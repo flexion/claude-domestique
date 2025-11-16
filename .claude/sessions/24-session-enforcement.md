@@ -63,9 +63,10 @@ Update `skills/context-loader/SKILL.md`:
 - [x] Install pre-commit framework
 - [x] Create `.pre-commit-config.yaml`
 - [x] Integrate shellcheck validation
-- [ ] Test with commit (should block without session update)
-- [ ] Test with session update (should allow commit)
+- [x] Test with commit (should block without session update)
+- [x] Test with session update (should allow commit)
 - [ ] Test `--no-verify` override
+- [ ] Create PR
 - [ ] Document hook in README or docs
 
 ### Phase 2: Session Update Prompter
@@ -126,8 +127,12 @@ Update `skills/context-loader/SKILL.md`:
 - Migrated config to fix deprecated stage names
 - Removed old custom git hook (moved to .legacy by pre-commit)
 - Shellcheck integration ensures all bash scripts pass validation
+- Fixed shellcheck repo URL (koalaman/shellcheck-precommit, not shellcheck-sh)
+- Tested hook: successfully blocks commits without session updates
+- Tested hook: allows commits when session file staged
+- Ready to create PR
 
-**Next**: Test hook behavior (blocking/allowing commits), then commit + create PR
+**Next**: Force-push clean history, create PR for Phase 3B.1
 
 ## Key Decisions
 
