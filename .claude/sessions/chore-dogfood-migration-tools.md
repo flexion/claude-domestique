@@ -116,6 +116,22 @@ Currently using bootstrap `.claude/` directory (copied from simple-D365). Need t
   - Configuration reference
 - **Next**: Create migration script (`scripts/migrate-bootstrap.sh`)
 
+### 2024-11-16 - Migration Script Created
+- **Created**: `scripts/migrate-bootstrap.sh` (automated migration tool)
+- **Features**:
+  - Detects bootstrap setup (.claude/ directory)
+  - Backs up to .claude-bootstrap-backup/
+  - Auto-detects tech stack (TypeScript, React, Java, Python)
+  - Auto-detects work-item platform (GitHub, Azure DevOps)
+  - Auto-detects branch pattern from current branch
+  - Generates .claude/config.json
+  - Preserves sessions/ and branches/
+  - Removes bootstrap tools/ (replaced by plugin scripts)
+  - Validates migration (JSON, file counts)
+  - Shows summary report
+- **Made executable**: chmod +x
+- **Next**: Run migration on this branch (dogfood test)
+
 ## Files to Create/Modify
 
 - `scripts/migrate-bootstrap.sh` - Main migration script
