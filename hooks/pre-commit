@@ -1,0 +1,55 @@
+#!/bin/bash
+# Pre-commit hook for claude-domestique
+# Runs shellcheck on all shell scripts
+
+set -e
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+echo "Running pre-commit checks..."
+
+# Check if shellcheck is installed
+if ! command -v shellcheck &> /dev/null; then
+    echo -e "${YELLOW}Warning: shellcheck not installed${NC}"
+    echo -e "${YELLOW}Install with: brew install shellcheck (macOS) or apt-get install shellcheck (Linux)${NC}"
+    echo -e "${YELLOW}Skipping shellcheck validation...${NC}"
+    exit 0
+fi
+
+# Find all shell scripts (*.sh and scripts in scripts/)
+SHELL_SCRIPTS=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(sh|bash)$' || true)
+
+if [ -z "$SHELL_SCRIPTS" ]; then
+    echo -e "${GREEN}No shell scripts to check${NC}"
+    exit 0
+fi
+
+echo "Checking shell scripts with shellcheck..."
+FAILED=0
+
+for script in $SHELL_SCRIPTS; do
+    if [ -f "$script" ]; then
+        echo "  Checking $script..."
+        if ! shellcheck "$script"; then
+            echo -e "${RED}✗ shellcheck failed for $script${NC}"
+            FAILED=1
+        else
+            echo -e "${GREEN}✓ $script passed${NC}"
+        fi
+    fi
+done
+
+if [ $FAILED -eq 1 ]; then
+    echo ""
+    echo -e "${RED}Pre-commit check failed!${NC}"
+    echo -e "${RED}Fix shellcheck errors before committing.${NC}"
+    exit 1
+fi
+
+echo ""
+echo -e "${GREEN}✓ All pre-commit checks passed${NC}"
+exit 0
