@@ -1,0 +1,44 @@
+{
+  "$schema": "../schemas/config.schema.json",
+  "extends": "../presets/java-spring.json",
+  "name": "portal-d365",
+  "vcs": {
+    "type": "git",
+    "git": {
+      "defaultBranch": "main",
+      "branchPatterns": {
+        "feature": "issue/feature-<N>/<desc>",
+        "chore": "chore/<desc>"
+      },
+      "commitFormat": {
+        "feature": "#<N> - <desc>",
+        "chore": "chore - <desc>"
+      },
+      "hooks": {
+        "preCommit": ["format", "lint", "test"],
+        "prePush": ["build"]
+      },
+      "mergeStrategy": "merge"
+    }
+  },
+  "runtime": {
+    "type": "java",
+    "version": "17",
+    "versionFile": ".java-version"
+  },
+  "test": {
+    "framework": "junit",
+    "testCommand": "gradle test",
+    "coverageCommand": "gradle jacocoTestReport",
+    "watchCommand": "gradle test --continuous",
+    "testPatterns": {
+      "test": "services, repositories, utilities, domain-logic, business-rules, controllers",
+      "skip": "integration-tests, database-tests, external-api-tests"
+    },
+    "testNaming": "*Test.java",
+    "testPlacement": {
+      "unit": "src/test/java/**/*Test.java",
+      "integration": "src/test/java/**/*IntegrationTest.java"
+    }
+  }
+}

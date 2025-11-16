@@ -166,7 +166,50 @@ cd /Users/dpuglielli/github/flexion/simple-D365
 
 ---
 
-#### 2.2 Config Reader
+#### 2.2 Plugin Initialization
+- [ ] Create `/init` command
+- [ ] Auto-detect project tech stack (package.json, build.gradle, etc.)
+- [ ] Prompt user for preset selection (or auto-select)
+- [ ] Generate `.claude/config.json` with preset + detected values
+- [ ] Create `.claude/` directory structure if needed
+- [ ] Support interactive and non-interactive modes
+- [ ] Validate generated config
+- [ ] Display summary and next steps
+
+**File:** `commands/init.md`
+
+**Auto-Detection Strategy:**
+- Node.js: Detect `package.json` → check dependencies for React, test framework
+- Java: Detect `build.gradle` or `pom.xml` → check for Spring Boot
+- Python: Detect `requirements.txt`, `setup.py`, `pyproject.toml` → check for Django
+
+**Interactive Flow:**
+```
+$ /init
+
+Detected: Node.js project with TypeScript and Jest
+Preset: typescript-node
+
+Configuration:
+  Runtime: Node.js 18.x
+  Test: jest
+  Lint: eslint
+
+Customize? (y/N): n
+
+✓ Created .claude/config.json
+✓ Plugin ready to use
+```
+
+**Migration Support:**
+- Detect existing `.claude/` directory
+- Preserve context files, sessions, branches
+- Generate config based on detected stack
+- Suggest cleanup of bootstrap files (optional)
+
+---
+
+#### 2.3 Config Reader
 - [ ] Create config reader utility
 - [ ] Support config validation
 - [ ] Support preset loading
@@ -191,7 +234,7 @@ fi
 
 ---
 
-#### 2.3 Test Runner Script
+#### 2.4 Test Runner Script
 - [ ] Create universal test runner
 - [ ] Read verifyCommands from config
 - [ ] Execute each command
@@ -231,14 +274,14 @@ echo "All checks passed ✓"
 
 ---
 
-#### 2.4 Update `/check` Command
+#### 2.5 Update `/check` Command
 - [ ] Make `/check` config-aware
 - [ ] Read test commands from config
 - [ ] Display tech-specific checklist
 
 ---
 
-#### 2.5 Test with Portal-D365-WebApp
+#### 2.6 Test with Portal-D365-WebApp
 - [ ] Install plugin
 - [ ] Create config for react-typescript
 - [ ] Test `/check commit`
@@ -462,6 +505,14 @@ Output: "Loaded 8 context files: README.yml, sessions.yml, git.yml, behavior.yml
 - [ ] Migration guide (docs/migration.md)
 - [ ] Feature workflow guide (docs/feature-workflow.md)
 - [ ] Chore workflow guide (docs/chore-workflow.md)
+- [ ] Developer workflow optimization (docs/development-setup.md)
+
+**Developer Workflow Optimization:**
+- Document safe commands that can be auto-approved in Claude settings
+- Read-only, non-mutating, non-secret commands: `git status`, `git branch --show-current`, `git log`, `git diff`, `ls`, `cat`, `jq`, `grep`
+- Validation commands: schema validation, config validation
+- Benefits: Significantly speeds up development by reducing approval prompts
+- Safety guidelines: Review commands before adding to auto-approve list
 
 ---
 

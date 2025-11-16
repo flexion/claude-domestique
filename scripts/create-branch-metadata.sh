@@ -57,14 +57,14 @@ elif [[ "$CURRENT_BRANCH" =~ chore/(.*) ]]; then
 
 else
     echo -e "${YELLOW}Non-standard branch name. Please provide details:${NC}"
-    read -p "Type (issue/chore/feature): " TYPE
-    read -p "Description: " DESCRIPTION
-    read -p "Session file name (e.g., my-session.md): " SESSION_FILE
+    read -r -p "Type (issue/chore/feature): " TYPE
+    read -r -p "Description: " DESCRIPTION
+    read -r -p "Session file name (e.g., my-session.md): " SESSION_FILE
 fi
 
 # Get or confirm session file
 echo ""
-read -p "Session file [${SESSION_FILE}]: " INPUT_SESSION
+read -r -p "Session file [${SESSION_FILE}]: " INPUT_SESSION
 if [ -n "$INPUT_SESSION" ]; then
     SESSION_FILE="$INPUT_SESSION"
 fi
@@ -72,13 +72,13 @@ fi
 # Get status
 echo ""
 echo "Status options: planning, in-progress, testing, pr-created, completed"
-read -p "Current status [in-progress]: " STATUS
+read -r -p "Current status [in-progress]: " STATUS
 if [ -z "$STATUS" ]; then
     STATUS="in-progress"
 fi
 
 # Get parent branch
-read -p "Parent branch [main]: " PARENT
+read -r -p "Parent branch [main]: " PARENT
 if [ -z "$PARENT" ]; then
     PARENT="main"
 fi

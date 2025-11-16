@@ -47,7 +47,7 @@ else
         ISSUE_NUM="${BASH_REMATCH[1]}"
         echo "Branch appears to be for issue #${ISSUE_NUM}"
         echo "Looking for session files matching: ${ISSUE_NUM}-*.md"
-        ls -la .claude/sessions/${ISSUE_NUM}-*.md 2>/dev/null || echo "No matching session found"
+        ls -la .claude/sessions/"${ISSUE_NUM}"-*.md 2>/dev/null || echo "No matching session found"
     elif [[ "$CURRENT_BRANCH" =~ chore/(.*) ]]; then
         CHORE_NAME="${BASH_REMATCH[1]}"
         echo "Branch appears to be a chore: ${CHORE_NAME}"
