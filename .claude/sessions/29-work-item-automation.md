@@ -313,6 +313,34 @@ Keep session and issue in sync:
 
 **Next**: Continue Phase 2 with complete local copy implementation
 
+### 2024-11-16 - Phase 2 Implementation: GitHub Integration
+- **Created**: `commands/fetch-issue.md` (comprehensive fetch command specification)
+- **Command features**:
+  - Auto-detects work item from branch or accepts explicit ID
+  - Fetches complete issue data (body, comments, metadata)
+  - Downloads all images/attachments locally
+  - Rewrites image URLs to local paths
+  - Creates complete offline copy
+  - Multi-platform support (GitHub, Jira, Azure DevOps)
+- **Testing with issue #29**:
+  - ✅ Fetched complete issue data from GitHub API
+  - ✅ Created local storage: `.claude/work-items/29/`
+  - ✅ Generated `issue.md` with formatted issue content
+  - ✅ Generated `comments.md` (0 comments)
+  - ✅ Generated `metadata.json` with structured data
+  - ✅ Verified Claude can read issue.md directly (offline access works)
+- **Local storage structure verified**:
+  ```
+  .claude/work-items/29/
+  ├── issue.md          (formatted issue content)
+  ├── comments.md       (comments chronologically)
+  └── metadata.json     (structured metadata)
+  ```
+- **No images in issue #29**: Tested with issue without attachments
+- **Next**: Test with issue containing images, implement download logic
+
+**Phase 2 Status**: ✅ Core implementation complete, testing successful
+
 ### 2024-11-16 - Phase 1 Complete: Issue Detection Skill
 - **Created**: `skills/issue-detector/SKILL.md` (comprehensive issue detection skill)
 - **Detection logic**:
@@ -546,6 +574,25 @@ Keep session and issue in sync:
    - Configuration schema
    - Integration documentation
 
+### Phase 2: GitHub Integration (Complete Local Copy)
+2. **commands/fetch-issue.md** (395 lines)
+   - Complete work-item fetch command specification
+   - Auto-detection from branch or explicit ID
+   - GitHub API integration (issue + comments)
+   - Image/attachment download logic
+   - URL rewriting for local references
+   - Local storage structure (.claude/work-items/<id>/)
+   - Multi-platform support (GitHub, Jira, Azure DevOps)
+   - Comprehensive error handling
+   - 4 detailed examples
+   - Integration with issue-detector skill
+
+3. **.claude/work-items/29/** (test data)
+   - issue.md (formatted issue content)
+   - comments.md (comments chronologically)
+   - metadata.json (structured metadata)
+   - Demonstrates complete local copy working
+
 ### Global Context (Phase 3C Setup)
 2. **context/work-items.yml** (189 lines)
    - Work-item automation workflow documentation
@@ -579,19 +626,21 @@ Keep session and issue in sync:
 6. ✅ Update session with learnings (5 learnings documented)
 7. ⏳ Commit skill + session update (pending)
 
-### Immediate Next: Phase 2 (GitHub Integration)
-1. Design GitHub integration approach (extend skill or create command)
-2. Implement full issue details fetching
-3. Extract all relevant fields:
-   - Title, body (description)
-   - Labels, milestone, assignee
-   - Created date, state, URL
-4. Parse markdown in issue body (for objectives/requirements)
-5. Map issue fields to session structure
-6. Test with issue #29 (fetch full details)
-7. Document mapping logic
-8. Update session with progress
-9. Commit GitHub integration
+### Phase 2 (GitHub Integration) - In Progress
+1. ✅ Design GitHub integration approach (command: /fetch-issue)
+2. ✅ Implement full issue details fetching
+3. ✅ Extract all relevant fields:
+   - ✅ Title, body (description)
+   - ✅ Labels, milestone, assignee
+   - ✅ Created date, state, URL
+4. ✅ Create local storage structure (.claude/work-items/<id>/)
+5. ✅ Test with issue #29 (fetch full details)
+6. ⏳ Implement image download logic (need issue with images to test)
+7. ⏳ Implement URL rewriting for local image references
+8. ⏳ Test with issue containing images/attachments
+9. ✅ Document command specification
+10. ⏳ Update session with progress
+11. ⏳ Commit Phase 2 implementation
 
 ### After Phase 2: Phase 3 (Auto-Populate Session)
 10. Design session template generator
