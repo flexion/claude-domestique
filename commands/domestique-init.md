@@ -231,7 +231,77 @@ If validation fails:
 - Ask user to review config manually
 - Do not proceed
 
-### Step 7: Display Summary
+### Step 7: Update or Create CLAUDE.md
+
+**Check if CLAUDE.md exists:**
+
+```bash
+if [ -f "CLAUDE.md" ]; then
+  # Existing CLAUDE.md - prepend plugin instructions
+  EXISTING_CONTENT=$(cat CLAUDE.md)
+else
+  # No CLAUDE.md - create new one
+  EXISTING_CONTENT=""
+fi
+```
+
+**Prepend plugin section to CLAUDE.md:**
+
+```markdown
+# CLAUDE.md - claude-domestique Plugin
+
+## Plugin Configuration
+
+This project uses the claude-domestique plugin for workflow management.
+
+### Configuration File
+
+- **Location**: `.claude/config.json`
+- **Preset**: {preset-name}
+- **Tech Stack**: {detected-stack}
+
+### Available Commands
+
+- `/next` - Show next steps for current work
+- `/create-session` - Create session for new branch
+- `/check [action]` - Show workflow checklists
+- `/domestique-init` - Re-initialize plugin config
+
+### Project Structure
+
+```
+.claude/
+├── config.json          # Plugin configuration (tech stack, commands)
+├── sessions/            # Session files (one per branch)
+├── branches/            # Branch metadata
+└── context/             # Project-specific context (optional)
+```
+
+### Getting Started
+
+1. Check current session: `/next`
+2. Create new work branch: `git checkout -b chore/description`
+3. Create session: `/create-session`
+4. Before commit: `/check commit`
+5. Before PR: `/check pr`
+
+For more info: `docs/` in claude-domestique plugin
+
+---
+
+{EXISTING_CONTENT}
+```
+
+**If existing CLAUDE.md:**
+- Preserve all existing content
+- Add plugin section at top
+- Keep user's custom instructions
+
+**If no CLAUDE.md:**
+- Create minimal file with plugin instructions
+- User can add project-specific instructions later
+
+### Step 8: Display Summary
 
 Show comprehensive summary:
 
@@ -244,10 +314,11 @@ Detected:
   TypeScript: Yes
   Preset: react-typescript
 
-Created:
+Created/Updated:
   ✓ .claude/config.json
   ✓ .claude/branches/
   ✓ .claude/sessions/
+  ✓ CLAUDE.md (plugin instructions added)
 
 Configuration:
   - Test command: npm test -- --watchAll=false
@@ -304,15 +375,14 @@ Prompt at key points:
    Customize configuration now? (y/N):
    ```
 
-4. **Migration cleanup (if applicable):**
+4. **CLAUDE.md handling:**
    ```
-   Found bootstrap files from manual setup:
-     - CLAUDE.md
-     - .claude/tools/ (scripts)
+   Found existing CLAUDE.md with custom instructions.
 
-   These are no longer needed with the plugin.
+   Plugin instructions will be added to the top.
+   Your existing content will be preserved.
 
-   Remove bootstrap files? (y/N):
+   Continue? (Y/n):
    ```
 
 ### Non-Interactive Mode (`--yes` flag)
@@ -321,7 +391,7 @@ Skip all prompts:
 - Accept all defaults
 - Use recommended preset
 - No customization
-- No cleanup prompts
+- Automatically update CLAUDE.md (preserve existing content)
 - Direct to completion
 
 ## Error Handling
@@ -464,25 +534,29 @@ Generating configuration...
 Validating configuration...
 ✓ Configuration is valid
 
+Found existing CLAUDE.md with custom instructions.
+
+Plugin instructions will be added to the top.
+Your existing content will be preserved.
+
+Continue? (Y/n): Y
+
+Updating CLAUDE.md...
+✓ Plugin instructions added
+✓ Existing content preserved
+
 Plugin initialized successfully!
 
 Migration complete:
   ✓ Config generated
   ✓ Existing data preserved
+  ✓ CLAUDE.md updated with plugin instructions
   ✓ Ready to use
-
-Found bootstrap files:
-  - CLAUDE.md (manual setup)
-  - .claude/tools/ (old scripts)
-
-These are no longer needed with the plugin.
-Remove? (y/N): N
-
-Skipping cleanup. You can remove these files later if desired.
 
 Next steps:
 1. Review .claude/config.json
-2. Continue with existing workflow
+2. Review CLAUDE.md (plugin section added at top)
+3. Continue with existing workflow
 ```
 
 ### Example 3: Non-Interactive Mode
