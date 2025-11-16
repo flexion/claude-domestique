@@ -95,10 +95,51 @@ When Beginning Chore:
 
 ### Before Git Commit
 
+**When displaying this checklist, dynamically generate the verification commands:**
+
+1. Check if `.claude/config.json` exists
+2. If exists:
+   - Use `scripts/read-config.sh vcs.git.hooks.preCommit` to get command list
+   - For each command type, extract actual command using `scripts/read-config.sh {path}`
+   - Display tech-specific commands
+3. If not exists:
+   - Show fallback checklist
+   - Suggest running `/plugin-init`
+
+**With Config (Tech-Specific):**
+```
+Before Git Commit:
+
+1. RUN VERIFICATION
+   ./scripts/run-verification.sh
+
+   Commands that will run:
+   {for each command in preCommit hooks}
+   - {command_type}: {actual_command}
+   {end for}
+
+2. UPDATE SESSION
+   - Ensure session file is up to date
+   - Session + code committed atomically
+
+3. REREAD .claude/context/git.yml
+
+4. VERIFY COMMIT FORMAT
+   - Feature: "#<N> - verb description"
+   - Chore: "chore - verb description"
+   - Use HEREDOC for multi-line messages
+   - ZERO attribution (no Claude Code, Generated, Co-Authored-By)
+```
+
+**Without Config (Fallback):**
 ```
 Before Git Commit:
 
 1. RUN VERIFICATION (if applicable)
+   No config found. Initialize plugin:
+   - /plugin-init
+
+   Or verify manually:
    - Shell scripts: shellcheck scripts/*.sh
    - Tests: Run test suite if exists
 
@@ -117,10 +158,44 @@ Before Git Commit:
 
 ### Before Pull Request
 
+**When displaying this checklist, dynamically generate the verification commands (same as commit checklist):**
+
+**With Config (Tech-Specific):**
 ```
 Before Pull Request:
 
 1. RUN VERIFICATION
+   ./scripts/run-verification.sh
+
+   Commands that will run:
+   {for each command in preCommit hooks}
+   - {command_type}: {actual_command}
+   {end for}
+
+2. REREAD .claude/context/git.yml
+
+3. VERIFY PR BODY HAS ZERO:
+   - Attribution ("Claude Code", "Generated")
+   - Emojis
+   - AI mentions
+   - Co-Authored-By tags
+
+4. INCLUDE IN PR:
+   - Summary (1-3 bullet points)
+   - Test plan (checklist)
+   - Files added/modified
+   - Closes #<N> (for features)
+```
+
+**Without Config (Fallback):**
+```
+Before Pull Request:
+
+1. RUN VERIFICATION
+   No config found. Initialize plugin:
+   - /plugin-init
+
+   Or verify manually:
    - Shell scripts: shellcheck scripts/*.sh
    - Tests: Run full test suite
 
@@ -158,7 +233,7 @@ Before Answering "What's Next?":
 
 ## Examples
 
-### Example 1: General Check
+### Example 1: General Check (With Config)
 
 **Input:**
 ```
@@ -171,6 +246,7 @@ Current Status:
   Branch: issue/feature-8/basic-commands
   Session: 8-basic-commands.md
   Uncommitted changes: Yes
+  Config: .claude/config.json (typescript-node)
 
 Relevant Checklists:
 
@@ -178,7 +254,13 @@ Relevant Checklists:
 Before Git Commit:
 
 1. ☐ RUN VERIFICATION
-   - shellcheck scripts/*.sh (if scripts modified)
+   ./scripts/run-verification.sh
+
+   Commands that will run:
+   - format: npm run format:check
+   - lint: npm run lint
+   - type-check: npm run type-check
+   - test: npm test
 
 2. ☐ UPDATE SESSION
    - Ensure session file reflects current state
@@ -228,7 +310,7 @@ Before Beginning Any New Work (REQUIRED):
    Use appropriate workflow checklist
 ```
 
-### Example 3: Specific Checklist - Commit
+### Example 3: Specific Checklist - Commit (TypeScript Node.js Project)
 
 **Input:**
 ```
@@ -239,9 +321,14 @@ Before Beginning Any New Work (REQUIRED):
 ```
 Before Git Commit:
 
-1. ☐ RUN VERIFICATION (if applicable)
-   - Shell scripts: shellcheck scripts/*.sh
-   - Tests: Run test suite
+1. ☐ RUN VERIFICATION
+   ./scripts/run-verification.sh
+
+   Commands that will run:
+   - format: npm run format:check
+   - lint: npm run lint
+   - type-check: npm run type-check
+   - test: npm test
 
 2. ☐ UPDATE SESSION
    - Ensure session up to date
@@ -256,7 +343,71 @@ Before Git Commit:
    - ZERO attribution
 ```
 
-### Example 4: Specific Checklist - PR
+### Example 3b: Specific Checklist - Commit (Java Spring Boot Project)
+
+**Input:**
+```
+/check commit
+```
+
+**Output:**
+```
+Before Git Commit:
+
+1. ☐ RUN VERIFICATION
+   ./scripts/run-verification.sh
+
+   Commands that will run:
+   - format: gradle spotlessCheck
+   - lint: gradle checkstyleMain
+   - test: gradle test
+
+2. ☐ UPDATE SESSION
+   - Ensure session up to date
+   - Commit session + code atomically
+
+3. ☐ REREAD .claude/context/git.yml
+
+4. ☐ VERIFY COMMIT FORMAT
+   - Feature: "#<N> - verb description"
+   - Chore: "chore - verb description"
+   - HEREDOC for multi-line
+   - ZERO attribution
+```
+
+### Example 3c: Specific Checklist - Commit (No Config)
+
+**Input:**
+```
+/check commit
+```
+
+**Output:**
+```
+Before Git Commit:
+
+1. ☐ RUN VERIFICATION
+   No config found. Initialize plugin:
+   - /plugin-init
+
+   Or verify manually:
+   - Shell scripts: shellcheck scripts/*.sh
+   - Tests: Run test suite if exists
+
+2. ☐ UPDATE SESSION
+   - Ensure session up to date
+   - Commit session + code atomically
+
+3. ☐ REREAD .claude/context/git.yml
+
+4. ☐ VERIFY COMMIT FORMAT
+   - Feature: "#<N> - verb description"
+   - Chore: "chore - verb description"
+   - HEREDOC for multi-line
+   - ZERO attribution
+```
+
+### Example 4: Specific Checklist - PR (With Config)
 
 **Input:**
 ```
@@ -268,8 +419,13 @@ Before Git Commit:
 Before Pull Request:
 
 1. ☐ RUN VERIFICATION
-   - shellcheck scripts/*.sh
-   - Run full test suite
+   ./scripts/run-verification.sh
+
+   Commands that will run:
+   - format: npm run format:check
+   - lint: npm run lint
+   - type-check: npm run type-check
+   - test: npm test
 
 2. ☐ REREAD .claude/context/git.yml
 
