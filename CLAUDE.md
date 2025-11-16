@@ -10,6 +10,7 @@ Claude Domestique - Your strategic coding partner. Like a cycling domestique, it
 .claude/context/README.yml       - How to read compact YAML
 .claude/context/sessions.yml     - Session workflow & branch tracking
 .claude/context/git.yml          - Git workflow rules
+.claude/context/features.yml     - Feature workflow patterns
 .claude/context/behavior.yml     - AI behavior/preferences
 .claude/context/test.yml         - Testing strategy (integration testing)
 .claude/context/project.yml      - Plugin project overview
@@ -36,6 +37,14 @@ Claude Domestique - Your strategic coding partner. Like a cycling domestique, it
 3. **POPULATE SESSION** - Document goal, approach, context
 4. **Commit session file** before starting implementation
 
+### When Beginning Feature (GitHub Issue):
+1. **REREAD** `.claude/context/sessions.yml` and `.claude/context/features.yml`
+2. **CREATE GITHUB ISSUE** - Document requirements, acceptance criteria
+3. **CREATE BRANCH** - `issue/feature-N/description` from main
+4. **CREATE SESSION** - Use `.claude/tools/create-branch-metadata.sh` (provide issue URL)
+5. **POPULATE SESSION** - Document issue details, objective, requirements, approach, implementation plan
+6. **Commit session file** before starting implementation
+
 ### After Completing Major Milestone:
 1. **UPDATE SESSION** - Document what completed, decisions made, context learned
 2. **Examples**: Component done (before testing), blocker resolved, architectural decision, before pausing work
@@ -53,14 +62,26 @@ Claude Domestique - Your strategic coding partner. Like a cycling domestique, it
    - (No automated tests initially - plugin is definitions, not executable code)
 2. **UPDATE SESSION** - Ensure session updated (session+code committed atomically)
 3. **REREAD** `.claude/context/git.yml`
-4. **Verify format**: `"chore - verb desc"` with HEREDOC, ZERO attribution
+4. **Verify format**:
+   - Chore: `"chore - verb desc"` with HEREDOC, ZERO attribution
+   - Feature: `"#N - verb desc"` with HEREDOC, ZERO attribution
 
-**HEREDOC Example:**
+**HEREDOC Examples:**
 ```bash
+# Chore commit
 git commit -m "$(cat <<'EOF'
 chore - implement /next command
 - Create commands/next.md with command definition
 - Document usage and implementation approach
+EOF
+)"
+
+# Feature commit
+git commit -m "$(cat <<'EOF'
+#10 - implement plugin installation command
+- Add /plugin install command
+- Create plugin manifest validation
+- Update session with implementation details
 EOF
 )"
 ```
@@ -83,9 +104,13 @@ EOF
 ## Session Detection (Auto)
 
 1. `git branch --show-current`
-2. Sanitize: `chore/implement-phase-1` → `chore-implement-phase-1`
+2. Sanitize branch name (/ → -):
+   - Chore: `chore/implement-phase-1` → `chore-implement-phase-1`
+   - Feature: `issue/feature-10/plugin-system` → `issue-feature-10-plugin-system`
 3. Read `.claude/branches/<sanitized>` to get session file
-4. Load session from `.claude/sessions/<session-file>`
+4. Load session from `.claude/sessions/<session-file>`:
+   - Chore: `chore-implement-phase-1.md`
+   - Feature: `10-plugin-system.md`
 
 **Tools:**
 - `.claude/tools/get-current-session.sh` - Check current session
@@ -113,6 +138,7 @@ claude-domestique/
 
 **Resume work:** "What's next?" (auto-detects from branch)
 **New chore:** "Create session for [description]"
+**New feature:** "Create session for feature #N - [description]"
 **Session ops:** "Update session"
 
 ## Key Documents to Reference
@@ -130,7 +156,9 @@ claude-domestique/
 
 ## Key Rules (Quick Ref - Full Details in .yml Files)
 
-**Git:** `chore - desc`, HEREDOC commits, no attribution
+**Git:** `chore - desc` | `#N - desc`, HEREDOC commits, no attribution
+**Features:** GitHub issue-driven, detailed session logs, `issue/feature-N/` branches
+**Chores:** Internal maintenance, focused sessions, `chore/` branches
 **Behavior:** Skeptical assessment, integration testing, validate in test projects
 **Testing:** Integration > validation > docs, test in all 3 projects
 **Artifacts:** Markdown (commands, agents, skills), Bash (scripts, hooks), JSON (manifest)
@@ -138,4 +166,4 @@ claude-domestique/
 
 ---
 
-**Critical:** Load all 6 `.claude/context/*.yml` files IMMEDIATELY using parallel Read calls.
+**Critical:** Load all 7 `.claude/context/*.yml` files IMMEDIATELY using parallel Read calls.
