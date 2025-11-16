@@ -1,0 +1,23 @@
+# Pre-commit hooks configuration
+# Install: brew install pre-commit
+# Setup: pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  # Session enforcement - custom local hook
+  - repo: local
+    hooks:
+      - id: check-session-updated
+        name: Check session file updated
+        entry: hooks/check-session-updated.sh
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
+
+  # Shellcheck for bash scripts
+  - repo: https://github.com/koalaman/shellcheck-precommit
+    rev: v0.11.0
+    hooks:
+      - id: shellcheck
+        args: ['--severity=warning']
