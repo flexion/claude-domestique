@@ -1,0 +1,36 @@
+# Git Workflow - Compact Reference
+# For examples and PR templates, see: git-workflow.md
+
+MANDATORY-REREAD: before-commit, before-PR (use-thinking-block-verification)
+
+## COMMIT CHECKLIST (you are reading this because you're about to commit):
+✓ Tests run if applicable (check project for test commands)
+✓ Session file updated (atomic commit: session+code together)
+✓ Format: "#N - verb desc" OR "chore - desc" (lowercase!)
+✓ HEREDOC with bullets
+✓ ZERO attribution/co-authored-by/emojis
+
+## PR CHECKLIST (you are reading this because you're about to create PR):
+✓ Tests run if applicable (check project for test commands)
+✓ Title format: "chore - lowercase desc" (NOT "Chore - Title Case")
+✓ Body has ZERO: attribution, emojis, AI mentions, co-authored-by
+✓ Base branch: main (or project default)
+✓ Re-read this checklist in thinking block BEFORE running gh pr create
+
+branch-from: main (git-fetch-first, remote-main)
+branch: issue/feature-N/desc | chore/desc
+commit: |
+  "#N - verb desc" OR "chore - desc"
+  - change1
+  - change2
+  (use HEREDOC format)
+no: attribution, co-authored-by, emojis, --amend (except pre-commit hooks)
+test-before: check project config or ask user for test commands
+pr-base: main (or project default branch)
+verify: 'git remote show origin | grep "HEAD branch" (check remote HEAD matches pr-base)'
+ask-first: "Is this an issue or chore?" + get issue number (never guess)
+examples:
+  branch-issue: issue/feature-3/add-error-handling
+  branch-chore: chore/update-dependencies
+  commit-issue: "#3 - add error handling\n- Add try-catch blocks\n- Log errors with context"
+  commit-chore: "chore - update dependencies\n- Update package to latest version"
