@@ -264,32 +264,215 @@ Keep session and issue in sync:
 
 **Next**: Begin Phase 1 (Issue Detection Skill) implementation
 
+### 2024-11-16 - Phase 1 Complete: Issue Detection Skill
+- **Created**: `skills/issue-detector/SKILL.md` (comprehensive issue detection skill)
+- **Detection logic**:
+  - Parses branch name to extract work-item identifier
+  - GitHub pattern: `issue/feature-N/desc` → `#N`
+  - Jira pattern: `feature/PROJ-123/desc` → `PROJ-123`
+  - Azure DevOps pattern: `feature/N/desc` → `#N`
+  - Platform detection via identifier format (PROJECT-N → Jira, numeric → GitHub/Azure)
+  - Ambiguous numeric IDs: try GitHub first, fall back to Azure DevOps
+- **Validation**:
+  - GitHub: `gh api repos/owner/repo/issues/N`
+  - Jira: REST API v3 OR imdone CLI (auto-detect from `.imdone/config.yml`)
+  - Azure DevOps: `az boards work-item show --id N`
+- **Testing**:
+  - Tested with current branch: `issue/feature-29/work-item-automation`
+  - Successfully extracted identifier: `29`
+  - Repo auto-detected: `flexion/claude-domestique`
+  - GitHub API validation successful: Issue #29 exists, open, correct title
+- **Features**:
+  - Auto-invokes at session start, branch switch, manual request
+  - Caches detection results (avoid repeated API calls)
+  - Graceful error handling (auth failures, not found, rate limits)
+  - Multi-platform support (GitHub, Jira with imdone option, Azure DevOps)
+  - Smart platform disambiguation for numeric IDs
+  - Zero-config design (auto-detects from git remote)
+- **Documentation**: 6 detailed examples covering all scenarios
+- **Phase 1 Status**: ✅ COMPLETE
+
+**Next**: Begin Phase 2 (GitHub Integration)
+
 ## Key Decisions
 
-_(To be populated as implementation progresses)_
+### Decision 1: Platform Detection Strategy
+**Decision**: Use identifier format to auto-detect platform, with API validation for ambiguous cases.
+
+**Rationale**:
+- `PROJECT-123` format is unambiguous → Jira
+- Numeric IDs could be GitHub or Azure DevOps
+- Try GitHub first (more common), fall back to Azure DevOps
+- Cache platform after successful validation to avoid repeated checks
+
+**Alternative Considered**: Require explicit platform in config
+**Rejected**: Too much configuration burden, auto-detection is better UX
+
+### Decision 2: Jira Integration - Dual Method Support
+**Decision**: Support both Jira REST API (mandatory) and imdone CLI (optional).
+
+**Rationale**:
+- REST API works for all Jira instances (mandatory baseline)
+- imdone CLI provides enhanced workflow (markdown, git-backed, AI-accessible)
+- Auto-detect which method to use: check for `.imdone/config.yml`
+- Projects like MCADS already use imdone, shouldn't force REST API
+
+**Alternative Considered**: imdone only
+**Rejected**: Not all projects use imdone (per user feedback: "very optional complement")
+
+### Decision 3: Caching Strategy
+**Decision**: Cache detection results in-memory for session, with 1-hour TTL.
+
+**Rationale**:
+- Avoids repeated API calls (rate limits, performance)
+- Branch doesn't change often during a session
+- 1-hour TTL prevents stale data
+- Invalidate on branch switch or manual re-detection
+
+**Alternative Considered**: No caching, query API each time
+**Rejected**: Wasteful, hits rate limits, slower
+
+### Decision 4: Zero-Config Design
+**Decision**: Auto-detect repo from git remote, no config required for basic usage.
+
+**Rationale**:
+- Most users work in cloned repos with correct remote
+- Extracting owner/repo from git remote is reliable
+- Configuration available for edge cases (multiple remotes, overrides)
+- Better UX: "just works" without setup
+
+**Alternative Considered**: Require explicit repo config
+**Rejected**: Too much friction for common case
 
 ## Learnings
 
-_(To be populated as implementation progresses)_
+### Learning 1: Branch Pattern Consistency
+**Observation**: Different platforms use different branch naming conventions.
+
+**Insight**:
+- GitHub: Often uses `issue/feature-N/desc` or `feature/N/desc`
+- Jira: Uses `feature/PROJ-123/desc` (project key + number)
+- Azure DevOps: Similar to GitHub (numeric only)
+
+**Impact**: Need flexible regex patterns to handle all conventions, plus platform disambiguation for ambiguous numeric IDs.
+
+### Learning 2: imdone is Project-Specific, Not Universal
+**Observation**: User clarified imdone is "very optional complement" used by MCADS project.
+
+**Insight**:
+- Not all Jira projects use imdone
+- Can't assume imdone is available
+- Need fallback to Jira REST API (mandatory baseline)
+- Dual-method support: REST API (always) + imdone (optional enhancement)
+
+**Impact**: Changed approach from "imdone for Jira" to "REST API with optional imdone enhancement". Detection: check for `.imdone/config.yml` existence.
+
+### Learning 3: Git Remote Parsing is Reliable
+**Observation**: Testing showed git remote URL parsing works consistently.
+
+**Insight**:
+- `git remote get-url origin` returns consistent format
+- Easy to extract `owner/repo` with regex
+- Works for both SSH and HTTPS URLs
+- Eliminates need for manual repo configuration
+
+**Impact**: Zero-config design is viable. Users don't need to specify repo in config.
+
+### Learning 4: GitHub API via gh CLI is Simple
+**Observation**: `gh api` makes GitHub integration trivial.
+
+**Insight**:
+- `gh` CLI handles authentication automatically
+- JSON output is clean and consistent
+- `--jq` flag allows easy field extraction
+- Already authenticated in most dev environments
+
+**Impact**: Phase 2 (GitHub integration) will be straightforward. No need for custom HTTP clients or token management.
+
+### Learning 5: Skill Structure is Well-Defined
+**Observation**: Existing skills (drift-detector, context-loader) follow consistent pattern.
+
+**Insight**:
+- Structure: Description, Trigger Conditions, Actions, Configuration, Error Handling, Examples, Integration, Notes
+- Detailed step-by-step actions
+- Comprehensive error handling for all scenarios
+- Multiple concrete examples
+- Clear integration points
+
+**Impact**: Following this pattern makes skills predictable, comprehensive, and easy to understand.
 
 ## Files Created
 
-_(To be populated as implementation progresses)_
+### Phase 1: Issue Detection Skill
+1. **skills/issue-detector/SKILL.md** (467 lines)
+   - Complete issue detection skill definition
+   - Multi-platform support (GitHub, Jira, Azure DevOps)
+   - Parsing logic for all three branch patterns
+   - Platform detection and disambiguation
+   - API validation for all three platforms
+   - Caching strategy
+   - Comprehensive error handling
+   - 6 detailed examples
+   - Configuration schema
+   - Integration documentation
+
+### Global Context (Phase 3C Setup)
+2. **context/work-items.yml** (189 lines)
+   - Work-item automation workflow documentation
+   - Platform definitions (GitHub, Jira, Azure DevOps)
+   - Auto-detection logic
+   - Auto-population workflow
+   - Field mapping for all platforms
+   - Dual Jira methods (REST API + imdone)
+   - Bidirectional sync strategy
+
+3. **Updated: context/sessions.yml**
+   - Added auto-population workflow section
+   - Documented work-item automation integration
+   - Updated tools section (auto-creation, sync)
+
+### Session Files
+4. **.claude/sessions/29-work-item-automation.md** (this file)
+   - Session tracking for Phase 3C
+   - Implementation plan (6 phases)
+   - Technical approach documentation
+   - Key decisions and learnings
 
 ## Next Steps
 
-### Immediate (Phase 1)
-1. Design issue-detector skill architecture
-2. Create `skills/issue-detector/SKILL.md`
-3. Implement branch name parsing logic
-4. Test with current branch (should detect #29)
-5. Document skill usage and examples
-6. Update session with learnings
-7. Commit skill + session update
+### ✅ Phase 1 Complete: Issue Detection Skill
+1. ✅ Design issue-detector skill architecture
+2. ✅ Create `skills/issue-detector/SKILL.md`
+3. ✅ Implement branch name parsing logic
+4. ✅ Test with current branch (successfully detected #29)
+5. ✅ Document skill usage and examples (6 detailed examples)
+6. ✅ Update session with learnings (5 learnings documented)
+7. ⏳ Commit skill + session update (pending)
 
-### After Phase 1
-8. Begin Phase 2 (GitHub Integration)
-9. Create `/fetch-issue` command or integrate into skill
-10. Test fetching issue #29
-11. Implement session auto-population
-12. Test end-to-end workflow
+### Immediate Next: Phase 2 (GitHub Integration)
+1. Design GitHub integration approach (extend skill or create command)
+2. Implement full issue details fetching
+3. Extract all relevant fields:
+   - Title, body (description)
+   - Labels, milestone, assignee
+   - Created date, state, URL
+4. Parse markdown in issue body (for objectives/requirements)
+5. Map issue fields to session structure
+6. Test with issue #29 (fetch full details)
+7. Document mapping logic
+8. Update session with progress
+9. Commit GitHub integration
+
+### After Phase 2: Phase 3 (Auto-Populate Session)
+10. Design session template generator
+11. Map issue fields to session sections
+12. Generate initial session file from issue
+13. Handle existing session files (don't overwrite)
+14. Test auto-population with new branch
+15. Update session
+16. Commit auto-population feature
+
+### Future Phases
+- Phase 4: Jira Integration (REST API + optional imdone)
+- Phase 5: Azure DevOps Integration
+- Phase 6: Bidirectional Sync
