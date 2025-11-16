@@ -1,0 +1,18 @@
+# Git Workflow - Compact Reference
+# MANDATORY-REREAD: before-commit, before-PR
+
+branch: chore/<desc>
+commit: |
+  "chore - verb desc"
+  - change1
+  - change2
+  (use HEREDOC format)
+never: emojis, Generated with, Co-Authored-By, Claude Code, --amend (user-rejects-commit)
+pr-base: main
+verify-before-commit-or-pr: |
+  shellcheck scripts/*.sh  (if shell scripts changed)
+  (no automated tests initially - plugin is markdown/bash definitions)
+examples:
+  branch: chore/implement-phase-1-scripts
+  commit: "chore - copy universal scripts from simple-D365\n- Add get-current-session.sh\n- Add create-branch-metadata.sh"
+  pr-title: "chore - implement Phase 1 core structure"

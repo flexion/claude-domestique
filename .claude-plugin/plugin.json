@@ -1,0 +1,34 @@
+{
+  "name": "claude-domestique",
+  "version": "0.1.0",
+  "description": "Your strategic coding partner - workflow management, skeptical assessment, and persistent memory. Like a cycling domestique: carries the water, stays focused on goals, handles the unglamorous work.",
+  "author": {
+    "name": "David Puglielli",
+    "email": "dpuglielli@flexion.us"
+  },
+  "homepage": "https://github.com/flexion/claude-domestique",
+  "repository": "https://github.com/flexion/claude-domestique",
+  "license": "MIT",
+  "keywords": [
+    "workflow",
+    "session-management",
+    "git-workflow",
+    "testing",
+    "work-items",
+    "multi-language",
+    "typescript",
+    "java",
+    "python",
+    "react"
+  ],
+  "commands": "./commands",
+  "agents": "./agents",
+  "skills": [
+    "./skills/context-loader",
+    "./skills/session-detector",
+    "./skills/test-runner",
+    "./skills/checklist-matcher"
+  ],
+  "hooks": "./hooks",
+  "mcpServers": null
+}
