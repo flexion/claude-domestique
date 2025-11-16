@@ -87,6 +87,44 @@ Commands must handle:
 
 **Next:** Implement `/next` command
 
+### 2024-11-16 - All Commands Implemented
+**Actions:**
+- Created `commands/` directory
+- Implemented `/next` command (131 lines)
+- Implemented `/create-session` command (271 lines)
+- Implemented `/check` command (315 lines)
+- Total: 717 lines of command documentation
+
+**Command Summaries:**
+
+1. **/next** - Show next steps from current session
+   - Detects current branch and session
+   - Extracts "Next Steps" section
+   - Handles both chore and feature sessions
+   - Clear error messages for missing sessions
+
+2. **/create-session** - Create new session and metadata
+   - Auto-detects branch type (chore vs feature)
+   - Uses appropriate template
+   - For features: prompts for GitHub issue info
+   - Creates both session file and branch metadata
+   - Provides commit instructions
+
+3. **/check** - Show workflow checklists
+   - Context-aware checklist display
+   - Supports specific actions (start, commit, pr, next)
+   - Extracts checklists from CLAUDE.md
+   - Helps users follow mandatory workflows
+
+**Implementation Highlights:**
+- All commands are Markdown files (Claude Code command format)
+- Comprehensive documentation with examples
+- Error handling specified for each command
+- Both chore and feature workflows supported
+- Clear, actionable instructions
+
+**Next:** Test commands, update implementation plan, commit and create PR
+
 ## Key Decisions
 
 ### Decision 1: Command Format (Markdown)
