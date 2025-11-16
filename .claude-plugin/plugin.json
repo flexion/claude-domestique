@@ -22,13 +22,10 @@
     "react"
   ],
   "commands": "./commands",
-  "agents": "./agents",
   "skills": [
     "./skills/context-loader",
     "./skills/drift-detector",
     "./skills/issue-detector",
     "./skills/session-update-prompter"
-  ],
-  "hooks": "./hooks",
-  "mcpServers": null
+  ]
 }
