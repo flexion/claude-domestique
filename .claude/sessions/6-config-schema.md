@@ -128,6 +128,32 @@ Each preset includes:
 
 **Next:** Implement JSON schema starting with Phase 1 modules
 
+### 2025-11-16 - Plugin Initialization Requirement
+**User Insight:** Projects need initialization to use the plugin effectively
+
+**Requirement:**
+- Plugin must provide initialization command (e.g., `/init`)
+- Initialization sets up necessary context for skills, agents, commands
+- Auto-detects project tech stack
+- Generates `.claude/config.json` with appropriate preset
+- Creates `.claude/` directory structure if needed
+- Validates configuration
+
+**Implementation Scope:**
+- Interactive mode (prompts user) vs non-interactive (--preset, --yes)
+- Auto-detection for Node.js, Java, Python projects
+- Migration support for existing `.claude/` directories (like simple-D365)
+- Validation after generation
+- Clear UX with summary and next steps
+
+**Impact on Design:**
+- Initialization is prerequisite for plugin usage
+- Config schema must support auto-detection
+- Presets must be complete enough for default usage
+- Migration path preserves existing work
+
+**Next:** Design complete. Ready to implement JSON schema.
+
 ## Key Decisions
 
 ### Decision 1: Use JSON Schema for Validation
@@ -144,6 +170,12 @@ Each preset includes:
 **Reason**: Different projects use different tools; config must adapt to tech stacks
 **Impact**: Config schema broken into 10 modules (vcs, package, build, test, quality, verify, dev, deploy, workitem, runtime)
 **Alternative**: Monolithic config (harder to understand, maintain, extend)
+
+### Decision 4: Require Plugin Initialization
+**Reason**: Plugin needs project-specific context to support skills, agents, and commands effectively
+**Impact**: Projects must run initialization step to set up config, context files, and structure
+**Alternative**: Manual setup (error-prone, inconsistent, poor user experience)
+**Implementation**: `/init` command or similar to bootstrap project
 
 ## Learnings
 

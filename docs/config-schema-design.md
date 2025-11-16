@@ -302,6 +302,112 @@ Merge strategy: Deep merge project config over preset
 
 ---
 
+## Plugin Initialization
+
+### Overview
+
+Projects must initialize the plugin to set up necessary context for skills, agents, and commands to function properly.
+
+### Initialization Process
+
+**Command**: `/init` or similar
+
+**What it does**:
+1. Detect project tech stack (package.json, build.gradle, requirements.txt, etc.)
+2. Select appropriate preset (or prompt user)
+3. Generate `.claude/config.json` with preset + detected values
+4. Create `.claude/` directory structure if needed:
+   - `.claude/context/` - Context files (if migrating from bootstrap)
+   - `.claude/sessions/` - Session files
+   - `.claude/branches/` - Branch metadata
+5. Optionally install git hooks (if configured)
+6. Validate generated config
+7. Display summary and next steps
+
+### Auto-Detection Strategy
+
+**Node.js Projects**:
+- Detect: `package.json` exists
+- Read: `package.json` → detect test framework, build tool
+- Preset: typescript-node or react-typescript (based on dependencies)
+
+**Java Projects**:
+- Detect: `build.gradle` or `pom.xml`
+- Read: build file → detect Spring Boot, test framework
+- Preset: java-spring
+
+**Python Projects**:
+- Detect: `requirements.txt`, `setup.py`, `pyproject.toml`
+- Read: dependencies → detect pytest, Django
+- Preset: python-django or python-generic
+
+### Interactive vs Non-Interactive
+
+**Interactive Mode** (default):
+```
+$ /init
+
+Detected: Node.js project with TypeScript and Jest
+Preset: typescript-node
+
+Configuration:
+  Runtime: Node.js 18.x
+  Test: jest
+  Lint: eslint
+  Format: prettier
+
+Customize? (y/N): n
+
+✓ Created .claude/config.json
+✓ Validated configuration
+✓ Plugin ready to use
+
+Next steps:
+  1. Review .claude/config.json
+  2. Try /next to see current session
+  3. Try /check commit to see pre-commit checklist
+```
+
+**Non-Interactive Mode**:
+```
+$ /init --preset typescript-node --yes
+```
+
+### Migration from Bootstrap
+
+For projects already using `.claude/` directory (like simple-D365):
+
+1. Detect existing `.claude/` structure
+2. Preserve existing files:
+   - `.claude/context/*.yml` → keep
+   - `.claude/sessions/*.md` → keep
+   - `.claude/branches/*` → keep
+3. Generate `.claude/config.json` based on detected stack
+4. Validate compatibility
+5. Suggest cleanup of bootstrap files (if desired)
+
+### Validation
+
+After initialization:
+- Run schema validation on generated config
+- Check all referenced commands exist (testCommand, lintCommand, etc.)
+- Verify directory structure
+- Test basic plugin functionality
+
+### User Experience
+
+**First-time user**:
+```
+User installs plugin → runs /init → answers prompts → plugin configured → ready to use
+```
+
+**Existing `.claude/` user**:
+```
+User has bootstrap → runs /init → detects existing → generates config → preserves context → upgraded
+```
+
+---
+
 ## Future Extensibility
 
 ### Adding New VCS
