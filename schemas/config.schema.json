@@ -1,0 +1,284 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/flexion/claude-domestique/schemas/config.schema.json",
+  "title": "Claude Domestique Configuration",
+  "description": "Configuration schema for claude-domestique plugin to support different tech stacks and tooling",
+  "type": "object",
+  "required": ["name", "vcs", "runtime"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Configuration name or preset name",
+      "examples": ["typescript-node", "react-typescript", "java-spring"]
+    },
+    "extends": {
+      "type": "string",
+      "description": "Preset to extend (optional)",
+      "examples": ["typescript-node", "react-typescript"]
+    },
+    "vcs": {
+      "$ref": "#/$defs/vcs"
+    },
+    "runtime": {
+      "$ref": "#/$defs/runtime"
+    },
+    "test": {
+      "$ref": "#/$defs/test"
+    },
+    "quality": {
+      "$ref": "#/$defs/quality"
+    }
+  },
+  "$defs": {
+    "vcs": {
+      "type": "object",
+      "description": "Version control system configuration",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["git"],
+          "description": "VCS type (currently only git supported)"
+        },
+        "git": {
+          "$ref": "#/$defs/gitConfig"
+        }
+      }
+    },
+    "gitConfig": {
+      "type": "object",
+      "description": "Git-specific configuration",
+      "properties": {
+        "defaultBranch": {
+          "type": "string",
+          "default": "main",
+          "description": "Default branch name",
+          "examples": ["main", "master", "develop"]
+        },
+        "branchPatterns": {
+          "type": "object",
+          "description": "Branch naming patterns",
+          "properties": {
+            "feature": {
+              "type": "string",
+              "default": "issue/feature-<N>/<desc>",
+              "description": "Feature branch pattern"
+            },
+            "chore": {
+              "type": "string",
+              "default": "chore/<desc>",
+              "description": "Chore branch pattern"
+            }
+          }
+        },
+        "commitFormat": {
+          "type": "object",
+          "description": "Commit message formats",
+          "properties": {
+            "feature": {
+              "type": "string",
+              "default": "#<N> - <desc>",
+              "description": "Feature commit format"
+            },
+            "chore": {
+              "type": "string",
+              "default": "chore - <desc>",
+              "description": "Chore commit format"
+            }
+          }
+        },
+        "hooks": {
+          "type": "object",
+          "description": "Git hook configurations",
+          "properties": {
+            "preCommit": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Commands to run before commit",
+              "examples": [["format", "lint", "test"]]
+            },
+            "prePush": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Commands to run before push",
+              "examples": [["build"]]
+            }
+          }
+        },
+        "mergeStrategy": {
+          "type": "string",
+          "enum": ["merge", "squash", "rebase"],
+          "default": "merge",
+          "description": "Default merge strategy"
+        }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "description": "Language/runtime configuration",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["node", "java", "python", "ruby", "go", "rust"],
+          "description": "Runtime type"
+        },
+        "version": {
+          "type": "string",
+          "description": "Required version or version range",
+          "examples": ["18.x", ">=16.0.0", "11", "3.10"]
+        },
+        "versionFile": {
+          "type": "string",
+          "description": "File containing version specification",
+          "examples": [".nvmrc", ".java-version", ".python-version"]
+        },
+        "versionManager": {
+          "type": "string",
+          "description": "Version manager tool",
+          "examples": ["nvm", "asdf", "pyenv", "rbenv"]
+        }
+      }
+    },
+    "test": {
+      "type": "object",
+      "description": "Testing configuration",
+      "properties": {
+        "framework": {
+          "type": "string",
+          "description": "Test framework name",
+          "examples": ["jest", "mocha", "junit", "pytest", "rspec"]
+        },
+        "testCommand": {
+          "type": "string",
+          "description": "Command to run tests",
+          "examples": ["npm test", "gradle test", "mvn test", "pytest"]
+        },
+        "coverageCommand": {
+          "type": "string",
+          "description": "Command to generate coverage",
+          "examples": ["npm run coverage", "gradle jacocoTestReport"]
+        },
+        "watchCommand": {
+          "type": "string",
+          "description": "Command to run tests in watch mode",
+          "examples": ["npm run test:watch"]
+        },
+        "testPatterns": {
+          "type": "object",
+          "description": "What to test vs skip",
+          "properties": {
+            "test": {
+              "type": "string",
+              "description": "Patterns for what to test",
+              "examples": ["pure-functions, business-logic, auth-logic"]
+            },
+            "skip": {
+              "type": "string",
+              "description": "Patterns for what to skip",
+              "examples": ["react-components, redux-integration, styling"]
+            }
+          }
+        },
+        "testNaming": {
+          "type": "string",
+          "description": "Test file naming convention",
+          "examples": ["*.test.ts", "*.spec.ts", "*Test.java"]
+        },
+        "testPlacement": {
+          "type": "object",
+          "description": "Where tests should be located",
+          "properties": {
+            "unit": {
+              "type": "string",
+              "description": "Unit test location pattern",
+              "examples": ["src/utils/*.test.ts", "src/**/*Test.java"]
+            },
+            "integration": {
+              "type": "string",
+              "description": "Integration test location pattern",
+              "examples": ["tests/integration/**/*.test.ts"]
+            }
+          }
+        }
+      }
+    },
+    "quality": {
+      "type": "object",
+      "description": "Code quality tool configuration",
+      "properties": {
+        "linter": {
+          "$ref": "#/$defs/linterConfig"
+        },
+        "formatter": {
+          "$ref": "#/$defs/formatterConfig"
+        },
+        "typeChecker": {
+          "$ref": "#/$defs/typeCheckerConfig"
+        }
+      }
+    },
+    "linterConfig": {
+      "type": "object",
+      "description": "Linter configuration",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["eslint", "checkstyle", "pylint", "rubocop", "golangci-lint"],
+          "description": "Linter type"
+        },
+        "command": {
+          "type": "string",
+          "description": "Command to run linter",
+          "examples": ["npm run lint", "gradle checkstyle"]
+        },
+        "autoFix": {
+          "type": "string",
+          "description": "Command to auto-fix lint issues",
+          "examples": ["npm run lint:fix", "eslint --fix"]
+        }
+      }
+    },
+    "formatterConfig": {
+      "type": "object",
+      "description": "Formatter configuration",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["prettier", "black", "google-java-format", "rustfmt"],
+          "description": "Formatter type"
+        },
+        "command": {
+          "type": "string",
+          "description": "Command to format code",
+          "examples": ["npm run format", "black ."]
+        },
+        "checkCommand": {
+          "type": "string",
+          "description": "Command to check formatting without changing files",
+          "examples": ["npm run format:check", "black --check ."]
+        }
+      }
+    },
+    "typeCheckerConfig": {
+      "type": "object",
+      "description": "Type checker configuration",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["typescript", "mypy", "flow"],
+          "description": "Type checker type"
+        },
+        "command": {
+          "type": "string",
+          "description": "Command to run type checking",
+          "examples": ["npm run type-check", "tsc --noEmit", "mypy ."]
+        }
+      }
+    }
+  }
+}

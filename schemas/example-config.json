@@ -1,0 +1,60 @@
+{
+  "$schema": "./config.schema.json",
+  "name": "typescript-node-example",
+  "vcs": {
+    "type": "git",
+    "git": {
+      "defaultBranch": "main",
+      "branchPatterns": {
+        "feature": "issue/feature-<N>/<desc>",
+        "chore": "chore/<desc>"
+      },
+      "commitFormat": {
+        "feature": "#<N> - <desc>",
+        "chore": "chore - <desc>"
+      },
+      "hooks": {
+        "preCommit": ["format", "lint", "test"],
+        "prePush": ["build"]
+      },
+      "mergeStrategy": "merge"
+    }
+  },
+  "runtime": {
+    "type": "node",
+    "version": "18.x",
+    "versionFile": ".nvmrc",
+    "versionManager": "nvm"
+  },
+  "test": {
+    "framework": "jest",
+    "testCommand": "npm test",
+    "coverageCommand": "npm run coverage",
+    "watchCommand": "npm run test:watch",
+    "testPatterns": {
+      "test": "pure-functions, business-logic, auth-logic",
+      "skip": "react-components, redux-integration, styling"
+    },
+    "testNaming": "*.test.ts",
+    "testPlacement": {
+      "unit": "src/utils/*.test.ts",
+      "integration": "tests/integration/**/*.test.ts"
+    }
+  },
+  "quality": {
+    "linter": {
+      "type": "eslint",
+      "command": "npm run lint",
+      "autoFix": "npm run lint:fix"
+    },
+    "formatter": {
+      "type": "prettier",
+      "command": "npm run format",
+      "checkCommand": "npm run format:check"
+    },
+    "typeChecker": {
+      "type": "typescript",
+      "command": "npm run type-check"
+    }
+  }
+}
