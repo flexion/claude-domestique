@@ -47,27 +47,38 @@ This document provides a step-by-step implementation plan for building the sessi
 
 ---
 
-#### 1.3 Config Schema
-- [ ] Create JSON schema for `.claude/config.json`
-- [ ] Define tech stack presets (typescript-node, react-typescript, java-spring)
-- [ ] Create validation script
-- [ ] Document all config options
+#### 1.3 Config Schema ✓
+- [x] Create JSON schema for `.claude/config.json`
+- [x] Define tech stack presets (typescript-node, react-typescript, java-spring)
+- [x] Create validation script
+- [x] Document all config options
 
 **Files:**
-- `schemas/config.schema.json`
-- `docs/configuration.md`
+- `schemas/config.schema.json` ✓
+- `schemas/example-config.json` ✓
+- `presets/typescript-node.json` ✓
+- `presets/react-typescript.json` ✓
+- `presets/java-spring.json` ✓
+- `scripts/validate-config.sh` ✓
+- `docs/config-schema-design.md` ✓
+- `docs/configuration.md` ✓
+- `test-configs/*` ✓
+
+**Completed:** Issue #6, PR #7 (merged)
 
 ---
 
-#### 1.4 Basic Commands
-- [ ] `/next` - Show next steps
-- [ ] `/create-session` - Create session (support both chore and feature)
-- [ ] `/check` - Show checklist
+#### 1.4 Basic Commands ✓
+- [x] `/next` - Show next steps
+- [x] `/create-session` - Create session (support both chore and feature)
+- [x] `/check` - Show checklist
 
 **Files:**
-- `commands/next.md`
-- `commands/create-session.md` (must support chore and feature workflows)
-- `commands/check.md`
+- `commands/next.md` ✓ (131 lines)
+- `commands/create-session.md` ✓ (271 lines)
+- `commands/check.md` ✓ (315 lines)
+
+**Completed:** Issue #8 (in progress)
 
 **Note:** `/create-session` must detect branch type and use appropriate template:
 - Chore branches → focused session structure
