@@ -505,6 +505,14 @@ Output: "Loaded 8 context files: README.yml, sessions.yml, git.yml, behavior.yml
 - [ ] Migration guide (docs/migration.md)
 - [ ] Feature workflow guide (docs/feature-workflow.md)
 - [ ] Chore workflow guide (docs/chore-workflow.md)
+- [ ] Developer workflow optimization (docs/development-setup.md)
+
+**Developer Workflow Optimization:**
+- Document safe commands that can be auto-approved in Claude settings
+- Read-only, non-mutating, non-secret commands: `git status`, `git branch --show-current`, `git log`, `git diff`, `ls`, `cat`, `jq`, `grep`
+- Validation commands: schema validation, config validation
+- Benefits: Significantly speeds up development by reducing approval prompts
+- Safety guidelines: Review commands before adding to auto-approve list
 
 ---
 

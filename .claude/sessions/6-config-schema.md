@@ -184,6 +184,12 @@ Each preset includes:
 - Preset pattern enables reusability
 - Merge strategy allows customization
 
+### About Development Workflow Optimization
+- Many safe commands (read-only, non-mutating, non-secret) can be configured in Claude settings for approval-free execution
+- Examples: `git status`, `git branch --show-current`, `git log`, `git diff`, `ls`, `cat`, `jq`, `grep`, validation commands
+- This significantly speeds up development by reducing approval prompts
+- Commands should be reviewed for safety (no mutations, no secret access) before adding to auto-approve list
+
 ## Files Created
 
 ### Schemas
