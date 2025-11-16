@@ -86,11 +86,12 @@ Update `skills/context-loader/SKILL.md`:
 - [x] Create PR (#27)
 
 ### Phase 4: Periodic Refresh
-- [ ] Update `skills/context-loader/SKILL.md`
-- [ ] Add periodic refresh trigger
-- [ ] Add interval configuration to schema
-- [ ] Test refresh during long session
-- [ ] Test configurable interval
+- [x] Update `skills/context-loader/SKILL.md`
+- [x] Add periodic refresh trigger (3rd trigger condition)
+- [x] Add interval configuration to schema
+- [ ] Test refresh during long session (manual testing in real usage)
+- [ ] Test configurable interval (manual testing in real usage)
+- [ ] Create PR
 
 ## Dependencies
 - Plugin `context/` directory (Phase 3A) - **COMPLETE**
@@ -194,9 +195,29 @@ Update `skills/context-loader/SKILL.md`:
 - Behavioral drift is HIGH priority (violates core values)
 - Skill provides early warning system before drift becomes problematic
 
-**Phase 3B.3**: Implementation complete, PR #27 created
+**Phase 3B.3**: ✅ COMPLETE - Merged to main (PR #27)
 
-**Next**: After PR #27 merged, continue to Phase 3B.4 (Periodic Refresh)
+### 2024-11-16 - Periodic Refresh Added to Context Loader
+- Updated `skills/context-loader/SKILL.md` with periodic refresh capability
+- Added 3rd trigger condition: Periodic Refresh
+  - Auto-triggers every N interactions (configurable, default: 50)
+  - Only during active work (not idle sessions)
+  - Skipped if context refreshed recently (within last 10 interactions)
+- Updated Configuration section with periodicRefresh object:
+  - `enabled` (boolean, default: true)
+  - `interval` (number, default: 50, min: 10, max: 500)
+- Updated schemas/config.schema.json with periodicRefresh definition
+- Added Example 4: Periodic Refresh (Long Session)
+- Added configuration control examples (disable, change interval)
+- Updated Benefits section with periodic refresh benefits
+- Added "Periodic Refresh Benefits" notes section explaining:
+  - Why it matters (prevents context drift in long sessions)
+  - Default interval rationale (50 interactions balances freshness vs interruption)
+  - When to adjust interval (increase for stable projects, decrease for strict adherence)
+
+**Phase 3B.4**: Implementation complete, ready for PR
+
+**Next**: Create PR for Phase 3B.4, completing Phase 3B (Session Enforcement)
 
 ## Key Decisions
 
@@ -274,6 +295,18 @@ Update `skills/context-loader/SKILL.md`:
   - Recommends corrective action (update scope, refocus, new session, reset behavior)
   - Early warning system before drift becomes problematic
   - 7 detailed drift scenario examples (3 behavioral, 4 scope)
+
+### Phase 3B.4: Periodic Refresh Enhancement
+- `skills/context-loader/SKILL.md` - Updated with periodic refresh
+  - 3rd trigger condition: Automatic periodic refresh during long sessions
+  - Default interval: 50 interactions (configurable 10-500)
+  - Configuration via `.claude/config.json` periodicRefresh object
+  - Prevents context drift by reloading core values and project context
+  - Example showing automatic refresh trigger and output
+- `schemas/config.schema.json` - Updated with periodicRefresh schema
+  - Enabled flag (boolean, default: true)
+  - Interval setting (number, default: 50, min: 10, max: 500)
+  - Full JSON schema validation for periodic refresh config
 
 ## Next Steps
 
