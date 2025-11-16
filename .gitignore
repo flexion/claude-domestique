@@ -28,3 +28,6 @@ node_modules/
 
 # Work-item cache (fetched from GitHub/Jira/Azure DevOps)
 .claude/work-items/
+
+# Migration backup (temporary, project-specific)
+.claude-bootstrap-backup/
