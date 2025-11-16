@@ -62,6 +62,7 @@ local_storage:
 
   structure:
     location: .claude/work-items/<issue-id>/
+    gitignore: YES (excluded from version control - cached data)
     files:
       - issue.md (main content in markdown)
       - comments.md (all comments chronologically)

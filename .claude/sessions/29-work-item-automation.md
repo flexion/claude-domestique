@@ -307,6 +307,9 @@ Keep session and issue in sync:
 - **Key decisions**: Added Decision 5 (Local Copy Strategy)
 - **Learnings**: Added Learning 6 (Complete Local Copy is Essential)
 - **Benefits**: Offline work, performance, rate limits, multimodal access, version control
+- **Gitignore**: Added `.claude/work-items/` to exclude cached data from version control
+- **Key decisions**: Added Decision 6 (Exclude Work-Items from Git)
+- **Updated global context**: Documented gitignore in `context/work-items.yml`
 
 **Next**: Continue Phase 2 with complete local copy implementation
 
@@ -427,6 +430,31 @@ Keep session and issue in sync:
 
 **Alternative Considered**: Fetch minimal data, API on-demand
 **Rejected**: Requires ongoing API access, can't view images, rate limit issues, offline work impossible
+
+### Decision 6: Exclude Work-Items from Git
+**Decision**: Add `.claude/work-items/` to `.gitignore` (exclude from version control).
+
+**Rationale**:
+- **Cached data**: Work items are fetched from external sources (GitHub, Jira, Azure DevOps)
+- **Can be re-fetched**: Not source code, can be retrieved again if needed
+- **Repository bloat**: Including would significantly increase repo size
+- **Merge conflicts**: Multiple developers fetching same issues = conflicts
+- **Data duplication**: Already stored in source system (GitHub/Jira/Azure)
+- **Noise in commits**: Changes to cached data would pollute commit history
+
+**Implementation**:
+- Added to `.gitignore`: `.claude/work-items/`
+- Similar to `.claude/cache/` or `node_modules/` (excluded cached/derived data)
+- Developers fetch their own work-item cache locally
+
+**Benefits**:
+- Clean repository (no cached data)
+- No merge conflicts on work-item cache
+- Faster clone/pull operations
+- Each developer maintains their own cache
+
+**Alternative Considered**: Commit work items to repo
+**Rejected**: Bloats repo, creates conflicts, duplicates data from source system
 
 ## Learnings
 
