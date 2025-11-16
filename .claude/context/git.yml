@@ -1,18 +1,32 @@
 # Git Workflow - Compact Reference
 # MANDATORY-REREAD: before-commit, before-PR
 
-branch: chore/<desc>
-commit: |
+## Branch Patterns
+chore: chore/<desc>
+feature: issue/feature-<N>/<desc>
+
+## Commit Formats
+chore: |
   "chore - verb desc"
   - change1
   - change2
-  (use HEREDOC format)
+feature: |
+  "#<N> - verb desc"
+  - change1
+  - change2
+format: HEREDOC (required)
 never: emojis, Generated with, Co-Authored-By, Claude Code, --amend (user-rejects-commit)
+
+## Workflow
 pr-base: main
+atomic: session+code (same commit)
 verify-before-commit-or-pr: |
   shellcheck scripts/*.sh  (if shell scripts changed)
   (no automated tests initially - plugin is markdown/bash definitions)
-examples:
-  branch: chore/implement-phase-1-scripts
-  commit: "chore - copy universal scripts from simple-D365\n- Add get-current-session.sh\n- Add create-branch-metadata.sh"
-  pr-title: "chore - implement Phase 1 core structure"
+
+## Examples
+chore-branch: chore/implement-phase-1-scripts
+chore-commit: "chore - copy universal scripts from simple-D365\n- Add get-current-session.sh\n- Add create-branch-metadata.sh"
+feature-branch: issue/feature-10/plugin-system
+feature-commit: "#10 - implement plugin installation command\n- Add /plugin install command\n- Create plugin manifest validation"
+pr-title: "chore - implement Phase 1 core structure" | "#10 - implement plugin system"

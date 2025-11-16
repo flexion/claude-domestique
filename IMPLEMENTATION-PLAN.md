@@ -23,15 +23,23 @@ This document provides a step-by-step implementation plan for building the sessi
 
 ---
 
-#### 1.2 Universal Scripts
-- [ ] Copy `get-current-session.sh` from test projects
-- [ ] Copy `create-branch-metadata.sh` from test projects
-- [ ] Make scripts universal (work with any branch pattern)
+#### 1.2 Universal Scripts ✓
+- [x] Copy `get-current-session.sh` from test projects
+- [x] Copy `create-branch-metadata.sh` from test projects
+- [x] Make scripts universal (work with any branch pattern)
+- [x] Add support for both chore and feature workflows
+- [x] Document feature workflow patterns from simple-D365
 - [ ] Add config-awareness to scripts
 
 **Files:**
-- `scripts/get-current-session.sh`
-- `scripts/create-branch-metadata.sh`
+- `scripts/get-current-session.sh` ✓
+- `scripts/create-branch-metadata.sh` ✓
+- `.claude/context/features.yml` ✓ (feature workflow documentation)
+- `.claude/templates/feature-session.md.template` ✓
+
+**Workflow Support:**
+- **Chores:** `chore/desc` branches, `chore-desc.md` sessions, `chore - verb desc` commits
+- **Features:** `issue/feature-N/desc` branches, `N-desc.md` sessions, `#N - verb desc` commits
 
 **Reference:**
 - `/Users/dpuglielli/github/flexion/simple-D365/.claude/tools/get-current-session.sh`
@@ -53,13 +61,17 @@ This document provides a step-by-step implementation plan for building the sessi
 
 #### 1.4 Basic Commands
 - [ ] `/next` - Show next steps
-- [ ] `/create-session` - Create session
+- [ ] `/create-session` - Create session (support both chore and feature)
 - [ ] `/check` - Show checklist
 
 **Files:**
 - `commands/next.md`
-- `commands/create-session.md`
+- `commands/create-session.md` (must support chore and feature workflows)
 - `commands/check.md`
+
+**Note:** `/create-session` must detect branch type and use appropriate template:
+- Chore branches → focused session structure
+- Feature branches → rich session structure with issue details, decisions, learnings
 
 **Command Template:**
 ```markdown
@@ -238,6 +250,11 @@ echo "All checks passed ✓"
 
 **Goal:** Auto-invoked capabilities and specialized agents
 
+**Note:** All skills and agents must handle both chore and feature workflows:
+- Session files have different structures (focused vs rich)
+- Commit formats differ (`chore -` vs `#N -`)
+- Branch patterns differ (`chore/` vs `issue/feature-N/`)
+
 ### Tasks
 
 #### 3.1 Context Loader Skill
@@ -334,12 +351,18 @@ Output: "Loaded 8 context files: README.yml, sessions.yml, git.yml, behavior.yml
 
 **Goal:** Workflow enforcement via hooks
 
+**Note:** Hooks must enforce correct commit format based on branch type:
+- Chore branches → require `chore - verb desc` format
+- Feature branches → require `#N - verb desc` format
+- All commits → ZERO attribution, emojis, or AI mentions
+
 ### Tasks
 
 #### 4.1 Pre-Commit Hook
 - [ ] Create hook script
 - [ ] Run tests via scripts/run-tests.sh
 - [ ] Verify session updated
+- [ ] Verify commit format matches branch type
 - [ ] Block if checks fail
 
 **File:** `hooks/pre-commit.sh`
@@ -378,6 +401,12 @@ Output: "Loaded 8 context files: README.yml, sessions.yml, git.yml, behavior.yml
 
 **Goal:** Easy migration from existing setups
 
+**Note:** Migration must preserve both chore and feature workflows:
+- Detect existing feature branches (`issue/feature-N/`)
+- Preserve feature session files (`N-desc.md`)
+- Maintain GitHub issue mappings
+- Convert existing branch metadata correctly
+
 ### Tasks
 
 #### 5.1 Auto-Detect Script
@@ -385,6 +414,8 @@ Output: "Loaded 8 context files: README.yml, sessions.yml, git.yml, behavior.yml
 - [ ] Detect build.gradle → gradle
 - [ ] Detect .github → GitHub
 - [ ] Detect existing .claude/context/*.yml
+- [ ] Detect existing feature branches and sessions
+- [ ] Detect existing chore branches and sessions
 
 **File:** `scripts/auto-detect.sh`
 
@@ -429,13 +460,16 @@ Output: "Loaded 8 context files: README.yml, sessions.yml, git.yml, behavior.yml
 - [ ] Configuration reference (docs/configuration.md)
 - [ ] Command reference (docs/commands.md)
 - [ ] Migration guide (docs/migration.md)
+- [ ] Feature workflow guide (docs/feature-workflow.md)
+- [ ] Chore workflow guide (docs/chore-workflow.md)
 
 ---
 
 #### 6.2 Examples
 - [ ] Example configs for each tech stack
-- [ ] Example session files
-- [ ] Example work item templates
+- [ ] Example chore session files
+- [ ] Example feature session files (with decisions, learnings, session logs)
+- [ ] Example work item templates (GitHub issues, Azure DevOps)
 
 ---
 
@@ -550,7 +584,16 @@ cd /Users/dpuglielli/github/flexion/simple-D365
 ## Current Status
 
 **Phase:** 1 (Core Plugin Structure)
-**Task:** 1.1 Plugin Manifest ✓
-**Next:** 1.2 Universal Scripts
+**Completed:**
+- 1.1 Plugin Manifest ✓
+- 1.2 Universal Scripts ✓ (including feature workflow documentation)
 
-**Ready to begin implementation!**
+**Next:** 1.3 Config Schema
+
+**Recent Updates:**
+- Added support for both chore and feature workflows
+- Documented feature patterns from simple-D365
+- Created feature session template
+- Updated all context files to support dual workflows
+
+**Ready to continue with Phase 1.3!**

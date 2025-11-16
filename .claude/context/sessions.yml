@@ -3,7 +3,8 @@
 
 ## Session = Long-term Memory
 purpose: persist state across conversation resets (context window cleanup)
-mapping: 1-session = 1-chore = 1-branch = 1-branch-metadata-file
+mapping: 1-session = 1-work-item = 1-branch = 1-branch-metadata-file
+work-item: chore (internal) | feature (github-issue)
 
 ## Auto-Detection
 on-startup: git-branch → .claude/branches/<sanitized> → load-session-file
@@ -19,16 +20,19 @@ NEVER: guess or assume current branch
 
 ## Session Files
 location: .claude/sessions/
-format: chore-<desc>.md
-content: goal, done, todo, context, files-changed, next-steps
+format: chore-<desc>.md | <N>-<desc>.md (features)
+content:
+  chore: goal, done, todo, context, files-changed, next-steps
+  feature: issue-details, objective, requirements, approach, plan, dependencies, criteria, session-log, decisions, learnings, files-created, next-steps
 update: beginning-work, after-milestone, before-pause, when-blocked, BEFORE-commit
 commit: atomic (session+code in same commit)
 
 ## Branch Metadata
 location: .claude/branches/
-format: chore-<desc> (/ → -)
-content: session:<file>, status:<state>, type:chore
-size: 6-8 lines (ultra-compact)
+format: chore-<desc> | issue-feature-<N>-<desc> (/ → -)
+content: session:<file>, status:<state>, type:chore|issue
+feature-only: issue:<number>
+size: 6-10 lines (ultra-compact)
 
 ## Workflow
 start: create-branch → .claude/tools/create-branch-metadata.sh → creates-metadata+session
