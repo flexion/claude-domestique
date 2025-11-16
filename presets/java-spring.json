@@ -1,0 +1,54 @@
+{
+  "$schema": "../schemas/config.schema.json",
+  "name": "java-spring",
+  "vcs": {
+    "type": "git",
+    "git": {
+      "defaultBranch": "main",
+      "branchPatterns": {
+        "feature": "issue/feature-<N>/<desc>",
+        "chore": "chore/<desc>"
+      },
+      "commitFormat": {
+        "feature": "#<N> - <desc>",
+        "chore": "chore - <desc>"
+      },
+      "hooks": {
+        "preCommit": ["format", "lint", "test"],
+        "prePush": ["build"]
+      },
+      "mergeStrategy": "merge"
+    }
+  },
+  "runtime": {
+    "type": "java",
+    "version": "17",
+    "versionFile": ".java-version"
+  },
+  "test": {
+    "framework": "junit",
+    "testCommand": "gradle test",
+    "coverageCommand": "gradle jacocoTestReport",
+    "watchCommand": "gradle test --continuous",
+    "testPatterns": {
+      "test": "services, repositories, utilities, domain-logic, business-rules",
+      "skip": "controllers, integration-tests, database-tests"
+    },
+    "testNaming": "*Test.java",
+    "testPlacement": {
+      "unit": "src/test/java/**/*Test.java",
+      "integration": "src/test/java/**/*IntegrationTest.java"
+    }
+  },
+  "quality": {
+    "linter": {
+      "type": "checkstyle",
+      "command": "gradle checkstyleMain"
+    },
+    "formatter": {
+      "type": "google-java-format",
+      "command": "gradle spotlessApply",
+      "checkCommand": "gradle spotlessCheck"
+    }
+  }
+}
