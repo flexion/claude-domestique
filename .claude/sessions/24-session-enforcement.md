@@ -79,10 +79,11 @@ Update `skills/context-loader/SKILL.md`:
 ### Phase 3: Drift Detector
 - [x] Create `skills/drift-detector/` directory
 - [x] Create `SKILL.md` with detection logic
-- [x] Define drift patterns to detect
+- [x] Define drift patterns to detect (5 patterns: behavioral + 4 scope patterns)
+- [x] Add behavioral drift detection (sycophantic, research avoidance, quality, workflow)
 - [ ] Test detection when creating off-scope files (manual testing in real usage)
 - [ ] Test detection when objective diverges (manual testing in real usage)
-- [ ] Create PR
+- [x] Create PR (#27)
 
 ### Phase 4: Periodic Refresh
 - [ ] Update `skills/context-loader/SKILL.md`
@@ -193,9 +194,9 @@ Update `skills/context-loader/SKILL.md`:
 - Behavioral drift is HIGH priority (violates core values)
 - Skill provides early warning system before drift becomes problematic
 
-**Phase 3B.3**: Implementation complete, ready for PR
+**Phase 3B.3**: Implementation complete, PR #27 created
 
-**Next**: Create PR for Phase 3B.3, then continue to Phase 3B.4 (Periodic Refresh)
+**Next**: After PR #27 merged, continue to Phase 3B.4 (Periodic Refresh)
 
 ## Key Decisions
 
