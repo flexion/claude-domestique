@@ -299,6 +299,57 @@ Each preset includes:
 
 **Next:** Test in target projects (simple-D365, Portal-D365-WebApp, portal-D365)
 
+### 2025-11-16 - Integration Testing Complete
+**Actions:**
+- Researched tech stacks for all three target projects
+- Created test configurations for each project
+- Validated all test configs with validation script
+- Manually installed and tested config in simple-D365
+- Documented findings and recommendations
+
+**Projects Analyzed:**
+1. **simple-D365** (TypeScript Node.js) - typescript-node preset
+   - Node >= 20.0.0, TypeScript 5.3
+   - Monorepo with applications/d365-api-client
+   - No test framework currently configured
+
+2. **Portal-D365-WebApp** (React TypeScript) - react-typescript preset
+   - React 18.2.0, TypeScript 4.7.4, Node >= 20.9.0
+   - Jest + React Testing Library
+   - Redux Toolkit, Tailwind CSS
+
+3. **portal-D365** (Java Spring Boot) - java-spring preset
+   - Spring Boot 3.5.7, Java 17, Gradle
+   - JUnit testing, Jacoco coverage
+
+**Test Results:**
+- ✓ All three configs validated successfully
+- ✓ Perfect preset mapping for all projects
+- ✓ Override mechanism works as expected
+- ✓ Manual installation in simple-D365 successful
+- ⚠️ Configs define desired state (scripts may not exist yet)
+
+**Key Findings:**
+1. All target projects map cleanly to existing presets
+2. Node projects use 20.x, not 18.x (preset default)
+3. Config can represent desired state for project initialization
+4. Basic jq validation requires explicit fields (doesn't merge extends)
+
+**Files Created:**
+- `test-configs/simple-d365-config.json`
+- `test-configs/portal-d365-webapp-config.json`
+- `test-configs/portal-d365-config.json`
+- `test-configs/README.md` - Project analysis and findings
+- `test-configs/TESTING-RESULTS.md` - Complete test results
+
+**Recommendations:**
+1. Update Node presets to default to 20.x
+2. Make test module optional in schema
+3. Document extends+validation interaction
+4. Use findings for Phase 2 initialization design
+
+**Next:** Commit testing work, update GitHub issue, or begin Phase 2
+
 ## Key Decisions
 
 ### Decision 1: Use JSON Schema for Validation

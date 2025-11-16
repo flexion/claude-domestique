@@ -1,0 +1,61 @@
+{
+  "$schema": "../schemas/config.schema.json",
+  "extends": "../presets/typescript-node.json",
+  "name": "simple-d365",
+  "vcs": {
+    "type": "git",
+    "git": {
+      "defaultBranch": "main",
+      "branchPatterns": {
+        "feature": "issue/feature-<N>/<desc>",
+        "chore": "chore/<desc>"
+      },
+      "commitFormat": {
+        "feature": "#<N> - <desc>",
+        "chore": "chore - <desc>"
+      },
+      "hooks": {
+        "preCommit": ["format", "lint", "type-check", "test"],
+        "prePush": ["build"]
+      },
+      "mergeStrategy": "merge"
+    }
+  },
+  "runtime": {
+    "type": "node",
+    "version": "20.x",
+    "versionFile": ".nvmrc",
+    "versionManager": "nvm"
+  },
+  "test": {
+    "framework": "jest",
+    "testCommand": "npm test",
+    "coverageCommand": "npm run coverage",
+    "watchCommand": "npm run test:watch",
+    "testPatterns": {
+      "test": "pure-functions, business-logic, utilities, helpers, services, api-clients",
+      "skip": "azure-integration, external-dependencies"
+    },
+    "testNaming": "*.test.ts",
+    "testPlacement": {
+      "unit": "applications/**/src/**/*.test.ts",
+      "integration": "applications/**/tests/integration/**/*.test.ts"
+    }
+  },
+  "quality": {
+    "linter": {
+      "type": "eslint",
+      "command": "npm run lint",
+      "autoFix": "npm run lint:fix"
+    },
+    "formatter": {
+      "type": "prettier",
+      "command": "npm run format",
+      "checkCommand": "npm run format:check"
+    },
+    "typeChecker": {
+      "type": "typescript",
+      "command": "npm run type-check"
+    }
+  }
+}
