@@ -35,19 +35,20 @@ The scripts being copied are currently in .claude/tools/ (bootstrap location) bu
 - ✅ Created branch chore/implement-phase-1-scripts
 - ✅ Created branch metadata file
 - ✅ Created this session file
+- ✅ Copied get-current-session.sh to scripts/
+- ✅ Copied create-branch-metadata.sh to scripts/
+- ✅ Verified scripts are executable (permissions preserved)
+- ✅ Tested get-current-session.sh - works correctly from scripts/
 
 ## Next Steps
 
-1. Copy get-current-session.sh to scripts/
-2. Copy create-branch-metadata.sh to scripts/
-3. Ensure scripts are executable
-4. Test get-current-session.sh works
-5. Update session with results
-6. Commit session + scripts atomically
+1. Commit session + scripts atomically
+2. Move to Phase 1.3 (Config Schema) or Phase 1.4 (Basic Commands)
 
 ## Files Changed
 
-_None yet - about to start implementation_
+- `scripts/get-current-session.sh` - Universal script to detect current session from branch
+- `scripts/create-branch-metadata.sh` - Universal script to create session workflow files
 
 ## Decisions & Learnings
 
