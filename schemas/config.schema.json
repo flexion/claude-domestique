@@ -27,6 +27,9 @@
     },
     "quality": {
       "$ref": "#/$defs/quality"
+    },
+    "context": {
+      "$ref": "#/$defs/context"
     }
   },
   "$defs": {
@@ -277,6 +280,28 @@
           "type": "string",
           "description": "Command to run type checking",
           "examples": ["npm run type-check", "tsc --noEmit", "mypy ."]
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "description": "Context loading configuration for session management",
+      "properties": {
+        "files": {
+          "type": "array",
+          "description": "List of context files to load from .claude/context/ directory",
+          "items": {
+            "type": "string"
+          },
+          "default": ["README.yml", "sessions.yml", "git.yml", "behavior.yml"],
+          "examples": [
+            ["README.yml", "sessions.yml", "git.yml", "behavior.yml", "test.yml", "project.yml"]
+          ]
+        },
+        "autoLoad": {
+          "type": "boolean",
+          "description": "Whether to automatically load context files at session start",
+          "default": true
         }
       }
     }
