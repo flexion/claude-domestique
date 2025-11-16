@@ -108,12 +108,42 @@ Each preset includes:
 - Initialized session file with requirements from issue
 - Ready to begin implementation
 
+### 2025-11-16 - Tooling Modularization Design
+**Actions:**
+- Analyzed tooling that varies between projects
+- Identified 10 configuration modules (vcs, package, build, test, quality, verify, dev, deploy, workitem, runtime)
+- Decided to assume git but structure for swappability (future: svn, mercurial)
+- Created comprehensive design document: docs/config-schema-design.md
+
+**Key Insights:**
+- Version control tooling was initially missed but critical for workflow
+- Modular structure enables plugin to adapt to different tech stacks
+- Each module will map to specific skills/agents in the plugin
+- Preset pattern allows reusable configurations with project overrides
+
+**Design Decisions:**
+1. VCS has type field with type-specific subsections (git, future: svn)
+2. 10 modules cover all major tooling variations
+3. Implementation priority: Phase 1 (vcs, runtime, test, quality) → Phase 2 (package, build, verify) → Phase 3 (dev, deploy, workitem)
+
+**Next:** Implement JSON schema starting with Phase 1 modules
+
 ## Key Decisions
 
 ### Decision 1: Use JSON Schema for Validation
 **Reason**: Industry standard, good tooling support, clear validation errors
 **Impact**: Enables robust config validation, prevents user errors
 **Alternative**: Custom validation logic (more complex, less standard)
+
+### Decision 2: Assume Git But Structure for Swappability
+**Reason**: All target projects use git, but good architecture allows future expansion
+**Impact**: VCS config has type field ("git") with git-specific subsection, allowing svn/mercurial later
+**Alternative**: Hard-code git assumptions (simpler now, harder to change later)
+
+### Decision 3: Modularize Tooling Configuration
+**Reason**: Different projects use different tools; config must adapt to tech stacks
+**Impact**: Config schema broken into 10 modules (vcs, package, build, test, quality, verify, dev, deploy, workitem, runtime)
+**Alternative**: Monolithic config (harder to understand, maintain, extend)
 
 ## Learnings
 
