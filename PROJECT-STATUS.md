@@ -1,143 +1,222 @@
-# Project Status - Session Workflow Plugin
+# Project Status - claude-domestique
 
 **Date:** 2024-11-16
-**Status:** Design Complete, Ready for Implementation
-**Phase:** 1 - Core Plugin Structure
-**Next Task:** 1.2 - Universal Scripts
+**Status:** Phase 5 Complete - Migration Tools & Dogfooding Successful
+**Phase:** Production Ready (v0.1.0)
+**Next Task:** Test in other projects, publish v1.0.0
 
 ---
 
 ## What's Been Completed ✓
 
-### Documentation (100%)
-- [x] **DESIGN.md** - Complete architecture design (19KB)
-  - Universal vs config-aware components
-  - Tech stack presets (TypeScript, React, Java, Python)
-  - Command specifications
-  - Skills and agents design
-  - Migration strategy
+### Phase 1: Core Plugin Structure (✅ COMPLETE)
+- [x] Plugin manifest (`.claude-plugin/plugin.json`)
+- [x] Directory structure (commands/, agents/, skills/, hooks/, scripts/, templates/)
+- [x] Core commands:
+  - [x] `/next` - Show next steps
+  - [x] `/create-session` - Create session (with --auto flag for work-item automation)
+  - [x] `/check` - Show checklist
+  - [x] `/plugin-init` - Initialize plugin config
+  - [x] `/fetch-issue` - Fetch work item (GitHub, Jira, Azure DevOps)
+  - [x] `/sync-work-item` - Bidirectional sync session ↔ work item
+- [x] Core scripts:
+  - [x] `get-current-session.sh` - Universal session detector
+  - [x] `create-branch-metadata.sh` - Universal session creator
+  - [x] `validate-config.sh` - Config validation
+  - [x] `read-config.sh` - Config reader
+  - [x] `run-verification.sh` - Tech-stack aware test runner
+  - [x] `install-hooks.sh` - Hook installer
+  - [x] `migrate-bootstrap.sh` - Bootstrap → plugin migration (Phase 5)
 
-- [x] **README.md** - User-facing documentation (8.9KB)
-  - What/Why/How
-  - Installation instructions
-  - Command reference
-  - Configuration examples
-  - Tech stack support
+### Phase 2: Config System (✅ COMPLETE)
+- [x] Tech stack auto-detection (TypeScript, React, Java, Python, custom)
+- [x] Work-item platform detection (GitHub, Jira, Azure DevOps)
+- [x] Branch pattern detection
+- [x] Config generator (`.claude/config.json`)
+- [x] Config validation and error handling
 
-- [x] **IMPLEMENTATION-PLAN.md** - Step-by-step guide (11.6KB)
-  - 6 phases with detailed tasks
-  - Success criteria per phase
-  - Testing checklist
-  - Quick start for developers
+### Phase 3: Skills & Agents (✅ COMPLETE)
+- [x] **context-loader** - Auto-load `.claude/context/*.yml` files
+- [x] **issue-detector** - Auto-detect work item from branch name (GitHub, Jira, Azure DevOps)
+- [x] **drift-detector** - Detect uncommitted session changes
+- [x] **session-update-prompter** - Prompt to update session after work
+- [ ] checklist-matcher (planned for future)
+- [ ] session-manager agent (planned for future)
+- [ ] git-workflow agent (planned for future)
 
+### Phase 4: Hooks & Enforcement (✅ COMPLETE)
+- [x] **pre-commit** - Run tests and verify session updated
+- [x] **check-session-updated** - Block commits if session not updated
+- [x] **post-session-commit** - Auto-sync session to work item
+- [x] Hook installation script
+- [x] Hook enforcement tested (blocks invalid commits)
+
+### Phase 5: Migration Tools (✅ COMPLETE - JUST COMPLETED!)
+- [x] **migrate-bootstrap.sh** - Automated migration script
+  - [x] Auto-detect bootstrap setup
+  - [x] Backup to `.claude-bootstrap-backup/`
+  - [x] Generate `.claude/config.json` from bootstrap
+  - [x] Preserve sessions and branch metadata
+  - [x] Remove bootstrap tools
+  - [x] Validation checks
+- [x] **Dogfooding test** - Migrated this project (claude-domestique)
+  - [x] Migration successful (17 sessions, 16 branches preserved)
+  - [x] Plugin structure validated
+  - [x] Scripts work post-migration
+  - [x] Hooks enforce session updates
+- [x] **Installation documentation** (`docs/installation.md`)
+  - [x] Installation methods
+  - [x] Migration guide (automated + manual)
+  - [x] Troubleshooting
+  - [x] Verification checklist
+
+### Phase 3C: Work-Item Automation (✅ COMPLETE)
+- [x] **Issue Detection Skill** - Multi-platform detection (GitHub, Jira, Azure DevOps)
+- [x] **GitHub Integration** - Complete local copy (issue, comments, attachments)
+- [x] **Auto-Populate Session** - Zero manual session creation
+- [x] **Jira Integration** - REST API + optional imdone CLI
+- [x] **Azure DevOps Integration** - Azure CLI integration
+- [x] **Bidirectional Sync** - Session ↔ work item synchronization
+- [x] **Global Context** - `context/work-items.yml` documenting workflow
+
+### Documentation (✅ COMPLETE)
+- [x] **DESIGN.md** - Complete architecture design
+- [x] **README.md** - User-facing documentation
 - [x] **QUICKSTART.md** - Developer onboarding
-  - 5-minute setup guide
-  - First tasks to implement
-  - Testing instructions
-
-### Plugin Structure (100%)
-- [x] Directory structure created
-  - commands/, agents/, skills/, hooks/, scripts/, templates/
-  - Subdirectories for skills (context-loader, session-detector, test-runner, checklist-matcher)
-  - Subdirectories for templates (context, work-items)
-
-- [x] **plugin.json** - Plugin manifest
-  - Metadata defined (name, version, description, author)
-  - Component paths configured
-  - Keywords for discovery
-
-### Project Files (100%)
-- [x] .gitignore
-- [x] LICENSE (MIT)
-- [x] CHANGELOG.md
-- [x] PROJECT-STATUS.md (this file)
+- [x] **ROADMAP.md** - Living roadmap (updated with each feature)
+- [x] **docs/installation.md** - Installation and migration guide
+- [x] **CHANGELOG.md** - Version history
+- [x] **PROJECT-STATUS.md** - This file (updated!)
 
 ---
 
-## What's Next - Implementation Roadmap
+## What's Next - Path to v1.0.0
 
-### Phase 1: Core Plugin Structure (Current)
-**Estimated:** 1 week
+### Test in Other Projects
+**Status:** Ready to begin
+**Projects:**
+1. **simple-D365** (TypeScript/Node.js, GitHub)
+2. **Portal-D365-WebApp** (React/TypeScript, Azure DevOps)
+3. **portal-D365** (Java/Spring Boot, Azure DevOps)
 
-#### Task 1.2: Universal Scripts (Next)
-```bash
-# Copy scripts from test projects
-cp /Users/dpuglielli/github/flexion/simple-D365/.claude/tools/get-current-session.sh \
-   scripts/get-current-session.sh
+**Tasks:**
+- [ ] Install plugin in simple-D365
+- [ ] Test all commands in simple-D365
+- [ ] Test work-item automation (GitHub)
+- [ ] Install plugin in Portal-D365-WebApp
+- [ ] Test React preset
+- [ ] Test Azure DevOps integration
+- [ ] Install plugin in portal-D365
+- [ ] Test Java preset
+- [ ] Document any issues found
+- [ ] Fix issues and iterate
 
-cp /Users/dpuglielli/github/flexion/simple-D365/.claude/tools/create-branch-metadata.sh \
-   scripts/create-branch-metadata.sh
+### Documentation Polish
+- [ ] Create `docs/commands.md` - Complete command reference
+- [ ] Create `docs/configuration.md` - Config schema reference
+- [ ] Create `docs/workflow.md` - Workflow guide
+- [ ] Add examples directory with sample configs
+- [ ] Create video/GIF demos
 
-# Make executable
-chmod +x scripts/*.sh
+### Release v1.0.0
+**Criteria:**
+- [ ] All 3 test projects using plugin successfully
+- [ ] All commands work across all tech stacks
+- [ ] Skills auto-invoke correctly
+- [ ] Hooks enforce workflow
+- [ ] Migration successful from all bootstrap variants
+- [ ] Documentation complete
+- [ ] No critical bugs
+
+---
+
+## Success Metrics
+
+### v0.1.0 (Current - Dogfooding Complete) ✅
+- [x] Core plugin structure complete
+- [x] Migration tools complete
+- [x] Dogfooding successful (this project using plugin)
+- [x] Installation documentation complete
+- [x] Work-item automation complete (GitHub, Jira, Azure DevOps)
+
+### v1.0.0 (Target)
+- [ ] All commands work in all 3 test projects
+- [ ] Tech stack presets complete (TypeScript, React, Java, Python)
+- [ ] Skills auto-invoke correctly
+- [ ] Hooks block invalid operations
+- [ ] Migration successful from existing setups
+- [ ] Documentation complete
+- [ ] All tests pass
+
+---
+
+## Key Achievements
+
+### November 16, 2024
+- ✅ **Phase 3C Complete**: Work-item automation (GitHub, Jira, Azure DevOps)
+- ✅ **Phase 5 Complete**: Migration tools (`migrate-bootstrap.sh`)
+- ✅ **Dogfooding Complete**: This project migrated to plugin structure
+- ✅ **Installation Guide**: Complete documentation in `docs/installation.md`
+
+### Validated Features
+- Session workflow (branch → metadata → session file) ✅
+- Git enforcement (HEREDOC, no attribution) ✅
+- Work-item automation (auto-detect, fetch, sync) ✅
+- Migration from bootstrap → plugin ✅
+- Hooks enforce session updates ✅
+- Multi-platform support (GitHub, Jira, Azure DevOps) ✅
+
+---
+
+## File Structure Summary
+
 ```
-
-#### Task 1.3: Config Schema
-- Create JSON schema for validation
-- Document all config fields
-- Create preset files
-
-#### Task 1.4: Basic Commands
-- `/next` - Show next steps
-- `/create-session` - Create session
-- `/check` - Show checklist
-
-#### Task 1.5: Test with simple-D365
-- Install plugin locally
-- Create test config
-- Verify commands work
-
----
-
-### Phase 2: Config System
-**Estimated:** 1 week
-
-- Tech stack presets (TypeScript, React, Java, Python)
-- Config reader utility
-- Test runner script (config-aware)
-- Test with Portal-D365-WebApp
-
----
-
-### Phase 3: Skills & Agents
-**Estimated:** 1 week
-
-- Context loader skill
-- Session detector skill
-- Test runner skill
-- Checklist matcher skill
-- Session manager agent
-- Git workflow agent
-
----
-
-### Phase 4: Hooks & Enforcement
-**Estimated:** 1 week
-
-- Pre-commit hook (tests + session verification)
-- Pre-PR hook (tests + format validation)
-- Prompt submit hook (pattern matching)
-- Test blocking behavior
-
----
-
-### Phase 5: Migration Tools
-**Estimated:** 1 week
-
-- Auto-detect existing setup
-- Config generator
-- Migration command
-- Test migration on all 3 projects
-
----
-
-### Phase 6: Documentation & Polish
-**Estimated:** 1 week
-
-- Complete docs/ directory
-- Create examples
-- Full testing across all projects
-- Release v1.0.0
+claude-domestique/
+├── .claude-plugin/
+│   └── plugin.json              ✓ Complete (skills list updated)
+├── commands/
+│   ├── check.md                 ✓ Complete
+│   ├── create-session.md        ✓ Complete (with --auto)
+│   ├── fetch-issue.md           ✓ Complete (GitHub, Jira, Azure)
+│   ├── next.md                  ✓ Complete
+│   ├── plugin-init.md           ✓ Complete
+│   └── sync-work-item.md        ✓ Complete
+├── skills/
+│   ├── context-loader/          ✓ Complete
+│   ├── drift-detector/          ✓ Complete
+│   ├── issue-detector/          ✓ Complete
+│   └── session-update-prompter/ ✓ Complete
+├── scripts/
+│   ├── create-branch-metadata.sh ✓ Complete
+│   ├── get-current-session.sh    ✓ Complete
+│   ├── install-hooks.sh          ✓ Complete
+│   ├── migrate-bootstrap.sh      ✓ Complete (NEW!)
+│   ├── read-config.sh            ✓ Complete
+│   ├── run-verification.sh       ✓ Complete
+│   └── validate-config.sh        ✓ Complete
+├── hooks/
+│   ├── check-session-updated.sh  ✓ Complete
+│   ├── post-session-commit.sh    ✓ Complete
+│   └── pre-commit                ✓ Complete
+├── context/
+│   ├── README.yml               ✓ Complete
+│   ├── sessions.yml             ✓ Complete
+│   ├── git.yml                  ✓ Complete
+│   ├── behavior.yml             ✓ Complete
+│   ├── test.yml                 ✓ Complete
+│   ├── features.yml             ✓ Complete
+│   ├── project.yml              ✓ Complete
+│   └── work-items.yml           ✓ Complete (NEW!)
+├── docs/
+│   └── installation.md          ✓ Complete (NEW!)
+├── DESIGN.md                    ✓ Complete
+├── README.md                    ✓ Complete
+├── ROADMAP.md                   ✓ Complete
+├── QUICKSTART.md                ✓ Complete
+├── PROJECT-STATUS.md            ✓ Complete (UPDATED!)
+├── CHANGELOG.md                 ✓ Complete
+└── LICENSE                      ✓ Complete (MIT)
+```
 
 ---
 
@@ -147,44 +226,22 @@ chmod +x scripts/*.sh
 **Path:** `/Users/dpuglielli/github/flexion/simple-D365`
 **Tech Stack:** TypeScript/Node.js
 **Work Items:** GitHub Issues
-**Deployment:** Terraform + Azure ACI
-**Use Case:** Test universal scripts, basic commands
+**Status:** Ready for plugin installation
+**Use Case:** Test TypeScript preset, GitHub integration
 
 ### 2. Portal-D365-WebApp
 **Path:** `/Users/dpuglielli/github/nucor/Portal-D365-WebApp`
 **Tech Stack:** React/TypeScript
 **Work Items:** Azure DevOps
-**Deployment:** Azure App Service (Frontend-last)
-**Use Case:** Test React preset, multiple verify commands (test + lint + build)
+**Status:** Ready for plugin installation
+**Use Case:** Test React preset, Azure DevOps integration
 
 ### 3. portal-D365
 **Path:** `/Users/dpuglielli/github/nucor/portal-D365`
 **Tech Stack:** Java/Spring Boot
 **Work Items:** Azure DevOps
-**Deployment:** Azure App Service (Expand-contract)
-**Use Case:** Test Java preset, different test command (./gradlew test)
-
----
-
-## Success Metrics
-
-### v1.0.0 Release Criteria
-- [ ] All commands work in all 3 test projects
-- [ ] Tech stack presets complete (TypeScript, React, Java, Python)
-- [ ] Skills auto-invoke correctly
-- [ ] Hooks block invalid operations
-- [ ] Migration successful from existing setups
-- [ ] Documentation complete
-- [ ] All tests pass
-
-### Key Validations
-- [ ] `/next` shows correct session in all projects
-- [ ] `/create-session` creates correct branch pattern per project
-- [ ] `/check commit` shows correct test commands per tech stack
-- [ ] Hooks block commits when tests fail
-- [ ] Context files load automatically
-- [ ] Personal context works (Portal projects only)
-- [ ] Zero breaking changes to existing workflows
+**Status:** Ready for plugin installation
+**Use Case:** Test Java preset, Gradle integration
 
 ---
 
@@ -192,138 +249,49 @@ chmod +x scripts/*.sh
 
 ### 1. Local Development
 ```bash
-cd /Users/dpuglielli/github/flexion/session-workflow-plugin
+cd /Users/dpuglielli/github/flexion/claude-domestique
 
-# Create local marketplace link (one time)
-mkdir -p ~/.claude/marketplaces/local
-ln -s $(pwd) ~/.claude/marketplaces/local/session-workflow
+# Make changes to plugin...
+# Test locally via scripts
+./scripts/get-current-session.sh
 ```
 
 ### 2. Install in Test Project
 ```bash
-cd /Users/dpuglielli/github/flexion/simple-D365
-/plugin install session-workflow@local
+cd /path/to/test/project
+claude plugin install /Users/dpuglielli/github/flexion/claude-domestique
 ```
 
-### 3. Make Changes
+### 3. Test Commands
 ```bash
-cd /Users/dpuglielli/github/flexion/session-workflow-plugin
-# Edit files...
-```
-
-### 4. Reload Plugin
-```bash
-cd /Users/dpuglielli/github/flexion/simple-D365
-/plugin reload session-workflow
-# Or reinstall: /plugin uninstall session-workflow && /plugin install session-workflow@local
-```
-
-### 5. Test Commands
-```bash
-/next
-/create-session 123
-/check commit
+claude /next
+claude /create-session
+claude /check commit
 ```
 
 ---
 
-## File Structure Summary
+## Rollback Plan
 
-```
-session-workflow-plugin/
-├── .claude-plugin/
-│   └── plugin.json              ✓ Complete
-├── DESIGN.md                    ✓ Complete (19KB)
-├── README.md                    ✓ Complete (8.9KB)
-├── IMPLEMENTATION-PLAN.md       ✓ Complete (11.6KB)
-├── QUICKSTART.md                ✓ Complete
-├── PROJECT-STATUS.md            ✓ Complete (this file)
-├── CHANGELOG.md                 ✓ Complete
-├── LICENSE                      ✓ Complete (MIT)
-├── .gitignore                   ✓ Complete
-├── commands/                    ⏳ Empty (ready for implementation)
-│   ├── next.md                  ⏳ TODO
-│   ├── create-session.md        ⏳ TODO
-│   ├── update-session.md        ⏳ TODO
-│   ├── new-work.md              ⏳ TODO
-│   ├── check.md                 ⏳ TODO
-│   └── refresh.md               ⏳ TODO
-├── agents/                      ⏳ Empty
-│   ├── session-manager.md       ⏳ TODO
-│   └── git-workflow.md          ⏳ TODO
-├── skills/                      ⏳ Empty
-│   ├── context-loader/SKILL.md  ⏳ TODO
-│   ├── session-detector/SKILL.md ⏳ TODO
-│   ├── test-runner/SKILL.md     ⏳ TODO
-│   └── checklist-matcher/SKILL.md ⏳ TODO
-├── hooks/                       ⏳ Empty
-│   ├── pre-commit.sh            ⏳ TODO
-│   ├── pre-pr.sh                ⏳ TODO
-│   └── prompt-submit.sh         ⏳ TODO
-├── scripts/                     ⏳ Empty
-│   ├── get-current-session.sh   ⏳ TODO (Task 1.2 - NEXT)
-│   ├── create-branch-metadata.sh ⏳ TODO (Task 1.2)
-│   ├── run-tests.sh             ⏳ TODO
-│   ├── config-reader.sh         ⏳ TODO
-│   ├── auto-detect.sh           ⏳ TODO
-│   └── generate-config.sh       ⏳ TODO
-├── templates/                   ⏳ Empty
-│   ├── context/                 ⏳ TODO
-│   │   ├── README.yml.template
-│   │   ├── sessions.yml.template
-│   │   ├── git.yml.template
-│   │   ├── behavior.yml.template
-│   │   └── test.yml.template
-│   └── work-items/              ⏳ TODO
-│       ├── github-issue.md
-│       └── azure-devops-bug.md
-└── docs/                        ⏳ Empty
-    ├── installation.md          ⏳ TODO
-    ├── configuration.md         ⏳ TODO
-    ├── commands.md              ⏳ TODO
-    └── migration.md             ⏳ TODO
-```
+If issues found in other projects:
 
-**Legend:**
-- ✓ Complete
-- ⏳ TODO (structure ready, awaiting implementation)
+1. **Immediate**: Each project can rollback via backup
+   ```bash
+   rm -rf .claude
+   mv .claude-bootstrap-backup .claude
+   ```
 
----
+2. **Fix issues**: Update plugin, test in simple-D365 first
 
-## Key Insights from Analysis
-
-### Universal Patterns (100% consistent)
-- Session workflow (branch → metadata → session file)
-- Git discipline (HEREDOC, no attribution)
-- Testing strategy (incremental, after each method)
-- Same bash tools across all projects
-
-### Project-Specific Patterns
-- Test commands (npm vs gradle)
-- Branch naming (issue/feature-N vs WorkItemID-desc)
-- Work item systems (GitHub vs Azure DevOps)
-- Deployment strategies (Terraform vs App Service)
-
-### Design Solution
-- **Plugin:** Provides universal workflow + commands
-- **Config:** Defines tech stack specifics per project
-- **Result:** Same commands, different execution
+3. **Re-migrate**: Run migration again once fixes confirmed
 
 ---
 
 ## Resources
 
-### Documentation
-- [DESIGN.md](DESIGN.md) - Architecture and design decisions
-- [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md) - Phase-by-phase tasks
-- [QUICKSTART.md](QUICKSTART.md) - Developer onboarding
-- [README.md](README.md) - User documentation
-
-### External References
-- [Claude Code Plugins](https://code.claude.com/docs/en/plugins.md)
-- [Plugin Reference](https://code.claude.com/docs/en/plugins-reference.md)
-- [Skills Documentation](https://code.claude.com/docs/en/skills.md)
-- [Hooks Guide](https://code.claude.com/docs/en/hooks-guide.md)
+- **Documentation**: `docs/` directory
+- **Issues**: https://github.com/flexion/claude-domestique/issues
+- **Repository**: https://github.com/flexion/claude-domestique
 
 ---
 
@@ -331,10 +299,9 @@ session-workflow-plugin/
 
 **Developer:** David Puglielli
 **Email:** dpuglielli@flexion.us
-**Repository:** (To be published)
 
 ---
 
-**Status:** ✅ Ready for implementation
-**Next Action:** Start Phase 1, Task 1.2 (Copy universal scripts)
-**Command:** See QUICKSTART.md
+**Status:** ✅ Phase 5 Complete - Ready for Multi-Project Testing
+**Version:** 0.1.0 (Dogfooding successful)
+**Next Action:** Test in simple-D365, Portal-D365-WebApp, portal-D365

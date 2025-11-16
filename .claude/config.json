@@ -1,0 +1,34 @@
+{
+  "techStack": {
+    "type": "custom",
+    "testCommand": "echo 'No tests configured'",
+    "lintCommand": "echo 'No lint configured'",
+    "buildCommand": "echo 'No build configured'",
+    "verifyCommands": ["test"]
+  },
+  "workItems": {
+    "platform": "github",
+    "branchPattern": "issue/feature-{id}/{desc}",
+    "sync": {
+      "enabled": true,
+      "autoSyncOnCommit": true,
+      "direction": "session-to-work-item"
+    }
+  },
+  "git": {
+    "commitFormat": "chore - {desc}",
+    "useHeredoc": true,
+    "noAttribution": true
+  },
+  "hooks": {
+    "preCommit": {
+      "enabled": true,
+      "runTests": true,
+      "checkSessionUpdated": true
+    },
+    "postCommit": {
+      "enabled": true,
+      "autoSync": true
+    }
+  }
+}
