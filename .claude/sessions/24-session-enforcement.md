@@ -77,11 +77,13 @@ Update `skills/context-loader/SKILL.md`:
 - [x] Create PR (#26)
 
 ### Phase 3: Drift Detector
-- [ ] Create `skills/drift-detector/` directory
-- [ ] Create `SKILL.md` with detection logic
-- [ ] Define drift patterns to detect
-- [ ] Test detection when creating off-scope files
-- [ ] Test detection when objective diverges
+- [x] Create `skills/drift-detector/` directory
+- [x] Create `SKILL.md` with detection logic
+- [x] Define drift patterns to detect (5 patterns: behavioral + 4 scope patterns)
+- [x] Add behavioral drift detection (sycophantic, research avoidance, quality, workflow)
+- [ ] Test detection when creating off-scope files (manual testing in real usage)
+- [ ] Test detection when objective diverges (manual testing in real usage)
+- [x] Create PR (#27)
 
 ### Phase 4: Periodic Refresh
 - [ ] Update `skills/context-loader/SKILL.md`
@@ -151,9 +153,50 @@ Update `skills/context-loader/SKILL.md`:
 - Documented session update templates (log entries, decisions, learnings formats)
 - Skill provides soft nudges (non-blocking) complementing hook's hard enforcement
 
-**Phase 3B.2**: Implementation complete, PR #26 created
+**Phase 3B.2**: ✅ COMPLETE - Merged to main (PR #26)
 
-**Next**: After PR #26 merged, continue to Phase 3B.3 (Drift Detector skill)
+### 2024-11-16 - Drift Detector Skill Created
+- Created `skills/drift-detector/` directory and SKILL.md
+- Monitors TWO types of drift:
+  - **Scope drift**: WHAT work is done (files, features, objectives)
+  - **Behavioral drift**: HOW work is done (AI behavior, workflow compliance)
+- Defined comprehensive drift detection logic:
+  - 4 trigger conditions (after file creation, after edits, during features, periodic)
+  - 5 drift patterns:
+    1. **Behavioral drift** (sycophantic, research avoidance, quality, workflow)
+    2. File scope drift
+    3. Feature scope drift
+    4. Architectural drift
+    5. Objective drift
+  - 3-tier severity scoring (low 1-3, medium 4-6, high 7-10)
+  - Severity-based alerting (increasingly urgent as drift increases)
+- Behavioral drift detection catches:
+  - Sycophantic responses (vs skeptical stance in behavior.yml)
+  - Implementing without research (vs search-first requirement)
+  - Skipping quality steps (testing, validation, alternatives)
+  - Workflow violations (attribution, HEREDOC, session updates)
+- Documented drift detection workflow:
+  - Load session context (objectives, requirements, scope)
+  - Load behavior context (behavior.yml, git.yml, sessions.yml)
+  - Analyze recent work (files created/edited, features implemented, AI responses)
+  - Compare against session scope AND context-specified behavior
+  - Calculate drift score based on severity
+  - Alert with recommendations (update scope, refocus, create new session, reset behavior)
+- Created 7 detailed examples:
+  1. Behavioral: Sycophantic response (Medium)
+  2. Behavioral: Research avoidance (High)
+  3. Behavioral: Workflow violation (Medium)
+  4. File scope drift (creating frontend when session is backend API)
+  5. Feature scope drift (bug fix expands to major feature additions)
+  6. Objective drift (email notifications grows to multi-channel platform)
+  7. Architectural drift (caching addition triggers API layer refactor)
+- Defined default drift thresholds including behavioral violations
+- Behavioral drift is HIGH priority (violates core values)
+- Skill provides early warning system before drift becomes problematic
+
+**Phase 3B.3**: Implementation complete, PR #27 created
+
+**Next**: After PR #27 merged, continue to Phase 3B.4 (Periodic Refresh)
 
 ## Key Decisions
 
@@ -216,6 +259,21 @@ Update `skills/context-loader/SKILL.md`:
   - Non-blocking soft nudges (complements hook enforcement)
   - Throttling to avoid over-prompting
   - 4 detailed usage examples
+
+### Phase 3B.3: Drift Detector Skill
+- `skills/drift-detector/SKILL.md` - Dual drift detection skill
+  - Monitors WHAT work is done (scope alignment) AND HOW it's done (behavior alignment)
+  - Detects 5 drift patterns:
+    1. Behavioral (sycophantic, research avoidance, quality, workflow)
+    2. File scope
+    3. Feature scope
+    4. Architectural
+    5. Objective
+  - 3-tier severity scoring and alerts
+  - Behavioral drift is HIGH priority (violates core values)
+  - Recommends corrective action (update scope, refocus, new session, reset behavior)
+  - Early warning system before drift becomes problematic
+  - 7 detailed drift scenario examples (3 behavioral, 4 scope)
 
 ## Next Steps
 
