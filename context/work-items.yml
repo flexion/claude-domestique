@@ -41,10 +41,62 @@ detection:
 ## Auto-Population Workflow
 workflow:
   1_detect: parse branch → extract identifier → detect platform
-  2_fetch: call appropriate API (gh/jira/az) → get issue details
-  3_map: map issue fields to session structure
-  4_populate: generate session file from template
-  5_metadata: update branch metadata with session link
+  2_fetch: call appropriate API (gh/jira/az) → get COMPLETE work item
+  3_download: download ALL attachments/images locally
+  4_store: save as markdown in .claude/work-items/<id>/
+  5_map: map issue fields to session structure
+  6_populate: generate session file from template
+  7_metadata: update branch metadata with session link
+
+## Local Copy Strategy (MANDATORY)
+local_storage:
+  principle: "Fetch ENTIRE work item once, store locally, NO roundtrips back to source"
+
+  rationale:
+    - Offline work (no API dependency after initial fetch)
+    - Performance (no latency from API requests)
+    - Rate limits (single fetch, no ongoing usage)
+    - Images accessible (Claude can view locally)
+    - Complete context (all comments, attachments)
+    - Version control (commit work item to repo)
+
+  structure:
+    location: .claude/work-items/<issue-id>/
+    files:
+      - issue.md (main content in markdown)
+      - comments.md (all comments chronologically)
+      - attachments/ (downloaded images/files)
+      - metadata.json (raw API response)
+
+  fetching:
+    github:
+      - Issue body (markdown) → issue.md
+      - All comments → comments.md
+      - Extract image URLs from markdown
+      - Download all images to attachments/
+      - Rewrite image URLs to local paths
+      - Store raw JSON → metadata.json
+
+    jira:
+      - If imdone: already creates local markdown
+      - If REST API: fetch description + comments + attachments
+      - Download attachments to attachments/
+      - Convert to markdown → issue.md
+      - Store raw JSON → metadata.json
+
+    azure_devops:
+      - Fetch work item description + comments + attachments
+      - Download attachments to attachments/
+      - Convert to markdown → issue.md
+      - Store raw JSON → metadata.json
+
+  benefits:
+    - Claude reads images directly (multimodal)
+    - No API failures during work
+    - Faster access to data
+    - Works offline after fetch
+    - Complete audit trail
+    - Can be committed to repo
 
 mapping:
   github:

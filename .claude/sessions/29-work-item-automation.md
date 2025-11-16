@@ -43,11 +43,21 @@ Create skill to detect issue from branch:
 - Cache issue detection to avoid repeated API calls
 
 ### 2. GitHub Integration (Second Priority)
-Fetch issue details:
+Fetch COMPLETE issue and store locally:
 - Use `gh api` command (already available in system)
-- Extract: title, body, labels, milestone, assignee, created date
-- Map to session structure (objectives, requirements, metadata)
-- Handle API errors gracefully (rate limits, auth issues, network)
+- **Fetch full issue**: title, body, labels, milestone, assignee, created date, state
+- **Fetch all comments**: `gh api repos/:owner/:repo/issues/:number/comments`
+- **Extract image URLs**: Parse markdown for image references
+- **Download attachments**: Download all images/files to `.claude/work-items/<id>/attachments/`
+- **Rewrite URLs**: Convert remote image URLs to local paths in markdown
+- **Store locally**:
+  - `issue.md` - Issue body in markdown (with local image refs)
+  - `comments.md` - All comments chronologically
+  - `attachments/` - Downloaded images/files
+  - `metadata.json` - Raw GitHub API response
+- **Map to session structure**: objectives, requirements, metadata
+- **Handle API errors**: rate limits, auth issues, network failures
+- **Enable offline work**: No roundtrips to GitHub after initial fetch
 
 ### 3. Auto-Populate Session (Third Priority)
 Create session from issue:
@@ -109,14 +119,25 @@ Keep session and issue in sync:
 - [ ] Cache detection results
 - [ ] Error handling for invalid branches
 
-### Phase 2: GitHub Integration
+### Phase 2: GitHub Integration (Complete Local Copy)
 - [ ] Create command `/fetch-issue` or integrate into skill
-- [ ] Use `gh api repos/:owner/:repo/issues/:number`
-- [ ] Parse JSON response
-- [ ] Extract relevant fields (title, body, labels, etc.)
-- [ ] Handle markdown in issue body
-- [ ] Test with various issue formats
-- [ ] Error handling (not found, auth, rate limit)
+- [ ] Fetch issue: `gh api repos/:owner/:repo/issues/:number`
+- [ ] Fetch comments: `gh api repos/:owner/:repo/issues/:number/comments`
+- [ ] Parse JSON responses
+- [ ] Extract all fields (title, body, labels, milestone, assignee, state, created)
+- [ ] Extract image URLs from markdown (issue body + comments)
+- [ ] Download all images/attachments to `.claude/work-items/<id>/attachments/`
+- [ ] Rewrite image URLs to local paths in markdown
+- [ ] Create local storage structure:
+  - [ ] `issue.md` - Issue body with local image refs
+  - [ ] `comments.md` - All comments chronologically
+  - [ ] `attachments/` - Downloaded images/files
+  - [ ] `metadata.json` - Raw API response
+- [ ] Map to session structure
+- [ ] Test with issue #29 (verify complete local copy)
+- [ ] Verify images accessible locally (Claude can read them)
+- [ ] Error handling (not found, auth, rate limit, download failures)
+- [ ] Test offline access (work without API after fetch)
 
 ### Phase 3: Auto-Populate Session
 - [ ] Create session template generator
@@ -264,6 +285,31 @@ Keep session and issue in sync:
 
 **Next**: Begin Phase 1 (Issue Detection Skill) implementation
 
+### 2024-11-16 - Architectural Decision: Complete Local Copy
+- **User feedback**: "make a local copy of the ENTIRE work item (including images)"
+- **Critical requirement**: No roundtrips back to work-item repository
+- **Updated**: `context/work-items.yml` to document local copy strategy as **global behavior**
+- **Storage structure**:
+  ```
+  .claude/work-items/<id>/
+    issue.md          # Issue body (markdown, local image refs)
+    comments.md       # All comments chronologically
+    attachments/      # Downloaded images/files
+    metadata.json     # Raw API response
+  ```
+- **Implementation approach**:
+  - Fetch COMPLETE work item (issue + comments + attachments)
+  - Download ALL images/files locally
+  - Rewrite image URLs to local paths
+  - Enable offline work (no API dependency)
+  - Claude can read images directly (multimodal)
+- **Updated Phase 2 plan**: Expanded scope to include complete local copy
+- **Key decisions**: Added Decision 5 (Local Copy Strategy)
+- **Learnings**: Added Learning 6 (Complete Local Copy is Essential)
+- **Benefits**: Offline work, performance, rate limits, multimodal access, version control
+
+**Next**: Continue Phase 2 with complete local copy implementation
+
 ### 2024-11-16 - Phase 1 Complete: Issue Detection Skill
 - **Created**: `skills/issue-detector/SKILL.md` (comprehensive issue detection skill)
 - **Detection logic**:
@@ -344,6 +390,44 @@ Keep session and issue in sync:
 **Alternative Considered**: Require explicit repo config
 **Rejected**: Too much friction for common case
 
+### Decision 5: Local Copy Strategy - Complete Offline Cache
+**Decision**: Fetch ENTIRE work item and store locally (description, comments, attachments, images). No roundtrips back to source.
+
+**Rationale**:
+- **Offline work**: Claude can access all work-item data without API calls
+- **Performance**: No latency from repeated API requests
+- **Rate limits**: Single fetch operation, no ongoing API usage
+- **Images accessible**: Download and reference locally (Claude can view them)
+- **Complete context**: All comments, discussion, attachments available
+- **Version control**: Local copy can be committed to repo
+
+**Implementation Approach**:
+- **GitHub**: Fetch issue + all comments + download attachments/images
+- **Jira**: Use imdone (already does this) OR fetch + download attachments
+- **Azure DevOps**: Fetch work item + attachments
+
+**Storage Structure**:
+```
+.claude/work-items/
+  29/
+    issue.md          # Main issue content (markdown)
+    comments.md       # All comments (chronological)
+    attachments/      # Downloaded images/files
+      screenshot1.png
+      diagram.svg
+    metadata.json     # Raw API response
+```
+
+**Benefits**:
+- Claude can read images directly (multimodal capability)
+- No API failures during work (cached locally)
+- Faster access to work-item data
+- Works offline after initial fetch
+- Complete audit trail in repo
+
+**Alternative Considered**: Fetch minimal data, API on-demand
+**Rejected**: Requires ongoing API access, can't view images, rate limit issues, offline work impossible
+
 ## Learnings
 
 ### Learning 1: Branch Pattern Consistency
@@ -400,6 +484,24 @@ Keep session and issue in sync:
 - Clear integration points
 
 **Impact**: Following this pattern makes skills predictable, comprehensive, and easy to understand.
+
+### Learning 6: Complete Local Copy is Essential
+**Observation**: User feedback: "make a local copy of the ENTIRE work item (including images)"
+
+**Insight**:
+- **Critical requirement**: No roundtrips back to work-item repository
+- **Multimodal advantage**: Claude can read images directly when stored locally
+- **Offline capability**: Work continues without API access
+- **Performance**: Single fetch, no latency from repeated API calls
+- **Rate limits**: Eliminates ongoing API usage
+- **Version control**: Work items can be committed to repo (audit trail)
+
+**Impact**:
+- Phase 2 scope expanded significantly (not just fetch metadata, but complete local copy)
+- Storage structure needed: `.claude/work-items/<id>/` with issue.md, comments.md, attachments/
+- Must download ALL images/attachments and rewrite URLs to local paths
+- This is now a **global behavior** documented in `context/work-items.yml`
+- Aligns with imdone approach (already stores Jira issues as local markdown)
 
 ## Files Created
 
