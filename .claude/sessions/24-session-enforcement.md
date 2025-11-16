@@ -70,11 +70,11 @@ Update `skills/context-loader/SKILL.md`:
 - [ ] Document hook in README or docs
 
 ### Phase 2: Session Update Prompter
-- [ ] Create `skills/session-update-prompter/` directory
-- [ ] Create `SKILL.md` with trigger conditions
-- [ ] Define prompt templates for different scenarios
-- [ ] Test prompting after implementation
-- [ ] Test prompting before commit
+- [x] Create `skills/session-update-prompter/` directory
+- [x] Create `SKILL.md` with trigger conditions
+- [x] Define prompt templates for different scenarios
+- [ ] Test prompting after implementation (manual testing in real usage)
+- [ ] Create PR
 
 ### Phase 3: Drift Detector
 - [ ] Create `skills/drift-detector/` directory
@@ -130,9 +130,30 @@ Update `skills/context-loader/SKILL.md`:
 - Fixed shellcheck repo URL (koalaman/shellcheck-precommit, not shellcheck-sh)
 - Tested hook: successfully blocks commits without session updates
 - Tested hook: allows commits when session file staged
-- Ready to create PR
+- Cleaned commit history (removed test commit)
+- Created PR #25
+- PR #25 merged to main
 
-**Next**: Force-push clean history, create PR for Phase 3B.1
+**Phase 3B.1**: ✅ COMPLETE
+
+### 2024-11-16 - Session Update Prompter Skill Created
+- Created `skills/session-update-prompter/` directory and SKILL.md
+- Defined comprehensive trigger conditions (4 scenarios):
+  - After implementation milestones (feature done, refactor complete, bug fixed)
+  - Before commit preparation (user signals ready to commit/PR)
+  - After resolving blockers (error fixed, complex problem solved)
+  - Explicit user request (asks what to document)
+- Documented session detection logic (branch → metadata → session file)
+- Created session update analysis framework (decisions, learnings, work, context)
+- Defined prompt format and suggestion structure
+- Added throttling logic (max once per 30 mins, skip if recently updated)
+- Provided 4 detailed examples (feature implementation, before commit, blocker resolved, explicit request)
+- Documented session update templates (log entries, decisions, learnings formats)
+- Skill provides soft nudges (non-blocking) complementing hook's hard enforcement
+
+**Phase 3B.2**: Implementation complete, ready for PR
+
+**Next**: Create PR for Phase 3B.2, then continue to Phase 3B.3 (Drift Detector skill)
 
 ## Key Decisions
 
@@ -174,10 +195,10 @@ Update `skills/context-loader/SKILL.md`:
 
 ## Files Created
 
-### Pre-Commit Framework Files
+### Phase 3B.1: Pre-Commit Framework Files
 - `.pre-commit-config.yaml` - Pre-commit framework configuration
   - Local hook: `check-session-updated` (custom session enforcement)
-  - Remote hook: `shellcheck` from shellcheck-precommit repo
+  - Remote hook: `shellcheck` from shellcheck-precommit repo v0.11.0
   - Stage: `pre-commit` (runs before commit)
 
 - `hooks/check-session-updated.sh` - Session enforcement hook script
@@ -186,6 +207,15 @@ Update `skills/context-loader/SKILL.md`:
   - Blocks commit with helpful error message
   - Supports `--no-verify` override
   - Color-coded output (red errors, yellow warnings, green success)
+
+### Phase 3B.2: Session Update Prompter Skill
+- `skills/session-update-prompter/SKILL.md` - Session update prompting skill
+  - Auto-invokes after implementation milestones
+  - Analyzes recent work to suggest what to document
+  - Provides helpful templates for session updates
+  - Non-blocking soft nudges (complements hook enforcement)
+  - Throttling to avoid over-prompting
+  - 4 detailed usage examples
 
 ## Next Steps
 
