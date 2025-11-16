@@ -25,6 +25,16 @@ Claude Domestique - Your strategic coding partner. Like a cycling domestique, it
 
 ## ⚠️ MANDATORY Action Checklists (BLOCKING)
 
+### Before Beginning Any New Work (REQUIRED):
+1. **ASSESS WORK TYPE** - Is this a feature (GitHub issue) or chore (internal)?
+   - Feature: REQUIRES pre-existing GitHub issue with requirements/acceptance criteria
+   - Chore: Internal maintenance, documentation, tooling, infrastructure (no issue needed)
+2. **CONFIRM WITH USER** - Ask explicitly: "Should this be a feature or chore?"
+   - If feature: "What is the GitHub issue number?"
+   - If no GitHub issue exists: Cannot be a feature, must be chore or create issue first
+3. **WAIT FOR ANSWER** - Do not proceed until user confirms type and provides issue number (if feature)
+4. **PROCEED** - Use appropriate workflow checklist below (feature vs chore)
+
 ### Before ANY Implementation/Proposal Response:
 1. **REREAD** `.claude/context/behavior.yml` in thinking block
 2. **Assess**: correctness, architecture, alternatives, risks
@@ -38,8 +48,10 @@ Claude Domestique - Your strategic coding partner. Like a cycling domestique, it
 4. **Commit session file** before starting implementation
 
 ### When Beginning Feature (GitHub Issue):
+**PREREQUISITE:** GitHub issue must already exist with requirements and acceptance criteria
+
 1. **REREAD** `.claude/context/sessions.yml` and `.claude/context/features.yml`
-2. **CREATE GITHUB ISSUE** - Document requirements, acceptance criteria
+2. **VERIFY ISSUE EXISTS** - Confirm GitHub issue #N has requirements documented
 3. **CREATE BRANCH** - `issue/feature-N/description` from main
 4. **CREATE SESSION** - Use `.claude/tools/create-branch-metadata.sh` (provide issue URL)
 5. **POPULATE SESSION** - Document issue details, objective, requirements, approach, implementation plan

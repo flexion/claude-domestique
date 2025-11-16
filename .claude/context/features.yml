@@ -2,8 +2,14 @@
 # Features = GitHub issue-driven work
 
 ## Feature vs Chore
-feature: github-issue-driven, external-tracking, multi-session, acceptance-criteria
+feature: github-issue-driven, external-tracking, multi-session, acceptance-criteria, REQUIRES-PRE-EXISTING-ISSUE
 chore: internal-maintenance, session-only, single-session, no-issue
+this-project: github-issues (other-projects: jira, azure-devops)
+
+## Workflow Initiation (REQUIRED)
+initiation: assess-work-type → confirm-with-user → get-issue-number (if-feature) → wait-for-answer → proceed-with-appropriate-workflow
+feature-requires: pre-existing-github-issue, issue-number, requirements-documented
+never: assume-type, start-without-confirmation, guess-based-on-content, create-feature-without-issue
 
 ## Branch Patterns
 feature: issue/feature-<N>/<desc>
