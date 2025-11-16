@@ -101,7 +101,7 @@ Core context loaded (from plugin):
 
 Project context:
 ⚠ No .claude/context/ directory found
-   Core values injected. Run /plugin-init to add project-specific context.
+   Core values injected. Run /domestique-init to add project-specific context.
 
 Loaded 4 core context files successfully.
 ```
@@ -170,7 +170,7 @@ Projects can customize which project-specific context files to load in `.claude/
 **Action**:
 - Load core context successfully
 - Report: "No project context directory"
-- Suggest: "Run /plugin-init to initialize project"
+- Suggest: "Run /domestique-init to initialize project"
 - Don't fail operation
 
 ### Individual Files Missing
@@ -231,7 +231,7 @@ Core context loaded (from plugin):
 
 Project context:
 ⚠ No .claude/context/ directory found
-   Core values injected. Run /plugin-init to add project-specific context.
+   Core values injected. Run /domestique-init to add project-specific context.
 
 Loaded 4 core context files successfully.
 
@@ -334,7 +334,7 @@ To change interval (e.g., every 100 interactions):
 - Core context files are in the PLUGIN, not the project
 - Projects don't need to create behavior.yml, git.yml, sessions.yml - these come from the plugin
 - Projects only create PROJECT-SPECIFIC context (project.yml, test.yml, deploy.yml, etc.)
-- `/plugin-init` should NOT create core context files (they're provided by plugin)
+- `/domestique-init` should NOT create core context files (they're provided by plugin)
 - This ensures core values are consistent across all projects using the plugin
 - Two-tier loading: Plugin core (values) → Project custom (specifics)
 

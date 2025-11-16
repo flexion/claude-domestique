@@ -37,7 +37,7 @@ Show tech-specific commands:
 Modify "Before Git Commit" and "Before Pull Request" sections to:
 1. Check if `.claude/config.json` exists
 2. If yes: Read and display tech-specific commands
-3. If no: Show fallback with `/plugin-init` suggestion
+3. If no: Show fallback with `/domestique-init` suggestion
 
 ### Dynamic Generation
 When `/check commit` or `/check pr` invoked:
@@ -83,7 +83,7 @@ When `/check commit` or `/check pr` invoked:
   - Added instructions for dynamic command generation
   - Created two versions: with config and without config (fallback)
   - With config: Shows tech-specific verification commands
-  - Without config: Suggests /plugin-init with manual fallback
+  - Without config: Suggests /domestique-init with manual fallback
 - Modified "Before Pull Request" section:
   - Same config-aware approach as commit checklist
   - Dynamic command list generation
@@ -109,7 +109,7 @@ When `/check commit` or `/check pr` invoked, Claude will:
    - Display tech-specific commands in checklist
 3. If no:
    - Show fallback checklist
-   - Suggest `/plugin-init` for plugin setup
+   - Suggest `/domestique-init` for plugin setup
    - Provide manual verification steps
 
 **Example Output Formats:**
@@ -141,7 +141,7 @@ When `/check commit` or `/check pr` invoked, Claude will:
 ```
 1. ☐ RUN VERIFICATION
    No config found. Initialize plugin:
-   - /plugin-init
+   - /domestique-init
 
    Or verify manually:
    - Shell scripts: shellcheck scripts/*.sh

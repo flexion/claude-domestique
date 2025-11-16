@@ -16,7 +16,7 @@
   - [x] `/next` - Show next steps
   - [x] `/create-session` - Create session (with --auto flag for work-item automation)
   - [x] `/check` - Show checklist
-  - [x] `/plugin-init` - Initialize plugin config
+  - [x] `/domestique-init` - Initialize plugin config
   - [x] `/fetch-issue` - Fetch work item (GitHub, Jira, Azure DevOps)
   - [x] `/sync-work-item` - Bidirectional sync session ↔ work item
 - [x] Core scripts:
@@ -179,7 +179,7 @@ claude-domestique/
 │   ├── create-session.md        ✓ Complete (with --auto)
 │   ├── fetch-issue.md           ✓ Complete (GitHub, Jira, Azure)
 │   ├── next.md                  ✓ Complete
-│   ├── plugin-init.md           ✓ Complete
+│   ├── domestique-init.md           ✓ Complete
 │   └── sync-work-item.md        ✓ Complete
 ├── skills/
 │   ├── context-loader/          ✓ Complete

@@ -61,8 +61,8 @@ project structure:
 2. Update context-loader skill to:
    - First load plugin's core context
    - Then load project's custom context
-3. `/plugin-init` should NOT create behavior.yml, git.yml, sessions.yml (those come from plugin)
-4. `/plugin-init` should only create project-specific context files
+3. `/domestique-init` should NOT create behavior.yml, git.yml, sessions.yml (those come from plugin)
+4. `/domestique-init` should only create project-specific context files
 
 ---
 
@@ -170,7 +170,7 @@ Everything. This is the biggest gap.
 **Tasks:**
 1. Move core context files into plugin `context/` directory
 2. Update context-loader to load plugin context first
-3. Update `/plugin-init` to NOT create core context files
+3. Update `/domestique-init` to NOT create core context files
 4. Test that core values are injected into every project
 
 **Timeline:** Can complete in 1-2 sessions

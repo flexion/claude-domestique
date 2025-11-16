@@ -69,7 +69,7 @@ The command will be a Markdown file that instructs Claude how to:
 
 ### 2024-11-16 - Session Created
 - Created GitHub issue #10
-- Created feature branch: issue/feature-10/plugin-init
+- Created feature branch: issue/feature-10/domestique-init
 - Initialized session file
 - Ready to implement
 
@@ -141,15 +141,15 @@ The command will be a Markdown file that instructs Claude how to:
 - Conflict would prevent plugin command from working
 
 **Resolution:**
-- Renamed command from `/init` to `/plugin-init`
+- Renamed command from `/init` to `/domestique-init`
 - Updated all references in command file (566 lines)
 - New command name clearly indicates plugin-specific initialization
 - Avoids confusion with built-in command
 
 **Actions:**
-- Renamed `commands/init.md` → `commands/plugin-init.md`
+- Renamed `commands/init.md` → `commands/domestique-init.md`
 - Updated all 10+ references within file
-- Command now: `/plugin-init [options]`
+- Command now: `/domestique-init [options]`
 
 **Next:** Update session, commit implementation, create PR
 
@@ -165,9 +165,9 @@ The command will be a Markdown file that instructs Claude how to:
 **Impact**: Reliable across different environments
 **Alternative**: Runtime detection (node --version), but less portable
 
-### Decision 3: Command Naming (`/plugin-init` vs `/init`)
+### Decision 3: Command Naming (`/domestique-init` vs `/init`)
 **Reason**: Claude Code has built-in `/init` command that initializes CLAUDE.md
-**Impact**: `/plugin-init` clearly indicates plugin-specific functionality, avoids conflict
+**Impact**: `/domestique-init` clearly indicates plugin-specific functionality, avoids conflict
 **Alternative**: Could have tried to override, but would be confusing and potentially break existing workflows
 
 ## Learnings
@@ -180,7 +180,7 @@ The command will be a Markdown file that instructs Claude how to:
 ## Files Created
 
 ### Commands
-- `commands/plugin-init.md` (566 lines)
+- `commands/domestique-init.md` (566 lines)
 
 ### Scripts (Not needed)
 - Tech stack detection logic embedded in command
@@ -189,7 +189,7 @@ The command will be a Markdown file that instructs Claude how to:
 
 ## Next Steps
 
-1. ✅ Create `/plugin-init` command definition
+1. ✅ Create `/domestique-init` command definition
 2. ✅ Define tech stack detection logic (6 languages)
 3. ✅ Specify config generation process
 4. ✅ Add examples for all modes (4 comprehensive examples)
