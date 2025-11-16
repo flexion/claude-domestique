@@ -23,6 +23,9 @@ NEVER guess or assume current branch - ALWAYS check first
 location: .claude/sessions/
 format: <IssueNum>-<desc>.md OR chore-<desc>.md
 content: goal, done, todo, context, files-changed, next-steps
+creation:
+  manual: .claude/tools/create-branch-metadata.sh
+  auto: work-item automation (GitHub/Jira/Azure DevOps)
 update: beginning-work, after-milestone, before-pause, when-blocked, before-commit
 commit: atomic (session+code in same commit)
 
@@ -33,11 +36,20 @@ content: session:<file>, status:<state>, todo:<list>
 size: 3-5 lines (ultra-compact)
 
 ## Workflow
+
+### Manual Creation
 start: create branch → .claude/tools/create-branch-metadata.sh → creates metadata + session
 work: implement → update session after each major task
 pause: update session, mark status
 resume: switch branch → auto-loads correct session
 complete: mark session complete, merge PR
+
+### Auto-Population (Work-Item Automation)
+start: create branch from issue (issue/feature-N/desc OR feature/PROJ-123/desc)
+detect: parse branch → extract issue identifier → detect platform (GitHub/Jira/Azure DevOps)
+fetch: call API (gh/jira/az) → retrieve issue details
+populate: map issue to session (title→goal, body→objectives, labels→tags)
+sync: bidirectional (session updates → issue comments, issue changes → session alerts)
 
 ## Key Patterns
 fresh-conversation-not-equal-lost-context: session file persists state
@@ -47,10 +59,14 @@ commit-regularly: session updates are code documentation
 
 ## Tools
 get: .claude/tools/get-current-session.sh
-create: .claude/tools/create-branch-metadata.sh
+create-manual: .claude/tools/create-branch-metadata.sh
+create-auto: work-item detection skill (auto-populates from GitHub/Jira/Azure DevOps)
+sync: bidirectional sync (session ↔ issue)
 
 ## Benefits
 resumable: pick up exactly where left off
-traceable: maps to github issues
+traceable: maps to github issues, jira tickets, azure devops work items
 handoff: teammates read session, understand work
 memory: external state outside context window
+automated: zero manual session creation for issue-based work
+synced: session stays in sync with work item (bidirectional)

@@ -17,25 +17,29 @@ Automate GitHub/Azure DevOps work-item maintenance to eliminate manual session m
 
 ### Core Components
 1. GitHub API integration - fetch issue details
-2. Azure DevOps API integration - fetch work item details
-3. Auto-detect issue/work-item from branch name
-4. Auto-populate session from issue/work-item
-5. Bidirectional sync (session ↔ work item)
+2. Jira API integration - fetch issue/ticket details
+3. Azure DevOps API integration - fetch work item details
+4. Auto-detect issue/work-item from branch name
+5. Auto-populate session from issue/work-item
+6. Bidirectional sync (session ↔ work item)
 
 ### Key Features
 - **Auto-detection**: Extract issue number from branch name
 - **Auto-fetch**: Retrieve issue/work-item details via API
 - **Auto-populate**: Create session file from issue data
 - **Bidirectional sync**: Update issue when session updates, vice versa
-- **Multi-platform**: Support both GitHub and Azure DevOps
+- **Multi-platform**: Support GitHub, Jira, and Azure DevOps
 
 ## Technical Approach
 
 ### 1. Issue Detection (First Priority)
 Create skill to detect issue from branch:
-- Parse branch name (e.g., `issue/feature-29/work-item-automation` → #29)
-- Support both GitHub (`issue/feature-N/desc`) and Azure DevOps patterns
-- Validate issue exists and is accessible
+- Parse branch name to extract issue identifier
+  - GitHub: `issue/feature-29/desc` → #29
+  - Jira: `feature/PROJ-123/desc` → PROJ-123
+  - Azure DevOps: `feature/456/desc` → #456
+- Detect platform based on identifier format
+- Validate issue exists via appropriate API
 - Cache issue detection to avoid repeated API calls
 
 ### 2. GitHub Integration (Second Priority)
@@ -53,14 +57,29 @@ Create session from issue:
 - Create initial session log entry with issue details
 - Respect existing session template structure
 
-### 4. Azure DevOps Integration (Fourth Priority)
+### 4. Jira Integration (Fourth Priority) - Use imdone.io
+Leverage imdone CLI (markdown-based Jira integration):
+- **Install**: `npm i -g imdone-cli && imdone init`
+- **Pull**: `imdone pull` → fetches Jira issues as markdown via JQL
+- **Structure**: `backlog/[ISSUE-KEY]-[SUMMARY]/issue-[KEY].md`
+- **Parse**: Extract from imdone markdown format → map to session structure
+- **Sync**: Use `imdone push` for bidirectional sync (local ↔ Jira)
+- **Benefits**:
+  - Markdown-native (no custom API integration needed)
+  - Git-backed (version control for issues)
+  - AI-accessible (issues as markdown in repo)
+  - Bidirectional sync built-in
+- **Limitations**: Free tier has 5 push limit (paid tier for unlimited)
+- **Config**: `.imdone/config.yml` with JQL queries
+
+### 5. Azure DevOps Integration (Fifth Priority)
 Fetch work item details:
 - Use Azure CLI (`az boards work-item show`) or REST API
 - Extract: title, description, acceptance criteria, state, assigned to
 - Map to session structure
 - Handle Azure-specific fields (work item type, area path, iteration)
 
-### 5. Bidirectional Sync (Fifth Priority)
+### 6. Bidirectional Sync (Sixth Priority)
 Keep session and issue in sync:
 - Session update → post comment on issue
 - Issue label change → update session status
@@ -74,9 +93,11 @@ Keep session and issue in sync:
 - [ ] Create `skills/issue-detector/SKILL.md`
 - [ ] Define trigger conditions (session start, branch switch, manual request)
 - [ ] Implement branch name parsing logic
-- [ ] Support GitHub branch patterns
-- [ ] Support Azure DevOps branch patterns
-- [ ] Validate issue exists via API
+- [ ] Support GitHub branch patterns (`issue/feature-N/desc`)
+- [ ] Support Jira branch patterns (`feature/PROJ-123/desc`)
+- [ ] Support Azure DevOps branch patterns (`feature/456/desc`)
+- [ ] Detect platform from identifier format (# vs KEY-N vs N)
+- [ ] Validate issue exists via appropriate API
 - [ ] Cache detection results
 - [ ] Error handling for invalid branches
 
@@ -101,7 +122,23 @@ Keep session and issue in sync:
 - [ ] Test session creation workflow
 - [ ] Handle existing session files (don't overwrite)
 
-### Phase 4: Azure DevOps Integration
+### Phase 4: Jira Integration (via imdone.io)
+- [ ] Install imdone CLI (`npm i -g imdone-cli`)
+- [ ] Research imdone CLI usage and configuration
+- [ ] Create skill to detect Jira issues (PROJ-123 pattern)
+- [ ] Use `imdone pull` to fetch issues as markdown
+- [ ] Parse imdone markdown format:
+  - `backlog/[KEY]-[SUMMARY]/issue-[KEY].md`
+  - Extract frontmatter (metadata)
+  - Extract body (description/acceptance criteria)
+  - Handle comments file (`comments-[KEY].md`)
+- [ ] Map imdone markdown → session structure
+- [ ] Handle `.imdone/config.yml` (JQL configuration)
+- [ ] Implement bidirectional sync via `imdone push`
+- [ ] Test with real Jira issues
+- [ ] Error handling (auth, pull limits on free tier)
+
+### Phase 5: Azure DevOps Integration
 - [ ] Research Azure CLI availability
 - [ ] Create Azure DevOps command/skill
 - [ ] Use `az boards work-item show --id <id>`
@@ -111,7 +148,7 @@ Keep session and issue in sync:
 - [ ] Test with Azure DevOps work items
 - [ ] Error handling
 
-### Phase 5: Bidirectional Sync
+### Phase 6: Bidirectional Sync
 - [ ] Design sync strategy (when to sync, what triggers)
 - [ ] Session update → issue comment:
   - Detect session file changes
@@ -130,22 +167,32 @@ Keep session and issue in sync:
 
 ## Dependencies
 - GitHub CLI (`gh`) - **AVAILABLE** (already in system)
+- Jira CLI or REST API access - **UNKNOWN** (may need configuration)
 - Azure CLI (`az`) - **UNKNOWN** (may need installation/setup)
 - Branch metadata system (Phase 1) - **COMPLETE**
 - Session file structure - **COMPLETE**
 - Pre-commit hook - **COMPLETE** (ensures session updates)
 
 ## Success Criteria
-- ✅ Auto-detects issue from branch name
-- ✅ Fetches issue details from GitHub API
+- ✅ Auto-detects issue from branch name (GitHub, Jira, Azure DevOps)
+- ✅ Fetches issue details from appropriate API
 - ✅ Auto-populates session file from issue
-- ✅ Supports Azure DevOps work items
+- ✅ Supports all three platforms (GitHub, Jira, Azure DevOps)
 - ✅ Bidirectional sync working
 - ✅ Zero manual session initialization for issue-based work
+- ✅ Platform auto-detection working based on identifier format
 
 ## Notes
 
-**Focus on GitHub first** - Most common use case. Azure DevOps integration is secondary.
+**Platform priority**:
+1. **GitHub first** - Most common in open source, easiest to test (this repo uses GitHub)
+2. **Jira second** - Most common in enterprise, widest adoption
+3. **Azure DevOps third** - Common in Microsoft shops
+
+**Platform detection**: Use identifier format to detect platform automatically:
+- `#N` or numeric only → GitHub or Azure DevOps (disambiguate via API)
+- `PROJECT-N` format → Jira
+- Allow explicit platform specification in config
 
 **Testing approach**: Integration testing with real GitHub issues (#29 can be the test case).
 
@@ -166,7 +213,22 @@ Keep session and issue in sync:
 - Initialized session file
 - Ready to implement issue detection skill
 
-**Next**: Plan Phase 1 (Issue Detection Skill) implementation
+### 2024-11-16 - Global Context Updated
+- Created `context/work-items.yml` - work-item automation workflow documentation:
+  - Supported platforms (GitHub, Jira, Azure DevOps)
+  - Auto-detection logic (branch pattern → identifier → platform)
+  - Auto-population workflow (detect → fetch → map → populate → metadata)
+  - Field mapping for all three platforms
+  - Bidirectional sync strategy
+  - Configuration, examples, error handling
+- Updated `context/sessions.yml` - added work-item automation:
+  - Session creation: manual + auto (work-item automation)
+  - Auto-population workflow documented
+  - Updated tools section with auto-creation
+  - Updated benefits (automated, synced with work items)
+- Global context now includes work-item automation as core workflow
+
+**Next**: Begin Phase 1 (Issue Detection Skill) implementation
 
 ## Key Decisions
 
