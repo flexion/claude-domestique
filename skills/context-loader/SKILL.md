@@ -16,6 +16,10 @@ This skill auto-invokes when:
    - "reload context"
    - "load context"
    - "update context"
+3. **Periodic Refresh** - Automatically during long sessions:
+   - Every N interactions (configurable, default: 50)
+   - Only during active work (not idle sessions)
+   - Skipped if context refreshed recently (within last 10 interactions)
 
 ## Actions
 
@@ -132,7 +136,11 @@ Projects can customize which project-specific context files to load in `.claude/
       "azure.yml",
       "custom-workflow.yml"
     ],
-    "autoLoad": true
+    "autoLoad": true,
+    "periodicRefresh": {
+      "enabled": true,
+      "interval": 50
+    }
   }
 }
 ```
@@ -140,6 +148,9 @@ Projects can customize which project-specific context files to load in `.claude/
 **Fields:**
 - `files` (array of strings) - List of PROJECT-SPECIFIC context files to load from `.claude/context/`
 - `autoLoad` (boolean, default: true) - Whether to auto-load at session start
+- `periodicRefresh` (object, optional) - Periodic context refresh configuration:
+  - `enabled` (boolean, default: true) - Whether to enable periodic refresh
+  - `interval` (number, default: 50) - Interactions between refreshes
 
 **Note**: This config controls ONLY project-specific context. Plugin core context is ALWAYS loaded.
 
@@ -249,6 +260,57 @@ Loaded 4 core + 2 project = 6 context files successfully.
 Context refreshed.
 ```
 
+### Example 4: Periodic Refresh (Long Session)
+
+**Context**: Working session has reached 50 interactions
+
+```
+[Automatic periodic refresh triggered]
+
+Refreshing context (periodic refresh at 50 interactions)...
+
+Core context loaded (from plugin):
+✓ README.yml
+✓ behavior.yml
+✓ git.yml
+✓ sessions.yml
+
+Project context loaded (from .claude/context/):
+✓ project.yml
+✓ test.yml
+✓ deploy.yml
+
+Loaded 4 core + 3 project = 7 context files successfully.
+
+Context refreshed. Core values and project context reloaded.
+Next refresh at interaction 100.
+```
+
+**Configuration control:**
+
+To disable periodic refresh:
+```json
+{
+  "context": {
+    "periodicRefresh": {
+      "enabled": false
+    }
+  }
+}
+```
+
+To change interval (e.g., every 100 interactions):
+```json
+{
+  "context": {
+    "periodicRefresh": {
+      "enabled": true,
+      "interval": 100
+    }
+  }
+}
+```
+
 ## Integration
 
 **Works with:**
@@ -264,6 +326,8 @@ Context refreshed.
 - **Fast** - Parallel loading for efficiency
 - **Transparent** - Clear reporting of what loaded
 - **Resilient** - Gracefully handles missing files
+- **Periodic refresh** - Prevents context drift in long sessions
+- **Configurable intervals** - Control refresh frequency per project needs
 
 ## Notes
 
@@ -273,3 +337,21 @@ Context refreshed.
 - `/plugin-init` should NOT create core context files (they're provided by plugin)
 - This ensures core values are consistent across all projects using the plugin
 - Two-tier loading: Plugin core (values) → Project custom (specifics)
+
+### Periodic Refresh Benefits
+
+**Why periodic refresh matters:**
+- Long sessions can drift from original context values
+- AI may gradually forget skeptical stance, workflow rules
+- Context files may be updated during session (team changes)
+- Refreshing maintains alignment with core values
+
+**Default interval (50 interactions):**
+- Balances freshness vs interruption
+- Appropriate for most development sessions
+- Can be adjusted per project needs
+
+**When to adjust interval:**
+- **Increase (e.g., 100)**: Stable projects, infrequent context changes
+- **Decrease (e.g., 25)**: Active context updates, strict adherence needed
+- **Disable**: Very short sessions, context never changes

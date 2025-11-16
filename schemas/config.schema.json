@@ -302,6 +302,25 @@
           "type": "boolean",
           "description": "Whether to automatically load context files at session start",
           "default": true
+        },
+        "periodicRefresh": {
+          "type": "object",
+          "description": "Periodic context refresh configuration to prevent drift in long sessions",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Whether to enable periodic context refresh",
+              "default": true
+            },
+            "interval": {
+              "type": "number",
+              "description": "Number of interactions between automatic context refreshes",
+              "default": 50,
+              "minimum": 10,
+              "maximum": 500,
+              "examples": [25, 50, 100]
+            }
+          }
         }
       }
     }
