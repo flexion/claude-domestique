@@ -378,6 +378,41 @@ Keep session and issue in sync:
 
 **Phase 3 Status**: ✅ COMPLETE - Auto-population working end-to-end
 
+### 2024-11-16 - Phase 4 & 5 Complete: Jira + Azure DevOps Integration
+- **Enhanced**: `commands/fetch-issue.md` with complete Jira and Azure DevOps support
+- **Jira Integration (Dual Method)**:
+  - **Method 1 (Optional)**: imdone CLI integration
+    - Detects `.imdone/config.yml` presence
+    - Uses `imdone pull PROJ-123` if available
+    - Parses imdone markdown format (frontmatter + body)
+    - Copies to standard local structure
+  - **Method 2 (Primary)**: Jira REST API v3
+    - Uses Jira REST API for standard integration
+    - Fetches issue, comments, attachments
+    - Converts ADF (Atlassian Document Format) to markdown
+    - Downloads all attachments
+    - Same local storage structure
+  - **Auto-detection**: Checks for .imdone/config.yml to choose method
+  - **Configuration**: JIRA_HOST, JIRA_API_TOKEN from config or environment
+- **Azure DevOps Integration**:
+  - Uses Azure CLI (`az boards work-item show`)
+  - Fetches work item, comments, attachments
+  - Converts HTML description to markdown
+  - Supports all work item types (User Story, Bug, Task, etc.)
+  - Extracts Azure-specific fields (Area Path, Iteration, Story Points)
+  - Same local storage structure
+- **Unified Local Storage**:
+  - All platforms use same structure: `.claude/work-items/<id>/`
+  - Platform-agnostic session auto-population
+  - Consistent offline access across platforms
+- **Platform-Specific Fields**:
+  - **Jira**: Type, Status, Priority, Story Points, Epic, Sprint
+  - **Azure DevOps**: Work Item Type, State, Area Path, Iteration, Story Points
+  - **GitHub**: Labels, Milestone, State (already implemented)
+
+**Phase 4 Status**: ✅ COMPLETE - Jira integration (REST API + imdone)
+**Phase 5 Status**: ✅ COMPLETE - Azure DevOps integration
+
 ### 2024-11-16 - Phase 1 Complete: Issue Detection Skill
 - **Created**: `skills/issue-detector/SKILL.md` (comprehensive issue detection skill)
 - **Detection logic**:
@@ -706,9 +741,39 @@ Keep session and issue in sync:
 13. ✅ Document field mapping
 14. ✅ Add example
 15. ✅ Update session
-16. ⏳ Commit Phase 3
+16. ✅ Commit Phase 3
 
-### Future Phases
-- Phase 4: Jira Integration (REST API + optional imdone)
-- Phase 5: Azure DevOps Integration
-- Phase 6: Bidirectional Sync
+### ✅ Phase 4 Complete: Jira Integration
+1. ✅ Add Jira REST API v3 integration to /fetch-issue
+2. ✅ Implement authentication (API token + email)
+3. ✅ Fetch issue, comments, attachments
+4. ✅ Convert ADF (Atlassian Document Format) to markdown
+5. ✅ Add imdone CLI integration (optional method)
+6. ✅ Auto-detect integration method (.imdone/config.yml)
+7. ✅ Parse imdone markdown format (frontmatter + body)
+8. ✅ Download attachments
+9. ✅ Create unified local storage structure
+10. ✅ Document Jira-specific fields (Story Points, Epic, Sprint)
+11. ✅ Document dual-method approach
+12. ⏳ Update session
+13. ⏳ Commit Phase 4
+
+### ✅ Phase 5 Complete: Azure DevOps Integration
+1. ✅ Add Azure DevOps integration to /fetch-issue
+2. ✅ Use Azure CLI (az boards work-item show)
+3. ✅ Fetch work item, comments, attachments
+4. ✅ Convert HTML description to markdown
+5. ✅ Support all work item types (User Story, Bug, Task)
+6. ✅ Extract Azure-specific fields (Area Path, Iteration)
+7. ✅ Create unified local storage structure
+8. ✅ Document Azure DevOps-specific fields
+9. ⏳ Update session
+10. ⏳ Commit Phase 5
+
+### Remaining: Phase 6 (Bidirectional Sync)
+1. Design sync strategy (when to sync, what triggers)
+2. Session update → work-item comment
+3. Work-item update → session alert
+4. Status synchronization
+5. Conflict resolution
+6. Test sync scenarios

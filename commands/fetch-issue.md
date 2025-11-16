@@ -224,19 +224,243 @@ All images rewritten to local paths.
 Work item available offline.
 ```
 
-### Step 8: Future Platforms (Jira, Azure DevOps)
+### Step 8: Jira Integration (Complete Implementation)
 
-For Jira:
-- If `.imdone/config.yml` exists: Use `imdone pull {issue-key}`
-- Otherwise: Fetch via Jira REST API v3
-- Download attachments from Jira
-- Convert to same local structure
+When platform is Jira (identifier format: PROJ-123):
 
-For Azure DevOps:
-- Use `az boards work-item show --id {id}`
-- Fetch work item details
-- Download attachments
-- Convert to same local structure
+**8a. Detect Jira Integration Method**
+
+Check for `.imdone/config.yml` in project root:
+```bash
+if [ -f ".imdone/config.yml" ]; then
+  USE_IMDONE=true
+else
+  USE_IMDONE=false
+fi
+```
+
+**8b. Method 1: imdone CLI (Optional - if available)**
+
+If `.imdone/config.yml` exists:
+
+```bash
+imdone pull PROJ-123
+```
+
+This creates:
+```
+backlog/PROJ-123-<summary>/
+  ├── issue-PROJ-123.md
+  ├── comments-PROJ-123.md
+  └── attachments/ (if any)
+```
+
+Parse imdone markdown:
+- Extract frontmatter (metadata: type, status, priority, assignee, story points, sprint, epic)
+- Extract body content
+- Read comments file
+- Copy to `.claude/work-items/PROJ-123/`
+
+**8c. Method 2: Jira REST API v3 (Primary - always available)**
+
+If `.imdone/config.yml` doesn't exist OR imdone fails:
+
+**Fetch Issue:**
+```bash
+curl -H "Authorization: Bearer $JIRA_API_TOKEN" \
+     -H "Accept: application/json" \
+     https://$JIRA_HOST/rest/api/3/issue/PROJ-123
+```
+
+**Configuration:**
+- `JIRA_HOST`: From `.claude/config.json` → `workItems.jira.host`
+- `JIRA_API_TOKEN`: From environment variable or config
+- `JIRA_EMAIL`: User email for authentication
+
+**Extract from response:**
+```json
+{
+  "key": "PROJ-123",
+  "fields": {
+    "summary": "Issue title",
+    "description": "Issue description (ADF format)",
+    "issuetype": {"name": "Story"},
+    "status": {"name": "In Progress"},
+    "priority": {"name": "High"},
+    "assignee": {"displayName": "John Doe"},
+    "created": "2024-11-16T10:00:00.000Z",
+    "updated": "2024-11-16T12:00:00.000Z",
+    "customfield_10016": 5,  // Story points
+    "customfield_10014": "PROJ-100"  // Epic link
+  }
+}
+```
+
+**Fetch Comments:**
+```bash
+curl -H "Authorization: Bearer $JIRA_API_TOKEN" \
+     https://$JIRA_HOST/rest/api/3/issue/PROJ-123/comment
+```
+
+**Fetch Attachments:**
+```bash
+curl -H "Authorization: Bearer $JIRA_API_TOKEN" \
+     https://$JIRA_HOST/rest/api/3/issue/PROJ-123/attachments
+```
+
+Download each attachment:
+```bash
+for attachment in attachments:
+  curl -H "Authorization: Bearer $JIRA_API_TOKEN" \
+       -o .claude/work-items/PROJ-123/attachments/$filename \
+       $attachment.content
+```
+
+**8d. Convert Jira Description to Markdown**
+
+Jira uses Atlassian Document Format (ADF). Convert to markdown:
+- Parse ADF JSON structure
+- Convert to markdown format
+- Preserve formatting (bold, italic, lists, code blocks)
+- Extract image URLs
+
+**8e. Create Local Storage**
+
+Same structure as GitHub:
+```
+.claude/work-items/PROJ-123/
+  ├── issue.md
+  ├── comments.md
+  ├── attachments/
+  └── metadata.json
+```
+
+**issue.md format:**
+```markdown
+# {summary}
+
+**Issue:** PROJ-123
+**Type:** {issuetype}
+**Status:** {status}
+**Priority:** {priority}
+**Created:** {created}
+**Updated:** {updated}
+**URL:** https://{host}/browse/PROJ-123
+**Assignee:** {assignee}
+**Story Points:** {customfield_10016}
+**Epic:** {customfield_10014}
+
+---
+
+{description converted to markdown}
+```
+
+**8f. Report Success**
+
+```
+✓ Work item fetched successfully
+
+Platform: Jira (via REST API)
+Issue: PROJ-123
+Summary: Implement user authentication
+Type: Story
+Status: In Progress
+
+Fetched:
+✓ Issue description (converted from ADF to markdown)
+✓ Comments (3 comments)
+✓ Attachments (2 files)
+
+Stored locally:
+.claude/work-items/PROJ-123/
+  ├── issue.md (markdown)
+  ├── comments.md (3 comments)
+  ├── attachments/ (2 files)
+  └── metadata.json (raw API response)
+
+Work item available offline.
+```
+
+### Step 9: Azure DevOps Integration (Complete Implementation)
+
+When platform is Azure DevOps (identifier format: numeric, after GitHub fails):
+
+**9a. Fetch Work Item:**
+```bash
+az boards work-item show --id 456 --output json
+```
+
+**Extract from response:**
+```json
+{
+  "id": 456,
+  "fields": {
+    "System.Title": "Add caching layer",
+    "System.Description": "HTML description",
+    "System.WorkItemType": "User Story",
+    "System.State": "Active",
+    "System.AssignedTo": "John Doe",
+    "System.CreatedDate": "2024-11-16T10:00:00Z",
+    "System.ChangedDate": "2024-11-16T12:00:00Z",
+    "System.AreaPath": "MyProject\\Backend",
+    "System.IterationPath": "MyProject\\Sprint 1",
+    "Microsoft.VSTS.Scheduling.StoryPoints": 5
+  }
+}
+```
+
+**9b. Fetch Comments:**
+```bash
+az boards work-item show --id 456 --fields System.History
+```
+
+**9c. Fetch Attachments:**
+```bash
+az boards work-item attachment list --id 456
+```
+
+Download each attachment:
+```bash
+az boards work-item attachment download --id {attachment-id} --file {filename}
+```
+
+**9d. Convert HTML Description to Markdown**
+
+Azure DevOps uses HTML. Convert to markdown:
+- Parse HTML
+- Convert to markdown format
+- Extract image URLs
+
+**9e. Create Local Storage**
+
+Same structure:
+```
+.claude/work-items/456/
+  ├── issue.md
+  ├── comments.md
+  ├── attachments/
+  └── metadata.json
+```
+
+**issue.md format:**
+```markdown
+# {System.Title}
+
+**Work Item:** #456
+**Type:** {System.WorkItemType}
+**State:** {System.State}
+**Created:** {System.CreatedDate}
+**Updated:** {System.ChangedDate}
+**URL:** https://dev.azure.com/{org}/{project}/_workitems/edit/456
+**Assignee:** {System.AssignedTo}
+**Area:** {System.AreaPath}
+**Iteration:** {System.IterationPath}
+**Story Points:** {Microsoft.VSTS.Scheduling.StoryPoints}
+
+---
+
+{description converted to markdown}
+```
 
 ## Error Handling
 
