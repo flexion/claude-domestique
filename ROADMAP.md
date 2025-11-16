@@ -20,8 +20,8 @@ Deliver on 4 core purposes:
 |---------|--------|---------------|------|
 | **1. Inject Core Values** | ✅ **DELIVERED** | Plugin `context/` with core YAML + markdown. Two-tier loading (plugin core → project custom). Phase 3A, PR #21. | Test in production projects |
 | **2. Automate Shit-Work** | ❌ **NOT STARTED** | - | Phase 3C: GitHub/Azure DevOps API integration, auto-create sessions from issues, bidirectional sync |
-| **3. Prevent Context Drift** | 🔄 **IN PROGRESS** | - | Phase 3B: Pre-commit hooks, session update prompts, drift detection |
-| **4. Share Knowledge** | ✅ **DELIVERED** | Sessions in Git (`.claude/sessions/`), branch metadata (`.claude/branches/`). Phase 1. | Works, needs enforcement (Phase 3B) |
+| **3. Prevent Context Drift** | ✅ **DELIVERED** | Pre-commit hook (blocks without session update), session update prompter (soft nudges), drift detector (scope + behavioral monitoring), periodic refresh (context maintenance). Phase 3B, PRs #25-28. | Production testing, refinement based on usage |
+| **4. Share Knowledge** | ✅ **DELIVERED** | Sessions in Git (`.claude/sessions/`), branch metadata (`.claude/branches/`). Phase 1. Enforced by Phase 3B hooks. | Production usage |
 
 ---
 
@@ -48,10 +48,14 @@ Deliver on 4 core purposes:
 - Updated context-loader skill for two-tier loading (plugin core → project custom)
 - **Impact**: Every project now gets core values automatically. Projects only add project-specific context.
 
-**Phase 3B: Session Enforcement** 🎯 NEXT
+**Phase 3B: Session Enforcement** ✅ COMPLETE (PRs #25, #26, #27, #28)
 - **Goal**: Actively enforce session updates, prevent drift
-- **Approach**: Pre-commit hooks (block without session update), session update prompts, drift detection, periodic context refresh
-- **Impact**: Cannot commit without updating session. Prompted after milestones. Alerted when drifting.
+- **Deliverables**:
+  - Pre-commit hook using pre-commit framework (blocks commits without session updates)
+  - Session update prompter skill (soft nudges after milestones)
+  - Drift detector skill (monitors scope AND behavioral drift - sycophantic, research avoidance, quality shortcuts, workflow violations)
+  - Periodic refresh in context-loader (auto-reloads context every N interactions, default 50)
+- **Impact**: Complete session enforcement system. Hard enforcement at commit time, soft prompts during work, dual drift monitoring (what + how), automatic context refresh in long sessions.
 
 **Phase 3C: Work-Item Automation** 📋 FUTURE
 - **Goal**: Automate GitHub/Azure DevOps work-item maintenance
@@ -73,9 +77,9 @@ Deliver on 4 core purposes:
 
 ## Current Focus
 
-**Working On**: Phase 3B - Session Enforcement
-**Next Task**: Create pre-commit hook to block commits without session updates
-**Last Completed**: Phase 3A - Core Values Injection (PR #21)
+**Last Completed**: Phase 3B - Session Enforcement (PRs #25-28)
+**Achievement**: 3 of 4 core purposes now DELIVERED (Inject Values, Prevent Drift, Share Knowledge)
+**Next Decision**: Phase 3C (Automate Shit-Work) OR Phase 4 (Additional Hooks) OR production testing/refinement
 
 ---
 
