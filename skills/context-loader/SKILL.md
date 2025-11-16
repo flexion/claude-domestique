@@ -1,7 +1,11 @@
 # Context Loader Skill
 
 ## Description
-Automatically loads project context files at session start, ensuring Claude has necessary context immediately available for effective workflow management.
+Automatically loads context files at session start using a two-tier system:
+1. **Plugin core context** (always loaded) - Injects core values (skepticism, quality, workflow)
+2. **Project custom context** (optional) - Project-specific context layered on top
+
+This ensures every project gets core AI behavior values while allowing customization.
 
 ## Trigger Conditions
 
@@ -17,73 +21,116 @@ This skill auto-invokes when:
 
 When triggered, perform the following steps:
 
-### Step 1: Check for Config
-Check if `.claude/config.json` exists in the current working directory.
+### Step 1: Load Plugin Core Context (ALWAYS)
 
-### Step 2: Determine Context Files
-**If config exists:**
-1. Use `scripts/read-config.sh context.files` to get array of context files
-2. If `context.files` is not defined, use default list
+Load the plugin's core context files that inject core values into every project.
 
-**If config doesn't exist:**
-Use default context file list:
-- `README.yml`
-- `sessions.yml`
-- `git.yml`
-- `behavior.yml`
+**Core files to load from plugin's `context/` directory:**
+- `README.yml` - Compact YAML format guide
+- `behavior.yml` - Skeptical, quality-focused AI behavior
+- `git.yml` - Git workflow rules (no attribution, HEREDOC format)
+- `sessions.yml` - Session management workflow
 
-### Step 3: Load Context Files
-For each file in the context files list:
-1. Check if `.claude/context/{filename}` exists
-2. If exists: Read file using the Read tool
-3. If doesn't exist: Skip with note (don't fail)
-4. Load content into session context
+**How to locate plugin context:**
+1. Plugin is installed at: `~/.claude/plugins/claude-domestique/` (or equivalent)
+2. Core context is at: `{plugin-path}/context/`
+3. Read all 4 core YAML files in parallel
 
-**Important:** Load files in parallel when possible for efficiency.
+**Important**: These files are ALWAYS loaded regardless of project configuration. They inject the core values that define how the AI behaves.
+
+### Step 2: Load Project Custom Context (OPTIONAL)
+
+After core context is loaded, load project-specific context files that layer on additional project needs.
+
+**Check for project config:**
+- If `.claude/config.json` exists: read `context.files` array
+- If config doesn't exist or `context.files` not defined: use default project files
+
+**Default project context files:**
+- `project.yml` - Project overview
+- `test.yml` - Testing strategy
+- `deploy.yml` - Deployment process
+- (any other project-specific files)
+
+**Load from:** `.claude/context/` directory in project root
+
+**Handling missing files:**
+- Skip gracefully if file doesn't exist
+- Don't fail the operation
+- Report which files were skipped
+
+### Step 3: Load Markdown Elaborations (ON-DEMAND)
+
+Core YAML files may reference markdown elaboration files:
+- `behavior.yml` → `assistant-preferences.md`
+- `git.yml` → `git-workflow.md`
+- `sessions.yml` → `session-workflow.md`
+
+**Don't load these at session start** - they're loaded on-demand when deeper context needed.
 
 ### Step 4: Report Results
-Display a summary of loaded files:
+
+Display a two-tier summary:
 
 ```
-Context loaded:
-✓ README.yml - Compact YAML reading guide
-✓ sessions.yml - Session workflow and branch tracking
-✓ git.yml - Git workflow rules
-✓ behavior.yml - AI behavior preferences
-✓ test.yml - Testing strategy
+Core context loaded (from plugin):
+✓ README.yml - Compact YAML format guide
+✓ behavior.yml - Skeptical AI behavior, quality focus
+✓ git.yml - Git workflow (no attribution, HEREDOC)
+✓ sessions.yml - Session management workflow
+
+Project context loaded (from .claude/context/):
 ✓ project.yml - Project overview
+✓ test.yml - Testing strategy
+✓ deploy.yml - Deployment process
 
-Loaded 6 context files successfully.
+Loaded 4 core + 3 project = 7 context files successfully.
 ```
 
-If any files were missing:
+If project context missing:
 ```
-Context loaded:
+Core context loaded (from plugin):
 ✓ README.yml
-✓ sessions.yml
-✓ git.yml
 ✓ behavior.yml
-⚠ test.yml - Not found (skipping)
-⚠ project.yml - Not found (skipping)
+✓ git.yml
+✓ sessions.yml
 
-Loaded 4 of 6 context files.
+Project context:
+⚠ No .claude/context/ directory found
+   Core values injected. Run /plugin-init to add project-specific context.
+
+Loaded 4 core context files successfully.
+```
+
+If some project files missing:
+```
+Core context loaded (from plugin):
+✓ README.yml
+✓ behavior.yml
+✓ git.yml
+✓ sessions.yml
+
+Project context loaded (from .claude/context/):
+✓ project.yml
+⚠ test.yml - Not found (skipping)
+⚠ deploy.yml - Not found (skipping)
+
+Loaded 4 core + 1 project = 5 context files successfully.
 ```
 
 ## Configuration
 
-Projects can configure context loading in `.claude/config.json`:
+Projects can customize which project-specific context files to load in `.claude/config.json`:
 
 ```json
 {
   "context": {
     "files": [
-      "README.yml",
-      "sessions.yml",
-      "git.yml",
-      "behavior.yml",
-      "test.yml",
       "project.yml",
-      "custom-context.yml"
+      "test.yml",
+      "deploy.yml",
+      "azure.yml",
+      "custom-workflow.yml"
     ],
     "autoLoad": true
   }
@@ -91,130 +138,138 @@ Projects can configure context loading in `.claude/config.json`:
 ```
 
 **Fields:**
-- `files` (array of strings) - List of context files to load from `.claude/context/`
+- `files` (array of strings) - List of PROJECT-SPECIFIC context files to load from `.claude/context/`
 - `autoLoad` (boolean, default: true) - Whether to auto-load at session start
 
-**If `autoLoad` is false:**
-- Skip automatic loading at session start
-- Only load when user explicitly requests
+**Note**: This config controls ONLY project-specific context. Plugin core context is ALWAYS loaded.
 
 ## Error Handling
 
-### No Config File
-- Use default context file list
-- Attempt to load from `.claude/context/`
-- Don't treat as error
+### Plugin Context Missing
+**Scenario**: Plugin's core context files not found
 
-### Missing Context Directory
-- Report: "Context directory not found: .claude/context/"
+**Action**:
+- Report error: "Plugin core context not found. Plugin may be corrupted."
+- Suggest: "Reinstall plugin: /plugin install claude-domestique"
+- Continue with project context only (degraded mode)
+
+### Project Context Directory Missing
+**Scenario**: `.claude/context/` doesn't exist in project
+
+**Action**:
+- Load core context successfully
+- Report: "No project context directory"
 - Suggest: "Run /plugin-init to initialize project"
-- Don't fail session
+- Don't fail operation
 
-### Missing Context Files
-- Skip missing files
+### Individual Files Missing
+**Scenario**: Specific context file doesn't exist
+
+**Action**:
+- Skip that file
 - Report which files were skipped
 - Continue with available files
 - Don't fail operation
 
 ### Invalid Config
-- Fall back to default list
+**Scenario**: `.claude/config.json` exists but `context.files` is invalid
+
+**Action**:
+- Fall back to default project files
 - Report: "Invalid context config, using defaults"
 - Continue operation
 
 ## Examples
 
-### Example 1: Session Start (Auto-Invoke)
+### Example 1: Session Start (Full Context)
 
-**Session begins**
+**Session begins in project with `.claude/context/`**
 
 ```
-Context loaded:
-✓ README.yml - Compact YAML reading guide
-✓ sessions.yml - Session workflow
-✓ git.yml - Git workflow rules
-✓ behavior.yml - AI behavior preferences
-✓ test.yml - Testing strategy
-✓ project.yml - Project overview
+Loading context...
 
-Loaded 6 context files successfully.
+Core context loaded (from plugin):
+✓ README.yml - Compact YAML format guide
+✓ behavior.yml - Skeptical AI behavior, quality focus
+✓ git.yml - Git workflow (no attribution, HEREDOC)
+✓ sessions.yml - Session management workflow
+
+Project context loaded (from .claude/context/):
+✓ project.yml - simple-D365 project overview
+✓ test.yml - Jest testing strategy
+✓ deploy.yml - Azure deployment process
+✓ azure.yml - Azure tenant configuration
+
+Loaded 4 core + 4 project = 8 context files successfully.
+
+Ready to work. Core values injected, project context loaded.
 ```
 
-**Claude now has all context files loaded and can follow the workflows defined in them.**
+### Example 2: Session Start (New Project, No Custom Context)
 
-### Example 2: Manual Reload
+**Session begins in project without `.claude/context/`**
+
+```
+Loading context...
+
+Core context loaded (from plugin):
+✓ README.yml
+✓ behavior.yml
+✓ git.yml
+✓ sessions.yml
+
+Project context:
+⚠ No .claude/context/ directory found
+   Core values injected. Run /plugin-init to add project-specific context.
+
+Loaded 4 core context files successfully.
+
+Ready to work with core behavior values.
+```
+
+### Example 3: Manual Reload
 
 **User:** "reload context"
 
 ```
-Reloading context files...
+Reloading context...
 
-Context loaded:
+Core context loaded (from plugin):
 ✓ README.yml
-✓ sessions.yml
-✓ git.yml
 ✓ behavior.yml
-✓ test.yml
+✓ git.yml
+✓ sessions.yml
+
+Project context loaded (from .claude/context/):
 ✓ project.yml
+✓ test.yml
 
-Loaded 6 context files successfully.
-```
+Loaded 4 core + 2 project = 6 context files successfully.
 
-### Example 3: Missing Files
-
-**Session begins**
-
-```
-Context loaded:
-✓ README.yml
-✓ sessions.yml
-✓ git.yml
-✓ behavior.yml
-⚠ test.yml - Not found
-⚠ custom-workflow.yml - Not found
-
-Loaded 4 of 6 context files.
-
-Note: Some context files are missing. The plugin will work with available context.
-```
-
-### Example 4: No Config
-
-**Session begins (no .claude/config.json)**
-
-```
-No config found, using default context files.
-
-Context loaded:
-✓ README.yml
-✓ sessions.yml
-✓ git.yml
-✓ behavior.yml
-
-Loaded 4 context files successfully.
-
-Tip: Run /plugin-init to create a project-specific configuration.
+Context refreshed.
 ```
 
 ## Integration
 
 **Works with:**
-- `.claude/config.json` - Optional project config
-- `.claude/context/` directory - Context files location
-- `scripts/read-config.sh` - Config reading utility
-- All project types (feature and chore workflows)
+- Plugin's `context/` directory - Core context files (ALWAYS loaded)
+- Project's `.claude/context/` directory - Custom context files (optional)
+- `.claude/config.json` - Project config for custom context
+- All project types and tech stacks
 
 **Benefits:**
-- **Automatic** - No manual loading required each session
-- **Consistent** - Same context loaded every time
-- **Configurable** - Projects choose what to load
+- **Core values injected** - Every project gets skepticism, quality, workflow rules
+- **Automatic** - No manual setup required for core values
+- **Customizable** - Projects can layer on specific context
 - **Fast** - Parallel loading for efficiency
 - **Transparent** - Clear reporting of what loaded
 - **Resilient** - Gracefully handles missing files
 
 ## Notes
 
-- Context files should be in YAML format for compact representation
-- Files are loaded at session start before any user interaction
-- This ensures all workflow rules and preferences are available immediately
-- Skills are auto-invoked based on triggers (unlike commands which require explicit invocation)
-- The skill must work for both feature branches (`issue/feature-N/`) and chore branches (`chore/`)
+- Core context files are in the PLUGIN, not the project
+- Projects don't need to create behavior.yml, git.yml, sessions.yml - these come from the plugin
+- Projects only create PROJECT-SPECIFIC context (project.yml, test.yml, deploy.yml, etc.)
+- `/plugin-init` should NOT create core context files (they're provided by plugin)
+- This ensures core values are consistent across all projects using the plugin
+- Two-tier loading: Plugin core (values) → Project custom (specifics)
