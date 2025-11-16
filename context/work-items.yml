@@ -1,0 +1,261 @@
+# Work-Item Automation Workflow
+
+## Purpose
+Automate GitHub/Jira/Azure DevOps work-item maintenance. Zero manual session creation for issue-based work.
+
+## Supported Platforms
+platforms:
+  github:
+    pattern: "issue/feature-N/desc"
+    identifier: "#29"
+    api: gh
+    priority: 1  # implement first
+
+  jira:
+    pattern: "feature/PROJ-123/desc"
+    identifier: "PROJ-123"
+    api: jira_rest_api  # direct Jira REST API (mandatory)
+    api_optional: imdone_cli  # optional: imdone.io for markdown-based workflow
+    priority: 2  # implement second
+    methods:
+      primary: Direct Jira REST API (mandatory)
+      optional: imdone CLI (used by MCADS project, markdown-based, git-like)
+
+  azure_devops:
+    pattern: "feature/456/desc"
+    identifier: "#456"
+    api: az_boards
+    priority: 3  # implement third
+
+## Auto-Detection
+detection:
+  trigger: session_start, branch_switch, manual_request
+  method: parse_branch_name
+  format_detection:
+    - "PROJ-123" → Jira (PROJECT-N pattern)
+    - "#29" → GitHub (hash prefix)
+    - "29" → GitHub or Azure DevOps (numeric, disambiguate via API)
+  validation: check_issue_exists_via_api
+  caching: yes  # avoid repeated API calls
+
+## Auto-Population Workflow
+workflow:
+  1_detect: parse branch → extract identifier → detect platform
+  2_fetch: call appropriate API (gh/jira/az) → get COMPLETE work item
+  3_download: download ALL attachments/images locally
+  4_store: save as markdown in .claude/work-items/<id>/
+  5_map: map issue fields to session structure
+  6_populate: generate session file from template
+  7_metadata: update branch metadata with session link
+
+## Local Copy Strategy (MANDATORY)
+local_storage:
+  principle: "Fetch ENTIRE work item once, store locally, NO roundtrips back to source"
+
+  rationale:
+    - Offline work (no API dependency after initial fetch)
+    - Performance (no latency from API requests)
+    - Rate limits (single fetch, no ongoing usage)
+    - Images accessible (Claude can view locally)
+    - Complete context (all comments, attachments)
+    - Version control (commit work item to repo)
+
+  structure:
+    location: .claude/work-items/<issue-id>/
+    gitignore: YES (excluded from version control - cached data)
+    files:
+      - issue.md (main content in markdown)
+      - comments.md (all comments chronologically)
+      - attachments/ (downloaded images/files)
+      - metadata.json (raw API response)
+
+  fetching:
+    github:
+      - Issue body (markdown) → issue.md
+      - All comments → comments.md
+      - Extract image URLs from markdown
+      - Download all images to attachments/
+      - Rewrite image URLs to local paths
+      - Store raw JSON → metadata.json
+
+    jira:
+      - If imdone: already creates local markdown
+      - If REST API: fetch description + comments + attachments
+      - Download attachments to attachments/
+      - Convert to markdown → issue.md
+      - Store raw JSON → metadata.json
+
+    azure_devops:
+      - Fetch work item description + comments + attachments
+      - Download attachments to attachments/
+      - Convert to markdown → issue.md
+      - Store raw JSON → metadata.json
+
+  benefits:
+    - Claude reads images directly (multimodal)
+    - No API failures during work
+    - Faster access to data
+    - Works offline after fetch
+    - Complete audit trail
+    - Can be committed to repo
+
+mapping:
+  github:
+    title: issue.title
+    body: issue.body → objectives/requirements
+    labels: issue.labels → session.tags
+    milestone: issue.milestone
+    assignee: issue.assignee
+    url: issue.html_url
+
+  jira:
+    # Primary method: Direct Jira REST API (mandatory)
+    method_primary: REST API
+    api: /rest/api/3/issue/{issueKey}
+    fields:
+      title: issue.fields.summary
+      body: issue.fields.description → objectives/requirements
+      type: issue.fields.issuetype.name
+      status: issue.fields.status.name
+      assignee: issue.fields.assignee.displayName
+      custom: story points (customfield_10016), epic (customfield_10014)
+
+    # Optional method: imdone CLI (markdown-based, used by MCADS project)
+    method_optional: imdone CLI
+    pull: imdone pull PROJ-123 → generates markdown file
+    map: imdone markdown → session structure
+    fields_imdone:
+      title: from markdown header
+      body: from markdown content → objectives/requirements
+      metadata: from frontmatter (type, status, priority, assignee)
+      custom: story points, sprint, epic from frontmatter
+    push: session updates → imdone push → syncs to Jira
+
+  azure_devops:
+    title: workItem.fields["System.Title"]
+    body: workItem.fields["System.Description"] → objectives
+    type: workItem.fields["System.WorkItemType"]
+    state: workItem.fields["System.State"]
+    assigned: workItem.fields["System.AssignedTo"]
+
+## Bidirectional Sync
+sync:
+  session_to_issue:
+    trigger: session_update, milestone_complete
+    action: post_comment_on_issue
+    content: session_log_entry, decisions, learnings
+
+  issue_to_session:
+    trigger: status_change, label_change, comment_added
+    action: alert_in_session_or_auto_update
+    examples:
+      - issue closed → mark session complete
+      - label added → update session tags
+      - priority changed → update session notes
+
+  conflict_resolution:
+    strategy: last_write_wins_with_alert
+    alert: both changed simultaneously
+
+## Configuration
+config:
+  location: .claude/config.json
+  fields:
+    workItems:
+      platform: github | jira | azure_devops  # explicit or auto-detect
+      autoPopulate: true  # auto-create session from issue
+      syncEnabled: true  # bidirectional sync
+      syncInterval: 300  # seconds between sync checks
+
+      github:
+        repo: owner/repo  # optional, auto-detect from git remote
+
+      jira:
+        method: rest_api | imdone  # rest_api (mandatory) or imdone (optional)
+        host: https://company.atlassian.net
+        project: PROJ  # project key
+
+        # Direct REST API (mandatory, default)
+        auth: api_token  # Jira API token
+        email: user@company.com
+        customFields:
+          story_points: customfield_10016
+          epic_link: customfield_10014
+
+        # imdone CLI (optional, used by MCADS project)
+        imdone:
+          enabled: false  # set true to use imdone instead of REST API
+          install: npm i -g imdone-cli
+          auth: imdone login  # authenticate with Jira
+          pull: imdone pull <issue-key>  # fetch as markdown
+          push: imdone push  # sync changes to Jira
+
+      azure_devops:
+        organization: myorg
+        project: MyProject
+
+## Examples
+
+### Example 1: GitHub Auto-Population
+branch: issue/feature-29/work-item-automation
+action: session start
+result:
+  detected: GitHub issue #29
+  fetched: title, body, labels from API
+  created: .claude/sessions/29-work-item-automation.md
+  populated: objectives from issue body, metadata from labels
+
+### Example 2: Jira Auto-Population
+branch: feature/PROJ-123/implement-auth
+action: session start
+result:
+  detected: Jira issue PROJ-123
+  fetched: summary, description, story points from API
+  created: .claude/sessions/PROJ-123-implement-auth.md
+  populated: objectives from description, story points in metadata
+
+### Example 3: Bidirectional Sync
+scenario: session updated with completion notes
+action: commit triggers sync
+result:
+  comment posted on GitHub issue #29
+  content: "Session updated: Completed Phase 1..."
+  issue remains open (not auto-closed)
+
+scenario: issue closed externally
+action: sync detects closed status
+result:
+  session file updated with completion status
+  alert: "Issue #29 was closed externally"
+
+## Error Handling
+errors:
+  no_issue_in_branch:
+    action: skip_auto_population
+    message: "No issue detected in branch name"
+
+  issue_not_found:
+    action: fail_with_error
+    message: "Issue #29 not found via API"
+    suggestion: "Check issue number and API access"
+
+  api_auth_failed:
+    action: fail_with_error
+    message: "API authentication failed"
+    suggestion: "Run 'gh auth login' or configure Jira credentials"
+
+  api_rate_limit:
+    action: use_cached_data_or_fail
+    message: "API rate limit exceeded"
+    suggestion: "Wait or use cached issue data"
+
+## Benefits
+benefits:
+  - Zero manual session creation for issue-based work
+  - Session always in sync with issue details
+  - Automatic updates to issue from session progress
+  - Works across GitHub, Jira, Azure DevOps
+  - No context switching between tools
+
+## Elaboration
+See: context/work-item-workflow.md for detailed workflow examples and configuration
