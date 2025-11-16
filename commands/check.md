@@ -104,7 +104,7 @@ When Beginning Chore:
    - Display tech-specific commands
 3. If not exists:
    - Show fallback checklist
-   - Suggest running `/plugin-init`
+   - Suggest running `/domestique-init`
 
 **With Config (Tech-Specific):**
 ```
@@ -137,7 +137,7 @@ Before Git Commit:
 
 1. RUN VERIFICATION (if applicable)
    No config found. Initialize plugin:
-   - /plugin-init
+   - /domestique-init
 
    Or verify manually:
    - Shell scripts: shellcheck scripts/*.sh
@@ -193,7 +193,7 @@ Before Pull Request:
 
 1. RUN VERIFICATION
    No config found. Initialize plugin:
-   - /plugin-init
+   - /domestique-init
 
    Or verify manually:
    - Shell scripts: shellcheck scripts/*.sh
@@ -388,7 +388,7 @@ Before Git Commit:
 
 1. ☐ RUN VERIFICATION
    No config found. Initialize plugin:
-   - /plugin-init
+   - /domestique-init
 
    Or verify manually:
    - Shell scripts: shellcheck scripts/*.sh

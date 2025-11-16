@@ -6,7 +6,7 @@ This guide provides comprehensive testing procedures for Phase 2 (Config System)
 ## Phase 2 Components
 
 1. **Tech Stack Presets** - Pre-configured settings for different tech stacks
-2. **/plugin-init Command** - Automated project initialization
+2. **/domestique-init Command** - Automated project initialization
 3. **Config Reader Script** - Universal config reading and merging
 4. **Test Runner Script** - Tech-agnostic verification execution
 5. **Config-Aware /check Command** - Dynamic, tech-specific checklists
@@ -277,7 +277,7 @@ Test in project without `.claude/config.json`:
 ```
 1. ☐ RUN VERIFICATION
    No config found. Initialize plugin:
-   - /plugin-init
+   - /domestique-init
 
    Or verify manually:
    - Shell scripts: shellcheck scripts/*.sh
@@ -286,7 +286,7 @@ Test in project without `.claude/config.json`:
 
 **Success Criteria:**
 - Fallback shown when config missing
-- Suggests `/plugin-init`
+- Suggests `/domestique-init`
 - Manual alternatives provided
 
 ### Test 4c: PR Checklist
@@ -302,7 +302,7 @@ Test in project without `.claude/config.json`:
 
 ---
 
-## Test 5: /plugin-init Command
+## Test 5: /domestique-init Command
 
 **Objective:** Verify project initialization works correctly
 
@@ -310,7 +310,7 @@ Test in project without `.claude/config.json`:
 
 ### Test 5a: Auto-Detection
 ```
-/plugin-init
+/domestique-init
 ```
 
 **Expected Interaction:**
@@ -393,7 +393,7 @@ cat .claude/config.json
 
 ### Test 5d: Non-Interactive Mode
 ```
-/plugin-init --preset react-typescript --yes
+/domestique-init --preset react-typescript --yes
 ```
 
 **Expected:**
@@ -418,7 +418,7 @@ cat .claude/config.json
 
 **Step 1: Initialize Project**
 ```
-/plugin-init
+/domestique-init
 ```
 - Confirm preset selection
 - Verify config created
@@ -538,7 +538,7 @@ CONFIG_PATH=.claude/config.json ./scripts/run-verification.sh test
 ## Troubleshooting
 
 ### Issue: "Config file not found"
-**Solution:** Ensure `.claude/config.json` exists. Run `/plugin-init` if not.
+**Solution:** Ensure `.claude/config.json` exists. Run `/domestique-init` if not.
 
 ### Issue: "Preset file not found"
 **Solution:** Verify presets are accessible. Check `extends` path in config.
@@ -561,7 +561,7 @@ CONFIG_PATH=.claude/config.json ./scripts/run-verification.sh test
 
 Phase 2 is successfully validated when:
 
-- ✅ `/plugin-init` creates valid config for all tech stacks
+- ✅ `/domestique-init` creates valid config for all tech stacks
 - ✅ `read-config.sh` reads and merges configs correctly
 - ✅ `run-verification.sh` executes commands for all tech stacks
 - ✅ `/check` shows tech-specific commands

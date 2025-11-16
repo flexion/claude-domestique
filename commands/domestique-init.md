@@ -1,11 +1,11 @@
-# Command: /plugin-init
+# Command: /domestique-init
 
 ## Description
 Initialize a project for claude-domestique plugin usage. This command auto-detects the tech stack, generates configuration, and sets up the necessary directory structure.
 
 ## Usage
 ```
-/plugin-init [options]
+/domestique-init [options]
 ```
 
 **Options:**
@@ -15,15 +15,15 @@ Initialize a project for claude-domestique plugin usage. This command auto-detec
 
 **Examples:**
 ```
-/plugin-init                                    # Interactive mode with auto-detection
-/plugin-init --preset typescript-node           # Use specific preset
-/plugin-init --preset react-typescript --yes    # Non-interactive with preset
-/plugin-init --force                            # Overwrite existing config
+/domestique-init                                    # Interactive mode with auto-detection
+/domestique-init --preset typescript-node           # Use specific preset
+/domestique-init --preset react-typescript --yes    # Non-interactive with preset
+/domestique-init --force                            # Overwrite existing config
 ```
 
 ## Implementation
 
-When the user invokes `/plugin-init`, follow these steps:
+When the user invokes `/domestique-init`, follow these steps:
 
 ### Step 1: Check for Existing .claude/ Directory
 
@@ -339,7 +339,7 @@ No recognizable files found:
   - Cargo.toml (Rust)
 
 To initialize manually:
-  /plugin-init --preset <preset-name>
+  /domestique-init --preset <preset-name>
 
 Available presets:
   - typescript-node
@@ -356,7 +356,7 @@ Available presets:
   - react-typescript
   - java-spring
 
-Usage: /plugin-init --preset <preset-name>
+Usage: /domestique-init --preset <preset-name>
 ```
 
 ### Validation Failed
@@ -385,7 +385,7 @@ Initialize git first:
 
 **Input:**
 ```
-/plugin-init
+/domestique-init
 ```
 
 **Interaction:**
@@ -436,7 +436,7 @@ Next steps:
 
 **Input:**
 ```
-/plugin-init
+/domestique-init
 ```
 
 **Interaction:**
@@ -489,7 +489,7 @@ Next steps:
 
 **Input:**
 ```
-/plugin-init --preset typescript-node --yes
+/domestique-init --preset typescript-node --yes
 ```
 
 **Output:**
@@ -512,7 +512,7 @@ Next: /create-session
 
 **Input:**
 ```
-/plugin-init
+/domestique-init
 ```
 
 **Interaction:**

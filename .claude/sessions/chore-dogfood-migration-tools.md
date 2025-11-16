@@ -78,7 +78,7 @@ Currently using bootstrap `.claude/` directory (copied from simple-D365). Need t
 - [ ] Test /check command
 - [ ] Test /fetch-issue command
 - [ ] Test /sync-work-item command
-- [ ] Test /plugin-init command
+- [ ] Test /domestique-init command
 - [ ] Test context-loader skill
 - [ ] Test issue-detector skill
 - [ ] Test drift-detector skill
@@ -109,7 +109,7 @@ Currently using bootstrap `.claude/` directory (copied from simple-D365). Need t
   - Added: drift-detector, issue-detector, session-update-prompter (actual skills)
 - **Created**: `docs/installation.md` (comprehensive installation guide)
   - Installation methods (local + GitHub)
-  - Initialization workflow (`/plugin-init`)
+  - Initialization workflow (`/domestique-init`)
   - Migration from bootstrap (automated + manual)
   - Verification checklist
   - Troubleshooting guide
