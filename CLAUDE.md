@@ -7,6 +7,7 @@ Claude Domestique - Your strategic coding partner. Like a cycling domestique, it
 **YOU MUST read these files in parallel on EVERY session start using a single message with multiple Read tool calls:**
 
 ```
+ROADMAP.md                        - Project direction, core purposes, what's next (CRITICAL)
 .claude/context/README.yml       - How to read compact YAML
 .claude/context/sessions.yml     - Session workflow & branch tracking
 .claude/context/git.yml          - Git workflow rules
@@ -50,16 +51,27 @@ Claude Domestique - Your strategic coding partner. Like a cycling domestique, it
 ### When Beginning Feature (GitHub Issue):
 **PREREQUISITE:** GitHub issue must already exist with requirements and acceptance criteria
 
-1. **REREAD** `.claude/context/sessions.yml` and `.claude/context/features.yml`
-2. **VERIFY ISSUE EXISTS** - Confirm GitHub issue #N has requirements documented
-3. **CREATE BRANCH** - `issue/feature-N/description` from main
-4. **CREATE SESSION** - Use `.claude/tools/create-branch-metadata.sh` (provide issue URL)
-5. **POPULATE SESSION** - Document issue details, objective, requirements, approach, implementation plan
-6. **Commit session file** before starting implementation
+1. **EVALUATE ROADMAP** - Read `ROADMAP.md`, assess if this feature aligns with core purposes, note current phase
+2. **REREAD** `.claude/context/sessions.yml` and `.claude/context/features.yml`
+3. **VERIFY ISSUE EXISTS** - Confirm GitHub issue #N has requirements documented
+4. **CREATE BRANCH** - `issue/feature-N/description` from main
+5. **CREATE SESSION** - Use `.claude/tools/create-branch-metadata.sh` (provide issue URL)
+6. **POPULATE SESSION** - Document issue details, objective, requirements, approach, implementation plan
+7. **Commit session file** before starting implementation
 
 ### After Completing Major Milestone:
 1. **UPDATE SESSION** - Document what completed, decisions made, context learned
 2. **Examples**: Component done (before testing), blocker resolved, architectural decision, before pausing work
+
+### After Completing Feature (Before PR Merge):
+1. **UPDATE SESSION** - Final summary of what was delivered, key decisions, learnings
+2. **UPDATE ROADMAP** - Update `ROADMAP.md`:
+   - Mark feature/phase as complete
+   - Add "How Delivered" summary
+   - Document key learnings or pivots
+   - Adjust "Next" steps if direction changed
+   - Update Decision Log with date and key decisions
+3. **Commit roadmap update** with session and code
 
 ### Before Answering "What's Next?" or Status Queries:
 1. **REREAD** `.claude/context/sessions.yml`
@@ -141,8 +153,9 @@ claude-domestique/
 ├── scripts/                      (utilities - bash)
 ├── templates/                    (context + work-item templates)
 ├── docs/                         (user documentation)
+├── context/                      (plugin core context - injected into every project)
 ├── DESIGN.md                     (architecture)
-├── IMPLEMENTATION-PLAN.md        (phase-by-phase tasks)
+├── ROADMAP.md                    (living roadmap - update each feature)
 └── README.md                     (user-facing docs)
 ```
 
@@ -155,11 +168,13 @@ claude-domestique/
 
 ## Key Documents to Reference
 
+**Strategy & Direction:**
+- `ROADMAP.md` - Living roadmap (4 core purposes, current phase, what's next) - **UPDATE EACH FEATURE**
+- `CORE-PURPOSE-REVIEW.md` - Why we pivoted from infrastructure to purpose-driven development
+
 **Design & Planning:**
 - `DESIGN.md` - Complete architecture design
-- `IMPLEMENTATION-PLAN.md` - Phase-by-phase implementation tasks
 - `QUICKSTART.md` - Developer onboarding
-- `PROJECT-STATUS.md` - Current status and roadmap
 
 **Testing:**
 - Install plugin: `/plugin install claude-domestique@local`
@@ -178,4 +193,7 @@ claude-domestique/
 
 ---
 
-**Critical:** Load all 7 `.claude/context/*.yml` files IMMEDIATELY using parallel Read calls.
+**Critical:**
+1. Load `ROADMAP.md` + all 7 `.claude/context/*.yml` files IMMEDIATELY using parallel Read calls.
+2. Evaluate `ROADMAP.md` at BEGINNING of each feature (assess alignment).
+3. Update `ROADMAP.md` at END of each feature (document delivery, learnings, pivots).
