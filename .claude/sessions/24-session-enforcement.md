@@ -74,7 +74,7 @@ Update `skills/context-loader/SKILL.md`:
 - [x] Create `SKILL.md` with trigger conditions
 - [x] Define prompt templates for different scenarios
 - [ ] Test prompting after implementation (manual testing in real usage)
-- [ ] Create PR
+- [x] Create PR (#26)
 
 ### Phase 3: Drift Detector
 - [ ] Create `skills/drift-detector/` directory
@@ -151,9 +151,9 @@ Update `skills/context-loader/SKILL.md`:
 - Documented session update templates (log entries, decisions, learnings formats)
 - Skill provides soft nudges (non-blocking) complementing hook's hard enforcement
 
-**Phase 3B.2**: Implementation complete, ready for PR
+**Phase 3B.2**: Implementation complete, PR #26 created
 
-**Next**: Create PR for Phase 3B.2, then continue to Phase 3B.3 (Drift Detector skill)
+**Next**: After PR #26 merged, continue to Phase 3B.3 (Drift Detector skill)
 
 ## Key Decisions
 
