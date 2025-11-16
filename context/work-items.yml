@@ -14,9 +14,12 @@ platforms:
   jira:
     pattern: "feature/PROJ-123/desc"
     identifier: "PROJ-123"
-    api: imdone_cli  # leverage imdone.io for Jira (markdown-based, bidirectional sync)
+    api: jira_rest_api  # direct Jira REST API (mandatory)
+    api_optional: imdone_cli  # optional: imdone.io for markdown-based workflow
     priority: 2  # implement second
-    tool: https://imdone.io/ (manages Jira as markdown, git-like CLI)
+    methods:
+      primary: Direct Jira REST API (mandatory)
+      optional: imdone CLI (used by MCADS project, markdown-based, git-like)
 
   azure_devops:
     pattern: "feature/456/desc"
@@ -53,10 +56,22 @@ mapping:
     url: issue.html_url
 
   jira:
-    method: imdone CLI (markdown-based)
+    # Primary method: Direct Jira REST API (mandatory)
+    method_primary: REST API
+    api: /rest/api/3/issue/{issueKey}
+    fields:
+      title: issue.fields.summary
+      body: issue.fields.description → objectives/requirements
+      type: issue.fields.issuetype.name
+      status: issue.fields.status.name
+      assignee: issue.fields.assignee.displayName
+      custom: story points (customfield_10016), epic (customfield_10014)
+
+    # Optional method: imdone CLI (markdown-based, used by MCADS project)
+    method_optional: imdone CLI
     pull: imdone pull PROJ-123 → generates markdown file
     map: imdone markdown → session structure
-    fields:
+    fields_imdone:
       title: from markdown header
       body: from markdown content → objectives/requirements
       metadata: from frontmatter (type, status, priority, assignee)
@@ -103,17 +118,24 @@ config:
         repo: owner/repo  # optional, auto-detect from git remote
 
       jira:
-        method: imdone  # use imdone.io CLI for Jira integration
+        method: rest_api | imdone  # rest_api (mandatory) or imdone (optional)
         host: https://company.atlassian.net
         project: PROJ  # project key
+
+        # Direct REST API (mandatory, default)
+        auth: api_token  # Jira API token
+        email: user@company.com
+        customFields:
+          story_points: customfield_10016
+          epic_link: customfield_10014
+
+        # imdone CLI (optional, used by MCADS project)
         imdone:
+          enabled: false  # set true to use imdone instead of REST API
           install: npm i -g imdone-cli
           auth: imdone login  # authenticate with Jira
           pull: imdone pull <issue-key>  # fetch as markdown
           push: imdone push  # sync changes to Jira
-        customFields:  # imdone handles these via frontmatter
-          story_points: customfield_10016
-          epic_link: customfield_10014
 
       azure_devops:
         organization: myorg

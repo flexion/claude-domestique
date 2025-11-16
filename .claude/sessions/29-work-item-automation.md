@@ -57,8 +57,15 @@ Create session from issue:
 - Create initial session log entry with issue details
 - Respect existing session template structure
 
-### 4. Jira Integration (Fourth Priority) - Use imdone.io
-Leverage imdone CLI (markdown-based Jira integration):
+### 4. Jira Integration (Fourth Priority) - Dual Approach
+**Primary (Mandatory)**: Direct Jira REST API
+- Use Jira REST API v3: `/rest/api/3/issue/{issueKey}`
+- Authentication: API token + email
+- Extract: summary, description, status, assignee, custom fields
+- Map to session structure
+- Standard Jira integration (works for all projects)
+
+**Optional Enhancement**: imdone CLI (used by MCADS project)
 - **Install**: `npm i -g imdone-cli && imdone init`
 - **Pull**: `imdone pull` → fetches Jira issues as markdown via JQL
 - **Structure**: `backlog/[ISSUE-KEY]-[SUMMARY]/issue-[KEY].md`
@@ -71,6 +78,7 @@ Leverage imdone CLI (markdown-based Jira integration):
   - Bidirectional sync built-in
 - **Limitations**: Free tier has 5 push limit (paid tier for unlimited)
 - **Config**: `.imdone/config.yml` with JQL queries
+- **When to use**: Projects already using imdone (like MCADS)
 
 ### 5. Azure DevOps Integration (Fifth Priority)
 Fetch work item details:
@@ -122,10 +130,21 @@ Keep session and issue in sync:
 - [ ] Test session creation workflow
 - [ ] Handle existing session files (don't overwrite)
 
-### Phase 4: Jira Integration (via imdone.io)
+### Phase 4: Jira Integration (Dual Approach)
+**Primary Method (Mandatory):**
+- [ ] Create Jira REST API integration
+- [ ] Use Jira REST API v3 (`/rest/api/3/issue/{issueKey}`)
+- [ ] Implement authentication (API token + email)
+- [ ] Extract fields: summary, description, status, assignee, custom fields
+- [ ] Map Jira fields → session structure
+- [ ] Handle custom fields (story points, epic link)
+- [ ] Test with real Jira issues
+- [ ] Error handling (auth, not found, API errors)
+
+**Optional Method (imdone CLI - for projects like MCADS):**
 - [ ] Install imdone CLI (`npm i -g imdone-cli`)
 - [ ] Research imdone CLI usage and configuration
-- [ ] Create skill to detect Jira issues (PROJ-123 pattern)
+- [ ] Detect if project uses imdone (`.imdone/config.yml` exists)
 - [ ] Use `imdone pull` to fetch issues as markdown
 - [ ] Parse imdone markdown format:
   - `backlog/[KEY]-[SUMMARY]/issue-[KEY].md`
@@ -133,9 +152,8 @@ Keep session and issue in sync:
   - Extract body (description/acceptance criteria)
   - Handle comments file (`comments-[KEY].md`)
 - [ ] Map imdone markdown → session structure
-- [ ] Handle `.imdone/config.yml` (JQL configuration)
 - [ ] Implement bidirectional sync via `imdone push`
-- [ ] Test with real Jira issues
+- [ ] Test with MCADS project (if available)
 - [ ] Error handling (auth, pull limits on free tier)
 
 ### Phase 5: Azure DevOps Integration
@@ -167,7 +185,8 @@ Keep session and issue in sync:
 
 ## Dependencies
 - GitHub CLI (`gh`) - **AVAILABLE** (already in system)
-- Jira CLI or REST API access - **UNKNOWN** (may need configuration)
+- Jira REST API access - **REQUIRED** (API token + email for authentication)
+- imdone CLI - **OPTIONAL** (for projects using imdone like MCADS)
 - Azure CLI (`az`) - **UNKNOWN** (may need installation/setup)
 - Branch metadata system (Phase 1) - **COMPLETE**
 - Session file structure - **COMPLETE**
@@ -227,6 +246,21 @@ Keep session and issue in sync:
   - Updated tools section with auto-creation
   - Updated benefits (automated, synced with work items)
 - Global context now includes work-item automation as core workflow
+
+### 2024-11-16 - Jira Integration Approach Clarified
+- **Clarification**: imdone is optional, not mandatory (used by MCADS project)
+- **Updated approach**: Dual Jira integration methods:
+  - **Primary (Mandatory)**: Direct Jira REST API v3
+  - **Optional (Enhancement)**: imdone CLI for projects using it
+- Updated `context/work-items.yml`:
+  - Platform definition shows both methods (primary + optional)
+  - Mapping section shows REST API fields + imdone markdown fields
+  - Configuration shows both methods with `imdone.enabled: false` by default
+- Updated session file Phase 4 implementation plan:
+  - Split into mandatory REST API integration + optional imdone integration
+  - Added tasks for both approaches
+  - imdone detection: check for `.imdone/config.yml` existence
+- Updated Dependencies section: Jira REST API (required), imdone CLI (optional)
 
 **Next**: Begin Phase 1 (Issue Detection Skill) implementation
 
