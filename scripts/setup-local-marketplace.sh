@@ -146,7 +146,6 @@ EOF
 echo -e "${GREEN}✓ Updated marketplace.json${NC}"
 echo -e "  Version: $PLUGIN_VERSION"
 echo -e "  Location: $MARKETPLACE_MANIFEST"
-
 echo
 
 # Step 6: Display usage instructions
