@@ -96,7 +96,7 @@ fi
 echo -e "  Link: $PLUGIN_LINK → $PLUGIN_DIR"
 echo
 
-# Step 4: Verify symlink
+# Step 4: Verify symlink and extract version
 echo -e "${YELLOW}4. Verifying installation...${NC}"
 
 if [ -L "$PLUGIN_LINK" ] && [ -d "$PLUGIN_LINK" ]; then
@@ -117,7 +117,39 @@ fi
 
 echo
 
-# Step 5: Display usage instructions
+# Step 5: Create/update marketplace.json with current version
+echo -e "${YELLOW}5. Updating marketplace metadata...${NC}"
+
+MARKETPLACE_MANIFEST="$MARKETPLACE_DIR/.claude-plugin/marketplace.json"
+MARKETPLACE_MANIFEST_DIR="$MARKETPLACE_DIR/.claude-plugin"
+
+# Create .claude-plugin directory if it doesn't exist
+if [ ! -d "$MARKETPLACE_MANIFEST_DIR" ]; then
+    mkdir -p "$MARKETPLACE_MANIFEST_DIR"
+    echo -e "${GREEN}✓ Created marketplace manifest directory${NC}"
+fi
+
+# Create/update marketplace.json with current version
+cat > "$MARKETPLACE_MANIFEST" <<EOF
+{
+  "plugins": [
+    {
+      "name": "$PLUGIN_NAME",
+      "version": "$PLUGIN_VERSION",
+      "source": "local",
+      "path": "$PLUGIN_NAME"
+    }
+  ]
+}
+EOF
+
+echo -e "${GREEN}✓ Updated marketplace.json${NC}"
+echo -e "  Version: $PLUGIN_VERSION"
+echo -e "  Location: $MARKETPLACE_MANIFEST"
+
+echo
+
+# Step 6: Display usage instructions
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${GREEN}✓ Local marketplace setup complete!${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
