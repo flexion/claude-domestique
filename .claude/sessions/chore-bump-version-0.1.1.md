@@ -25,10 +25,34 @@ Bump plugin patch version from 0.1.0 to 0.1.1 so updated plugin (with new README
 ## Files Changed
 - `.claude-plugin/plugin.json` - Version field
 
+### 2025-11-17 - Enhanced setup-local-marketplace.sh Script
+**User request:** Update setup-local-marketplace.sh to automatically sync version from plugin.json to marketplace.json
+
+**Actions:**
+1. Modified `scripts/setup-local-marketplace.sh` to:
+   - Extract version from `.claude-plugin/plugin.json`
+   - Create/update `~/.claude/marketplaces/local/.claude-plugin/marketplace.json`
+   - Write version automatically to marketplace manifest
+   - Ensure marketplace always reflects current plugin version
+
+**New behavior:**
+- Step 4: Extract version from plugin.json
+- Step 5: Create/update marketplace.json with extracted version
+- Step 6: Display usage instructions
+
+**Result:**
+- Running `./scripts/setup-local-marketplace.sh` now automatically updates marketplace version
+- No manual editing of marketplace.json required
+- Version always in sync between plugin and marketplace
+
+## Files Changed
+- `.claude-plugin/plugin.json` - Version field (0.1.0 → 0.1.1)
+- `scripts/setup-local-marketplace.sh` - Auto-sync version to marketplace
+
 ## Next Steps
-1. Update plugin.json version to 0.1.1
-2. Commit with message: "chore - bump version to 0.1.1"
+1. Test the updated script
+2. Commit changes (version bump + script enhancement)
 3. Push branch
 4. Create PR
 5. Merge PR
-6. User can install updated plugin in other projects
+6. User can run setup-local-marketplace.sh to sync version automatically
