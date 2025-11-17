@@ -52,7 +52,7 @@ After installation, initialize the plugin in your project:
 ### Step 1: Run Plugin Init
 
 ```bash
-claude /domestique-init
+claude /init
 ```
 
 This command will:
@@ -140,7 +140,7 @@ cp -r .claude .claude-bootstrap-backup
 claude plugin install claude-domestique
 
 # 3. Run plugin init
-claude /domestique-init
+claude /init
 
 # 4. Copy session files
 cp -r .claude-bootstrap-backup/sessions/* .claude/sessions/
@@ -201,7 +201,7 @@ claude /fetch-issue                    # Fetch work item
 claude /sync-work-item                 # Sync session ↔ work item
 
 # Plugin management
-claude /domestique-init                # Re-initialize config
+claude /init                # Re-initialize config
 ```
 
 ### Test Skills (Auto-Invoke)
@@ -322,7 +322,7 @@ cat .claude/config.json
 jq . .claude/config.json
 
 # Re-initialize if corrupted
-claude /domestique-init
+claude /init
 ```
 
 ---

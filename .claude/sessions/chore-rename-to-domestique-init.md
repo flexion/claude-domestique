@@ -1,4 +1,4 @@
-# Session: Rename /plugin-init to /domestique-init
+# Session: Rename /plugin-init to /init
 
 **Type:** Chore
 **Branch:** chore/rename-to-domestique-init
@@ -7,7 +7,7 @@
 
 ## Objective
 
-Rename the `/plugin-init` command to `/domestique-init` to better align with the project's identity and branding. The name "domestique-init" better reflects the plugin's purpose as "Claude Domestique."
+Rename the `/plugin-init` command to `/init` to better align with the project's identity and branding. The name "domestique-init" better reflects the plugin's purpose as "Claude Domestique."
 
 ## Context
 
@@ -15,7 +15,7 @@ The command was originally named `/plugin-init` during initial development (feat
 
 ## Scope
 
-1. Rename command file: `commands/plugin-init.md` → `commands/domestique-init.md`
+1. Rename command file: `commands/plugin-init.md` → `commands/init.md`
 2. Update all references across the codebase:
    - Documentation files
    - Session files
@@ -27,7 +27,7 @@ The command was originally named `/plugin-init` during initial development (feat
 ## Implementation Plan
 
 ### Phase 1: Rename Command File
-- Move `commands/plugin-init.md` to `commands/domestique-init.md`
+- Move `commands/plugin-init.md` to `commands/init.md`
 - Update all internal references within the command file
 
 ### Phase 2: Update References
@@ -66,7 +66,7 @@ Based on grep results, these files contain references:
 
 ### Files Updated
 
-1. **Command File Renamed**: `commands/plugin-init.md` → `commands/domestique-init.md`
+1. **Command File Renamed**: `commands/plugin-init.md` → `commands/init.md`
 2. **Documentation Updated**:
    - `docs/installation.md` - All 4 references
    - `docs/testing/phase-2-testing-guide.md` - All 8 references
@@ -93,4 +93,4 @@ Total files modified: 14 files
 
 ### Method
 
-Used `sed -i '' 's/plugin-init/domestique-init/g'` for bulk replacement across all files.
+Used `sed -i '' 's/plugin-init/init/g'` for bulk replacement across all files.

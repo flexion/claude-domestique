@@ -25,7 +25,7 @@ if [ ! -d ".claude" ]; then
   echo -e "${RED}✗ No .claude/ directory found${NC}"
   echo ""
   echo "This script migrates existing bootstrap .claude/ to plugin."
-  echo "No bootstrap detected. Run /domestique-init instead."
+  echo "No bootstrap detected. Run /init instead."
   echo ""
   exit 1
 fi

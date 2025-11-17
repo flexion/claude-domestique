@@ -6,7 +6,7 @@ Create comprehensive testing documentation for Phase 2 (Config System) to guide 
 ## Context
 Phase 2 is complete with all components implemented:
 - 2.1 Tech Stack Presets (typescript-node, react-typescript, java-spring)
-- 2.2 Plugin Initialization (`/domestique-init`)
+- 2.2 Plugin Initialization (`/init`)
 - 2.3 Config Reader (`scripts/read-config.sh`)
 - 2.4 Test Runner (`scripts/run-verification.sh`)
 - 2.5 Config-Aware `/check` Command
@@ -29,7 +29,7 @@ Create testing guide that documents:
 ## Testing Scope
 
 ### Components to Test
-1. `/domestique-init` command - Project initialization
+1. `/init` command - Project initialization
 2. `scripts/read-config.sh` - Config reading and merging
 3. `scripts/run-verification.sh` - Verification execution
 4. `/check` command - Config-aware checklists
@@ -42,7 +42,7 @@ Create testing guide that documents:
 
 ### Test Types
 1. **Installation** - Plugin can be installed
-2. **Initialization** - `/domestique-init` creates correct config
+2. **Initialization** - `/init` creates correct config
 3. **Config Reading** - `read-config.sh` works with generated config
 4. **Verification** - `run-verification.sh` executes commands
 5. **Command Integration** - `/check` shows correct commands
@@ -74,7 +74,7 @@ Create testing guide that documents:
 2. **Test 2: Config Reader** - 5 sub-tests covering all functionality
 3. **Test 3: Test Runner** - 5 sub-tests including actual execution
 4. **Test 4: /check Command** - Config-aware checklist verification
-5. **Test 5: /domestique-init** - Initialization and config generation
+5. **Test 5: /init** - Initialization and config generation
 6. **Test 6: End-to-End Workflow** - Complete workflow validation
 7. **Test 7: Cross-Tech-Stack** - Verify universal compatibility
 
@@ -112,7 +112,7 @@ Create testing guide that documents:
 - Verify plugin commands available
 - Check scripts are accessible
 
-### 3. Initialization Testing (`/domestique-init`)
+### 3. Initialization Testing (`/init`)
 - Test auto-detection for each tech stack
 - Test config generation
 - Test preset selection
@@ -140,7 +140,7 @@ Create testing guide that documents:
 - Test fallback when no config
 
 ### 7. End-to-End Workflow
-- Initialize project with `/domestique-init`
+- Initialize project with `/init`
 - Make code changes
 - Run `/check commit`
 - Run verification script

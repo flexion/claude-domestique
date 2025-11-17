@@ -407,7 +407,37 @@ After interactive migration completes, automatically create:
 - `README.md` - Complete rewrite explaining actual Claude Code mechanisms (717 lines)
 - `commands/init.md` - Interactive migration workflow + automatic markdown guide creation
 
+### 2025-11-17 - Pushed Branch and Created PR #33
+**Actions:**
+1. Pushed `chore/update-readme-core-purpose` branch to remote
+2. Created PR #33 with comprehensive description covering:
+   - README.md complete rewrite (mechanism-focused, execution traces)
+   - commands/init.md interactive migration workflow
+   - Automatic markdown guide creation
+   - Session file documentation
+3. Committed cleanup files (session updates, strategic docs, command rename)
+
+**PR Details:**
+- **Title:** "chore - update readme core purpose"
+- **Branch:** `chore/update-readme-core-purpose`
+- **Base:** `main`
+- **Description:** Detailed breakdown of README rewrite iterations and init command implementation
+
+**Files in final cleanup commit:**
+- Session files: Updated 5 session files with command rename references
+- Strategic docs: Updated ROADMAP.md, PROJECT-STATUS.md, CORE-PURPOSE-REVIEW.md
+- Commands: Updated check.md, deleted domestique-init.md (renamed to init.md)
+- Docs: Updated installation.md, phase-2-testing-guide.md
+- Scripts: Updated migrate-bootstrap.sh
+- Skills: Updated context-loader/SKILL.md with migration workflow
+
+**Result:**
+- All work from this chore pushed to remote
+- PR ready for review
+- Documentation complete and consistent across all files
+- Command rename fully propagated through codebase
+
 ## Next Steps
-1. Commit README + init.md changes together
+1. Merge PR #33 after review
 2. Consider adding "CLAUDE.md not needed" note to README installation section
-3. Update ROADMAP.md to reflect README completion
+3. Update ROADMAP.md to reflect README completion (if not already done in cleanup commit)

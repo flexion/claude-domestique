@@ -36,7 +36,7 @@ Deliver on 4 core purposes:
 
 **Phase 2: Config System** (PR #7, #11, #13, #15, #17, #18)
 - Tech stack presets (typescript-node, react-typescript, java-spring)
-- `/domestique-init` command with auto-detection
+- `/init` command with auto-detection
 - Config reader, verification runner
 - Config-aware commands
 
