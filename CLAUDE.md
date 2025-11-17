@@ -80,6 +80,21 @@ ROADMAP.md                        - Project direction, core purposes, what's nex
    - `.claude/tools/get-current-session.sh` (verify mapping)
    - Read `.claude/sessions/<session-file>.md` (Next Steps section)
 
+### When Executing /init Command (BLOCKING):
+1. **CREATE TODO LIST** - All 8 steps from init specification (use TodoWrite tool)
+2. **THINKING BLOCK COMMITMENT** - Before execution, commit to literal execution:
+   - Note: "I will execute steps 1-8 literally, no substitutions"
+   - No skipping based on content analysis or assumptions
+3. **STEP 7 IS MANDATORY** - If CLAUDE.md exists:
+   - MUST check existence FIRST (Step 7.1)
+   - MUST create backup BEFORE reading content (Step 7.2)
+   - MUST verify backup created (Step 7.2 verification)
+   - MUST run interactive prompts (Step 7.3)
+   - NEVER skip based on file content interpretation
+4. **VERIFY EACH STEP** - Run verification command after each step
+5. **MARK COMPLETE** - Only after verification passes
+6. **SELF-CHECK** - In thinking block after each step: "Did I execute this step exactly as written?"
+
 ### When User Requests Git Commit (BLOCKING):
 1. **RUN VERIFICATION** (if applicable):
    - Shell scripts changed: `shellcheck scripts/*.sh`

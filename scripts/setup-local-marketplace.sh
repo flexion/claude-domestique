@@ -132,12 +132,16 @@ fi
 # Create/update marketplace.json with current version
 cat > "$MARKETPLACE_MANIFEST" <<EOF
 {
+  "name": "local",
+  "owner": {
+    "name": "Local Development",
+    "email": "dev@localhost"
+  },
   "plugins": [
     {
       "name": "$PLUGIN_NAME",
       "version": "$PLUGIN_VERSION",
-      "source": "local",
-      "path": "$PLUGIN_NAME"
+      "source": "./$PLUGIN_NAME"
     }
   ]
 }

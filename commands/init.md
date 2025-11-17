@@ -23,6 +23,38 @@ Initialize a project for claude-domestique plugin usage. This command auto-detec
 
 ## Implementation
 
+### ⚠️ BLOCKING EXECUTION CHECKLIST (MANDATORY)
+
+**Before executing /init, you MUST:**
+
+1. **CREATE TODO LIST** using TodoWrite tool with these items:
+   - Check for existing .claude/ directory
+   - Detect tech stack
+   - Select preset
+   - Generate configuration
+   - Create directory structure
+   - Validate configuration
+   - **Backup and migrate CLAUDE.md (if exists) - DO NOT SKIP**
+   - Display summary
+
+2. **COMMIT** to executing steps 1-8 sequentially WITHOUT interpretation
+   - Use thinking block to note: "I will execute steps 1-8 literally, no substitutions"
+   - Each step must be executed EXACTLY as written
+   - NO skipping based on content analysis or assumptions
+
+3. **MARK COMPLETE** only after verification command confirms success
+   - Run verification command after each step
+   - Check result in thinking block
+   - If verification fails: STOP and correct before proceeding
+
+**CRITICAL:** Step 7 (CLAUDE.md backup) is MANDATORY if CLAUDE.md exists. You MUST:
+- Create backup FIRST (before reading content)
+- Verify backup created
+- Run interactive prompts
+- NEVER skip based on file content interpretation
+
+---
+
 When the user invokes `/init`, follow these steps:
 
 ### Step 1: Check for Existing .claude/ Directory
@@ -231,25 +263,82 @@ If validation fails:
 - Ask user to review config manually
 - Do not proceed
 
-### Step 7: Migrate CLAUDE.md and README.md to Context
+### Step 7: Backup and Migrate CLAUDE.md (MANDATORY - DO NOT SKIP)
+
+**⚠️ BLOCKING REQUIREMENT:** If CLAUDE.md exists, backup MUST occur before proceeding.
+
+**DO NOT SKIP THIS STEP based on:**
+- Content analysis ("it's just plugin instructions")
+- Assumptions ("backup not needed")
+- Interpretation ("content can be recreated")
+
+**Verification-First Approach:**
+
+#### Step 7.1: Check Existence (REQUIRED - DO NOT SKIP)
+
+```bash
+# MANDATORY: Run this check FIRST (before reading file content)
+if [ -f "CLAUDE.md" ]; then
+  echo "✓ CLAUDE.md EXISTS - BACKUP REQUIRED"
+  CLAUDE_MD_EXISTS=true
+else
+  echo "✓ CLAUDE.md NOT FOUND - SKIP TO STEP 8"
+  CLAUDE_MD_EXISTS=false
+fi
+```
+
+**Autonomous Verification (REQUIRED):**
+```bash
+# YOU MUST run this verification command:
+ls -la CLAUDE.md 2>/dev/null && echo "VERIFICATION: CLAUDE.md exists" || echo "VERIFICATION: CLAUDE.md not found"
+```
+
+**Self-Check (in thinking block):**
+- Did I run the existence check? (yes/no)
+- Did I run the verification command? (yes/no)
+- If either NO: STOP and correct now
+
+---
+
+#### Step 7.2: Create Backup (BLOCKING - MUST COMPLETE IF CLAUDE.md EXISTS)
+
+**IF CLAUDE_MD_EXISTS=true, execute ALL substeps below (NO EXCEPTIONS):**
+
+```bash
+# BLOCKING: Create timestamped backup
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+cp CLAUDE.md "CLAUDE.md.backup-${TIMESTAMP}"
+echo "✓ Backed up CLAUDE.md to CLAUDE.md.backup-${TIMESTAMP}"
+```
+
+**Autonomous Verification (REQUIRED):**
+```bash
+# YOU MUST run this verification command:
+if [ -f "CLAUDE.md.backup-${TIMESTAMP}" ]; then
+  echo "✓ VERIFIED: Backup created at CLAUDE.md.backup-${TIMESTAMP}"
+else
+  echo "✗ FAILED: Backup not created - ABORT INIT"
+  exit 1
+fi
+```
+
+**Self-Check (in thinking block):**
+- Did I create a backup? (yes/no)
+- Did I verify it exists? (yes/no)
+- Did the verification command pass? (yes/no)
+- If any NO: STOP and correct now
+
+---
+
+#### Step 7.3: Interactive Migration (REQUIRED IF CLAUDE.md EXISTS)
 
 **Interactive migration of existing documentation into .claude/context/ files.**
 
 The plugin's context-loader skill automatically loads files from `.claude/context/` at session start and periodic refresh. This step helps migrate valuable content from CLAUDE.md and README.md into this structure.
 
 ```bash
-TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 MIGRATE_NEEDED=false
-
-# Check for CLAUDE.md
-if [ -f "CLAUDE.md" ]; then
-  cp CLAUDE.md "CLAUDE.md.backup-${TIMESTAMP}"
-  echo "✓ Backed up CLAUDE.md to CLAUDE.md.backup-${TIMESTAMP}"
-  MIGRATE_NEEDED=true
-  HAS_CLAUDE_MD=true
-else
-  HAS_CLAUDE_MD=false
-fi
+HAS_CLAUDE_MD=$CLAUDE_MD_EXISTS  # From Step 7.1
 
 # Check for README.md
 if [ -f "README.md" ]; then
@@ -1090,6 +1179,26 @@ rollback: terraform destroy → redeploy-previous
 ```
 
 **Result:** Plugin core values + your project-specific context, no duplication.
+
+---
+
+#### Post-Step 7 Verification (REQUIRED)
+
+**YOU MUST verify in thinking block:**
+
+- [ ] Ran existence check (Step 7.1)
+- [ ] Ran verification command for existence check
+- [ ] IF CLAUDE.md existed:
+  - [ ] Created backup (Step 7.2)
+  - [ ] Verified backup file exists
+  - [ ] Completed interactive prompts (Step 7.3)
+- [ ] IF CLAUDE.md did not exist:
+  - [ ] Skipped to Step 8 (correct behavior)
+
+**Self-Check Question:**
+Did I skip Step 7.2 or 7.3 based on content analysis? If YES: FAILED - go back and execute literally.
+
+---
 
 ### Step 8: Display Summary
 
