@@ -64,6 +64,17 @@ Deliver on 4 core purposes:
 
 ### Polish & Migration 📦 FUTURE
 
+**Phase 3D: /init Enforcement** ✅ COMPLETE (Feature #35, v0.1.2)
+- **Goal**: Prevent drift in /init execution, especially CLAUDE.md backup step
+- **Deliverables**:
+  - BLOCKING execution checklist with TodoWrite requirement
+  - Step 7 rewritten with verification-first approach (check → backup → verify → migrate)
+  - DO NOT SKIP warnings and BLOCKING keywords
+  - Autonomous verification commands (REQUIRED for each step)
+  - Self-check requirements in thinking blocks
+  - CLAUDE.md execution checklist for /init pattern
+- **Impact**: LLM cannot skip Step 7 backup based on content interpretation. Verification-first prevents assumptions.
+
 **Phase 4: Additional Hooks**
 - Pre-PR verification, prompt-submit pattern matching
 
@@ -77,9 +88,9 @@ Deliver on 4 core purposes:
 
 ## Current Focus
 
-**Last Completed**: Phase 3B - Session Enforcement (PRs #25-28)
-**Achievement**: 3 of 4 core purposes now DELIVERED (Inject Values, Prevent Drift, Share Knowledge)
-**Next Decision**: Phase 3C (Automate Shit-Work) OR Phase 4 (Additional Hooks) OR production testing/refinement
+**Last Completed**: Feature #35 - /init Command Enforcement (v0.1.2)
+**Achievement**: 3 of 4 core purposes DELIVERED + improved /init reliability
+**Next Decision**: Integration testing of #35 OR Phase 3C (Automate Shit-Work) OR Phase 4 (Additional Hooks)
 
 ---
 
@@ -98,3 +109,5 @@ Deliver on 4 core purposes:
 **2024-11-16**: Pivoted from infrastructure focus to core purpose delivery. Reorganized phases around 4 core purposes. Prioritized value injection (3A) → enforcement (3B) → automation (3C).
 
 **2024-11-16**: Renamed IMPLEMENTATION-PLAN.md → ROADMAP.md. Made succinct, living document evaluated each feature.
+
+**2024-11-17**: Added /init enforcement (v0.1.2, #35). Verification-first approach prevents CLAUDE.md backup skipping. BLOCKING keywords + autonomous verification + self-checks ensure literal execution.
