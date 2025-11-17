@@ -135,7 +135,34 @@ Add enforcement mechanisms to the `/init` command to prevent drift where steps (
 
 **Next:**
 - Integration test in test project (recommended but not blocking for commit)
-- Update ROADMAP.md
+- Commit changes
+
+### 2024-11-17 - Work Item Detection Added
+**Actions:**
+1. Added Step 2.5 "Detect Work Item System" to commands/init.md:
+   - GitHub detection (.github directory or gh CLI)
+   - Azure DevOps detection (.azuredevops, azure-pipelines.yml, or az CLI)
+   - Jira detection (.jira file or git config)
+   - Interactive confirmation with user
+   - Branch pattern configuration (preset options per system)
+   - Commit format configuration
+   - Autonomous verification
+2. Updated BLOCKING checklist to include work item detection step
+3. Updated Step 4 (Generate Configuration) to include workItems section with detected values
+4. Updated example configurations to show workItems instead of deprecated vcs section
+5. Updated GitHub issue #35 to include work item detection scope
+
+**Key Decisions:**
+1. Detect work item system early (Step 2.5, right after tech stack)
+2. Provide preset branch patterns per system (GitHub: issue/feature-N/desc, Azure: N-desc, Jira: KEY-N-desc)
+3. Allow user to confirm/override detection
+4. Store in workItems section (replacing deprecated vcs)
+
+**Files Modified:**
+- commands/init.md (Step 2.5 added, Step 4 updated, checklist updated)
+- GitHub issue #35 (scope expanded)
+
+**Next:**
 - Commit changes
 
 ## Key Decisions

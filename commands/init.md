@@ -30,6 +30,7 @@ Initialize a project for claude-domestique plugin usage. This command auto-detec
 1. **CREATE TODO LIST** using TodoWrite tool with these items:
    - Check for existing .claude/ directory
    - Detect tech stack
+   - **Detect work item system - DO NOT SKIP**
    - Select preset
    - Generate configuration
    - Create directory structure
@@ -149,6 +150,210 @@ if [ -f "Cargo.toml" ]; then
 fi
 ```
 
+### Step 2.5: Detect Work Item System
+
+**⚠️ MANDATORY:** Detect and confirm work item tracking system configuration.
+
+Analyze project to determine work item system (GitHub, Azure DevOps, Jira, etc.):
+
+**GitHub Detection:**
+```bash
+WORK_ITEM_SYSTEM=""
+
+# Check for .github directory
+if [ -d ".github" ]; then
+  WORK_ITEM_SYSTEM="github"
+  echo "✓ Detected GitHub (.github/ directory found)"
+fi
+
+# Check if gh CLI is configured for this repo
+if [ -z "$WORK_ITEM_SYSTEM" ] && gh repo view &>/dev/null; then
+  WORK_ITEM_SYSTEM="github"
+  echo "✓ Detected GitHub (gh CLI configured)"
+fi
+```
+
+**Azure DevOps Detection:**
+```bash
+# Check for .azuredevops or azure-pipelines.yml
+if [ -d ".azuredevops" ] || [ -f "azure-pipelines.yml" ]; then
+  WORK_ITEM_SYSTEM="azure-devops"
+  echo "✓ Detected Azure DevOps (project files found)"
+fi
+
+# Check if az CLI is configured
+if [ -z "$WORK_ITEM_SYSTEM" ] && az devops project show &>/dev/null 2>&1; then
+  WORK_ITEM_SYSTEM="azure-devops"
+  echo "✓ Detected Azure DevOps (az CLI configured)"
+fi
+```
+
+**Jira Detection:**
+```bash
+# Check for .jira file or git config
+if [ -f ".jira" ]; then
+  WORK_ITEM_SYSTEM="jira"
+  echo "✓ Detected Jira (.jira file found)"
+fi
+
+if [ -z "$WORK_ITEM_SYSTEM" ] && git config --get jira.url &>/dev/null; then
+  WORK_ITEM_SYSTEM="jira"
+  echo "✓ Detected Jira (git config found)"
+fi
+```
+
+**Interactive Confirmation:**
+
+If system detected:
+```bash
+if [ -n "$WORK_ITEM_SYSTEM" ]; then
+  echo ""
+  echo "Detected work item system: $WORK_ITEM_SYSTEM"
+  read -p "Is this correct? (Y/n): " CONFIRM_SYSTEM
+
+  if [ "$CONFIRM_SYSTEM" = "n" ] || [ "$CONFIRM_SYSTEM" = "N" ]; then
+    WORK_ITEM_SYSTEM=""  # User rejected, ask manually
+  fi
+fi
+```
+
+If not detected or user rejected:
+```bash
+if [ -z "$WORK_ITEM_SYSTEM" ]; then
+  echo ""
+  echo "Which work item tracking system do you use?"
+  echo "  1. GitHub Issues"
+  echo "  2. Azure DevOps"
+  echo "  3. Jira"
+  echo "  4. None (chores only)"
+  echo ""
+  read -p "Select (1-4): " SYSTEM_CHOICE
+
+  case $SYSTEM_CHOICE in
+    1) WORK_ITEM_SYSTEM="github" ;;
+    2) WORK_ITEM_SYSTEM="azure-devops" ;;
+    3) WORK_ITEM_SYSTEM="jira" ;;
+    4) WORK_ITEM_SYSTEM="none" ;;
+    *)
+      echo "Invalid choice. Defaulting to 'none'"
+      WORK_ITEM_SYSTEM="none"
+      ;;
+  esac
+fi
+```
+
+**Branch Pattern Configuration:**
+
+```bash
+if [ "$WORK_ITEM_SYSTEM" != "none" ]; then
+  echo ""
+  echo "What branch pattern do you use for features?"
+
+  case $WORK_ITEM_SYSTEM in
+    github)
+      echo "  1. issue/feature-<N>/<desc>  (recommended for GitHub)"
+      echo "  2. feature/<N>-<desc>"
+      echo "  3. <N>-<desc>"
+      echo "  4. Custom"
+      DEFAULT_FEATURE_PATTERN="issue/feature-<N>/<desc>"
+      DEFAULT_COMMIT_FORMAT="#<N> - <desc>"
+      ;;
+    azure-devops)
+      echo "  1. <N>-<desc>  (recommended for Azure DevOps)"
+      echo "  2. feature/<N>-<desc>"
+      echo "  3. user/<username>/<N>-<desc>"
+      echo "  4. Custom"
+      DEFAULT_FEATURE_PATTERN="<N>-<desc>"
+      DEFAULT_COMMIT_FORMAT="<N> - <desc>"
+      ;;
+    jira)
+      echo "  1. <KEY>-<N>-<desc>  (e.g., PROJ-123-description)"
+      echo "  2. feature/<KEY>-<N>-<desc>"
+      echo "  3. Custom"
+      DEFAULT_FEATURE_PATTERN="<KEY>-<N>-<desc>"
+      DEFAULT_COMMIT_FORMAT="<KEY>-<N> - <desc>"
+      ;;
+  esac
+
+  echo ""
+  read -p "Select (1-4): " PATTERN_CHOICE
+
+  case $PATTERN_CHOICE in
+    1) FEATURE_PATTERN="$DEFAULT_FEATURE_PATTERN" ;;
+    2)
+      case $WORK_ITEM_SYSTEM in
+        github) FEATURE_PATTERN="feature/<N>-<desc>" ;;
+        azure-devops) FEATURE_PATTERN="feature/<N>-<desc>" ;;
+        jira) FEATURE_PATTERN="feature/<KEY>-<N>-<desc>" ;;
+      esac
+      ;;
+    3)
+      case $WORK_ITEM_SYSTEM in
+        github) FEATURE_PATTERN="<N>-<desc>" ;;
+        azure-devops) FEATURE_PATTERN="user/<username>/<N>-<desc>" ;;
+        jira) FEATURE_PATTERN="<KEY>-<N>-<desc>" ;;
+      esac
+      ;;
+    4)
+      read -p "Enter custom pattern: " FEATURE_PATTERN
+      ;;
+    *)
+      echo "Invalid choice. Using recommended pattern."
+      FEATURE_PATTERN="$DEFAULT_FEATURE_PATTERN"
+      ;;
+  esac
+
+  # Set commit format based on pattern
+  if echo "$FEATURE_PATTERN" | grep -q "issue/feature"; then
+    COMMIT_FORMAT="#<N> - <desc>"
+  elif echo "$FEATURE_PATTERN" | grep -q "<KEY>"; then
+    COMMIT_FORMAT="<KEY>-<N> - <desc>"
+  else
+    COMMIT_FORMAT="<N> - <desc>"
+  fi
+
+  echo ""
+  echo "Branch pattern: $FEATURE_PATTERN"
+  echo "Commit format: $COMMIT_FORMAT"
+else
+  # No work item system - chores only
+  FEATURE_PATTERN="chore/<desc>"
+  COMMIT_FORMAT="chore - <desc>"
+  echo ""
+  echo "No work item system configured (chores only)"
+fi
+
+# Store for config generation
+CHORE_PATTERN="chore/<desc>"
+CHORE_COMMIT_FORMAT="chore - <desc>"
+```
+
+**Autonomous Verification (REQUIRED):**
+```bash
+# YOU MUST verify:
+echo ""
+echo "Work Item Configuration:"
+echo "  System: $WORK_ITEM_SYSTEM"
+echo "  Feature branch: $FEATURE_PATTERN"
+echo "  Feature commit: $COMMIT_FORMAT"
+echo "  Chore branch: $CHORE_PATTERN"
+echo "  Chore commit: $CHORE_COMMIT_FORMAT"
+echo ""
+read -p "Is this configuration correct? (Y/n): " CONFIRM_CONFIG
+
+if [ "$CONFIRM_CONFIG" = "n" ] || [ "$CONFIRM_CONFIG" = "N" ]; then
+  echo "ERROR: Configuration rejected. Please restart /init"
+  exit 1
+fi
+```
+
+**Self-Check (in thinking block):**
+- Did I detect work item system? (yes/no)
+- Did I confirm with user? (yes/no)
+- Did I configure branch patterns? (yes/no)
+- Did I run verification? (yes/no)
+- If any NO: STOP and correct now
+
 ### Step 3: Select Preset
 
 Based on detected tech stack, map to preset:
@@ -187,6 +392,7 @@ Create `.claude/config.json` by merging:
 2. Detected runtime version
 3. Detected framework versions
 4. Project name (from directory name or package.json)
+5. **Work item system configuration (from Step 2.5)**
 
 **Example Generation:**
 ```json
@@ -196,9 +402,20 @@ Create `.claude/config.json` by merging:
   "name": "my-project",
   "runtime": {
     "type": "node",
-    "version": "20.x",           // Detected
+    "version": "20.x",           // Detected (Step 2)
     "versionFile": ".nvmrc",
     "versionManager": "nvm"
+  },
+  "workItems": {
+    "system": "github",          // Detected (Step 2.5)
+    "branchPatterns": {
+      "feature": "issue/feature-<N>/<desc>",  // Configured (Step 2.5)
+      "chore": "chore/<desc>"
+    },
+    "commitFormat": {
+      "feature": "#<N> - <desc>",             // Configured (Step 2.5)
+      "chore": "chore - <desc>"
+    }
   }
 }
 ```
@@ -209,31 +426,25 @@ Create minimal config:
 {
   "$schema": "../schemas/config.schema.json",
   "name": "my-project",
-  "vcs": {
-    "type": "git",
-    "git": {
-      "defaultBranch": "main",
-      "branchPatterns": {
-        "feature": "issue/feature-<N>/<desc>",
-        "chore": "chore/<desc>"
-      },
-      "commitFormat": {
-        "feature": "#<N> - <desc>",
-        "chore": "chore - <desc>"
-      },
-      "hooks": {
-        "preCommit": [],
-        "prePush": []
-      },
-      "mergeStrategy": "merge"
-    }
-  },
   "runtime": {
-    "type": "python",              // Detected
-    "version": "3.11"              // Detected
+    "type": "python",              // Detected (Step 2)
+    "version": "3.11"              // Detected (Step 2)
+  },
+  "workItems": {
+    "system": "azure-devops",      // Detected (Step 2.5)
+    "branchPatterns": {
+      "feature": "<N>-<desc>",     // Configured (Step 2.5)
+      "chore": "chore/<desc>"
+    },
+    "commitFormat": {
+      "feature": "<N> - <desc>",   // Configured (Step 2.5)
+      "chore": "chore - <desc>"
+    }
   }
 }
 ```
+
+**Note:** The deprecated `vcs` section has been replaced by the `workItems` section which handles work item tracking, branch patterns, and commit formats.
 
 ### Step 5: Create Directory Structure
 
