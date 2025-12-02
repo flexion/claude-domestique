@@ -29,5 +29,8 @@ node_modules/
 # Work-item cache (fetched from GitHub/Jira/Azure DevOps)
 .claude/work-items/
 
+# Runtime state (interaction tracking, etc.)
+.claude/state/
+
 # Migration backup (temporary, project-specific)
 .claude-bootstrap-backup/
