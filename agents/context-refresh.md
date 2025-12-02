@@ -17,7 +17,7 @@ This agent ensures context stays fresh and values remain enforced.
 
 This agent activates when:
 
-1. **Interaction threshold reached** - Interaction count hits configured interval (default: 50)
+1. **Interaction threshold reached** - Interaction count hits configured interval (default: 20)
 2. **Only during active work** - Not idle sessions
 3. **Not recently refreshed** - Skips if context refreshed within last 10 interactions
 
@@ -28,7 +28,7 @@ The agent maintains internal state:
 ```
 interaction_count: 0          # Increments each user message
 last_refresh_at: 0            # Interaction count when last refreshed
-refresh_interval: 50          # Configurable (from config.json)
+refresh_interval: 20          # Configurable (from config.json)
 refresh_enabled: true         # Configurable (from config.json)
 ```
 
@@ -43,7 +43,7 @@ Read refresh settings from `.claude/config.json`:
   "context": {
     "periodicRefresh": {
       "enabled": true,
-      "interval": 50
+      "interval": 20
     }
   }
 }
@@ -51,7 +51,7 @@ Read refresh settings from `.claude/config.json`:
 
 **Defaults (if not configured):**
 - `enabled`: true
-- `interval`: 50
+- `interval`: 20
 
 ### Step 2: Track Interactions
 
@@ -80,7 +80,7 @@ When refresh needed:
 Display refresh notification:
 
 ```
-[Periodic context refresh at interaction 50]
+[Periodic context refresh at interaction 20]
 
 Refreshing context to maintain alignment with core values...
 
@@ -95,14 +95,14 @@ Project context loaded (from .claude/context/):
 ✓ test.yml
 
 Context refreshed. Core values and project context reloaded.
-Next refresh at interaction 100.
+Next refresh at interaction 40.
 ```
 
 ## Configuration
 
 Projects control refresh behavior in `.claude/config.json`:
 
-**Enable with default interval (50):**
+**Enable with default interval (20):**
 ```json
 {
   "context": {
@@ -137,8 +137,8 @@ Projects control refresh behavior in `.claude/config.json`:
 ```
 
 **When to adjust interval:**
-- **Increase (e.g., 100)**: Stable projects, infrequent context changes
-- **Decrease (e.g., 25)**: Active context updates, strict adherence needed
+- **Increase (e.g., 50)**: Stable projects, infrequent context changes
+- **Decrease (e.g., 10)**: Active context updates, strict adherence needed
 - **Disable**: Very short sessions, context never changes
 
 ## Integration
@@ -158,13 +158,13 @@ Projects control refresh behavior in `.claude/config.json`:
 
 ### Example 1: Normal Refresh Cycle
 
-**Interaction 1-49:** Agent increments counter, no action
+**Interaction 1-19:** Agent increments counter, no action
 
-**Interaction 50:**
+**Interaction 20:**
 ```
 [Periodic context refresh triggered]
 
-Refreshing context (periodic refresh at 50 interactions)...
+Refreshing context (periodic refresh at 20 interactions)...
 
 Core context loaded (from plugin):
 ✓ README.yml - Compact YAML format guide
@@ -180,37 +180,37 @@ Project context loaded (from .claude/context/):
 Loaded 4 core + 3 project = 7 context files successfully.
 
 Context refreshed. Core values reinforced.
-Next refresh at interaction 100.
+Next refresh at interaction 40.
 ```
 
 ### Example 2: Skip (Recently Refreshed)
 
-**User manually says "refresh context" at interaction 45**
+**User manually says "refresh context" at interaction 15**
 **Context-loader skill handles it**
 
-**Interaction 50:**
+**Interaction 20:**
 ```
-[Periodic refresh skipped - context refreshed recently at interaction 45]
-Next check at interaction 55.
+[Periodic refresh skipped - context refreshed recently at interaction 15]
+Next check at interaction 25.
 ```
 
 ### Example 3: Disabled
 
 **Config has `periodicRefresh.enabled: false`**
 
-**Interaction 50:** No action, agent remains dormant
+**Interaction 20:** No action, agent remains dormant
 
 ### Example 4: Custom Interval
 
-**Config has `periodicRefresh.interval: 25`**
+**Config has `periodicRefresh.interval: 10`**
 
-**Interaction 25:**
+**Interaction 10:**
 ```
 [Periodic context refresh triggered]
 
-Refreshing context (periodic refresh at 25 interactions)...
+Refreshing context (periodic refresh at 10 interactions)...
 ...
-Next refresh at interaction 50.
+Next refresh at interaction 20.
 ```
 
 ## Error Handling
@@ -218,7 +218,7 @@ Next refresh at interaction 50.
 ### Configuration Missing
 **Scenario**: No `periodicRefresh` in config
 
-**Action**: Use defaults (enabled: true, interval: 50)
+**Action**: Use defaults (enabled: true, interval: 20)
 
 ### Context-Loader Skill Fails
 **Scenario**: Skill reports error during loading
@@ -231,7 +231,7 @@ Next refresh at interaction 50.
 ### Invalid Configuration
 **Scenario**: `interval` is not a number or is negative
 
-**Action**: Fall back to default (50), warn user
+**Action**: Fall back to default (20), warn user
 
 ## Benefits
 
