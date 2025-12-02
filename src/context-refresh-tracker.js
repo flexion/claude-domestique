@@ -125,6 +125,33 @@ function recordManualRefresh() {
   };
 }
 
+/**
+ * Get current status without modifying state (for canary display)
+ * @returns {Object} Status with interaction count and interactions until next refresh
+ */
+function getStatus() {
+  const config = readConfig();
+
+  if (!config.enabled) {
+    return { enabled: false, untilRefresh: null };
+  }
+
+  let interval = config.interval;
+  if (typeof interval !== 'number' || interval <= 0) {
+    interval = DEFAULTS.interval;
+  }
+
+  const state = readState();
+  const nextRefresh = state.last_refresh_at + interval;
+  const untilRefresh = nextRefresh - state.interaction_count;
+
+  return {
+    enabled: true,
+    interaction: state.interaction_count,
+    untilRefresh: untilRefresh
+  };
+}
+
 // CLI entry point
 if (require.main === module) {
   const args = process.argv.slice(2);
@@ -134,6 +161,9 @@ if (require.main === module) {
   switch (command) {
     case 'check':
       result = checkRefresh();
+      break;
+    case 'status':
+      result = getStatus();
       break;
     case 'reset':
       resetState();
@@ -152,6 +182,7 @@ if (require.main === module) {
 
 module.exports = {
   checkRefresh,
+  getStatus,
   readConfig,
   readState,
   writeState,

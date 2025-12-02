@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const {
   checkRefresh,
+  getStatus,
   readConfig,
   readState,
   writeState,
@@ -236,6 +237,58 @@ describe('context-refresh-tracker', () => {
       const result = checkRefresh();
       expect(result.action).toBe('REFRESH_NEEDED');
       expect(result.interaction).toBe(35);
+    });
+  });
+
+  describe('getStatus', () => {
+    test('returns correct untilRefresh at start', () => {
+      const status = getStatus();
+      expect(status.enabled).toBe(true);
+      expect(status.interaction).toBe(0);
+      expect(status.untilRefresh).toBe(DEFAULTS.interval);
+    });
+
+    test('returns decreasing untilRefresh as interactions increase', () => {
+      checkRefresh(); // count = 1
+      checkRefresh(); // count = 2
+      checkRefresh(); // count = 3
+
+      const status = getStatus();
+      expect(status.enabled).toBe(true);
+      expect(status.interaction).toBe(3);
+      expect(status.untilRefresh).toBe(DEFAULTS.interval - 3);
+    });
+
+    test('resets untilRefresh after refresh', () => {
+      // Run to refresh point
+      for (let i = 1; i <= DEFAULTS.interval; i++) {
+        checkRefresh();
+      }
+
+      const status = getStatus();
+      expect(status.untilRefresh).toBe(DEFAULTS.interval);
+    });
+
+    test('does not modify state', () => {
+      checkRefresh(); // count = 1
+      const stateBefore = readState();
+
+      getStatus();
+      getStatus();
+      getStatus();
+
+      const stateAfter = readState();
+      expect(stateAfter.interaction_count).toBe(stateBefore.interaction_count);
+    });
+
+    test('returns disabled when config disabled', () => {
+      setupConfig({
+        context: { periodicRefresh: { enabled: false } }
+      });
+
+      const status = getStatus();
+      expect(status.enabled).toBe(false);
+      expect(status.untilRefresh).toBe(null);
     });
   });
 });

@@ -184,6 +184,25 @@ Keep:
 - Hook paths are relative to plugin root
 - UserPromptSubmit fires on every user message submission
 
+### 2024-12-02 - Added Canary for Context Freshness
+**Actions:**
+1. Added `getStatus()` function to tracker:
+   - Returns current state without modifying it
+   - Provides `untilRefresh` count for canary display
+   - Handles disabled state gracefully
+2. Updated hook to output canary instruction on every response:
+   - Shows `[CANARY: Include "(N)" at the end of your response...]`
+   - N decrements with each interaction, resets after refresh
+3. Added 5 new unit tests for `getStatus()`:
+   - Correct untilRefresh at start
+   - Decreasing count as interactions increase
+   - Reset after refresh
+   - Does not modify state (read-only)
+   - Disabled state handling
+4. All 19 tests pass
+
+**Purpose:** Visible canary allows users to verify context refresh is working correctly
+
 ## Key Decisions
 
 ### Decision 1: Separation of Concerns
