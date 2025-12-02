@@ -165,6 +165,25 @@ Keep:
 - `hooks/prompt-submit/check-refresh.js`
 - `package.json`
 
+### 2024-12-02 - Registered Hook in Plugin Manifest
+**Actions:**
+1. Investigated Claude Code hook system
+   - Hooks declared in plugin.json under `hooks` field
+   - Node.js hooks supported via `#!/usr/bin/env node` shebang
+   - Hooks invoked via shell execution with JSON stdin
+   - Exit code 0 = success, exit code 2 = blocking error
+2. Added `hooks` configuration to `.claude-plugin/plugin.json`:
+   - Registered `UserPromptSubmit` hook
+   - Points to `./hooks/prompt-submit/check-refresh.js`
+3. Tested hook locally:
+   - Ran 21 interactions, confirmed refresh triggers at interaction 20
+   - Output shows refresh message with next refresh target
+
+**Key findings:**
+- Claude Code discovers hooks from plugin.json during plugin installation
+- Hook paths are relative to plugin root
+- UserPromptSubmit fires on every user message submission
+
 ## Key Decisions
 
 ### Decision 1: Separation of Concerns
@@ -194,7 +213,7 @@ Keep:
 ## Files Modified
 
 - `skills/context-loader/SKILL.md` - Removed periodic refresh, added agent invocation
-- `.claude-plugin/plugin.json` - Version bump to 0.1.3
+- `.claude-plugin/plugin.json` - Version bump to 0.1.3, added hooks configuration
 - `.gitignore` - Added `.claude/state/` for runtime state
 
 ## Next Steps

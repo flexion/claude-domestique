@@ -27,5 +27,13 @@
     "./skills/drift-detector",
     "./skills/issue-detector",
     "./skills/session-update-prompter"
-  ]
+  ],
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "type": "command",
+        "command": "./hooks/prompt-submit/check-refresh.js"
+      }
+    ]
+  }
 }
