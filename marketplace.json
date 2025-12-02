@@ -1,0 +1,11 @@
+{
+  "name": "local-dev",
+  "owner": "Local Development",
+  "plugins": [
+    {
+      "name": "claude-domestique",
+      "source": "./",
+      "version": "0.1.3"
+    }
+  ]
+}
