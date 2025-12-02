@@ -121,6 +121,11 @@ Keep:
 - agents/context-refresh.md (created)
 - skills/context-loader/SKILL.md (refactored)
 
+### 2024-12-02 - Version Bump and PR
+**Actions:**
+1. Bumped plugin version from 0.1.2 to 0.1.3
+2. Created PR for merge to main
+
 ## Key Decisions
 
 ### Decision 1: Separation of Concerns
@@ -146,6 +151,7 @@ Keep:
 ## Files Modified
 
 - `skills/context-loader/SKILL.md` - Removed periodic refresh, added agent invocation
+- `.claude-plugin/plugin.json` - Version bump to 0.1.3
 
 ## Next Steps
 1. Integration test in test project
