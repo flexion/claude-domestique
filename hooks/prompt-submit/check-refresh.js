@@ -69,7 +69,12 @@ Next refresh at interaction ${result.nextRefresh}.`;
       break;
 
     case 'NO_REFRESH':
-      // Silent between refreshes - no countdown clutter
+      // Show countdown to next refresh
+      const untilRefresh = result.nextRefresh - result.interaction;
+      output.hookSpecificOutput.additionalContext = `[Context Refresh: ${untilRefresh} interactions remaining]
+
+At the END of your response, include this line:
+"🔄 Context refresh in ${untilRefresh}"`;
       break;
 
     case 'DISABLED':

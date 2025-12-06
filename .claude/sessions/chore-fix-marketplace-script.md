@@ -164,9 +164,14 @@ This chore was identified when attempting to install the plugin and receiving "u
 - Updated tests (20 passing) to account for new FIRST_INTERACTION behavior
 - Key architectural insight: Skills cannot access plugin files directly; hooks are the bridge
 
+### 2025-12-06 - Visible Countdown (0.2.3)
+- Added visible countdown indicator to every response
+- On each interaction, Claude now shows: "🔄 Context refresh in N"
+- Makes the context refresh agent's presence obvious to users
+- Helps track session length and anticipate refresh points
+
 ## Next Steps
 
-1. Bump version to 0.2.2
-2. Commit and push plugin context loading fix
-3. Test plugin update in target project
-4. Create PR for this chore branch
+1. Commit and push visible countdown fix
+2. Test plugin update in target project
+3. Create PR for this chore branch
