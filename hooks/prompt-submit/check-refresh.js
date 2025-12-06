@@ -15,11 +15,10 @@ const path = require('path');
 
 // Import tracker from src directory
 const trackerPath = path.join(__dirname, '..', '..', 'src', 'context-refresh-tracker.js');
-const { checkRefresh, getStatus } = require(trackerPath);
+const { checkRefresh } = require(trackerPath);
 
 function main() {
   const result = checkRefresh();
-  const status = getStatus();
 
   // Build the hook output
   const output = {
@@ -31,32 +30,21 @@ function main() {
   switch (result.action) {
     case 'REFRESH_NEEDED':
       // Inject mandatory context refresh instruction
-      output.hookSpecificOutput.additionalContext = `[MANDATORY CONTEXT REFRESH - Interaction ${result.interaction}]
+      // Use only project-relative paths that work in any installed project
+      output.hookSpecificOutput.additionalContext = `[CONTEXT REFRESH REQUIRED - Interaction ${result.interaction}]
 
-You MUST read the following context files BEFORE responding to the user's message:
+BEFORE responding, use the Read tool to reload these project context files:
+1. .claude/context/behavior.yml
+2. .claude/context/sessions.yml
+3. .claude/context/git.yml
 
-Plugin core context (read these files):
-- context/README.yml
-- context/behavior.yml
-- context/git.yml
-- context/sessions.yml
+Then say "Context refreshed." and proceed with the user's request.
 
-Project context (read these files):
-- .claude/context/*.yml (all YAML files in this directory)
-
-After reading, briefly acknowledge the refresh: "Context refreshed at interaction ${result.interaction}."
-
-Next refresh at interaction ${result.nextRefresh}.
-
-Now proceed with the user's request.`;
+Next refresh at interaction ${result.nextRefresh}.`;
       break;
 
     case 'NO_REFRESH':
-      // Include interaction countdown as subtle context
-      if (status.enabled && status.untilRefresh !== null) {
-        output.hookSpecificOutput.additionalContext =
-          `[Context refresh in ${status.untilRefresh} interactions]`;
-      }
+      // Silent between refreshes - no countdown clutter
       break;
 
     case 'DISABLED':

@@ -125,9 +125,18 @@ This chore was identified when attempting to install the plugin and receiving "u
 - Added `"agents": "./agents"` to plugin.json
 - Updated agent documentation to reflect new architecture
 - All 19 tests still pass
+- Committed structured JSON hook fix
+
+### 2025-12-06 - Simplified Refresh Instruction
+- Identified path resolution issue: plugin paths (`context/*.yml`) won't resolve in installed projects
+- Simplified to project-relative paths only (`.claude/context/*.yml`)
+- Removed countdown clutter between refreshes (silent until refresh needed)
+- Numbered list for clarity
+- Cleaned up unused imports
+- All 19 tests still pass
 
 ## Next Steps
 
 1. Test installation via `/plugin` → Add Marketplace in a target project
-2. Commit context-refresh agent fix
+2. Commit simplified refresh instruction
 3. Create PR for this chore branch
