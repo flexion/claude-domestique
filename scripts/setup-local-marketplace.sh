@@ -2,15 +2,16 @@
 #
 # Setup Local Marketplace for claude-domestique Plugin
 #
-# This script registers the plugin directory as a local marketplace
-# in Claude Code's settings, enabling local development and testing.
+# This script prepares the plugin for local development by:
+# 1. Creating/updating .claude-plugin/marketplace.json
+# 2. Syncing version from plugin.json
+# 3. Providing instructions to add the marketplace in Claude Code
 #
 # Usage:
 #   ./scripts/setup-local-marketplace.sh
 #
-# After running:
-#   /plugin install claude-domestique@local-dev
-#   /plugin reload claude-domestique  (after making changes)
+# After running, add the marketplace in Claude Code:
+#   /plugin → Add Marketplace → enter the plugin directory path
 #
 
 set -e
@@ -26,10 +27,7 @@ NC='\033[0m' # No Color
 PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PLUGIN_NAME="claude-domestique"
 MARKETPLACE_NAME="local-dev"
-
-# Claude settings location
-CLAUDE_DIR="$HOME/.claude"
-SETTINGS_FILE="$CLAUDE_DIR/settings.local.json"
+MARKETPLACE_FILE="$PLUGIN_DIR/.claude-plugin/marketplace.json"
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${BLUE}Setting up local marketplace for $PLUGIN_NAME${NC}"
@@ -42,12 +40,6 @@ echo -e "${YELLOW}1. Verifying plugin structure...${NC}"
 if [ ! -f "$PLUGIN_DIR/.claude-plugin/plugin.json" ]; then
     echo -e "${RED}✗ Error: Plugin manifest not found${NC}"
     echo -e "${RED}  Expected: $PLUGIN_DIR/.claude-plugin/plugin.json${NC}"
-    exit 1
-fi
-
-if [ ! -f "$PLUGIN_DIR/marketplace.json" ]; then
-    echo -e "${RED}✗ Error: Marketplace manifest not found${NC}"
-    echo -e "${RED}  Expected: $PLUGIN_DIR/marketplace.json${NC}"
     exit 1
 fi
 
@@ -65,108 +57,39 @@ echo -e "  Plugin directory: $PLUGIN_DIR"
 echo -e "  Version: $PLUGIN_VERSION"
 echo
 
-# Step 2: Ensure Claude directory exists
-echo -e "${YELLOW}2. Checking Claude configuration directory...${NC}"
+# Step 2: Create/update marketplace.json
+echo -e "${YELLOW}2. Creating marketplace manifest...${NC}"
 
-if [ ! -d "$CLAUDE_DIR" ]; then
-    mkdir -p "$CLAUDE_DIR"
-    echo -e "${GREEN}✓ Created Claude directory${NC}"
-else
-    echo -e "${GREEN}✓ Claude directory exists${NC}"
-fi
-
-echo -e "  Location: $CLAUDE_DIR"
-echo
-
-# Step 3: Update settings.local.json with extraKnownMarketplaces
-echo -e "${YELLOW}3. Registering local marketplace in settings...${NC}"
-
-if [ -f "$SETTINGS_FILE" ]; then
-    # Check if jq is available for JSON manipulation
-    if command -v jq &> /dev/null; then
-        # Check if extraKnownMarketplaces exists
-        if jq -e '.extraKnownMarketplaces' "$SETTINGS_FILE" > /dev/null 2>&1; then
-            # Check if local-dev marketplace already exists
-            if jq -e ".extraKnownMarketplaces[] | select(.name == \"$MARKETPLACE_NAME\")" "$SETTINGS_FILE" > /dev/null 2>&1; then
-                # Update existing entry
-                jq --arg name "$MARKETPLACE_NAME" --arg path "$PLUGIN_DIR" \
-                    '(.extraKnownMarketplaces[] | select(.name == $name)) |= {name: $name, source: {type: "directory", path: $path}}' \
-                    "$SETTINGS_FILE" > "$SETTINGS_FILE.tmp" && mv "$SETTINGS_FILE.tmp" "$SETTINGS_FILE"
-                echo -e "${GREEN}✓ Updated existing marketplace entry${NC}"
-            else
-                # Add to existing array
-                jq --arg name "$MARKETPLACE_NAME" --arg path "$PLUGIN_DIR" \
-                    '.extraKnownMarketplaces += [{name: $name, source: {type: "directory", path: $path}}]' \
-                    "$SETTINGS_FILE" > "$SETTINGS_FILE.tmp" && mv "$SETTINGS_FILE.tmp" "$SETTINGS_FILE"
-                echo -e "${GREEN}✓ Added marketplace to existing settings${NC}"
-            fi
-        else
-            # Add extraKnownMarketplaces array
-            jq --arg name "$MARKETPLACE_NAME" --arg path "$PLUGIN_DIR" \
-                '. + {extraKnownMarketplaces: [{name: $name, source: {type: "directory", path: $path}}]}' \
-                "$SETTINGS_FILE" > "$SETTINGS_FILE.tmp" && mv "$SETTINGS_FILE.tmp" "$SETTINGS_FILE"
-            echo -e "${GREEN}✓ Added extraKnownMarketplaces to settings${NC}"
-        fi
-    else
-        echo -e "${YELLOW}⚠ jq not installed - creating new settings file${NC}"
-        echo -e "${YELLOW}  (existing settings will be backed up)${NC}"
-        cp "$SETTINGS_FILE" "$SETTINGS_FILE.backup"
-        cat > "$SETTINGS_FILE" <<EOF
+# marketplace.json must be in .claude-plugin/ directory
+# owner must be an object with name and email
+cat > "$MARKETPLACE_FILE" <<EOF
 {
-  "extraKnownMarketplaces": [
+  "name": "$MARKETPLACE_NAME",
+  "owner": {
+    "name": "Local Development",
+    "email": "dev@localhost"
+  },
+  "plugins": [
     {
-      "name": "$MARKETPLACE_NAME",
-      "source": {
-        "type": "directory",
-        "path": "$PLUGIN_DIR"
-      }
+      "name": "$PLUGIN_NAME",
+      "source": "./",
+      "version": "$PLUGIN_VERSION"
     }
   ]
 }
 EOF
-        echo -e "${GREEN}✓ Created new settings file (backup at $SETTINGS_FILE.backup)${NC}"
-    fi
-else
-    # Create new settings file
-    cat > "$SETTINGS_FILE" <<EOF
-{
-  "extraKnownMarketplaces": [
-    {
-      "name": "$MARKETPLACE_NAME",
-      "source": {
-        "type": "directory",
-        "path": "$PLUGIN_DIR"
-      }
-    }
-  ]
-}
-EOF
-    echo -e "${GREEN}✓ Created settings file${NC}"
-fi
 
-echo -e "  Settings: $SETTINGS_FILE"
+echo -e "${GREEN}✓ Created marketplace manifest${NC}"
+echo -e "  Location: $MARKETPLACE_FILE"
+echo -e "  Version: $PLUGIN_VERSION"
 echo
 
-# Step 4: Sync marketplace.json version with plugin.json
-echo -e "${YELLOW}4. Syncing marketplace.json version...${NC}"
+# Step 3: Clean up old configurations (if exists)
+echo -e "${YELLOW}3. Cleaning up old configurations...${NC}"
 
-if command -v jq &> /dev/null; then
-    jq --arg version "$PLUGIN_VERSION" \
-        '.plugins[0].version = $version' \
-        "$PLUGIN_DIR/marketplace.json" > "$PLUGIN_DIR/marketplace.json.tmp" && \
-        mv "$PLUGIN_DIR/marketplace.json.tmp" "$PLUGIN_DIR/marketplace.json"
-    echo -e "${GREEN}✓ Updated marketplace.json version to $PLUGIN_VERSION${NC}"
-else
-    # Fallback to sed
-    sed -i.bak "s/\"version\": *\"[^\"]*\"/\"version\": \"$PLUGIN_VERSION\"/" "$PLUGIN_DIR/marketplace.json"
-    rm -f "$PLUGIN_DIR/marketplace.json.bak"
-    echo -e "${GREEN}✓ Updated marketplace.json version to $PLUGIN_VERSION${NC}"
-fi
-echo
+CLEANUP_DONE=false
 
-# Step 5: Clean up old marketplace structure (if exists)
-echo -e "${YELLOW}5. Cleaning up old marketplace structure...${NC}"
-
+# Clean up old ~/.claude/marketplaces/local directory
 OLD_MARKETPLACE="$HOME/.claude/marketplaces/local"
 if [ -d "$OLD_MARKETPLACE" ]; then
     echo -e "${YELLOW}  Found old marketplace at: $OLD_MARKETPLACE${NC}"
@@ -175,6 +98,7 @@ if [ -d "$OLD_MARKETPLACE" ]; then
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         rm -rf "$OLD_MARKETPLACE"
         echo -e "${GREEN}✓ Removed old marketplace structure${NC}"
+        CLEANUP_DONE=true
 
         # Remove parent if empty
         if [ -d "$HOME/.claude/marketplaces" ] && [ -z "$(ls -A "$HOME/.claude/marketplaces")" ]; then
@@ -184,63 +108,91 @@ if [ -d "$OLD_MARKETPLACE" ]; then
     else
         echo -e "${YELLOW}  Skipped cleanup${NC}"
     fi
-else
-    echo -e "${GREEN}✓ No old marketplace structure found${NC}"
 fi
-echo
 
-# Step 6: Verify configuration
-echo -e "${YELLOW}6. Verifying configuration...${NC}"
-
-echo -e "  Checking settings file..."
-if [ -f "$SETTINGS_FILE" ]; then
-    if command -v jq &> /dev/null; then
-        if jq -e ".extraKnownMarketplaces[] | select(.name == \"$MARKETPLACE_NAME\")" "$SETTINGS_FILE" > /dev/null 2>&1; then
-            echo -e "${GREEN}✓ Marketplace '$MARKETPLACE_NAME' registered${NC}"
-        else
-            echo -e "${RED}✗ Marketplace not found in settings${NC}"
-            exit 1
-        fi
+# Clean up old marketplace.json at repo root (wrong location)
+OLD_MARKETPLACE_JSON="$PLUGIN_DIR/marketplace.json"
+if [ -f "$OLD_MARKETPLACE_JSON" ]; then
+    echo -e "${YELLOW}  Found old marketplace.json at repo root${NC}"
+    read -p "  Remove old marketplace.json? [y/N] " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        rm -f "$OLD_MARKETPLACE_JSON"
+        echo -e "${GREEN}✓ Removed old marketplace.json${NC}"
+        CLEANUP_DONE=true
     else
-        if grep -q "$MARKETPLACE_NAME" "$SETTINGS_FILE"; then
-            echo -e "${GREEN}✓ Marketplace '$MARKETPLACE_NAME' appears to be registered${NC}"
+        echo -e "${YELLOW}  Skipped cleanup${NC}"
+    fi
+fi
+
+# Clean up extraKnownMarketplaces from settings.json if it references local-dev
+SETTINGS_FILE="$HOME/.claude/settings.json"
+if [ -f "$SETTINGS_FILE" ] && command -v jq &> /dev/null; then
+    if jq -e ".extraKnownMarketplaces.\"$MARKETPLACE_NAME\"" "$SETTINGS_FILE" > /dev/null 2>&1; then
+        echo -e "${YELLOW}  Found extraKnownMarketplaces in settings.json${NC}"
+        read -p "  Remove extraKnownMarketplaces entry? [y/N] " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            jq "del(.extraKnownMarketplaces.\"$MARKETPLACE_NAME\")" "$SETTINGS_FILE" > "$SETTINGS_FILE.tmp"
+            # Remove extraKnownMarketplaces entirely if empty
+            if jq -e '.extraKnownMarketplaces | length == 0' "$SETTINGS_FILE.tmp" > /dev/null 2>&1; then
+                jq 'del(.extraKnownMarketplaces)' "$SETTINGS_FILE.tmp" > "$SETTINGS_FILE"
+                rm -f "$SETTINGS_FILE.tmp"
+            else
+                mv "$SETTINGS_FILE.tmp" "$SETTINGS_FILE"
+            fi
+            echo -e "${GREEN}✓ Removed extraKnownMarketplaces entry${NC}"
+            CLEANUP_DONE=true
         else
-            echo -e "${RED}✗ Marketplace not found in settings${NC}"
-            exit 1
+            echo -e "${YELLOW}  Skipped cleanup${NC}"
         fi
     fi
-else
-    echo -e "${RED}✗ Settings file not found${NC}"
-    exit 1
+fi
+
+# Clean up old settings.local.json if it only has extraKnownMarketplaces
+OLD_SETTINGS="$HOME/.claude/settings.local.json"
+if [ -f "$OLD_SETTINGS" ] && command -v jq &> /dev/null; then
+    KEY_COUNT=$(jq 'keys | length' "$OLD_SETTINGS")
+    if [ "$KEY_COUNT" = "1" ] && jq -e '.extraKnownMarketplaces' "$OLD_SETTINGS" > /dev/null 2>&1; then
+        echo -e "${YELLOW}  Found old settings.local.json with only extraKnownMarketplaces${NC}"
+        read -p "  Remove old settings.local.json? [y/N] " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            rm -f "$OLD_SETTINGS"
+            echo -e "${GREEN}✓ Removed old settings.local.json${NC}"
+            CLEANUP_DONE=true
+        else
+            echo -e "${YELLOW}  Skipped cleanup${NC}"
+        fi
+    fi
+fi
+
+if [ "$CLEANUP_DONE" = false ]; then
+    echo -e "${GREEN}✓ No old configurations found${NC}"
 fi
 echo
 
-# Step 7: Display usage instructions
+# Step 4: Display usage instructions
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${GREEN}✓ Local marketplace setup complete!${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo
-echo -e "${YELLOW}Next steps:${NC}"
+echo -e "${YELLOW}To install the plugin:${NC}"
 echo
-echo -e "  ${BLUE}1. Install plugin in a project:${NC}"
-echo -e "     cd /path/to/your/project"
-echo -e "     /plugin install $PLUGIN_NAME@$MARKETPLACE_NAME"
+echo -e "  ${BLUE}1. In Claude Code, run:${NC}"
+echo -e "     /plugin"
 echo
-echo -e "  ${BLUE}2. After making changes to the plugin:${NC}"
-echo -e "     /plugin reload $PLUGIN_NAME"
+echo -e "  ${BLUE}2. Select:${NC}"
+echo -e "     Add Marketplace"
 echo
-echo -e "  ${BLUE}3. Or reinstall if needed:${NC}"
-echo -e "     /plugin uninstall $PLUGIN_NAME"
-echo -e "     /plugin install $PLUGIN_NAME@$MARKETPLACE_NAME"
+echo -e "  ${BLUE}3. Enter the plugin directory path:${NC}"
+echo -e "     $PLUGIN_DIR"
 echo
-echo -e "${YELLOW}Development workflow:${NC}"
-echo -e "  1. Edit files in: $PLUGIN_DIR"
-echo -e "  2. Reload plugin: /plugin reload $PLUGIN_NAME"
-echo -e "  3. Test changes in your project"
-echo -e "  4. Repeat"
+echo -e "  ${BLUE}4. Select the plugin and install${NC}"
 echo
-echo -e "${YELLOW}Configuration:${NC}"
-echo -e "  Settings: $SETTINGS_FILE"
-echo -e "  Marketplace: $MARKETPLACE_NAME"
-echo -e "  Plugin: $PLUGIN_DIR"
+echo -e "${YELLOW}After making changes to the plugin:${NC}"
+echo -e "  /plugin reload $PLUGIN_NAME"
+echo
+echo -e "${YELLOW}Plugin location:${NC}"
+echo -e "  $PLUGIN_DIR"
 echo

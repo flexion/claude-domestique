@@ -31,8 +31,13 @@
   "hooks": {
     "UserPromptSubmit": [
       {
-        "type": "command",
-        "command": "./hooks/prompt-submit/check-refresh.js"
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./hooks/prompt-submit/check-refresh.js"
+          }
+        ]
       }
     ]
   }

@@ -1,6 +1,9 @@
 {
   "name": "local-dev",
-  "owner": "Local Development",
+  "owner": {
+    "name": "Local Development",
+    "email": "dev@localhost"
+  },
   "plugins": [
     {
       "name": "claude-domestique",

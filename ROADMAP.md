@@ -48,13 +48,13 @@ Deliver on 4 core purposes:
 - Updated context-loader skill for two-tier loading (plugin core → project custom)
 - **Impact**: Every project now gets core values automatically. Projects only add project-specific context.
 
-**Phase 3B: Session Enforcement** ✅ COMPLETE (PRs #25, #26, #27, #28)
+**Phase 3B: Session Enforcement** ✅ COMPLETE (PRs #25, #26, #27, #28, #39)
 - **Goal**: Actively enforce session updates, prevent drift
 - **Deliverables**:
   - Pre-commit hook using pre-commit framework (blocks commits without session updates)
   - Session update prompter skill (soft nudges after milestones)
   - Drift detector skill (monitors scope AND behavioral drift - sycophantic, research avoidance, quality shortcuts, workflow violations)
-  - Periodic refresh in context-loader (auto-reloads context every N interactions, default 50)
+  - Context-refresh agent with prompt-submit hook (auto-reloads context every N interactions, default 20). Extracted from context-loader in #38/#39 for separation of concerns.
 - **Impact**: Complete session enforcement system. Hard enforcement at commit time, soft prompts during work, dual drift monitoring (what + how), automatic context refresh in long sessions.
 
 **Phase 3C: Work-Item Automation** 📋 FUTURE
@@ -88,9 +88,9 @@ Deliver on 4 core purposes:
 
 ## Current Focus
 
-**Last Completed**: Feature #35 - /init Command Enforcement (v0.1.2)
-**Achievement**: 3 of 4 core purposes DELIVERED + improved /init reliability
-**Next Decision**: Integration testing of #35 OR Phase 3C (Automate Shit-Work) OR Phase 4 (Additional Hooks)
+**Last Completed**: Feature #38 - Context Refresh Agent (v0.1.3, PR #39)
+**Achievement**: 3 of 4 core purposes DELIVERED. Context refresh now has dedicated agent with testable Node.js implementation (19 unit tests), prompt-submit hook for tracking, and canary visibility.
+**Next Decision**: Phase 3C (Automate Shit-Work) OR Phase 4 (Additional Hooks)
 
 ---
 
@@ -111,3 +111,5 @@ Deliver on 4 core purposes:
 **2024-11-16**: Renamed IMPLEMENTATION-PLAN.md → ROADMAP.md. Made succinct, living document evaluated each feature.
 
 **2024-11-17**: Added /init enforcement (v0.1.2, #35). Verification-first approach prevents CLAUDE.md backup skipping. BLOCKING keywords + autonomous verification + self-checks ensure literal execution.
+
+**2024-12-02**: Extracted context refresh from context-loader skill into dedicated agent (#38, v0.1.3). Separation of concerns: agent handles scheduling/state, skill handles loading. Added testable Node.js implementation with 19 unit tests, prompt-submit hook for interaction tracking, and canary indicator showing countdown to next refresh. Default interval reduced from 50 to 20 for earlier drift detection.

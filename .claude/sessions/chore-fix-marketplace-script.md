@@ -4,25 +4,29 @@
 
 Fix `scripts/setup-local-marketplace.sh` to use the correct Claude Code plugin architecture instead of assumed conventions.
 
-## Problems Identified
+## Problems Identified (Original)
 
 | Issue | Script Does | Official Approach |
 |-------|-------------|-------------------|
-| Directory location | `~/.claude/marketplaces/local/` | Not a recognized location - must use `extraKnownMarketplaces` setting |
-| Manifest location | `.claude-plugin/marketplace.json` | Should be `marketplace.json` at root (`.claude-plugin/` is for plugin manifests only) |
-| `@local` notation | `/plugin install plugin@local` | Not documented - should use actual marketplace name from `name` field |
+| Directory location | `~/.claude/marketplaces/local/` | Not a recognized location |
+| Manifest location | repo root | Should be in `.claude-plugin/` |
+| Owner format | String | Must be object with `name` and `email` |
+| Registration | `extraKnownMarketplaces` | `/plugin` → Add Marketplace → directory path |
 
-## Correct Architecture
+## Correct Architecture (Revised)
 
 ### 1. Plugin manifest (already correct)
 Location: `.claude-plugin/plugin.json` - this is correct
 
-### 2. Marketplace manifest (NEW - at repo root)
-Location: `marketplace.json` at repository root
+### 2. Marketplace manifest (in .claude-plugin/)
+Location: `.claude-plugin/marketplace.json`
 ```json
 {
   "name": "local-dev",
-  "owner": "Local Development",
+  "owner": {
+    "name": "Local Development",
+    "email": "dev@localhost"
+  },
   "plugins": [
     {
       "name": "claude-domestique",
@@ -33,46 +37,41 @@ Location: `marketplace.json` at repository root
 }
 ```
 
-### 3. Register via settings
-Location: `~/.claude/settings.local.json`
-```json
-{
-  "extraKnownMarketplaces": [
-    {
-      "name": "local-dev",
-      "source": {
-        "type": "directory",
-        "path": "/Users/dpuglielli/github/flexion/claude-domestique"
-      }
-    }
-  ]
-}
-```
+Note: `owner` must be an object with `name` and `email`, not a string.
 
-### 4. Install command
-```
-/plugin install claude-domestique@local-dev
-```
+### 3. Register via /plugin command
+In Claude Code:
+1. Run `/plugin`
+2. Select "Add Marketplace"
+3. Enter the plugin directory path (e.g., `/Users/dpuglielli/github/flexion/claude-domestique`)
+
+### 4. Install
+Select the plugin from the marketplace UI and install.
 
 ## Implementation Plan
 
-- [x] Create `marketplace.json` at repo root with correct structure
+- [x] Create `.claude-plugin/marketplace.json` with correct structure
 - [x] Rewrite `scripts/setup-local-marketplace.sh` to:
-  - Create/update `~/.claude/settings.local.json` with `extraKnownMarketplaces`
-  - Register the plugin directory as a local marketplace
-  - Offer to remove the old `~/.claude/marketplaces/local/` approach
-  - Update usage instructions
+  - Create/update `.claude-plugin/marketplace.json`
+  - Sync version from plugin.json
+  - Offer cleanup of old configurations (root marketplace.json, extraKnownMarketplaces, ~/.claude/marketplaces/)
+  - Provide instructions for `/plugin` → Add Marketplace workflow
 - [x] Test script execution
 - [ ] Test installation in a target project
 
 ## Files Modified
 
 - `scripts/setup-local-marketplace.sh` - complete rewrite
-- `marketplace.json` (NEW) - created at repo root
+- `.claude-plugin/marketplace.json` (NEW) - marketplace manifest
+- `.claude-plugin/plugin.json` - (check for changes)
+- `marketplace.json` (DELETED) - moved to .claude-plugin/
 
-## Files to Clean Up (manually)
+## Files to Clean Up (script handles interactively)
 
-- `~/.claude/marketplaces/local/` - old approach, can be removed
+- `marketplace.json` at repo root - old location
+- `~/.claude/marketplaces/local/` - old approach
+- `~/.claude/settings.local.json` - if only contains extraKnownMarketplaces
+- `extraKnownMarketplaces` in `~/.claude/settings.json`
 
 ## Context
 
@@ -85,7 +84,7 @@ This chore was identified when attempting to install the plugin and receiving "u
 - Documented correct architecture based on Claude Code plugin system
 - Created implementation plan
 
-### 2025-12-02 - Implementation Complete
+### 2025-12-02 - Implementation Complete (First Attempt)
 - Created `marketplace.json` at repo root with correct structure
 - Rewrote `scripts/setup-local-marketplace.sh`:
   - Now registers marketplace via `extraKnownMarketplaces` in `~/.claude/settings.local.json`
@@ -96,7 +95,20 @@ This chore was identified when attempting to install the plugin and receiving "u
 - Passed shellcheck validation
 - Tested script execution successfully
 
+### 2025-12-06 - Architecture Pivot
+- Discovered correct approach differs from initial implementation:
+  - Marketplace manifest belongs in `.claude-plugin/`, not repo root
+  - `owner` must be object `{"name": "...", "email": "..."}`, not string
+  - Registration via `/plugin` → Add Marketplace → directory path, not `extraKnownMarketplaces`
+- Rewrote script with correct approach:
+  - Creates `.claude-plugin/marketplace.json` with proper owner format
+  - Provides instructions for `/plugin` → Add Marketplace workflow
+  - Offers cleanup of old configurations (root marketplace.json, extraKnownMarketplaces, etc.)
+- Updated ROADMAP.md to reflect #38 completion (context-refresh agent)
+- Updated session documentation to match current implementation
+
 ## Next Steps
 
-1. Test `/plugin install claude-domestique@local-dev` in a target project
-2. Commit changes
+1. Test installation via `/plugin` → Add Marketplace in a target project
+2. Run shellcheck on updated script
+3. Commit changes
