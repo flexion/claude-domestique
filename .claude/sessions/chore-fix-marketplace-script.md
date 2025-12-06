@@ -143,7 +143,17 @@ This chore was identified when attempting to install the plugin and receiving "u
   - Agent registration in plugin manifest
   - Simplified refresh instruction with project-relative paths
 
+### 2025-12-06 - Plugin Installation Fixes (0.2.1)
+- Fixed plugin validation errors discovered during installation in target project:
+  - **agents field**: Changed from `"agents": "./agents"` (directory) to `"agents": ["./agents/context-refresh.md"]` (array of .md files)
+  - **hook path**: Changed from `./hooks/prompt-submit/check-refresh.js` to `${CLAUDE_PLUGIN_ROOT}/hooks/prompt-submit/check-refresh.js` for cross-project resolution
+- Bumped version to 0.2.1 in plugin.json and marketplace.json
+- Key learnings:
+  - Plugin `agents` field must be array of `.md` file paths, not a directory
+  - Hook command paths must use `${CLAUDE_PLUGIN_ROOT}` environment variable to resolve correctly when plugin is installed in other projects
+
 ## Next Steps
 
-1. Test installation via `/plugin` → Add Marketplace in a target project
-2. Create PR for this chore branch
+1. Commit and push 0.2.1 fixes
+2. Test plugin update in target project
+3. Create PR for this chore branch

@@ -1,6 +1,6 @@
 {
   "name": "claude-domestique",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Your strategic coding partner - workflow management, skeptical assessment, and persistent memory. Like a cycling domestique: carries the water, stays focused on goals, handles the unglamorous work.",
   "author": {
     "name": "David Puglielli",
@@ -22,7 +22,9 @@
     "react"
   ],
   "commands": "./commands",
-  "agents": "./agents",
+  "agents": [
+    "./agents/context-refresh.md"
+  ],
   "skills": [
     "./skills/context-loader",
     "./skills/drift-detector",
@@ -36,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "./hooks/prompt-submit/check-refresh.js"
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/prompt-submit/check-refresh.js"
           }
         ]
       }
