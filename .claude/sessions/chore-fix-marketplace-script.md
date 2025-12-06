@@ -152,8 +152,21 @@ This chore was identified when attempting to install the plugin and receiving "u
   - Plugin `agents` field must be array of `.md` file paths, not a directory
   - Hook command paths must use `${CLAUDE_PLUGIN_ROOT}` environment variable to resolve correctly when plugin is installed in other projects
 
+### 2025-12-06 - Plugin Context Loading (0.2.2)
+- Discovered: Plugin's `context/` files not being loaded in target projects
+- Root cause: Skills don't have access to `${CLAUDE_PLUGIN_ROOT}` - only hooks do
+- Solution: Extended the prompt-submit hook to inject plugin context paths
+- Implementation:
+  - Added `FIRST_INTERACTION` action to tracker (triggers on first user message)
+  - Hook now uses `${CLAUDE_PLUGIN_ROOT}` to construct absolute paths to `context/` directory
+  - On first interaction: instructs Claude to read ALL files in plugin `context/` directory
+  - On periodic refresh: instructs Claude to read both plugin and project context directories
+- Updated tests (20 passing) to account for new FIRST_INTERACTION behavior
+- Key architectural insight: Skills cannot access plugin files directly; hooks are the bridge
+
 ## Next Steps
 
-1. Commit and push 0.2.1 fixes
-2. Test plugin update in target project
-3. Create PR for this chore branch
+1. Bump version to 0.2.2
+2. Commit and push plugin context loading fix
+3. Test plugin update in target project
+4. Create PR for this chore branch

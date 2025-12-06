@@ -80,7 +80,19 @@ function checkRefresh() {
   }
 
   const state = readState();
+  const wasFirstInteraction = state.interaction_count === 0;
   state.interaction_count++;
+
+  // First interaction - load initial context
+  if (wasFirstInteraction) {
+    state.last_refresh_at = state.interaction_count;
+    writeState(state);
+    return {
+      action: 'FIRST_INTERACTION',
+      interaction: state.interaction_count,
+      nextRefresh: state.interaction_count + interval
+    };
+  }
 
   const sinceRefresh = state.interaction_count - state.last_refresh_at;
 

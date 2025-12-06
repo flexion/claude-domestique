@@ -4,7 +4,8 @@
  *
  * Called on every user message submission.
  * - Increments interaction count
- * - Outputs structured JSON for context injection when refresh needed
+ * - On first interaction: injects plugin core context directory path
+ * - On refresh intervals: injects refresh instruction
  * - Uses Claude Code's hookSpecificOutput.additionalContext for enforcement
  *
  * @see agents/context-refresh.md for behavioral specification
@@ -17,6 +18,9 @@ const path = require('path');
 const trackerPath = path.join(__dirname, '..', '..', 'src', 'context-refresh-tracker.js');
 const { checkRefresh } = require(trackerPath);
 
+// Plugin root from environment (set by Claude Code when running hook)
+const PLUGIN_ROOT = process.env.CLAUDE_PLUGIN_ROOT || path.join(__dirname, '..', '..');
+
 function main() {
   const result = checkRefresh();
 
@@ -27,18 +31,39 @@ function main() {
     }
   };
 
+  const pluginContextDir = path.join(PLUGIN_ROOT, 'context');
+
   switch (result.action) {
+    case 'FIRST_INTERACTION':
+      // First interaction - load plugin core context
+      output.hookSpecificOutput.additionalContext = `[CONTEXT LOAD - Session Start]
+
+BEFORE responding, use the Read tool to load ALL files in these directories:
+
+1. Plugin core context: ${pluginContextDir}/
+   Read all .yml and .md files in this directory.
+
+2. Project context (optional): .claude/context/
+   If this directory exists, read all .yml files in it.
+
+Say "Context loaded." and proceed with the user's request.
+
+Next refresh at interaction ${result.nextRefresh}.`;
+      break;
+
     case 'REFRESH_NEEDED':
-      // Inject mandatory context refresh instruction
-      // Use only project-relative paths that work in any installed project
+      // Periodic refresh - reload both plugin and project context
       output.hookSpecificOutput.additionalContext = `[CONTEXT REFRESH REQUIRED - Interaction ${result.interaction}]
 
-BEFORE responding, use the Read tool to reload these project context files:
-1. .claude/context/behavior.yml
-2. .claude/context/sessions.yml
-3. .claude/context/git.yml
+BEFORE responding, use the Read tool to reload ALL files in these directories:
 
-Then say "Context refreshed." and proceed with the user's request.
+1. Plugin core context: ${pluginContextDir}/
+   Read all .yml and .md files in this directory.
+
+2. Project context (optional): .claude/context/
+   If this directory exists, read all .yml files in it.
+
+Say "Context refreshed." and proceed with the user's request.
 
 Next refresh at interaction ${result.nextRefresh}.`;
       break;

@@ -54,52 +54,72 @@ describe('context-refresh-tracker', () => {
   });
 
   describe('checkRefresh', () => {
-    test('does not refresh before interval reached', () => {
-      for (let i = 1; i < DEFAULTS.interval; i++) {
+    test('returns FIRST_INTERACTION on first call', () => {
+      const result = checkRefresh();
+      expect(result.action).toBe('FIRST_INTERACTION');
+      expect(result.interaction).toBe(1);
+      expect(result.nextRefresh).toBe(1 + DEFAULTS.interval);
+    });
+
+    test('does not refresh before interval reached after first interaction', () => {
+      checkRefresh(); // First interaction
+      for (let i = 2; i <= DEFAULTS.interval; i++) {
         const result = checkRefresh();
         expect(result.action).toBe('NO_REFRESH');
         expect(result.interaction).toBe(i);
       }
     });
 
-    test('refreshes at interval', () => {
-      // Run to interval - 1
-      for (let i = 1; i < DEFAULTS.interval; i++) {
-        checkRefresh();
-      }
-      // 20th should trigger refresh
-      const result = checkRefresh();
-      expect(result.action).toBe('REFRESH_NEEDED');
-      expect(result.interaction).toBe(DEFAULTS.interval);
-      expect(result.nextRefresh).toBe(DEFAULTS.interval * 2);
-    });
-
-    test('refreshes again at next interval', () => {
-      // First refresh cycle
-      for (let i = 1; i <= DEFAULTS.interval; i++) {
-        checkRefresh();
-      }
-      // Second cycle - should not refresh until interval * 2
-      for (let i = DEFAULTS.interval + 1; i < DEFAULTS.interval * 2; i++) {
-        const result = checkRefresh();
-        expect(result.action).toBe('NO_REFRESH');
-      }
-      // Should refresh at interval * 2
-      const result = checkRefresh();
-      expect(result.action).toBe('REFRESH_NEEDED');
-      expect(result.interaction).toBe(DEFAULTS.interval * 2);
-    });
-
-    test('reports correct nextRefresh value', () => {
-      const result = checkRefresh();
-      expect(result.nextRefresh).toBe(DEFAULTS.interval);
-
-      // After refresh, nextRefresh should be double
+    test('refreshes at interval after first interaction', () => {
+      // First interaction sets last_refresh_at = 1
+      checkRefresh();
+      // Run to interval (1 + interval - 1 more calls)
       for (let i = 2; i <= DEFAULTS.interval; i++) {
         checkRefresh();
       }
+      // Next call (interval + 1) should trigger refresh
+      const result = checkRefresh();
+      expect(result.action).toBe('REFRESH_NEEDED');
+      expect(result.interaction).toBe(DEFAULTS.interval + 1);
+      expect(result.nextRefresh).toBe(DEFAULTS.interval + 1 + DEFAULTS.interval);
+    });
+
+    test('refreshes again at next interval', () => {
+      // First interaction
+      checkRefresh();
+      // Run to first periodic refresh
+      for (let i = 2; i <= DEFAULTS.interval + 1; i++) {
+        checkRefresh();
+      }
+      // Now at interval + 1, next refresh at (interval + 1) + interval = 2*interval + 1
+      for (let i = DEFAULTS.interval + 2; i <= DEFAULTS.interval * 2; i++) {
+        const result = checkRefresh();
+        expect(result.action).toBe('NO_REFRESH');
+      }
+      // Should refresh at 2*interval + 1
+      const result = checkRefresh();
+      expect(result.action).toBe('REFRESH_NEEDED');
+      expect(result.interaction).toBe(DEFAULTS.interval * 2 + 1);
+    });
+
+    test('reports correct nextRefresh value', () => {
+      // First interaction sets last_refresh_at = 1, so next refresh at 1 + interval = 21
+      const result = checkRefresh();
+      expect(result.action).toBe('FIRST_INTERACTION');
+      expect(result.nextRefresh).toBe(1 + DEFAULTS.interval);
+
+      // Run until just before refresh (interaction 21)
+      for (let i = 2; i <= DEFAULTS.interval; i++) {
+        const r = checkRefresh();
+        expect(r.action).toBe('NO_REFRESH');
+        expect(r.nextRefresh).toBe(1 + DEFAULTS.interval);
+      }
+
+      // Interaction 21 should trigger refresh
       const refreshResult = checkRefresh();
-      expect(refreshResult.nextRefresh).toBe(DEFAULTS.interval * 2);
+      expect(refreshResult.action).toBe('REFRESH_NEEDED');
+      expect(refreshResult.interaction).toBe(DEFAULTS.interval + 1);
+      expect(refreshResult.nextRefresh).toBe(DEFAULTS.interval + 1 + DEFAULTS.interval);
     });
   });
 
@@ -123,16 +143,20 @@ describe('context-refresh-tracker', () => {
         context: { periodicRefresh: { enabled: true, interval: customInterval } }
       });
 
+      // First interaction
+      const first = checkRefresh();
+      expect(first.action).toBe('FIRST_INTERACTION');
+
       // Should not refresh before custom interval
-      for (let i = 1; i < customInterval; i++) {
+      for (let i = 2; i <= customInterval; i++) {
         const result = checkRefresh();
         expect(result.action).toBe('NO_REFRESH');
       }
 
-      // Should refresh at custom interval
+      // Should refresh at custom interval + 1
       const result = checkRefresh();
       expect(result.action).toBe('REFRESH_NEEDED');
-      expect(result.interaction).toBe(customInterval);
+      expect(result.interaction).toBe(customInterval + 1);
     });
 
     test('uses defaults when config missing', () => {
@@ -146,8 +170,10 @@ describe('context-refresh-tracker', () => {
         context: { periodicRefresh: { enabled: true, interval: -5 } }
       });
 
+      // First interaction
+      checkRefresh();
       // Should use default interval despite invalid config
-      for (let i = 1; i < DEFAULTS.interval; i++) {
+      for (let i = 2; i <= DEFAULTS.interval; i++) {
         checkRefresh();
       }
       const result = checkRefresh();
@@ -159,7 +185,9 @@ describe('context-refresh-tracker', () => {
         context: { periodicRefresh: { enabled: true, interval: 'invalid' } }
       });
 
-      for (let i = 1; i < DEFAULTS.interval; i++) {
+      // First interaction
+      checkRefresh();
+      for (let i = 2; i <= DEFAULTS.interval; i++) {
         checkRefresh();
       }
       const result = checkRefresh();
@@ -196,8 +224,8 @@ describe('context-refresh-tracker', () => {
 
   describe('recordManualRefresh', () => {
     test('updates last_refresh_at without incrementing count', () => {
-      // Run some interactions
-      checkRefresh(); // count = 1
+      // Run some interactions (first is FIRST_INTERACTION)
+      checkRefresh(); // count = 1 (FIRST_INTERACTION, sets last_refresh_at = 1)
       checkRefresh(); // count = 2
       checkRefresh(); // count = 3
 
@@ -212,7 +240,7 @@ describe('context-refresh-tracker', () => {
     });
 
     test('delays next automatic refresh after manual refresh', () => {
-      // Run 15 interactions
+      // Run 15 interactions (first is FIRST_INTERACTION)
       for (let i = 1; i <= 15; i++) {
         checkRefresh();
       }
@@ -220,16 +248,8 @@ describe('context-refresh-tracker', () => {
       // Manual refresh at interaction 15
       recordManualRefresh();
 
-      // Next 4 interactions should not trigger refresh
-      for (let i = 16; i <= 19; i++) {
-        const result = checkRefresh();
-        expect(result.action).toBe('NO_REFRESH');
-      }
-
-      // But we still need 20 more from last refresh (at 15)
-      // So refresh should happen at 15 + 20 = 35
-      // Currently at 19, need to go to 35
-      for (let i = 20; i < 35; i++) {
+      // Next interactions should not trigger refresh until 15 + 20 = 35
+      for (let i = 16; i < 35; i++) {
         const result = checkRefresh();
         expect(result.action).toBe('NO_REFRESH');
       }
@@ -249,22 +269,27 @@ describe('context-refresh-tracker', () => {
     });
 
     test('returns decreasing untilRefresh as interactions increase', () => {
-      checkRefresh(); // count = 1
+      checkRefresh(); // count = 1 (FIRST_INTERACTION, sets last_refresh_at = 1)
       checkRefresh(); // count = 2
       checkRefresh(); // count = 3
 
+      // Next refresh at 1 + 20 = 21, current at 3, so untilRefresh = 21 - 3 = 18
       const status = getStatus();
       expect(status.enabled).toBe(true);
       expect(status.interaction).toBe(3);
-      expect(status.untilRefresh).toBe(DEFAULTS.interval - 3);
+      expect(status.untilRefresh).toBe(1 + DEFAULTS.interval - 3);
     });
 
     test('resets untilRefresh after refresh', () => {
-      // Run to refresh point
-      for (let i = 1; i <= DEFAULTS.interval; i++) {
+      // First interaction sets last_refresh_at = 1
+      checkRefresh();
+      // Run to first periodic refresh at interaction 21
+      for (let i = 2; i <= DEFAULTS.interval + 1; i++) {
         checkRefresh();
       }
 
+      // Now at interaction 21, last_refresh_at = 21, next at 21 + 20 = 41
+      // untilRefresh = 41 - 21 = 20
       const status = getStatus();
       expect(status.untilRefresh).toBe(DEFAULTS.interval);
     });
