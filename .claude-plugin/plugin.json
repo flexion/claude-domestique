@@ -22,6 +22,7 @@
     "react"
   ],
   "commands": "./commands",
+  "agents": "./agents",
   "skills": [
     "./skills/context-loader",
     "./skills/drift-detector",

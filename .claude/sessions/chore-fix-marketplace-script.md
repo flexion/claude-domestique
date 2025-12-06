@@ -106,9 +106,28 @@ This chore was identified when attempting to install the plugin and receiving "u
   - Offers cleanup of old configurations (root marketplace.json, extraKnownMarketplaces, etc.)
 - Updated ROADMAP.md to reflect #38 completion (context-refresh agent)
 - Updated session documentation to match current implementation
+- Committed and pushed marketplace script fix
+
+### 2025-12-06 - Context Refresh Agent Fix
+- Analyzed context-refresh agent to assess if Claude will respect it
+- Found critical issues:
+  - Hook was outputting plain text (suggestions) not structured JSON (enforcement)
+  - Agent was not registered in plugin.json `agents` field
+  - No mechanism to verify Claude actually loaded context
+- Researched Claude Code hook capabilities via documentation:
+  - Hooks CAN return structured JSON with `hookSpecificOutput.additionalContext`
+  - This gets injected into conversation as mandatory context, not displayed text
+  - Plugin manifest supports `agents` field for agent discovery
+- Rewrote `hooks/prompt-submit/check-refresh.js`:
+  - Now outputs structured JSON with `hookSpecificOutput.additionalContext`
+  - Injects MANDATORY instruction for Claude to read context files
+  - Includes countdown context on every interaction (subtle reminder)
+- Added `"agents": "./agents"` to plugin.json
+- Updated agent documentation to reflect new architecture
+- All 19 tests still pass
 
 ## Next Steps
 
 1. Test installation via `/plugin` → Add Marketplace in a target project
-2. Run shellcheck on updated script
-3. Commit changes
+2. Commit context-refresh agent fix
+3. Create PR for this chore branch

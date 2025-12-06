@@ -2,7 +2,7 @@
 
 ## Description
 
-Monitors interaction count during long sessions and triggers periodic context refresh to prevent drift from core values and project context. Works with the context-loader skill to reload context files at configurable intervals.
+Monitors interaction count during long sessions and triggers periodic context refresh to prevent drift from core values and project context. Uses Claude Code's structured hook output to **inject mandatory context** that Claude must follow.
 
 ## Purpose
 
@@ -13,13 +13,27 @@ Long sessions can drift from original context values:
 
 This agent ensures context stays fresh and values remain enforced.
 
+## Architecture
+
+The agent uses **structured JSON output** via the `UserPromptSubmit` hook to inject context directly into the conversation:
+
+```json
+{
+  "hookSpecificOutput": {
+    "hookEventName": "UserPromptSubmit",
+    "additionalContext": "[MANDATORY CONTEXT REFRESH - Interaction 20]\n\nYou MUST read the following context files..."
+  }
+}
+```
+
+This is **not a suggestion** - Claude Code parses this JSON and injects the `additionalContext` into Claude's visible context, making it a mandatory instruction.
+
 ## Trigger Conditions
 
 This agent activates when:
 
 1. **Interaction threshold reached** - Interaction count hits configured interval (default: 20)
-2. **Only during active work** - Not idle sessions
-3. **Not recently refreshed** - Skips if context refreshed within last 10 interactions
+2. **Not recently refreshed** - Skips if already refreshed recently
 
 ## Agent State
 
@@ -68,35 +82,24 @@ Before refreshing, verify:
 
 If any skip condition met, log and continue without refresh.
 
-### Step 4: Trigger Context Reload
+### Step 4: Inject Mandatory Context
 
-When refresh needed:
-1. Invoke the **context-loader skill** to perform actual loading
-2. Record: `last_refresh_at = interaction_count`
-3. Report refresh to user
+When refresh needed, the hook outputs structured JSON that Claude Code injects:
 
-### Step 5: Report Results
-
-Display refresh notification:
-
+```json
+{
+  "hookSpecificOutput": {
+    "hookEventName": "UserPromptSubmit",
+    "additionalContext": "[MANDATORY CONTEXT REFRESH - Interaction 20]\n\nYou MUST read the following context files BEFORE responding..."
+  }
+}
 ```
-[Periodic context refresh at interaction 20]
 
-Refreshing context to maintain alignment with core values...
-
-Core context loaded (from plugin):
-✓ README.yml
-✓ behavior.yml
-✓ git.yml
-✓ sessions.yml
-
-Project context loaded (from .claude/context/):
-✓ project.yml
-✓ test.yml
-
-Context refreshed. Core values and project context reloaded.
-Next refresh at interaction 40.
-```
+Claude then:
+1. Reads the specified context files
+2. Acknowledges the refresh: "Context refreshed at interaction 20."
+3. Records: `last_refresh_at = interaction_count`
+4. Proceeds with the user's request
 
 ## Configuration
 
