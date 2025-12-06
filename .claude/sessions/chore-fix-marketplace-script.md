@@ -134,9 +134,16 @@ This chore was identified when attempting to install the plugin and receiving "u
 - Numbered list for clarity
 - Cleaned up unused imports
 - All 19 tests still pass
+- Committed simplified refresh instruction
+
+### 2025-12-06 - Version Bump to 0.2.0
+- Bumped version in plugin.json, marketplace.json, package.json
+- Minor version bump reflects significant changes:
+  - Structured JSON hook output (enforcement vs suggestion)
+  - Agent registration in plugin manifest
+  - Simplified refresh instruction with project-relative paths
 
 ## Next Steps
 
 1. Test installation via `/plugin` → Add Marketplace in a target project
-2. Commit simplified refresh instruction
-3. Create PR for this chore branch
+2. Create PR for this chore branch

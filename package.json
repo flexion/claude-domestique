@@ -1,6 +1,6 @@
 {
   "name": "claude-domestique",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "Your strategic coding partner - workflow management, skeptical assessment, and persistent memory",
   "main": "src/context-refresh-tracker.js",
   "scripts": {
