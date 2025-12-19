@@ -20,7 +20,7 @@ You groan. The context switch kills your momentum. You write "fixed bug" and mov
 onus handles the project management bureaucracy:
 
 - **Fetches work items** from GitHub Issues, JIRA, Azure DevOps
-- **Auto-populates sessions** with issue details (integrates with [memento](https://github.com/flexion/claude-domestique/tree/main/memento))
+- **Auto-populates sessions** with issue details (integrates with [memento](../memento))
 - **Generates commit messages** that reference tickets properly
 - **Creates PR descriptions** from your session and work item
 - **Updates work items** with progress (bidirectional sync)
@@ -42,9 +42,9 @@ onus is part of a plugin family that works together:
 
 | Plugin | Purpose | Layer |
 |--------|---------|-------|
-| **[memento](https://github.com/flexion/claude-domestique/tree/main/memento)** | Session persistence | Persistence |
-| **[mantra](https://github.com/flexion/claude-domestique/tree/main/mantra)** | Context refresh | Injection |
-| **[onus](https://github.com/flexion/claude-domestique/tree/main/onus)** | Work-item automation | Integration |
+| **[memento](../memento)** | Session persistence | Persistence |
+| **[mantra](../mantra)** | Context refresh | Injection |
+| **[onus](../onus)** | Work-item automation | Integration |
 
 ### How They Work Together
 
@@ -82,6 +82,26 @@ Session: .claude/sessions/42-description.md
 - **mantra → memento**: Mantra keeps behavioral rules fresh; memento persists the actual work state
 
 Each plugin works standalone but gains enhanced behavior when used together.
+
+## Installation
+
+```bash
+# Add the marketplace
+/plugin marketplace add flexion/claude-domestique
+
+# Install the plugin
+/plugin install onus@claude-domestique
+
+# Initialize work-item config
+/onus:init
+```
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `/onus:init` | Initialize work-item configuration |
+| `/onus:fetch` | Fetch issue details from tracker |
 
 ## Why "onus"?
 

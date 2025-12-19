@@ -21,40 +21,22 @@ Claude is brilliant. Claude is helpful. Claude also has the memory of a goldfish
 
 ## Installation
 
-### As a Claude Code Plugin (Recommended)
-
 ```bash
-# Add the GitHub repo as a marketplace
-/plugin marketplace add flexion/mantra
+# Add the marketplace
+/plugin marketplace add flexion/claude-domestique
 
 # Install the plugin
-/plugin install mantra@mantra
+/plugin install mantra@claude-domestique
 
 # Scaffold context files for your project
-/init
+/mantra:init
 ```
 
-The `/init` command creates:
+The `/mantra:init` command creates:
 - `.claude/context/README.md` - How to extend context
 - `.claude/context/project.yml` - Project-specific context template
 
 If `CLAUDE.md` exists, init backs it up and attempts to extract project info.
-
-### Local Development
-
-For rapid iteration during plugin development:
-
-```bash
-# Add local path as a marketplace
-/plugin marketplace add /path/to/mantra
-
-# Install from local
-/plugin install mantra@mantra
-
-# After changes: uninstall and reinstall
-/plugin uninstall mantra@mantra
-/plugin install mantra@mantra
-```
 
 ## Usage
 
@@ -174,9 +156,9 @@ mantra is part of a plugin family that works together:
 
 | Plugin | Purpose | Layer |
 |--------|---------|-------|
-| **[memento](https://github.com/flexion/claude-domestique/tree/main/memento)** | Session persistence | Persistence |
-| **[mantra](https://github.com/flexion/claude-domestique/tree/main/mantra)** | Context refresh | Injection |
-| **[onus](https://github.com/flexion/claude-domestique/tree/main/onus)** | Work-item automation | Integration |
+| **[memento](../memento)** | Session persistence | Persistence |
+| **[mantra](../mantra)** | Context refresh | Injection |
+| **[onus](../onus)** | Work-item automation | Integration |
 
 ### How They Work Together
 
