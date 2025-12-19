@@ -1,12 +1,12 @@
-# claude-onus Ideas
+# onus Ideas
 
 ## Core Insight
 Developers hate project management overhead but it's critical for team function.
 The work is awful but important. Automate it completely.
 
-## Naming Convention Bridge (with claude-memento)
+## Naming Convention Bridge (with memento)
 - Issue number drives everything: branch name, session file, commit prefix
-- claude-onus fetches issue → claude-memento creates session
+- onus fetches issue → memento creates session
 - Shared convention: issue #42 → branch issue/feature-42/desc → session 42-desc.md
 - Onus owns the "fetch and format" piece, memento owns persistence
 
@@ -44,20 +44,20 @@ The work is awful but important. Automate it completely.
 - Flag PRs that don't match issue requirements
 
 ## Integration Protocol
-With claude-memento:
+With memento:
 - Onus provides: issue details, requirements, acceptance criteria
 - Memento provides: session file location, update protocol
 - Convention: session file has "Issue Details" section populated by onus
 
-With claude-mantra:
+With mantra:
 - Onus context (work item requirements) included in mantra refresh
 - Keeps Claude aligned with what the issue actually asked for
 
 ## CLI Commands (maybe)
-- `npx claude-onus fetch 42` - fetch issue #42, output to stdout
-- `npx claude-onus commit` - generate commit message from staged + session
-- `npx claude-onus pr` - generate PR description
-- `npx claude-onus sync` - push session progress to work item
+- `npx onus fetch 42` - fetch issue #42, output to stdout
+- `npx onus commit` - generate commit message from staged + session
+- `npx onus pr` - generate PR description
+- `npx onus sync` - push session progress to work item
 
 ## Configuration
 ```json
@@ -65,7 +65,7 @@ With claude-mantra:
   "platform": "github",
   "github": {
     "owner": "flexion",
-    "repo": "claude-onus"
+    "repo": "onus"
   },
   "jira": {
     "host": "company.atlassian.net",

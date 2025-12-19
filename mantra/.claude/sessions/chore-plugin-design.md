@@ -1,10 +1,10 @@
 # Session: Plugin Design
 
 ## Goal
-Design the claude-mantra plugin architecture for periodic context refresh in Claude Code sessions.
+Design the mantra plugin architecture for periodic context refresh in Claude Code sessions.
 
 ## Problem Statement
-Claude has the "memory of a goldfish in a context window." Even with well-documented CLAUDE.md files and project conventions, Claude gradually drifts from original guidance as conversations grow. claude-mantra solves this by periodically re-injecting key instruction files into Claude's working context.
+Claude has the "memory of a goldfish in a context window." Even with well-documented CLAUDE.md files and project conventions, Claude gradually drifts from original guidance as conversations grow. mantra solves this by periodically re-injecting key instruction files into Claude's working context.
 
 ## Requirements (from ideas.txt)
 - Keep plugin as unobtrusive as possible
@@ -55,7 +55,7 @@ Core pattern: `.claude/context/` folder with:
 
 ### 2024-12-07 - Context Files Copied and Adapted
 - Copied context files from claude-domestique
-- Adapted examples for claude-mantra (hook patterns, context-refresh references)
+- Adapted examples for mantra (hook patterns, context-refresh references)
 
 **Files created in `.claude/context/`:**
 - `format-guide.yml` - How to read/write compact YAML
@@ -65,7 +65,7 @@ Core pattern: `.claude/context/` folder with:
 - `git-workflow.md` - Commit/PR examples
 - `sessions.yml` - Session management rules
 - `session-workflow.md` - Session patterns and templates
-- `project.yml` - claude-mantra specific context
+- `project.yml` - mantra specific context
 - `README.md` - Directory guide
 
 ### 2024-12-07 - Architecture Decision: Hook
@@ -94,7 +94,7 @@ Core pattern: `.claude/context/` folder with:
 Discussed architecture for multiple independent plugins that can work together.
 
 **Use Case:**
-- Plugin A (claude-mantra): context refresh
+- Plugin A (mantra): context refresh
 - Plugin B (future): session recording to source control
 - When both installed, mantra could also read session file
 

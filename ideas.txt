@@ -1,0 +1,9 @@
+- make claude-domestique a claude plugin marketplace monorepo
+- the plugins achieve the overall mission od domestique in the README
+- plugin names are memento, onus, mantra
+- the plugins were in stanalone repos with the plugin names prefixes by "claude-" this will need to be changed
+- all references to  memento will need to change to memento
+- all references to onus will need to change to onus
+- all references to claude mantra will need to change to mantra 
+- domestique will have all the marketplace registration
+- documentation needs to be updated

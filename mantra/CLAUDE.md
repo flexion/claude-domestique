@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**claude-mantra** is a periodic context refresh plugin for Claude Code sessions. It addresses the problem of "context drift" where Claude gradually forgets project guidance as conversations grow longer.
+**mantra** is a periodic context refresh plugin for Claude Code sessions. It addresses the problem of "context drift" where Claude gradually forgets project guidance as conversations grow longer.
 
 Tagline: "I told you. You agreed. You forgot. Repeat."
 

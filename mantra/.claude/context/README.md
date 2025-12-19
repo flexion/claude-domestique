@@ -20,7 +20,7 @@ This directory contains project-specific context files that Claude loads automat
 ├── session-workflow.md       (detailed: session patterns)
 │
 └── # Project-Specific
-    └── project.yml           (claude-mantra project context)
+    └── project.yml           (mantra project context)
 ```
 
 ## Two-File Pattern
@@ -60,7 +60,7 @@ These files establish baseline Claude behavior:
 - `sessions.yml` / `session-workflow.md` - Session management patterns
 
 ### Project-Specific
-- `project.yml` - claude-mantra domain, architecture, requirements
+- `project.yml` - mantra domain, architecture, requirements
 - (add more as project evolves: `test.yml`, `deploy.yml`, etc.)
 
 ## How to Maintain

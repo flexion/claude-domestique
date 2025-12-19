@@ -1,7 +1,7 @@
 # Chore: Plugin Documentation
 
 ## Goal
-Document how the claude-mantra plugin works for developers and contributors.
+Document how the mantra plugin works for developers and contributors.
 
 ## Context
 - Plugin structure now follows Claude Code plugin standard

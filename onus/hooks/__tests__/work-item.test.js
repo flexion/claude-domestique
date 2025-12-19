@@ -1,5 +1,5 @@
 /**
- * Tests for claude-onus work-item hook
+ * Tests for onus work-item hook
  */
 
 const fs = require('fs');

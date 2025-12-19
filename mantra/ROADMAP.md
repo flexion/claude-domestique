@@ -1,4 +1,4 @@
-# claude-mantra Roadmap
+# mantra Roadmap
 
 ## Current State (v0.1.2)
 
@@ -57,7 +57,7 @@ Visual indicator that changes as staleness increases:
 Make [claude-domestique](https://github.com/flexion/claude-domestique) a plugin orchestrator that coordinates multiple plugins:
 
 **Plugin examples:**
-- `claude-mantra` - context refresh (this project)
+- `mantra` - context refresh (this project)
 - `claude-session` - session recording to source control
 - `claude-guard` - behavior guardrails
 - `claude-workflow` - git/PR conventions

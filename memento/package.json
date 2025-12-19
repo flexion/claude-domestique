@@ -1,0 +1,32 @@
+{
+  "name": "@claude-domestique/memento",
+  "version": "0.1.7",
+  "description": "Session management for Claude Code - persist context across conversation resets with branch-based session tracking",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test",
+    "test:watch": "node --test --watch",
+    "test:coverage": "c8 --reporter=text --reporter=html node --test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/flexion/claude-domestique.git",
+    "directory": "memento"
+  },
+  "keywords": [
+    "claude",
+    "session",
+    "memory",
+    "context",
+    "plugin"
+  ],
+  "author": "David Puglielli",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/flexion/claude-domestique/issues"
+  },
+  "homepage": "https://github.com/flexion/claude-domestique/tree/main/memento#readme",
+  "devDependencies": {
+    "c8": "^10.1.3"
+  }
+}

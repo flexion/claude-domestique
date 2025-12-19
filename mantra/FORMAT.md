@@ -1,6 +1,6 @@
 # Context File Format Specification
 
-This document defines the format for context files used by claude-mantra.
+This document defines the format for context files used by mantra.
 
 ## Directory Structure
 
@@ -151,12 +151,12 @@ When Claude reads compact YAML:
 
 ## Validation
 
-claude-mantra validates:
+mantra validates:
 - File exists and is readable
 - Valid YAML syntax
 - File size within limits
 
-claude-mantra does NOT validate:
+mantra does NOT validate:
 - Content correctness
 - Operator usage
 - Naming conventions
