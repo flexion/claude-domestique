@@ -4,7 +4,7 @@
 **Branch**: chore/readme-context-override
 **Type**: chore
 **Created**: 2025-12-19
-**Status**: in-progress
+**Status**: complete
 
 ## Goal
 Document how to override default plugin context in target projects. This is critical for users to understand the two-tier system: plugin-provided base context vs project-specific extensions.
@@ -36,4 +36,5 @@ Update the main README.md with clear guidance on:
 - [x] Add "Context Override" section explaining the pattern
 - [x] Include examples (project.yml, test.yml, git.yml overrides)
 - [x] Document loading order (plugin → project → CLAUDE.md)
-- [ ] Commit changes
+- [x] Commit changes
+- [ ] Create PR and merge
