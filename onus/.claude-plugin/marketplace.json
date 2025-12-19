@@ -1,0 +1,14 @@
+{
+  "name": "claude-onus",
+  "owner": {
+    "name": "David Puglielli"
+  },
+  "plugins": [
+    {
+      "name": "claude-onus",
+      "source": "./",
+      "description": "Work item automation for Claude Code - fetches issues, generates commits/PRs, syncs progress",
+      "version": "0.1.0"
+    }
+  ]
+}

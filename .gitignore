@@ -1,0 +1,28 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Testing
+test-results/
+.coverage
+
+# Build artifacts
+dist/
+build/
+
+# Dependencies (if we add any Node.js tooling)
+node_modules/
+
+# Temporary files
+*.tmp
+.temp/
+

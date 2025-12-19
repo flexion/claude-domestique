@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(scripts/get-current-session.sh:*)",
+      "Bash(git -C /Users/dpuglielli/github/flexion/simple-D365 branch -a)",
+      "Bash(git show:*)",
+      "Bash(./scripts/validate-config.sh:*)",
+      "Bash(git checkout:*)",
+      "Bash(git pull:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

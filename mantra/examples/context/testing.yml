@@ -1,0 +1,41 @@
+# Testing Patterns - Compact Reference
+# For examples, templates, and detailed guidance, see: testing.md
+
+## Priority
+order: unit > integration > e2e
+focus: business-logic, error-paths, edge-cases
+
+## Always Test
+required:
+  - complex-business-logic
+  - bug-fixes (failing-test-first)
+  - conditional-logic
+  - error-handling-paths
+  - data-transformations
+
+## Skip Tests For
+skip:
+  - simple-DTOs
+  - getters-setters
+  - configuration-classes
+  - framework-provided-behavior
+  - trivial-one-liners
+
+## Test Doubles
+unit: mock-external-dependencies
+integration: real-implementations
+stubs: simple-data-providers
+
+## Principles (F.I.R.S.T.)
+fast: tests-run-quickly
+independent: no-test-interdependence
+repeatable: same-result-every-run
+self-validating: pass-or-fail-clearly
+timely: written-close-to-code
+
+## Commands
+run-all: npm test
+run-single: npm test -- --testNamePattern="test name"
+run-file: npm test -- path/to/file.test.ts
+watch: npm test -- --watch
+coverage: npm test -- --coverage

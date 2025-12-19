@@ -1,0 +1,61 @@
+# Work Item Integration - Compact Reference
+# For patterns and examples, see: work-items.md
+
+## WORK ITEM AWARENESS
+detect: branch-name-first (issue/feature-N, PROJ-123, #N)
+inject: session-start (full-context), prompt (status-line)
+platforms: github-issues, jira, azure-devops
+
+## COMMIT MESSAGE FORMAT
+pattern: "#{number} - {verb} {description}"
+verbs: add|implement|fix|update|refactor|remove|document|test
+require: issue-reference (unless chore)
+never: generic-messages ("fix bug", "update code", "changes")
+example: "#42 - implement user login form with validation"
+
+## BRANCH NAMING
+pattern: "issue/{type}-{number}/{slug}"
+types: feature|bug|fix|chore|hotfix
+slug: lowercase, hyphenated, 3-5-words
+examples:
+  - issue/feature-42/user-login-form
+  - issue/bug-123/fix-null-pointer
+  - issue/chore-99/update-dependencies
+
+## PR DESCRIPTION
+structure:
+  - summary: 1-3 bullet points (what changed, why)
+  - acceptance: checklist from issue criteria
+  - test-plan: how to verify changes work
+  - links: related issues, PRs, docs
+require: issue-link-in-title-or-body
+validation: acceptance-criteria-addressed
+
+## WORK ITEM LIFECYCLE
+branch-checkout: status → "In Progress"
+pr-created: status → "In Review"
+pr-merged: status → "Done"
+comments: milestone-updates, blockers, decisions
+
+## ACCEPTANCE CRITERIA
+track: checkbox-list (from issue description)
+validate: before-commit (did-we-address-this?)
+warn: unaddressed-criteria (before PR)
+format: "- [ ] criterion" → "- [x] criterion" (when done)
+
+## SESSION INTEGRATION
+with-memento: populate-session-from-issue
+with-mantra: refresh-issue-context-periodically
+shared-convention: issue-N → branch → metadata → session
+
+## MULTI-PLATFORM CONSIDERATIONS
+github: simplest, #N references, labels
+jira: customizable-fields, status-transitions, sprints
+azure: work-item-types, state-management, iterations
+abstraction: unified-issue-interface (platform-agnostic)
+
+## COMMIT DISCIPLINE
+staged-changes: detect-and-suggest-message
+frequency: logical-units (not-too-big, not-too-small)
+structure: single-purpose-commits
+validation: lint-and-test-before-commit

@@ -1,0 +1,15 @@
+# Branch Metadata
+branch: chore/plugin-design
+session: chore-plugin-design.md
+type: chore
+status: in-progress
+created: 2024-12-07
+last-updated: 2024-12-07
+description: plugin-design
+parent: main
+
+## Current Work
+Designing claude-mantra plugin architecture
+
+## Next Steps
+Architecture discussion to determine plugin type

@@ -1,0 +1,52 @@
+# Session Workflow - Compact Reference
+# For examples and workflow details, see: session-workflow.md
+
+MANDATORY-REREAD: before-whats-next-queries (use-3-step-process)
+
+## Session = Long-term Memory
+purpose: persist state across conversation resets (context window cleanup)
+mapping: 1 session = 1 issue = 1 branch = 1 branch-metadata-file
+
+## Auto-Detection
+on-startup: git branch → .claude/branches/<sanitized> → load session file
+user-asks: "What's next?" or "What are we working on?"
+manual: "Read .claude/sessions/<file>.md"
+
+## CRITICAL: Determining "What's Next"
+ALWAYS run these commands in order (single message, parallel tool calls):
+1. git branch --show-current (get authoritative current branch)
+2. Read .claude/branches/<branch-sanitized> (verify session mapping)
+3. Read .claude/sessions/<session-file>.md (find "Next Steps" section)
+NEVER guess or assume current branch - ALWAYS check first
+
+## Session Files
+location: .claude/sessions/
+format: <IssueNum>-<desc>.md OR chore-<desc>.md
+content: goal, done, todo, context, files-changed, next-steps
+update: beginning-work, after-milestone, before-pause, when-blocked, before-commit
+commit: atomic (session+code in same commit)
+
+## Branch Metadata
+location: .claude/branches/
+format: <branch-name-sanitized> (/ → -)
+content: session:<file>, status:<state>, todo:<list>
+size: 3-5 lines (ultra-compact)
+
+## Workflow
+start: create branch → create metadata + session
+work: implement → update session after each major task
+pause: update session, mark status
+resume: switch branch → load correct session
+complete: mark session complete, merge PR
+
+## Key Patterns
+fresh-conversation-not-equal-lost-context: session file persists state
+reset-context-window: start new conversation, read session, quality restored
+branch-switch-equal-session-switch: automatic via metadata
+commit-regularly: session updates are code documentation
+
+## Benefits
+resumable: pick up exactly where left off
+traceable: maps to github issues
+handoff: teammates read session, understand work
+memory: external state outside context window

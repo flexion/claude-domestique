@@ -1,0 +1,38 @@
+# Git Workflow - Compact Reference
+# For examples and PR templates, see: git-workflow.md
+
+MANDATORY-REREAD: before-commit, before-PR (use-thinking-block-verification)
+
+## COMMIT CHECKLIST (you are reading this because you're about to commit):
+✓ Tests run if applicable (npm test)
+✓ Session file updated (atomic commit: session+code together)
+✓ Format: "#N - verb desc" OR "chore - desc" (lowercase!)
+✓ HEREDOC with bullets
+✓ ZERO attribution/co-authored-by/emojis
+
+## PR CHECKLIST (you are reading this because you're about to create PR):
+✓ Tests run if applicable (npm test)
+✓ Title format: "#N - lowercase desc" OR "chore - lowercase desc" (MATCHES commit format)
+✓ Body has ZERO: attribution, emojis, AI mentions, co-authored-by
+✓ Base branch: main (or project default)
+✓ Re-read this checklist in thinking block BEFORE running gh pr create
+
+branch-from: main (git-fetch-first, remote-main)
+branch: issue/feature-N/desc | chore/desc
+commit: |
+  "#N - verb desc" OR "chore - desc"
+  - change1
+  - change2
+  (use HEREDOC format)
+no: attribution, co-authored-by, emojis, --amend (except pre-commit hooks)
+test-before: npm test (when package.json exists)
+pr-base: main (or project default branch)
+verify: 'git remote show origin | grep "HEAD branch" (check remote HEAD matches pr-base)'
+ask-first: "Is this an issue or chore?" + get issue number (never guess)
+examples:
+  branch-issue: issue/feature-3/add-context-refresh
+  branch-chore: chore/update-dependencies
+  commit-issue: "#3 - add context refresh hook\n- Implement UserPromptSubmit hook\n- Add interaction counter"
+  commit-chore: "chore - update dependencies\n- Update typescript to latest version"
+  pr-issue: "#3 - add context refresh hook"
+  pr-chore: "chore - update dependencies"

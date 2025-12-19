@@ -1,0 +1,27 @@
+{
+  "description": "Work item automation - injects issue context on session start, tracks work progress",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/work-item.js",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/work-item.js",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

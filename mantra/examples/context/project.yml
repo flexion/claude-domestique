@@ -1,0 +1,33 @@
+# Project Context - Compact Reference
+# For examples, templates, and detailed guidance, see: project.md
+
+## Identity
+name: your-project-name
+description: brief description of the project
+type: api | cli | library | web-app | other
+
+## Tech Stack
+language: typescript | javascript | python | go | other
+runtime: node | deno | browser | other
+framework: express | fastify | react | none | other
+database: postgres | mongodb | none | other
+
+## Architecture
+pattern: monolith | microservices | serverless | other
+structure: src/, tests/, docs/
+entry-point: src/index.ts
+
+## Conventions
+naming: kebab-case (files) | camelCase (variables) | PascalCase (classes)
+testing: jest | vitest | pytest | other
+linting: eslint | prettier | biome | other
+
+## Key Concepts
+# List domain-specific terms and their meanings
+# concept-1: definition
+# concept-2: definition
+
+## Important Files
+# List files that are critical to understand
+# - src/core/engine.ts: main processing logic
+# - src/config/defaults.ts: configuration schema

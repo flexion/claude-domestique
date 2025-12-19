@@ -1,0 +1,32 @@
+{
+  "name": "claude-mantra",
+  "description": "Periodic context refresh plugin for Claude Code sessions",
+  "runtime": {
+    "type": "node",
+    "version": "20.x",
+    "packageManager": "npm"
+  },
+  "workItems": {
+    "system": "github",
+    "branchPatterns": {
+      "feature": "issue/feature-<N>/<desc>",
+      "chore": "chore/<desc>"
+    },
+    "commitFormat": {
+      "feature": "#<N> - <desc>",
+      "chore": "chore - <desc>"
+    }
+  },
+  "context": {
+    "periodicRefresh": {
+      "enabled": true,
+      "interval": 20
+    }
+  },
+  "commands": {
+    "test": "npm test",
+    "lint": "npm run lint",
+    "typeCheck": "npm run type-check",
+    "format": "npm run format"
+  }
+}

@@ -1,0 +1,16 @@
+# Branch Metadata
+branch: issue/feature-4/context-format-spec
+session: 4-context-format-spec.md
+type: issue
+status: in-progress
+created: 2024-12-07
+last-updated: 2024-12-07
+description: context-format-spec
+parent: main
+issue: 4
+
+## Current Work
+Adding context format documentation, specification, and scaffolding
+
+## Next Steps
+Create FORMAT.md specification document
