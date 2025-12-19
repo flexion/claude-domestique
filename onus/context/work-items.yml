@@ -1,35 +1,16 @@
 # Work Item Integration - Compact Reference
 # For patterns and examples, see: work-items.md
+# For git conventions (commit/branch/PR formats), see: git.yml
 
 ## WORK ITEM AWARENESS
 detect: branch-name-first (issue/feature-N, PROJ-123, #N)
 inject: session-start (full-context), prompt (status-line)
 platforms: github-issues, jira, azure-devops
 
-## COMMIT MESSAGE FORMAT
-pattern: "#{number} - {verb} {description}"
-verbs: add|implement|fix|update|refactor|remove|document|test
-require: issue-reference (unless chore)
-never: generic-messages ("fix bug", "update code", "changes")
-example: "#42 - implement user login form with validation"
-
-## BRANCH NAMING
-pattern: "issue/{type}-{number}/{slug}"
-types: feature|bug|fix|chore|hotfix
-slug: lowercase, hyphenated, 3-5-words
-examples:
-  - issue/feature-42/user-login-form
-  - issue/bug-123/fix-null-pointer
-  - issue/chore-99/update-dependencies
-
-## PR DESCRIPTION
-structure:
-  - summary: 1-3 bullet points (what changed, why)
-  - acceptance: checklist from issue criteria
-  - test-plan: how to verify changes work
-  - links: related issues, PRs, docs
-require: issue-link-in-title-or-body
-validation: acceptance-criteria-addressed
+## GIT CONVENTIONS
+# Commit, branch, and PR formats are defined in git.yml (single source of truth)
+# This file focuses on work-item-specific integration
+see: git.yml (commit-format, branch-naming, pr-format)
 
 ## WORK ITEM LIFECYCLE
 branch-checkout: status → "In Progress"

@@ -80,6 +80,21 @@ Two-tier context pattern:
 
 Context loading order: base (plugin) → sibling plugins → project extensions → CLAUDE.md
 
+### Context Ownership
+
+Each plugin owns specific context domains. When adding or modifying context, respect these boundaries:
+
+| Plugin | Domain | Files |
+|--------|--------|-------|
+| **mantra** | AI behavior, format conventions | `behavior.yml`, `format-guide.yml`, `context-format.yml` |
+| **memento** | Session management | `sessions.yml` |
+| **onus** | Git operations, work items | `git.yml`, `work-items.yml` |
+
+**Ownership rules:**
+- Single source of truth: each concept defined in exactly one place
+- Cross-references over duplication: reference other plugins' context rather than redefining
+- Domain boundaries: commit/branch/PR formats → onus, session lifecycle → memento, behavioral rules → mantra
+
 ### Session Conventions
 
 All plugins share these conventions:
