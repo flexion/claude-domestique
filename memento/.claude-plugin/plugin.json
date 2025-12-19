@@ -1,8 +1,7 @@
 {
   "name": "memento",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "description": "Session management for Claude Code - persist context across conversation resets with branch-based session tracking",
-  "contextFamily": "domestique",
   "author": {
     "name": "David Puglielli"
   },
