@@ -330,7 +330,7 @@ describe('session-startup.js', () => {
       assert.strictEqual(state.count, 0);
     });
 
-    it('returns empty context when no session exists', () => {
+    it('returns no-session status when no session exists', () => {
       fs.writeFileSync(stateFile, JSON.stringify({ count: 0 }));
 
       const result = processUserPromptSubmit(
@@ -338,7 +338,9 @@ describe('session-startup.js', () => {
         { stateFile, updateInterval: 10 }
       );
 
-      assert.strictEqual(result.systemMessage, 'Success');
+      // Should show Memento branding with no-session status (like other plugins)
+      assert.ok(result.systemMessage.includes('Memento'));
+      assert.ok(result.systemMessage.includes('No session'));
       assert.strictEqual(result.hookSpecificOutput.additionalContext, '');
     });
 

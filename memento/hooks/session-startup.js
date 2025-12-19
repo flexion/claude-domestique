@@ -273,10 +273,16 @@ function processUserPromptSubmit(input, config = {}) {
   saveState(cfg.stateFile, state);
 
   const info = getSessionInfo(cwd);
+  const branch = getCurrentBranch(cwd);
 
   if (!info) {
+    // No session - show status like other plugins
+    let displayMsg = '📍 Memento: No session';
+    if (branch && branch !== 'main' && branch !== 'master') {
+      displayMsg = `📍 Memento: No session for \`${branch}\``;
+    }
     return {
-      systemMessage: 'Success',
+      systemMessage: displayMsg,
       hookSpecificOutput: {
         hookEventName: 'UserPromptSubmit',
         additionalContext: ''
@@ -284,14 +290,17 @@ function processUserPromptSubmit(input, config = {}) {
     };
   }
 
-  let additionalContext = '';
+  // Show session name and update progress
+  const sessionName = path.basename(info.session.path, '.md');
+  const displayMsg = `📍 Memento: ${sessionName} (${state.count}/${cfg.updateInterval})`;
 
+  let additionalContext = '';
   if (shouldPromptUpdate) {
     additionalContext = buildUpdatePrompt(info);
   }
 
   return {
-    systemMessage: 'Success',
+    systemMessage: displayMsg,
     hookSpecificOutput: {
       hookEventName: 'UserPromptSubmit',
       additionalContext
