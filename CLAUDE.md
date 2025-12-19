@@ -61,6 +61,20 @@ cd memento && npm test
 cd onus && npm test
 ```
 
+### Version Management
+
+Bump plugin versions consistently across all config files:
+
+```bash
+node scripts/bump-version.js <plugin> <patch|minor|major>
+
+# Examples:
+node scripts/bump-version.js memento patch   # 0.1.10 → 0.1.11
+node scripts/bump-version.js mantra minor    # 0.1.5 → 0.2.0
+```
+
+This updates `package.json`, `plugin.json`, and `marketplace.json` atomically.
+
 ## Architecture
 
 ### Hook Pattern

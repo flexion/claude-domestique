@@ -57,4 +57,6 @@ Run all test suites
 - Changes won't take effect until plugins are reinstalled
 
 ## Session Log
-- 2025-12-19: Fixed verify-session.js subdirectory bug - hook now uses git root instead of cwd
+- 2025-12-19: Fixed verify-session.js subdirectory bug
+- 2025-12-19: Added scripts/bump-version.js for consistent version management - hook now uses git root instead of cwd
+- 2025-12-19: Documented version bump script in CLAUDE.md and README.md
