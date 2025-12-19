@@ -29,9 +29,12 @@ function loadProjectConfig(cwd, configFile) {
     if (fs.existsSync(configPath)) {
       const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
       const session = config.session || {};
-      return {
-        updateInterval: session.updateInterval
-      };
+      const result = {};
+      // Only include defined values to avoid overwriting defaults
+      if (session.updateInterval !== undefined) {
+        result.updateInterval = session.updateInterval;
+      }
+      return result;
     }
   } catch (e) {
     // Ignore errors, use defaults

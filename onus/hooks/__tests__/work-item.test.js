@@ -313,6 +313,20 @@ describe('work-item hook', () => {
       const msg = generatePromptSubmitMessage(state, null, true);
       expect(msg).toContain('staged');
     });
+
+    it('shows branch switched indicator', () => {
+      const state = { currentIssue: '99' };
+      const msg = generatePromptSubmitMessage(state, null, false, true);
+      expect(msg).toContain('branch switched');
+      expect(msg).toContain('#99');
+    });
+
+    it('shows both branch switched and staged indicators', () => {
+      const state = { currentIssue: '42' };
+      const msg = generatePromptSubmitMessage(state, null, true, true);
+      expect(msg).toContain('branch switched');
+      expect(msg).toContain('staged');
+    });
   });
 
   describe('findYmlFiles', () => {
