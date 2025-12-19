@@ -16,13 +16,14 @@ const {
   findSiblingPlugins,
   findSiblingContextFiles,
   readInstalledPluginsRegistry,
+  getPluginContextFamily,
+  getOwnContextFamily,
   isPluginFamilyMember,
   readClaudeMd,
   readContextFiles,
   freshnessIndicator,
   BASE_CONTEXT_DIR,
   INSTALLED_PLUGINS_FILE,
-  PLUGIN_FAMILY,
   _setPathsForTesting,
   _resetPaths
 } = require('../context-refresh');
@@ -475,22 +476,106 @@ describe('context-refresh hook', () => {
       fs.mkdirSync(path.join(mockPluginDir, 'context'), { recursive: true });
     });
 
-    it('PLUGIN_FAMILY contains mantra, memento, onus', () => {
-      expect(PLUGIN_FAMILY).toContain('mantra');
-      expect(PLUGIN_FAMILY).toContain('memento');
-      expect(PLUGIN_FAMILY).toContain('onus');
-      expect(PLUGIN_FAMILY).toHaveLength(3);
+    it('getPluginContextFamily reads contextFamily from manifest', () => {
+      const pluginDir = path.join(tmpDir, 'test-plugin');
+      const manifestDir = path.join(pluginDir, '.claude-plugin');
+      fs.mkdirSync(manifestDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(manifestDir, 'plugin.json'),
+        JSON.stringify({ name: 'test', contextFamily: 'domestique' })
+      );
+
+      const family = getPluginContextFamily(pluginDir);
+      expect(family).toBe('domestique');
     });
 
-    it('isPluginFamilyMember returns true for family plugins', () => {
-      expect(isPluginFamilyMember('mantra@flexion-mantra')).toBe(true);
-      expect(isPluginFamilyMember('memento@flexion-memento')).toBe(true);
-      expect(isPluginFamilyMember('onus@flexion-onus')).toBe(true);
+    it('getPluginContextFamily returns null when no manifest', () => {
+      const pluginDir = path.join(tmpDir, 'no-manifest-plugin');
+      fs.mkdirSync(pluginDir, { recursive: true });
+
+      const family = getPluginContextFamily(pluginDir);
+      expect(family).toBeNull();
     });
 
-    it('isPluginFamilyMember returns false for non-family plugins', () => {
-      expect(isPluginFamilyMember('some-other-plugin@org')).toBe(false);
-      expect(isPluginFamilyMember('random-plugin@random')).toBe(false);
+    it('getPluginContextFamily returns null when no contextFamily field', () => {
+      const pluginDir = path.join(tmpDir, 'plugin-no-family');
+      const manifestDir = path.join(pluginDir, '.claude-plugin');
+      fs.mkdirSync(manifestDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(manifestDir, 'plugin.json'),
+        JSON.stringify({ name: 'test', version: '1.0.0' })
+      );
+
+      const family = getPluginContextFamily(pluginDir);
+      expect(family).toBeNull();
+    });
+
+    it('isPluginFamilyMember returns true for same contextFamily', () => {
+      // Create own plugin with contextFamily
+      const ownPluginDir = path.join(tmpDir, 'own-plugin');
+      const ownManifestDir = path.join(ownPluginDir, '.claude-plugin');
+      fs.mkdirSync(ownManifestDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(ownManifestDir, 'plugin.json'),
+        JSON.stringify({ name: 'mantra', contextFamily: 'domestique' })
+      );
+
+      // Create sibling with same contextFamily
+      const siblingDir = path.join(tmpDir, 'sibling-plugin');
+      const siblingManifestDir = path.join(siblingDir, '.claude-plugin');
+      fs.mkdirSync(siblingManifestDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(siblingManifestDir, 'plugin.json'),
+        JSON.stringify({ name: 'memento', contextFamily: 'domestique' })
+      );
+
+      _setPathsForTesting({ pluginRoot: ownPluginDir });
+
+      expect(isPluginFamilyMember(siblingDir)).toBe(true);
+    });
+
+    it('isPluginFamilyMember returns false for different contextFamily', () => {
+      const ownPluginDir = path.join(tmpDir, 'own-plugin');
+      const ownManifestDir = path.join(ownPluginDir, '.claude-plugin');
+      fs.mkdirSync(ownManifestDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(ownManifestDir, 'plugin.json'),
+        JSON.stringify({ name: 'mantra', contextFamily: 'domestique' })
+      );
+
+      const otherPluginDir = path.join(tmpDir, 'other-plugin');
+      const otherManifestDir = path.join(otherPluginDir, '.claude-plugin');
+      fs.mkdirSync(otherManifestDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(otherManifestDir, 'plugin.json'),
+        JSON.stringify({ name: 'other', contextFamily: 'different-family' })
+      );
+
+      _setPathsForTesting({ pluginRoot: ownPluginDir });
+
+      expect(isPluginFamilyMember(otherPluginDir)).toBe(false);
+    });
+
+    it('isPluginFamilyMember returns false when sibling has no contextFamily', () => {
+      const ownPluginDir = path.join(tmpDir, 'own-plugin');
+      const ownManifestDir = path.join(ownPluginDir, '.claude-plugin');
+      fs.mkdirSync(ownManifestDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(ownManifestDir, 'plugin.json'),
+        JSON.stringify({ name: 'mantra', contextFamily: 'domestique' })
+      );
+
+      const noFamilyDir = path.join(tmpDir, 'no-family-plugin');
+      const noFamilyManifestDir = path.join(noFamilyDir, '.claude-plugin');
+      fs.mkdirSync(noFamilyManifestDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(noFamilyManifestDir, 'plugin.json'),
+        JSON.stringify({ name: 'other' })
+      );
+
+      _setPathsForTesting({ pluginRoot: ownPluginDir });
+
+      expect(isPluginFamilyMember(noFamilyDir)).toBe(false);
     });
 
     it('readInstalledPluginsRegistry returns null when file does not exist', () => {
@@ -599,15 +684,30 @@ describe('context-refresh hook', () => {
       expect(siblings).toEqual([]);
     });
 
-    it('findSiblingPlugins filters out non-family plugins', () => {
+    it('findSiblingPlugins filters out plugins with different contextFamily', () => {
       const registryDir = path.join(tmpDir, '.claude', 'plugins');
       fs.mkdirSync(registryDir, { recursive: true });
       const registryFile = path.join(registryDir, 'installed_plugins.json');
 
-      // Create a mock plugin directory with context
+      // Create own plugin with contextFamily
+      const ownPluginDir = path.join(tmpDir, 'own-plugin');
+      const ownManifestDir = path.join(ownPluginDir, '.claude-plugin');
+      fs.mkdirSync(ownManifestDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(ownManifestDir, 'plugin.json'),
+        JSON.stringify({ name: 'mantra', contextFamily: 'domestique' })
+      );
+
+      // Create a mock plugin directory with different contextFamily
       const mockPluginDir = path.join(tmpDir, 'random-plugin');
+      const mockManifestDir = path.join(mockPluginDir, '.claude-plugin');
       fs.mkdirSync(path.join(mockPluginDir, 'context'), { recursive: true });
+      fs.mkdirSync(mockManifestDir, { recursive: true });
       fs.writeFileSync(path.join(mockPluginDir, 'context', 'test.yml'), 'key: value');
+      fs.writeFileSync(
+        path.join(mockManifestDir, 'plugin.json'),
+        JSON.stringify({ name: 'random', contextFamily: 'other-family' })
+      );
 
       fs.writeFileSync(registryFile, JSON.stringify({
         plugins: {
@@ -615,21 +715,36 @@ describe('context-refresh hook', () => {
         }
       }));
 
-      _setPathsForTesting({ installedPluginsFile: registryFile });
+      _setPathsForTesting({ installedPluginsFile: registryFile, pluginRoot: ownPluginDir });
 
       const siblings = findSiblingPlugins(tmpDir);
-      expect(siblings).toEqual([]); // Not in PLUGIN_FAMILY
+      expect(siblings).toEqual([]); // Different contextFamily
     });
 
-    it('findSiblingPlugins finds family plugins with context', () => {
+    it('findSiblingPlugins finds plugins with same contextFamily', () => {
       const registryDir = path.join(tmpDir, '.claude', 'plugins');
       fs.mkdirSync(registryDir, { recursive: true });
       const registryFile = path.join(registryDir, 'installed_plugins.json');
 
-      // Create a mock sibling plugin directory with context
+      // Create own plugin with contextFamily
+      const ownPluginDir = path.join(tmpDir, 'own-plugin');
+      const ownManifestDir = path.join(ownPluginDir, '.claude-plugin');
+      fs.mkdirSync(ownManifestDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(ownManifestDir, 'plugin.json'),
+        JSON.stringify({ name: 'mantra', contextFamily: 'domestique' })
+      );
+
+      // Create a mock sibling plugin directory with same contextFamily
       const siblingDir = path.join(tmpDir, 'sibling-plugin');
+      const siblingManifestDir = path.join(siblingDir, '.claude-plugin');
       fs.mkdirSync(path.join(siblingDir, 'context'), { recursive: true });
+      fs.mkdirSync(siblingManifestDir, { recursive: true });
       fs.writeFileSync(path.join(siblingDir, 'context', 'sibling.yml'), 'sibling: true');
+      fs.writeFileSync(
+        path.join(siblingManifestDir, 'plugin.json'),
+        JSON.stringify({ name: 'memento', contextFamily: 'domestique' })
+      );
 
       fs.writeFileSync(registryFile, JSON.stringify({
         plugins: {
@@ -639,7 +754,7 @@ describe('context-refresh hook', () => {
 
       _setPathsForTesting({
         installedPluginsFile: registryFile,
-        pluginRoot: '/different/path' // Ensure sibling isn't filtered as self
+        pluginRoot: ownPluginDir
       });
 
       const siblings = findSiblingPlugins(tmpDir);
@@ -653,9 +768,15 @@ describe('context-refresh hook', () => {
       fs.mkdirSync(registryDir, { recursive: true });
       const registryFile = path.join(registryDir, 'installed_plugins.json');
 
-      // Create our own plugin directory
+      // Create our own plugin directory with manifest
       const ownPluginDir = path.join(tmpDir, 'own-plugin');
+      const ownManifestDir = path.join(ownPluginDir, '.claude-plugin');
       fs.mkdirSync(path.join(ownPluginDir, 'context'), { recursive: true });
+      fs.mkdirSync(ownManifestDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(ownManifestDir, 'plugin.json'),
+        JSON.stringify({ name: 'mantra', contextFamily: 'domestique' })
+      );
 
       fs.writeFileSync(registryFile, JSON.stringify({
         plugins: {
@@ -677,9 +798,23 @@ describe('context-refresh hook', () => {
       fs.mkdirSync(registryDir, { recursive: true });
       const registryFile = path.join(registryDir, 'installed_plugins.json');
 
-      // Create plugin directory WITHOUT context subdirectory
+      // Create own plugin with contextFamily
+      const ownPluginDir = path.join(tmpDir, 'own-plugin');
+      const ownManifestDir = path.join(ownPluginDir, '.claude-plugin');
+      fs.mkdirSync(ownManifestDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(ownManifestDir, 'plugin.json'),
+        JSON.stringify({ name: 'mantra', contextFamily: 'domestique' })
+      );
+
+      // Create plugin directory WITHOUT context subdirectory but with manifest
       const siblingDir = path.join(tmpDir, 'sibling-no-context');
-      fs.mkdirSync(siblingDir, { recursive: true });
+      const siblingManifestDir = path.join(siblingDir, '.claude-plugin');
+      fs.mkdirSync(siblingManifestDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(siblingManifestDir, 'plugin.json'),
+        JSON.stringify({ name: 'memento', contextFamily: 'domestique' })
+      );
 
       fs.writeFileSync(registryFile, JSON.stringify({
         plugins: {
@@ -687,7 +822,7 @@ describe('context-refresh hook', () => {
         }
       }));
 
-      _setPathsForTesting({ installedPluginsFile: registryFile });
+      _setPathsForTesting({ installedPluginsFile: registryFile, pluginRoot: ownPluginDir });
 
       const siblings = findSiblingPlugins(tmpDir);
       expect(siblings).toEqual([]); // No context dir
@@ -698,9 +833,25 @@ describe('context-refresh hook', () => {
       fs.mkdirSync(registryDir, { recursive: true });
       const registryFile = path.join(registryDir, 'installed_plugins.json');
 
+      // Create own plugin with contextFamily
+      const ownPluginDir = path.join(tmpDir, 'own-plugin');
+      const ownManifestDir = path.join(ownPluginDir, '.claude-plugin');
+      fs.mkdirSync(ownManifestDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(ownManifestDir, 'plugin.json'),
+        JSON.stringify({ name: 'mantra', contextFamily: 'domestique' })
+      );
+
+      // Create sibling with same contextFamily
       const siblingDir = path.join(tmpDir, 'sibling-plugin');
+      const siblingManifestDir = path.join(siblingDir, '.claude-plugin');
       fs.mkdirSync(path.join(siblingDir, 'context'), { recursive: true });
+      fs.mkdirSync(siblingManifestDir, { recursive: true });
       fs.writeFileSync(path.join(siblingDir, 'context', 'memento.yml'), 'memory: true');
+      fs.writeFileSync(
+        path.join(siblingManifestDir, 'plugin.json'),
+        JSON.stringify({ name: 'memento', contextFamily: 'domestique' })
+      );
 
       fs.writeFileSync(registryFile, JSON.stringify({
         plugins: {
@@ -710,7 +861,7 @@ describe('context-refresh hook', () => {
 
       _setPathsForTesting({
         installedPluginsFile: registryFile,
-        pluginRoot: '/different/path'
+        pluginRoot: ownPluginDir
       });
 
       const siblingContexts = findSiblingContextFiles(tmpDir);
@@ -724,10 +875,26 @@ describe('context-refresh hook', () => {
       fs.mkdirSync(registryDir, { recursive: true });
       const registryFile = path.join(registryDir, 'installed_plugins.json');
 
+      // Create own plugin with contextFamily
+      const ownPluginDir = path.join(tmpDir, 'own-plugin');
+      const ownManifestDir = path.join(ownPluginDir, '.claude-plugin');
+      fs.mkdirSync(ownManifestDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(ownManifestDir, 'plugin.json'),
+        JSON.stringify({ name: 'mantra', contextFamily: 'domestique' })
+      );
+
+      // Create sibling with same contextFamily but no yml files
       const siblingDir = path.join(tmpDir, 'sibling-plugin');
+      const siblingManifestDir = path.join(siblingDir, '.claude-plugin');
       fs.mkdirSync(path.join(siblingDir, 'context'), { recursive: true });
+      fs.mkdirSync(siblingManifestDir, { recursive: true });
       // Create only .md file, no .yml
       fs.writeFileSync(path.join(siblingDir, 'context', 'readme.md'), '# Readme');
+      fs.writeFileSync(
+        path.join(siblingManifestDir, 'plugin.json'),
+        JSON.stringify({ name: 'memento', contextFamily: 'domestique' })
+      );
 
       fs.writeFileSync(registryFile, JSON.stringify({
         plugins: {
@@ -737,7 +904,7 @@ describe('context-refresh hook', () => {
 
       _setPathsForTesting({
         installedPluginsFile: registryFile,
-        pluginRoot: '/different/path'
+        pluginRoot: ownPluginDir
       });
 
       const siblingContexts = findSiblingContextFiles(tmpDir);
@@ -749,9 +916,25 @@ describe('context-refresh hook', () => {
       fs.mkdirSync(registryDir, { recursive: true });
       const registryFile = path.join(registryDir, 'installed_plugins.json');
 
+      // Create own plugin with contextFamily
+      const ownPluginDir = path.join(tmpDir, 'own-plugin');
+      const ownManifestDir = path.join(ownPluginDir, '.claude-plugin');
+      fs.mkdirSync(ownManifestDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(ownManifestDir, 'plugin.json'),
+        JSON.stringify({ name: 'mantra', contextFamily: 'domestique' })
+      );
+
+      // Create sibling with same contextFamily
       const siblingDir = path.join(tmpDir, 'sibling-plugin');
+      const siblingManifestDir = path.join(siblingDir, '.claude-plugin');
       fs.mkdirSync(path.join(siblingDir, 'context'), { recursive: true });
+      fs.mkdirSync(siblingManifestDir, { recursive: true });
       fs.writeFileSync(path.join(siblingDir, 'context', 'memento.yml'), 'memory: persistent');
+      fs.writeFileSync(
+        path.join(siblingManifestDir, 'plugin.json'),
+        JSON.stringify({ name: 'memento', contextFamily: 'domestique' })
+      );
 
       fs.writeFileSync(registryFile, JSON.stringify({
         plugins: {
@@ -765,7 +948,7 @@ describe('context-refresh hook', () => {
 
       _setPathsForTesting({
         installedPluginsFile: registryFile,
-        pluginRoot: '/different/path',
+        pluginRoot: ownPluginDir,
         baseContextDir: emptyBaseDir
       });
 

@@ -39,6 +39,24 @@ function getCurrentBranch(cwd) {
   }
 }
 
+/**
+ * Get the git repository root directory
+ * Sessions are stored at the repo root, not in subdirectories
+ * @param {string} cwd - Current working directory
+ * @returns {string|null} Git root path or null if not in a git repo
+ */
+function getGitRoot(cwd) {
+  try {
+    return execSync('git rev-parse --show-toplevel', {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+      cwd: cwd,
+    }).trim();
+  } catch {
+    return null;
+  }
+}
+
 function readBranchMeta(cwd, branchMetaFile) {
   const metaPath = path.join(cwd, '.claude', 'branches', branchMetaFile);
   try {
@@ -98,6 +116,9 @@ function isFeatureBranch(branch) {
  * Process PreToolUse hook for Edit/Write verification
  */
 function processPreToolUse(input) {
+  // Get git root - sessions are stored at repo root, not subdirectories
+  const gitRoot = getGitRoot(input.cwd || process.cwd());
+
   const cwd = input.cwd || process.cwd();
   const toolName = input.tool_name;
   const toolInput = input.tool_input || {};
@@ -114,7 +135,7 @@ function processPreToolUse(input) {
   }
 
   // Allow editing certain files without a session
-  if (isAllowedPath(filePath, cwd)) {
+  if (isAllowedPath(filePath, gitRoot || cwd)) {
     return { decision: 'approve' };
   }
 
@@ -126,7 +147,7 @@ function processPreToolUse(input) {
   }
 
   // Check if .claude directory exists (memento is set up)
-  const claudeDir = path.join(cwd, '.claude');
+  const claudeDir = path.join(gitRoot || cwd, '.claude');
   if (!fs.existsSync(claudeDir)) {
     // Memento not initialized - allow edits
     return { decision: 'approve' };
@@ -134,7 +155,7 @@ function processPreToolUse(input) {
 
   // Parse branch and check for session
   const branchInfo = parseBranchName(branch);
-  if (sessionExists(cwd, branchInfo)) {
+  if (sessionExists(gitRoot || cwd, branchInfo)) {
     return { decision: 'approve' };
   }
 
@@ -195,6 +216,7 @@ async function main() {
 
 // Export for testing
 module.exports = {
+  getGitRoot,
   processHook,
   processPreToolUse,
   sessionExists,
