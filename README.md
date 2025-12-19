@@ -60,6 +60,10 @@ External (GitHub/JIRA/Azure DevOps)
 
 Each plugin works standalone but gains enhanced behavior when used together.
 
+![All three plugins working together](images/plugins-in-action.png)
+
+*Session resumption showing mantra (context refresh counter), onus (issue tracking), and memento (session file) working together. Claude reads the session file and picks up exactly where the previous conversation left off.*
+
 ---
 
 ## Installation
