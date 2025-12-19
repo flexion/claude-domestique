@@ -2,7 +2,6 @@
   "name": "mantra",
   "version": "0.1.5",
   "description": "Periodic context refresh for Claude Code sessions - prevents context drift by re-injecting key guidance files",
-  "contextFamily": "domestique",
   "author": {
     "name": "David Puglielli"
   },
