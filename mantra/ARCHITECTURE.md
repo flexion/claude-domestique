@@ -2,12 +2,12 @@
 
 ## Overview
 
-claude-mantra is a Claude Code plugin that periodically re-injects context files into Claude's working memory. It addresses "context drift" where Claude gradually forgets project guidance as conversations grow longer.
+mantra is a Claude Code plugin that periodically re-injects context files into Claude's working memory. It addresses "context drift" where Claude gradually forgets project guidance as conversations grow longer.
 
 ## Plugin Structure
 
 ```
-claude-mantra/
+mantra/
 ├── .claude-plugin/
 │   ├── plugin.json           # Plugin metadata
 │   └── marketplace.json      # Marketplace definition (required by plugin system)
@@ -30,7 +30,7 @@ claude-mantra/
 └── examples/context/         # Legacy template files
 ```
 
-Note: The `.claude/` directory in this repository contains project-specific files for developing claude-mantra itself (sessions, branches, context) and is not distributed with the plugin.
+Note: The `.claude/` directory in this repository contains project-specific files for developing mantra itself (sessions, branches, context) and is not distributed with the plugin.
 
 ## How Context Loading Works
 
@@ -40,14 +40,14 @@ The plugin loads context from multiple sources in a specific order:
 
 **Loading order:**
 1. **Base context** - `{plugin-root}/context/*.yml` (shipped with plugin)
-2. **Sibling plugins** - Context from claude-memento and claude-onus if installed in same project
+2. **Sibling plugins** - Context from memento and onus if installed in same project
 3. **Project extensions** - `{project}/.claude/context/*.yml` (consumer additions)
 4. **CLAUDE.md fallback** - If present (with warning if modular context also exists)
 
 ### Sibling Plugin Discovery
 
 The hook reads `~/.claude/plugins/installed_plugins.json` to find sibling plugins:
-- Only includes plugins from the family: claude-mantra, claude-memento, claude-onus
+- Only includes plugins from the family: mantra, memento, onus
 - Only includes plugins where `projectPath` matches the current working directory
 - Loads `context/*.yml` from each sibling's install path
 
@@ -69,7 +69,7 @@ On refresh, the hook:
 ### context-format.yml
 [contents from plugin root]
 
-## From: claude-memento@flexion-claude-memento
+## From: memento@flexion-memento
 ### sessions.yml
 [contents from sibling plugin]
 

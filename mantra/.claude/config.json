@@ -1,5 +1,5 @@
 {
-  "name": "claude-mantra",
+  "name": "mantra",
   "description": "Periodic context refresh plugin for Claude Code sessions",
   "runtime": {
     "type": "node",

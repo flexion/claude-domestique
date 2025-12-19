@@ -1,4 +1,4 @@
-# claude-mantra
+# mantra
 
 > I told you. You agreed. You forgot. Repeat.
 
@@ -6,7 +6,7 @@ Periodic context refresh plugin for Claude Code sessions.
 
 Claude is brilliant. Claude is helpful. Claude also has the memory of a goldfish in a context window. You've written the perfect CLAUDE.md. You've carefully documented your project conventions. Claude reads it. Claude agrees. Claude then proceeds to ignore half of it by turn 47.
 
-**claude-mantra** solves this by periodically re-injecting key instruction files into Claude's working context—reinforcing the behavioral guidance before it fades into the abyss of distant tokens.
+**mantra** solves this by periodically re-injecting key instruction files into Claude's working context—reinforcing the behavioral guidance before it fades into the abyss of distant tokens.
 
 ## Features
 
@@ -15,7 +15,7 @@ Claude is brilliant. Claude is helpful. Claude also has the memory of a goldfish
 - **Periodic refresh** - Re-injects context files every N interactions
 - **Base context** - Ships with behavior rules (skeptical-first, evidence-based troubleshooting)
 - **Project extensions** - Add project-specific context via `.claude/context/*.yml`
-- **Sibling plugin discovery** - Automatically loads context from claude-memento and claude-onus
+- **Sibling plugin discovery** - Automatically loads context from memento and onus
 - **CLAUDE.md fallback** - Works with existing CLAUDE.md if no context directory
 - **Lightweight** - Native Claude Code hook, no external dependencies
 
@@ -25,10 +25,10 @@ Claude is brilliant. Claude is helpful. Claude also has the memory of a goldfish
 
 ```bash
 # Add the GitHub repo as a marketplace
-/plugin marketplace add flexion/claude-mantra
+/plugin marketplace add flexion/mantra
 
 # Install the plugin
-/plugin install claude-mantra@claude-mantra
+/plugin install mantra@mantra
 
 # Scaffold context files for your project
 /init
@@ -46,14 +46,14 @@ For rapid iteration during plugin development:
 
 ```bash
 # Add local path as a marketplace
-/plugin marketplace add /path/to/claude-mantra
+/plugin marketplace add /path/to/mantra
 
 # Install from local
-/plugin install claude-mantra@claude-mantra
+/plugin install mantra@mantra
 
 # After changes: uninstall and reinstall
-/plugin uninstall claude-mantra@claude-mantra
-/plugin install claude-mantra@claude-mantra
+/plugin uninstall mantra@mantra
+/plugin install mantra@mantra
 ```
 
 ## Usage
@@ -170,13 +170,13 @@ Mantra isn't just about remembering project conventions. It's about **overriding
 
 ## Plugin Family
 
-claude-mantra is part of a plugin family that works together:
+mantra is part of a plugin family that works together:
 
 | Plugin | Purpose | Layer |
 |--------|---------|-------|
-| **[claude-memento](https://github.com/flexion/claude-memento)** | Session persistence | Persistence |
-| **[claude-mantra](https://github.com/flexion/claude-mantra)** | Context refresh | Injection |
-| **[claude-onus](https://github.com/flexion/claude-onus)** | Work-item automation | Integration |
+| **[memento](https://github.com/flexion/claude-domestique/tree/main/memento)** | Session persistence | Persistence |
+| **[mantra](https://github.com/flexion/claude-domestique/tree/main/mantra)** | Context refresh | Injection |
+| **[onus](https://github.com/flexion/claude-domestique/tree/main/onus)** | Work-item automation | Integration |
 
 ### How They Work Together
 

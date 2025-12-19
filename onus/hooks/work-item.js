@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * claude-onus: Work item automation hook
+ * onus: Work item automation hook
  *
  * Runs on:
  * - SessionStart: Detect branch, extract issue number, inject work item context
@@ -14,8 +14,8 @@
  * 5. Track which acceptance criteria may be addressed
  *
  * Integration:
- * - Works with claude-memento for session persistence
- * - Works with claude-mantra for context refresh
+ * - Works with memento for session persistence
+ * - Works with mantra for context refresh
  */
 
 const fs = require('fs');

@@ -11,7 +11,7 @@ Rework context loading architecture to separate base behavior (plugin-provided) 
 
 ### New Structure
 ```
-claude-mantra/
+mantra/
 ├── context/                      # Plugin's base context (shipped with plugin)
 │   ├── behavior.yml              # Base AI behavior rules
 │   ├── behavior.md               # Detailed behavior guide
@@ -61,7 +61,7 @@ claude-mantra/
 ### 2024-12-16 - Sibling Plugin Discovery
 - Added sibling plugin discovery: reads `~/.claude/plugins/installed_plugins.json`
 - Filters siblings by `projectPath === cwd` (only project-scoped plugins)
-- Only loads from plugin family: claude-mantra, claude-memento, claude-onus
+- Only loads from plugin family: mantra, memento, onus
 - Loads context from sibling plugins' `context/` directories
 - Loading order: base → siblings → project → CLAUDE.md
 - Removed duplicate `scripts/context-refresh.js` (hook only in `.claude/hooks/`)

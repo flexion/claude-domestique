@@ -1,4 +1,4 @@
-# claude-onus Roadmap
+# onus Roadmap
 
 ## Phase 1: GitHub Issues (Foundation)
 
@@ -62,7 +62,7 @@ Make it actually smart.
 
 ## Integration Milestones
 
-| Milestone | claude-memento integration |
+| Milestone | memento integration |
 |-----------|---------------------------|
 | Phase 1 | Populate session files from GitHub issues |
 | Phase 3 | Populate from JIRA issues |

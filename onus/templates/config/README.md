@@ -1,6 +1,6 @@
 # Configuration Templates
 
-This directory contains template configuration files for claude-onus.
+This directory contains template configuration files for onus.
 
 ## config.json.example
 

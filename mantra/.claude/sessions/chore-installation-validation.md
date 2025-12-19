@@ -1,7 +1,7 @@
 # Chore: Installation Validation
 
 ## Goal
-Validate how consumers will install and configure the claude-mantra plugin in their projects.
+Validate how consumers will install and configure the mantra plugin in their projects.
 
 ## Status
 Complete - PR #7 created
@@ -30,10 +30,10 @@ Migrated from npm/npx approach to official Claude Code plugin format.
 
 ## Installation (for consumers)
 ```bash
-/plugin marketplace add flexion/claude-mantra
-/plugin install claude-mantra@flexion-mantra
+/plugin marketplace add flexion/mantra
+/plugin install mantra@flexion-mantra
 /init
 ```
 
 ## PR
-https://github.com/flexion/claude-mantra/pull/7
+https://github.com/flexion/claude-domestique/tree/main/mantra/pull/7

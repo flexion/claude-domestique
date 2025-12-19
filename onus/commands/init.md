@@ -24,7 +24,7 @@ Options:
 
 **If GitHub:**
 - Owner/organization name (e.g., `flexion`)
-- Repository name (e.g., `claude-onus`)
+- Repository name (e.g., `onus`)
 
 **If JIRA:**
 - JIRA host (e.g., `company.atlassian.net`)

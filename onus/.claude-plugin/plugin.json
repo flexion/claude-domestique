@@ -1,5 +1,5 @@
 {
-  "name": "claude-onus",
+  "name": "onus",
   "version": "0.1.0",
   "description": "Work item automation for Claude Code - fetches issues, generates commits/PRs, syncs progress",
   "author": {

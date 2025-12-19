@@ -9,7 +9,7 @@ description: plugin-design
 parent: main
 
 ## Current Work
-Designing claude-mantra plugin architecture
+Designing mantra plugin architecture
 
 ## Next Steps
 Architecture discussion to determine plugin type

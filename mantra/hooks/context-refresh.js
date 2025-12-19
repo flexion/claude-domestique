@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * claude-mantra: Periodic context refresh hook
+ * mantra: Periodic context refresh hook
  *
  * Runs on:
  * - SessionStart: Inject context immediately on new/resumed sessions
@@ -159,14 +159,14 @@ function readInstalledPluginsRegistry() {
 
 // Known plugin family - only load context from these siblings
 const PLUGIN_FAMILY = [
-  'claude-mantra',
-  'claude-memento',
-  'claude-onus'
+  'mantra',
+  'memento',
+  'onus'
 ];
 
 /**
  * Check if a plugin ID belongs to the known plugin family
- * @param {string} pluginId - Plugin ID (e.g., "claude-memento@flexion-claude-memento")
+ * @param {string} pluginId - Plugin ID (e.g., "memento@flexion-memento")
  * @returns {boolean} - True if plugin is in the family
  */
 function isPluginFamilyMember(pluginId) {

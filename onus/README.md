@@ -1,4 +1,4 @@
-# claude-onus
+# onus
 
 > "The burden is mine now."
 
@@ -17,10 +17,10 @@ You groan. The context switch kills your momentum. You write "fixed bug" and mov
 
 ## The Solution
 
-claude-onus handles the project management bureaucracy:
+onus handles the project management bureaucracy:
 
 - **Fetches work items** from GitHub Issues, JIRA, Azure DevOps
-- **Auto-populates sessions** with issue details (integrates with [claude-memento](https://github.com/flexion/claude-memento))
+- **Auto-populates sessions** with issue details (integrates with [memento](https://github.com/flexion/claude-domestique/tree/main/memento))
 - **Generates commit messages** that reference tickets properly
 - **Creates PR descriptions** from your session and work item
 - **Updates work items** with progress (bidirectional sync)
@@ -38,13 +38,13 @@ You code. Claude carries the burden.
 
 ## Plugin Family
 
-claude-onus is part of a plugin family that works together:
+onus is part of a plugin family that works together:
 
 | Plugin | Purpose | Layer |
 |--------|---------|-------|
-| **[claude-memento](https://github.com/flexion/claude-memento)** | Session persistence | Persistence |
-| **[claude-mantra](https://github.com/flexion/claude-mantra)** | Context refresh | Injection |
-| **[claude-onus](https://github.com/flexion/claude-onus)** | Work-item automation | Integration |
+| **[memento](https://github.com/flexion/claude-domestique/tree/main/memento)** | Session persistence | Persistence |
+| **[mantra](https://github.com/flexion/claude-domestique/tree/main/mantra)** | Context refresh | Injection |
+| **[onus](https://github.com/flexion/claude-domestique/tree/main/onus)** | Work-item automation | Integration |
 
 ### How They Work Together
 

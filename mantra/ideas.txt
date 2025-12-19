@@ -1,9 +1,9 @@
-claude-mantra
+mantra
 I told you. You agreed. You forgot. Repeat.
 
 Claude is brilliant. Claude is helpful. Claude also has the memory of a goldfish in a context window.
 You've written the perfect CLAUDE.md. You've carefully documented your project conventions, architectural decisions, and coding standards. Claude reads it. Claude agrees it's excellent guidance. Claude then proceeds to ignore half of it by turn 47.
-claude-mantra solves this by periodically re-injecting key instruction files into Claude's working context—reinforcing the behavioral guidance you've already provided before it fades into the abyss of distant tokens.
+mantra solves this by periodically re-injecting key instruction files into Claude's working context—reinforcing the behavioral guidance you've already provided before it fades into the abyss of distant tokens.
 
 Think of it as a parent walking into the room every 20 minutes to say "Remember what we talked about?"—except automated, and without the disappointed sigh.
 
@@ -27,7 +27,7 @@ I'd like to extract the ideas from this agent
 - Make the freshness of the context apparent with every prompt response -- this is a context drift detector for the user
 - Do not overwhelm working context with context reenforcement -- we neext context to do actual work and not just how to do the work
 - make the refresh fast but obvious that it happened
-- upstream project is https://github.com/flexion/claude-mantra.git
+- upstream project is https://github.com/flexion/claude-domestique/tree/main/mantra.git
 - copy /Users/dpuglielli/github/flexion/claude-domestique/context into this project under ./claude/context
   - change the files to pertain to this project
   - instruct claude to use them for developing this plugin

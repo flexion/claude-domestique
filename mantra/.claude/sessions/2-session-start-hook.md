@@ -5,7 +5,7 @@
 - Title: Add SessionStart hook for context refresh on session start
 - Created: 2024-12-07
 - Status: In Progress
-- GitHub URL: https://github.com/flexion/claude-mantra/issues/2
+- GitHub URL: https://github.com/flexion/claude-domestique/tree/main/mantra/issues/2
 
 ## Objective
 Add a SessionStart hook that injects context immediately when a session starts, resumes, clears, or compacts.

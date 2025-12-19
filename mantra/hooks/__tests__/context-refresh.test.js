@@ -476,16 +476,16 @@ describe('context-refresh hook', () => {
     });
 
     it('PLUGIN_FAMILY contains mantra, memento, onus', () => {
-      expect(PLUGIN_FAMILY).toContain('claude-mantra');
-      expect(PLUGIN_FAMILY).toContain('claude-memento');
-      expect(PLUGIN_FAMILY).toContain('claude-onus');
+      expect(PLUGIN_FAMILY).toContain('mantra');
+      expect(PLUGIN_FAMILY).toContain('memento');
+      expect(PLUGIN_FAMILY).toContain('onus');
       expect(PLUGIN_FAMILY).toHaveLength(3);
     });
 
     it('isPluginFamilyMember returns true for family plugins', () => {
-      expect(isPluginFamilyMember('claude-mantra@flexion-claude-mantra')).toBe(true);
-      expect(isPluginFamilyMember('claude-memento@flexion-claude-memento')).toBe(true);
-      expect(isPluginFamilyMember('claude-onus@flexion-claude-onus')).toBe(true);
+      expect(isPluginFamilyMember('mantra@flexion-mantra')).toBe(true);
+      expect(isPluginFamilyMember('memento@flexion-memento')).toBe(true);
+      expect(isPluginFamilyMember('onus@flexion-onus')).toBe(true);
     });
 
     it('isPluginFamilyMember returns false for non-family plugins', () => {
@@ -563,7 +563,7 @@ describe('context-refresh hook', () => {
       const registryFile = path.join(registryDir, 'installed_plugins.json');
       fs.writeFileSync(registryFile, JSON.stringify({
         plugins: {
-          'claude-memento@test': [{ projectPath: tmpDir, installPath: '/some/path' }]
+          'memento@test': [{ projectPath: tmpDir, installPath: '/some/path' }]
         }
       }));
 
@@ -572,7 +572,7 @@ describe('context-refresh hook', () => {
       const registry = readInstalledPluginsRegistry();
       expect(registry).not.toBeNull();
       expect(registry.plugins).toBeDefined();
-      expect(registry.plugins['claude-memento@test']).toBeDefined();
+      expect(registry.plugins['memento@test']).toBeDefined();
     });
 
     it('readInstalledPluginsRegistry returns null on invalid JSON', () => {
@@ -633,7 +633,7 @@ describe('context-refresh hook', () => {
 
       fs.writeFileSync(registryFile, JSON.stringify({
         plugins: {
-          'claude-memento@flexion': [{ projectPath: tmpDir, installPath: siblingDir }]
+          'memento@flexion': [{ projectPath: tmpDir, installPath: siblingDir }]
         }
       }));
 
@@ -644,7 +644,7 @@ describe('context-refresh hook', () => {
 
       const siblings = findSiblingPlugins(tmpDir);
       expect(siblings).toHaveLength(1);
-      expect(siblings[0].pluginId).toBe('claude-memento@flexion');
+      expect(siblings[0].pluginId).toBe('memento@flexion');
       expect(siblings[0].contextDir).toContain('context');
     });
 
@@ -659,7 +659,7 @@ describe('context-refresh hook', () => {
 
       fs.writeFileSync(registryFile, JSON.stringify({
         plugins: {
-          'claude-mantra@flexion': [{ projectPath: tmpDir, installPath: ownPluginDir }]
+          'mantra@flexion': [{ projectPath: tmpDir, installPath: ownPluginDir }]
         }
       }));
 
@@ -683,7 +683,7 @@ describe('context-refresh hook', () => {
 
       fs.writeFileSync(registryFile, JSON.stringify({
         plugins: {
-          'claude-memento@flexion': [{ projectPath: tmpDir, installPath: siblingDir }]
+          'memento@flexion': [{ projectPath: tmpDir, installPath: siblingDir }]
         }
       }));
 
@@ -704,7 +704,7 @@ describe('context-refresh hook', () => {
 
       fs.writeFileSync(registryFile, JSON.stringify({
         plugins: {
-          'claude-memento@flexion': [{ projectPath: tmpDir, installPath: siblingDir }]
+          'memento@flexion': [{ projectPath: tmpDir, installPath: siblingDir }]
         }
       }));
 
@@ -715,7 +715,7 @@ describe('context-refresh hook', () => {
 
       const siblingContexts = findSiblingContextFiles(tmpDir);
       expect(siblingContexts).toHaveLength(1);
-      expect(siblingContexts[0].pluginId).toBe('claude-memento@flexion');
+      expect(siblingContexts[0].pluginId).toBe('memento@flexion');
       expect(siblingContexts[0].files).toHaveLength(1);
     });
 
@@ -731,7 +731,7 @@ describe('context-refresh hook', () => {
 
       fs.writeFileSync(registryFile, JSON.stringify({
         plugins: {
-          'claude-memento@flexion': [{ projectPath: tmpDir, installPath: siblingDir }]
+          'memento@flexion': [{ projectPath: tmpDir, installPath: siblingDir }]
         }
       }));
 
@@ -755,7 +755,7 @@ describe('context-refresh hook', () => {
 
       fs.writeFileSync(registryFile, JSON.stringify({
         plugins: {
-          'claude-memento@flexion': [{ projectPath: tmpDir, installPath: siblingDir }]
+          'memento@flexion': [{ projectPath: tmpDir, installPath: siblingDir }]
         }
       }));
 
@@ -773,7 +773,7 @@ describe('context-refresh hook', () => {
       fs.writeFileSync(path.join(tmpDir, 'CLAUDE.md'), '# Test');
 
       const content = buildContextContent(tmpDir, cfg, 'test');
-      expect(content).toContain('From: claude-memento@flexion');
+      expect(content).toContain('From: memento@flexion');
       expect(content).toContain('memory: persistent');
     });
 

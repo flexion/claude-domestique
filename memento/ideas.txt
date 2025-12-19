@@ -1,0 +1,34 @@
+"Remember Sammy Jankis."
+
+  Like Leonard in Memento, Claude can't form long-term memories. memento gives Claude its tattoos—session 
+  files that persist decisions, progress, and context across conversation resets. 
+
+In Christopher Nolan's Memento (2000), Leonard Shelby suffers from anterograde amnesia—he can't form new 
+  memories. Every few minutes, his slate wipes clean. To function, he tattoos critical facts on his body and leaves
+   himself Polaroids and notes. Each morning he wakes up, pieces together his own breadcrumbs, and continues his 
+  mission.
+
+Claude has the same problem. Context window fills up, conversation resets, and everything learned—decisions made,
+   approaches tried, dead ends discovered—vanishes. memento is Leonard's system for Claude: persistent 
+  session files that survive the reset, letting Claude wake up, read its own notes, and pick up exactly where it 
+  left off.
+
+  - Intended to work in concert with source control
+    - this branch has this session file
+    - all the decisions, todos, and context to work on this feature/chore are easily referenciable by this branch
+  - Persists important todos, decisions across claude sessions by persisting them in a file
+  - 1 Session = 1 Issue = 1 Branch - enforces clean mapping between work units
+  - Branch metadata files - compact lookup to find session from current branch
+  - Session templates - standardized structure for feature vs chore sessions
+  - Automatic context restoration - "What's next?" triggers branch → session → next steps lookup
+  - Session log - chronological record of what was done, when, and why
+  - Key decisions documentation - captures WHY, not just WHAT (architectural rationale)
+  - Learnings capture - what surprised you, what would you do differently
+  - Files changed tracking - inventory of modified files for handoff
+  - Atomic commits - session file versions WITH the code it describes
+  - Team handoffs - teammate checks out branch, reads session, has full context
+  - Survives conversation resets - context window fills up, start new chat, read session, continue
+  - Survives context compaction - when Claude summarizes, session file has the real details
+  - Progress checkpointing - update throughout work, not just at the end
+  - Blockers documentation - capture what's blocking and why before stepping away
+  - all tools should be wrtten in javascript since node is a requirement of claude cli.

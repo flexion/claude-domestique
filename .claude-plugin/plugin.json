@@ -1,0 +1,9 @@
+{
+  "name": "domestique",
+  "version": "0.1.0",
+  "description": "Claude Domestique - Your strategic coding partner. Marketplace for memento, mantra, and onus plugins.",
+  "author": {
+    "name": "David Puglielli"
+  },
+  "marketplace": true
+}

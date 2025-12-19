@@ -1,6 +1,6 @@
 # Context Module Format Guide
 
-This document explains the claude-mantra context system - how to structure, write, and extend context files that keep Claude aligned with your project conventions.
+This document explains the mantra context system - how to structure, write, and extend context files that keep Claude aligned with your project conventions.
 
 ## The Problem: Context Drift
 
@@ -14,7 +14,7 @@ Claude has excellent capabilities but suffers from "context drift" - as conversa
 
 ## The Solution: Periodic Context Refresh
 
-claude-mantra periodically re-injects key context files, reinforcing guidance throughout the session. Think of it as a "mantra" - repeated phrases to focus the mind.
+mantra periodically re-injects key context files, reinforcing guidance throughout the session. Think of it as a "mantra" - repeated phrases to focus the mind.
 
 ## Two-Tier File Pattern
 
