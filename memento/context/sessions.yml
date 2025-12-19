@@ -3,6 +3,18 @@
 
 MANDATORY-REREAD: before-implementation-start, before-whats-next-queries (use-thinking-block)
 
+## WHAT'S-NEXT RESPONSE (BLOCKING - FIRST ACTION)
+when-user-asks: "what's next", "where were we", "continue", any-resumption-query
+FIRST: read session file (use Read tool on .claude/sessions/<session>.md)
+THEN: optionally fetch issue (only if details needed beyond session)
+NEVER: fetch issue, explore code, or answer before reading session file
+rationale: session-file-is-truth (captures decisions, context, next-steps already)
+steps:
+  1. Check .claude/branches/<current-branch-sanitized> for session mapping
+  2. Read the session file from .claude/sessions/ (find "Next Steps" section)
+  3. Answer based on session content
+NEVER guess or assume current branch - ALWAYS check git branch first
+
 ## Session = Long-term Memory
 purpose: persist state across conversation resets (context window cleanup)
 mapping: 1 session = 1 issue = 1 branch = 1 branch-metadata-file
@@ -17,14 +29,7 @@ must-show: "Verifying session exists per sessions.yml"
 
 ## Auto-Detection
 on-startup: git branch → .claude/branches/<sanitized> → load session file
-user-asks: "What's next?" or "What are we working on?"
 manual: "Read .claude/sessions/<file>.md"
-
-## CRITICAL: Determining "What's Next"
-ALWAYS follow these steps in order:
-1. Check .claude/branches/<current-branch-sanitized> for session mapping
-2. Read the session file from .claude/sessions/ (find "Next Steps" section)
-NEVER guess or assume current branch - ALWAYS check git branch first
 
 ## Session Files
 location: .claude/sessions/
