@@ -1,0 +1,25 @@
+{
+  "onus": {
+    "platform": "github",
+    "github": {
+      "owner": "your-org",
+      "repo": "your-repo"
+    },
+    "jira": {
+      "host": "your-company.atlassian.net",
+      "project": "PROJ"
+    },
+    "azure": {
+      "org": "your-org",
+      "project": "your-project"
+    },
+    "commitFormat": "#{number} - {verb} {description}",
+    "branchFormat": "issue/{type}-{number}/{slug}"
+  },
+  "context": {
+    "periodicRefresh": {
+      "enabled": true,
+      "interval": 20
+    }
+  }
+}

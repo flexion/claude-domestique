@@ -1,0 +1,31 @@
+# .claude/context Format Guide - Compact Reference
+
+## Reading Compact YAML
+patterns:
+  flow: "→" (hook → inject → refresh)
+  priority: ">" (unit > integration > e2e)
+  list: commas (test: new-logic, conditionals, errors)
+  alternatives: "|" (issue/feature-N/desc | chore/desc)
+  negation: "no:", "skip:", "never:"
+  inline-examples: parens (branch: pattern (example: issue/feature-3/auth))
+
+interpret:
+  "test: a, b, c": test ALL of these
+  "skip: x, y, z": don't test ANY of these
+  "a > b > c": priority order (a highest)
+  "a → b → c": flow/sequence (a to b to c)
+  "a | b": either is valid
+
+## Writing Compact YAML
+do: shortest-phrasing, no-articles, operators (→ > |), key:value, one-fact-per-line
+dont: prose, explanations, complete-sentences, markdown-formatting, redundancy
+
+size-targets:
+  simple: 5-12 lines
+  config: 10-20 lines
+  max: 30 lines
+
+## Purpose
+for: claude (machine-optimized, fast parsing, minimal tokens)
+not-for: humans (use *.md files for docs)
+benefit: 89% token reduction (~7,750 → ~850 tokens)

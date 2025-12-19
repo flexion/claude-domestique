@@ -1,0 +1,48 @@
+# Project Context - Example Template
+# Rename to project.yml and customize for your project
+
+## Project Identity
+name: your-project-name
+description: brief description of what this project does
+domain: e.g., e-commerce, healthcare, fintech, devtools
+
+## Technology Stack
+language: e.g., typescript, python, go
+framework: e.g., react, django, gin
+database: e.g., postgres, mongodb, redis
+infrastructure: e.g., aws, gcp, kubernetes
+
+## Architecture Patterns
+patterns: e.g., repository-pattern, CQRS, event-sourcing
+structure: e.g., monolith, microservices, serverless
+
+## Conventions
+naming:
+  files: e.g., kebab-case, camelCase
+  functions: e.g., camelCase, snake_case
+  classes: e.g., PascalCase
+  constants: e.g., SCREAMING_SNAKE_CASE
+
+testing:
+  framework: e.g., jest, pytest, go test
+  coverage: e.g., minimum 80%
+  style: e.g., AAA (arrange-act-assert), BDD
+
+## Commands
+# Common commands for this project
+build: npm run build
+test: npm test
+lint: npm run lint
+dev: npm run dev
+
+## Key Directories
+# Help Claude understand your project structure
+src: source code
+tests: test files
+docs: documentation
+scripts: utility scripts
+
+## Domain Terminology
+# Project-specific terms Claude should know
+# term: definition
+# example: "widget" means a dashboard component in this project
