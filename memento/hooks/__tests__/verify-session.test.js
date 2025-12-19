@@ -319,3 +319,119 @@ describe('verify-session.js', () => {
     });
   });
 });
+
+  describe('getGitRoot', () => {
+    const { getGitRoot } = require('../verify-session.js');
+    let tempDir;
+
+    beforeEach(() => {
+      tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'memento-gitroot-test-'));
+    });
+
+    afterEach(() => {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    });
+
+    it('returns git root from subdirectory', () => {
+      // Initialize git at tempDir
+      execSync('git init', { cwd: tempDir, stdio: 'pipe' });
+      execSync('git config user.email "test@test.com"', { cwd: tempDir, stdio: 'pipe' });
+      execSync('git config user.name "Test"', { cwd: tempDir, stdio: 'pipe' });
+      
+      // Create subdirectory
+      const subDir = path.join(tempDir, 'packages', 'core');
+      fs.mkdirSync(subDir, { recursive: true });
+      
+      // Get git root from subdirectory
+      const gitRoot = getGitRoot(subDir);
+      
+      assert.strictEqual(fs.realpathSync(gitRoot), fs.realpathSync(tempDir));
+    });
+
+    it('returns null when not in a git repo', () => {
+      const gitRoot = getGitRoot(tempDir);
+      assert.strictEqual(gitRoot, null);
+    });
+  });
+
+  describe('processPreToolUse with subdirectories', () => {
+    let tempDir;
+
+    beforeEach(() => {
+      tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'memento-subdir-test-'));
+    });
+
+    afterEach(() => {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    });
+
+    it('finds session at git root when cwd is subdirectory', () => {
+      // Set up .claude directory with session at root
+      const claudeDir = path.join(tempDir, '.claude');
+      const sessionsDir = path.join(claudeDir, 'sessions');
+      const branchesDir = path.join(claudeDir, 'branches');
+      fs.mkdirSync(sessionsDir, { recursive: true });
+      fs.mkdirSync(branchesDir, { recursive: true });
+
+      // Create session file
+      fs.writeFileSync(path.join(sessionsDir, 'chore-update-deps.md'), '# Session');
+
+      // Create branch metadata
+      fs.writeFileSync(
+        path.join(branchesDir, 'chore-update-deps'),
+        'session: chore-update-deps.md\nstatus: in-progress'
+      );
+
+      // Create subdirectory (simulating monorepo package)
+      const subDir = path.join(tempDir, 'packages', 'core');
+      fs.mkdirSync(subDir, { recursive: true });
+
+      // Initialize git on feature branch
+      execSync('git init', { cwd: tempDir, stdio: 'pipe' });
+      execSync('git config user.email "test@test.com"', { cwd: tempDir, stdio: 'pipe' });
+      execSync('git config user.name "Test"', { cwd: tempDir, stdio: 'pipe' });
+      fs.writeFileSync(path.join(tempDir, '.gitkeep'), '');
+      execSync('git add .gitkeep', { cwd: tempDir, stdio: 'pipe' });
+      execSync('git commit -m "init"', { cwd: tempDir, stdio: 'pipe' });
+      execSync('git checkout -b chore/update-deps', { cwd: tempDir, stdio: 'pipe' });
+
+      // Call from subdirectory - should find session at git root
+      const result = processPreToolUse({
+        cwd: subDir,  // subdirectory, not git root
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Edit',
+        tool_input: { file_path: path.join(subDir, 'src/index.js') }
+      });
+
+      assert.strictEqual(result.decision, 'approve');
+    });
+
+    it('blocks when no session exists even from subdirectory', () => {
+      // Set up .claude directory at root (no session)
+      fs.mkdirSync(path.join(tempDir, '.claude', 'sessions'), { recursive: true });
+
+      // Create subdirectory
+      const subDir = path.join(tempDir, 'packages', 'core');
+      fs.mkdirSync(subDir, { recursive: true });
+
+      // Initialize git on feature branch
+      execSync('git init', { cwd: tempDir, stdio: 'pipe' });
+      execSync('git config user.email "test@test.com"', { cwd: tempDir, stdio: 'pipe' });
+      execSync('git config user.name "Test"', { cwd: tempDir, stdio: 'pipe' });
+      fs.writeFileSync(path.join(tempDir, '.gitkeep'), '');
+      execSync('git add .gitkeep', { cwd: tempDir, stdio: 'pipe' });
+      execSync('git commit -m "init"', { cwd: tempDir, stdio: 'pipe' });
+      execSync('git checkout -b feature/new-feature', { cwd: tempDir, stdio: 'pipe' });
+
+      // Call from subdirectory - should still block (no session at git root)
+      const result = processPreToolUse({
+        cwd: subDir,
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Edit',
+        tool_input: { file_path: path.join(subDir, 'src/index.js') }
+      });
+
+      assert.strictEqual(result.decision, 'block');
+      assert.ok(result.reason.includes('Session Required'));
+    });
+  });

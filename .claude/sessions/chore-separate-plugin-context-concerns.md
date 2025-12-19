@@ -55,3 +55,6 @@ Run all test suites
 ## Notes
 - This is a self-referential project: we're modifying the plugins that are also running
 - Changes won't take effect until plugins are reinstalled
+
+## Session Log
+- 2025-12-19: Fixed verify-session.js subdirectory bug - hook now uses git root instead of cwd
