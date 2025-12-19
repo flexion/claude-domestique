@@ -1,0 +1,11 @@
+{
+  "onus": {
+    "platform": "github",
+    "github": {
+      "owner": "flexion",
+      "repo": "claude-domestique"
+    },
+    "commitFormat": "#{number} - {verb} {description}",
+    "branchFormat": "issue/{type}-{number}/{slug}"
+  }
+}

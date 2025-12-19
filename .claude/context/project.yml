@@ -1,0 +1,44 @@
+# Claude Domestique - Project Context
+
+## META (CRITICAL)
+self-referential: source-code-for-plugins-that-are-also-running
+distinguish:
+  source: mantra/, memento/, onus/ (what we develop)
+  running: installed plugins injecting this context
+changes-to-source: require-reinstall-to-take-effect
+
+## OVERVIEW
+name: claude-domestique
+type: claude-code-plugin-marketplace
+plugins: memento (sessions), mantra (context-refresh), onus (work-items)
+relationship: independent-but-enhanced-together
+
+## STRUCTURE
+monorepo: each plugin in own directory
+plugin-pattern:
+  hooks/: implementations (SessionStart, UserPromptSubmit)
+  context/: base *.yml files shipped with plugin
+  commands/: skill *.md files
+  templates/: scaffolding
+  scripts/: init scripts
+  .claude-plugin/plugin.json: manifest
+
+## TESTING
+mantra: jest (cd mantra && npm test)
+memento: node-test-runner (cd memento && npm test)
+onus: jest (cd onus && npm test)
+pattern: dependency-injection for paths/filesystem
+
+## HOOK PATTERN
+input: JSON on stdin (hook_event_name, cwd, etc.)
+output: JSON with systemMessage, hookSpecificOutput
+events: SessionStart, UserPromptSubmit
+
+## STATE LOCATIONS
+mantra: ~/.claude/mantra-state.json
+memento: ~/.claude/memento-state.json
+onus: ~/.claude/onus/state.json, ~/.claude/onus/work-item-cache.json
+
+## SHARED CODE
+branch-parsing: memento/tools/session.js (parseBranchName)
+convention: 1-session = 1-issue = 1-branch
