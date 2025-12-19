@@ -1,9 +1,13 @@
 {
   "name": "onus",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Work item automation for Claude Code - fetches issues, generates commits/PRs, syncs progress",
+  "contextFamily": "domestique",
   "author": {
     "name": "David Puglielli"
   },
-  "commands": ["./commands/init.md", "./commands/fetch.md"]
+  "commands": [
+    "./commands/init.md",
+    "./commands/fetch.md"
+  ]
 }

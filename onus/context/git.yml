@@ -1,5 +1,6 @@
 # Git Workflow - Compact Reference
 # For examples and PR templates, see: git.md
+# For work-item integration (lifecycle, acceptance criteria), see: work-items.yml
 
 MANDATORY-REREAD: before-commit, before-PR (use-thinking-block-verification)
 

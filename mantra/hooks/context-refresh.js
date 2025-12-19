@@ -157,25 +157,49 @@ function readInstalledPluginsRegistry() {
   return null;
 }
 
-// Known plugin family - only load context from these siblings
-const PLUGIN_FAMILY = [
-  'mantra',
-  'memento',
-  'onus'
-];
+/**
+ * Read a plugin's contextFamily from its manifest
+ * @param {string} installPath - Plugin installation directory
+ * @returns {string|null} - contextFamily value or null if not found
+ */
+function getPluginContextFamily(installPath) {
+  try {
+    const manifestPath = path.join(installPath, '.claude-plugin', 'plugin.json');
+    if (fs.existsSync(manifestPath)) {
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+      return manifest.contextFamily || null;
+    }
+  } catch (e) {
+    // Ignore errors - treat as no family
+  }
+  return null;
+}
 
 /**
- * Check if a plugin ID belongs to the known plugin family
- * @param {string} pluginId - Plugin ID (e.g., "memento@flexion-memento")
- * @returns {boolean} - True if plugin is in the family
+ * Get this plugin's contextFamily from its own manifest
+ * @returns {string|null}
  */
-function isPluginFamilyMember(pluginId) {
-  return PLUGIN_FAMILY.some(name => pluginId.startsWith(name));
+function getOwnContextFamily() {
+  return getPluginContextFamily(_paths.pluginRoot);
+}
+
+/**
+ * Check if a plugin is in the same contextFamily as this plugin
+ * Uses manifest-based discovery instead of hardcoded names
+ * @param {string} installPath - Plugin installation directory
+ * @returns {boolean} - True if plugin shares the same contextFamily
+ */
+function isPluginFamilyMember(installPath) {
+  const ownFamily = getOwnContextFamily();
+  if (!ownFamily) return false; // This plugin has no family
+
+  const siblingFamily = getPluginContextFamily(installPath);
+  return siblingFamily === ownFamily;
 }
 
 /**
  * Find sibling plugins installed in the same project
- * Only includes plugins from the known family (mantra, memento, onus)
+ * Only includes plugins that share the same contextFamily (manifest-based discovery)
  * @param {string} cwd - Current working directory (project path)
  * @returns {Array<{pluginId: string, installPath: string, contextDir: string}>} - Sibling plugins with context
  */
@@ -188,25 +212,27 @@ function findSiblingPlugins(cwd) {
   const siblings = [];
 
   for (const [pluginId, installations] of Object.entries(registry.plugins)) {
-    // Only include plugins from the known family
-    if (!isPluginFamilyMember(pluginId)) {
-      continue;
-    }
-
     for (const installation of installations) {
       // Only include plugins installed for the same project
       if (installation.projectPath === cwd) {
+        // Skip our own plugin (avoid duplicate loading)
+        if (installation.installPath === _paths.pluginRoot) {
+          continue;
+        }
+
+        // Only include plugins from the same contextFamily (manifest-based check)
+        if (!isPluginFamilyMember(installation.installPath)) {
+          continue;
+        }
+
         const contextDir = path.join(installation.installPath, 'context');
         // Only include if plugin has a context directory
         if (fs.existsSync(contextDir)) {
-          // Skip our own plugin (avoid duplicate loading)
-          if (installation.installPath !== _paths.pluginRoot) {
-            siblings.push({
-              pluginId,
-              installPath: installation.installPath,
-              contextDir
-            });
-          }
+          siblings.push({
+            pluginId,
+            installPath: installation.installPath,
+            contextDir
+          });
         }
       }
     }
@@ -466,6 +492,8 @@ module.exports = {
   findSiblingPlugins,
   findSiblingContextFiles,
   readInstalledPluginsRegistry,
+  getPluginContextFamily,
+  getOwnContextFamily,
   isPluginFamilyMember,
   readClaudeMd,
   readContextFiles,
@@ -474,7 +502,6 @@ module.exports = {
   PLUGIN_ROOT,
   BASE_CONTEXT_DIR,
   INSTALLED_PLUGINS_FILE,
-  PLUGIN_FAMILY,
   // Testing helpers
   _setPathsForTesting,
   _resetPaths

@@ -1,6 +1,6 @@
 {
   "name": "@claude-domestique/onus",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Work item automation plugin for Claude Code - fetches issues, generates commits/PRs, syncs progress",
   "main": "index.js",
   "bin": {
