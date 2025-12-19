@@ -294,9 +294,12 @@ function processUserPromptSubmit(input, config = {}) {
   const sessionName = path.basename(info.session.path, '.md');
   const displayMsg = `📍 Memento: ${sessionName} (${state.count}/${cfg.updateInterval})`;
 
-  let additionalContext = '';
+  // Always include session path and resumption guidance
+  let additionalContext = `📂 Session: ${info.session.path}
+For "what's next" or resumption queries: Read session file FIRST (not issue).`;
+
   if (shouldPromptUpdate) {
-    additionalContext = buildUpdatePrompt(info);
+    additionalContext += '\n' + buildUpdatePrompt(info);
   }
 
   return {

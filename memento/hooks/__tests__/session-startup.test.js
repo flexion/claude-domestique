@@ -344,7 +344,7 @@ describe('session-startup.js', () => {
       assert.strictEqual(result.hookSpecificOutput.additionalContext, '');
     });
 
-    it('returns empty context when not at update interval', () => {
+    it('returns session guidance when not at update interval', () => {
       // Set up session
       const claudeDir = path.join(tempDir, '.claude');
       const sessionsDir = path.join(claudeDir, 'sessions');
@@ -364,7 +364,7 @@ describe('session-startup.js', () => {
       execSync('git commit -m "init"', { cwd: tempDir, stdio: 'pipe' });
       execSync('git checkout -b feature/test', { cwd: tempDir, stdio: 'pipe' });
 
-      // Count at 5, interval at 10 - should not prompt
+      // Count at 5, interval at 10 - should not prompt for update but should include session guidance
       fs.writeFileSync(stateFile, JSON.stringify({ count: 5 }));
 
       const result = processUserPromptSubmit(
@@ -372,7 +372,12 @@ describe('session-startup.js', () => {
         { stateFile, updateInterval: 10 }
       );
 
-      assert.strictEqual(result.hookSpecificOutput.additionalContext, '');
+      // Should always include session path and resumption guidance
+      assert.ok(result.hookSpecificOutput.additionalContext.includes('Session:'));
+      assert.ok(result.hookSpecificOutput.additionalContext.includes('feature-test.md'));
+      assert.ok(result.hookSpecificOutput.additionalContext.includes('Read session file FIRST'));
+      // Should NOT include update prompt since not at interval
+      assert.ok(!result.hookSpecificOutput.additionalContext.includes('Session Update Reminder'));
     });
 
     it('returns update prompt when at update interval with session', () => {
