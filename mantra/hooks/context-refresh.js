@@ -158,48 +158,51 @@ function readInstalledPluginsRegistry() {
 }
 
 /**
- * Read a plugin's contextFamily from its manifest
- * @param {string} installPath - Plugin installation directory
- * @returns {string|null} - contextFamily value or null if not found
+ * Extract marketplace name from pluginId
+ * Plugin IDs are formatted as "pluginName@marketplaceName"
+ * @param {string} pluginId - Plugin ID (e.g., "mantra@claude-domestique")
+ * @returns {string|null} - Marketplace name or null if no @ separator
  */
-function getPluginContextFamily(installPath) {
-  try {
-    const manifestPath = path.join(installPath, '.claude-plugin', 'plugin.json');
-    if (fs.existsSync(manifestPath)) {
-      const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-      return manifest.contextFamily || null;
+function getMarketplaceFromPluginId(pluginId) {
+  if (!pluginId || typeof pluginId !== 'string') return null;
+  const atIndex = pluginId.indexOf('@');
+  if (atIndex === -1) return null;
+  return pluginId.slice(atIndex + 1) || null;
+}
+
+/**
+ * Get this plugin's marketplace by finding its entry in the registry
+ * @returns {string|null} - Marketplace name or null if not found
+ */
+function getOwnMarketplace() {
+  const registry = readInstalledPluginsRegistry();
+  if (!registry || !registry.plugins) return null;
+
+  for (const [pluginId, installations] of Object.entries(registry.plugins)) {
+    for (const installation of installations) {
+      if (installation.installPath === _paths.pluginRoot) {
+        return getMarketplaceFromPluginId(pluginId);
+      }
     }
-  } catch (e) {
-    // Ignore errors - treat as no family
   }
   return null;
 }
 
 /**
- * Get this plugin's contextFamily from its own manifest
- * @returns {string|null}
+ * Check if a plugin is in the same marketplace family as this plugin
+ * @param {string} pluginId - Plugin ID to check
+ * @param {string} ownMarketplace - This plugin's marketplace (passed to avoid repeated lookups)
+ * @returns {boolean} - True if plugin shares the same marketplace
  */
-function getOwnContextFamily() {
-  return getPluginContextFamily(_paths.pluginRoot);
-}
-
-/**
- * Check if a plugin is in the same contextFamily as this plugin
- * Uses manifest-based discovery instead of hardcoded names
- * @param {string} installPath - Plugin installation directory
- * @returns {boolean} - True if plugin shares the same contextFamily
- */
-function isPluginFamilyMember(installPath) {
-  const ownFamily = getOwnContextFamily();
-  if (!ownFamily) return false; // This plugin has no family
-
-  const siblingFamily = getPluginContextFamily(installPath);
-  return siblingFamily === ownFamily;
+function isPluginFamilyMember(pluginId, ownMarketplace) {
+  if (!ownMarketplace) return false;
+  const siblingMarketplace = getMarketplaceFromPluginId(pluginId);
+  return siblingMarketplace === ownMarketplace;
 }
 
 /**
  * Find sibling plugins installed in the same project
- * Only includes plugins that share the same contextFamily (manifest-based discovery)
+ * Only includes plugins that share the same marketplace (registry-based discovery)
  * @param {string} cwd - Current working directory (project path)
  * @returns {Array<{pluginId: string, installPath: string, contextDir: string}>} - Sibling plugins with context
  */
@@ -209,6 +212,7 @@ function findSiblingPlugins(cwd) {
     return [];
   }
 
+  const ownMarketplace = getOwnMarketplace();
   const siblings = [];
 
   for (const [pluginId, installations] of Object.entries(registry.plugins)) {
@@ -220,8 +224,8 @@ function findSiblingPlugins(cwd) {
           continue;
         }
 
-        // Only include plugins from the same contextFamily (manifest-based check)
-        if (!isPluginFamilyMember(installation.installPath)) {
+        // Only include plugins from the same marketplace family
+        if (!isPluginFamilyMember(pluginId, ownMarketplace)) {
           continue;
         }
 
@@ -492,8 +496,8 @@ module.exports = {
   findSiblingPlugins,
   findSiblingContextFiles,
   readInstalledPluginsRegistry,
-  getPluginContextFamily,
-  getOwnContextFamily,
+  getMarketplaceFromPluginId,
+  getOwnMarketplace,
   isPluginFamilyMember,
   readClaudeMd,
   readContextFiles,
