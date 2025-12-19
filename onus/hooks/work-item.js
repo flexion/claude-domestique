@@ -415,13 +415,17 @@ function generateSessionStartMessage(state, workItem) {
 /**
  * Generate prompt submit message
  */
-function generatePromptSubmitMessage(state, workItem, hasStagedChanges) {
+function generatePromptSubmitMessage(state, workItem, hasStagedChanges, branchChanged = false) {
   const parts = [];
 
   if (state.currentIssue) {
     parts.push(`📍 Onus: #${state.currentIssue}`);
   } else {
     parts.push('📍 Onus: No issue');
+  }
+
+  if (branchChanged) {
+    parts.push('branch switched');
   }
 
   if (hasStagedChanges) {
@@ -499,14 +503,34 @@ function processUserPromptSubmit(input, config = {}) {
   const state = loadState(cfg.stateFile);
   state.lastPrompt = new Date().toISOString();
 
+  // Check if branch changed since session start
+  const currentBranch = getCurrentBranch(cwd);
+  let branchChanged = false;
+  if (currentBranch !== state.currentBranch) {
+    branchChanged = true;
+    // Re-detect issue from new branch
+    const issueKey = extractIssueFromBranch(currentBranch, cfg.branchPatterns);
+    const platform = detectPlatform(issueKey);
+    state.currentBranch = currentBranch;
+    state.currentIssue = issueKey;
+    state.platform = platform;
+  }
+
   // Check for staged changes
   const staged = hasStagedChanges(cwd);
 
   // Get cached work item if we have an issue
   let workItem = null;
+  const cache = loadWorkItemCache(cfg.cacheFile);
   if (state.currentIssue) {
-    const cache = loadWorkItemCache(cfg.cacheFile);
     workItem = getCachedWorkItem(cache, state.currentIssue, state.platform || 'github');
+    // Create placeholder if branch changed and no cache exists
+    if (!workItem && branchChanged) {
+      workItem = createPlaceholderWorkItem(state.currentIssue, state.platform || 'github');
+      const cacheKey = `${state.platform || 'github'}:${state.currentIssue}`;
+      cache.items[cacheKey] = workItem;
+      saveWorkItemCache(cfg.cacheFile, cache);
+    }
   }
 
   // Save updated state
@@ -531,7 +555,7 @@ function processUserPromptSubmit(input, config = {}) {
   }
 
   return {
-    systemMessage: generatePromptSubmitMessage(state, workItem, staged),
+    systemMessage: generatePromptSubmitMessage(state, workItem, staged, branchChanged),
     hookSpecificOutput: {
       hookEventName: 'UserPromptSubmit',
       additionalContext: contextParts.join('\n')
