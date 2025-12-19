@@ -1,0 +1,34 @@
+# Git Workflow - Compact Reference
+# For examples, templates, and detailed guidance, see: git.md
+
+## Branches
+pattern: feature/<desc> | fix/<desc> | chore/<desc>
+# Or with issue numbers: issue/feature-<N>/<desc>
+from: main (always fetch first)
+
+## Commits
+format: "type: description" | "#N - description"
+style: lowercase, imperative-mood
+body: bullet-points-for-details
+
+# Example formats:
+# - conventional: "feat: add user authentication"
+# - issue-linked: "#123 - add user authentication"
+
+## Commit Types (if using conventional)
+# feat: new feature
+# fix: bug fix
+# docs: documentation
+# refactor: code refactoring
+# test: adding tests
+# chore: maintenance
+
+## Pull Requests
+title: matches-commit-format
+body: description, changes-list, test-approach
+base: main
+
+## Prohibited
+no: force-push-to-main, amend-others-commits
+no: attribution-footers, co-authored-by-tags
+# Remove 'no: attribution' lines if you want AI attribution

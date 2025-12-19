@@ -1,0 +1,38 @@
+{
+  "name": "claude-onus",
+  "version": "0.1.0",
+  "description": "Work item automation plugin for Claude Code - fetches issues, generates commits/PRs, syncs progress",
+  "main": "index.js",
+  "bin": {
+    "claude-onus": "./bin/cli.js"
+  },
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/flexion/claude-onus.git"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "plugin",
+    "github",
+    "jira",
+    "azure-devops",
+    "work-items",
+    "automation"
+  ],
+  "author": "David Puglielli",
+  "license": "MIT",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/flexion/claude-onus/issues"
+  },
+  "homepage": "https://github.com/flexion/claude-onus#readme",
+  "devDependencies": {
+    "jest": "^30.2.0"
+  }
+}

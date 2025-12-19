@@ -1,0 +1,42 @@
+# .claude/context Format Guide - Compact Reference
+
+## Reading Compact YAML
+patterns:
+  flow: "→" (bootstrap → develop → transition → dogfood)
+  priority: ">" (integration > unit)
+  list: commas (test: commands, skills, hooks)
+  alternatives: "|" (chore/desc | chore-desc)
+  negation: "no:", "skip:", "never:"
+  inline-examples: parens (branch: pattern (example: chore/implement-phase-1))
+
+interpret:
+  "test: a, b, c": test ALL of these
+  "skip: x, y, z": don't test ANY of these
+  "a > b > c": priority order (a highest)
+  "a → b → c": flow/sequence (a to b to c)
+  "a | b": either is valid
+
+## Writing Compact YAML
+do: shortest-phrasing, no-articles, operators (→ > |), key:value, one-fact-per-line
+dont: prose, explanations, complete-sentences, markdown-formatting, redundancy
+
+size-targets:
+  simple: 5-12 lines
+  config: 10-20 lines
+  max: 30 lines
+
+## Transformation Example
+before-md: "## Testing\n**CRITICAL**: Test incrementally...\n- Why: catches bugs early\n- How: write tests after each function\n[100+ more lines]"
+after-yml: "when: after-implementation\nstrategy: integration-testing\ntest: commands, skills, hooks\nskip: unit-tests"
+reduction: 98%
+
+## Update Process
+1-read: understand current structure
+2-find-key: update value (no duplicates)
+3-keep-format: match existing style
+4-verify: count lines/words, stay compact
+
+## Purpose
+for: claude (machine-optimized, fast parsing, minimal tokens)
+not-for: humans (use DESIGN.md, IMPLEMENTATION-PLAN.md for docs)
+benefit: 89% token reduction

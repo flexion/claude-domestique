@@ -1,0 +1,87 @@
+# claude-onus Ideas
+
+## Core Insight
+Developers hate project management overhead but it's critical for team function.
+The work is awful but important. Automate it completely.
+
+## Naming Convention Bridge (with claude-memento)
+- Issue number drives everything: branch name, session file, commit prefix
+- claude-onus fetches issue → claude-memento creates session
+- Shared convention: issue #42 → branch issue/feature-42/desc → session 42-desc.md
+- Onus owns the "fetch and format" piece, memento owns persistence
+
+## Commit Message Generation
+- Analyze staged changes (git diff --staged)
+- Read session context (what was the goal?)
+- Read issue requirements (what acceptance criteria does this address?)
+- Generate: "#42 - implement user login\n\n- Add login form component\n- Create auth API client"
+- Never generic ("fix bug", "update code")
+
+## PR Description Generation
+- Pull from session log (what did we actually do?)
+- Map to acceptance criteria (which boxes can we check?)
+- Include test plan suggestions
+- Link to related issues/PRs
+- Warn about missing test coverage
+
+## Work Item Status Updates
+- Detect branch checkout → move to "In Progress"
+- Detect PR creation → move to "In Review"
+- Detect PR merge → move to "Done"
+- Post progress comments from session milestones
+
+## Multi-Platform Challenges
+- JIRA: fields are highly customizable per org
+- Azure DevOps: work item types vary (Bug vs Task vs User Story)
+- GitHub: simplest, but Projects adds complexity
+- Need field mapping config per platform
+
+## Smart Features (Future)
+- Infer issue type from branch prefix (feature/ vs bugfix/)
+- Suggest labels based on files changed
+- Auto-assign based on CODEOWNERS
+- Estimate complexity from diff size
+- Flag PRs that don't match issue requirements
+
+## Integration Protocol
+With claude-memento:
+- Onus provides: issue details, requirements, acceptance criteria
+- Memento provides: session file location, update protocol
+- Convention: session file has "Issue Details" section populated by onus
+
+With claude-mantra:
+- Onus context (work item requirements) included in mantra refresh
+- Keeps Claude aligned with what the issue actually asked for
+
+## CLI Commands (maybe)
+- `npx claude-onus fetch 42` - fetch issue #42, output to stdout
+- `npx claude-onus commit` - generate commit message from staged + session
+- `npx claude-onus pr` - generate PR description
+- `npx claude-onus sync` - push session progress to work item
+
+## Configuration
+```json
+{
+  "platform": "github",
+  "github": {
+    "owner": "flexion",
+    "repo": "claude-onus"
+  },
+  "jira": {
+    "host": "company.atlassian.net",
+    "project": "PROJ"
+  },
+  "azure": {
+    "org": "company",
+    "project": "MyProject"
+  },
+  "commitFormat": "#{number} - {verb} {description}",
+  "branchFormat": "issue/feature-{number}/{slug}"
+}
+```
+
+## Questions to Resolve
+- How to handle auth tokens securely? Env vars? Keychain?
+- Should onus create sessions directly or just output data for memento?
+- How aggressive should auto-updates be? Every commit? Only milestones?
+- What if issue requirements change mid-work? Re-fetch and diff?

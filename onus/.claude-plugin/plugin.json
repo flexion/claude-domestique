@@ -1,0 +1,9 @@
+{
+  "name": "claude-onus",
+  "version": "0.1.0",
+  "description": "Work item automation for Claude Code - fetches issues, generates commits/PRs, syncs progress",
+  "author": {
+    "name": "David Puglielli"
+  },
+  "commands": ["./commands/init.md", "./commands/fetch.md"]
+}
