@@ -43,9 +43,9 @@ memento is part of a plugin family that works together:
 
 | Plugin | Purpose | Layer |
 |--------|---------|-------|
-| **[memento](https://github.com/flexion/claude-domestique/tree/main/memento)** | Session persistence | Persistence |
-| **[mantra](https://github.com/flexion/claude-domestique/tree/main/mantra)** | Context refresh | Injection |
-| **[onus](https://github.com/flexion/claude-domestique/tree/main/onus)** | Work-item automation | Integration |
+| **[memento](../memento)** | Session persistence | Persistence |
+| **[mantra](../mantra)** | Context refresh | Injection |
+| **[onus](../onus)** | Work-item automation | Integration |
 
 ### How They Work Together
 
@@ -86,24 +86,12 @@ Each plugin works standalone but gains enhanced behavior when used together.
 
 ## Installation
 
-### From Marketplace (recommended)
-
 ```bash
 # Add the marketplace
-/plugin marketplace add flexion/memento
+/plugin marketplace add flexion/claude-domestique
 
 # Install the plugin
-/plugin install memento@memento
-```
-
-### Local Development
-
-```bash
-# Clone the repository
-git clone https://github.com/flexion/claude-domestique/tree/main/memento.git
-
-# Install from local path
-/plugin install memento@/path/to/memento
+/plugin install memento@claude-domestique
 ```
 
 ### Initialize in Your Project
