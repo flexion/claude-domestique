@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * claude-onus CLI
+ * onus CLI
  *
  * Usage:
- *   claude-onus init [target-dir]    Initialize onus configuration
- *   claude-onus fetch <issue>        Fetch issue details (placeholder)
- *   claude-onus commit               Generate commit message (placeholder)
- *   claude-onus pr                   Generate PR description (placeholder)
+ *   onus init [target-dir]    Initialize onus configuration
+ *   onus fetch <issue>        Fetch issue details (placeholder)
+ *   onus commit               Generate commit message (placeholder)
+ *   onus pr                   Generate PR description (placeholder)
  */
 
 const { init } = require('../scripts/init.js');
@@ -17,20 +17,20 @@ const command = args[0];
 
 function showHelp() {
   console.log(`
-claude-onus - Work item automation for Claude Code
+onus - Work item automation for Claude Code
 
 Usage:
-  claude-onus init [target-dir]    Initialize onus configuration
-  claude-onus fetch <issue>        Fetch issue details
-  claude-onus commit               Generate commit message
-  claude-onus pr                   Generate PR description
-  claude-onus help                 Show this help
+  onus init [target-dir]    Initialize onus configuration
+  onus fetch <issue>        Fetch issue details
+  onus commit               Generate commit message
+  onus pr                   Generate PR description
+  onus help                 Show this help
 
 Examples:
-  claude-onus init                 Initialize in current directory
-  claude-onus init ~/my-project    Initialize in specific directory
-  claude-onus fetch 42             Fetch GitHub issue #42
-  claude-onus fetch PROJ-123       Fetch JIRA issue PROJ-123
+  onus init                 Initialize in current directory
+  onus init ~/my-project    Initialize in specific directory
+  onus fetch 42             Fetch GitHub issue #42
+  onus fetch PROJ-123       Fetch JIRA issue PROJ-123
 
 Environment Variables:
   GITHUB_TOKEN         GitHub API token
@@ -49,7 +49,7 @@ switch (command) {
     const issue = args[1];
     if (!issue) {
       console.error('Error: Issue number required');
-      console.error('Usage: claude-onus fetch <issue>');
+      console.error('Usage: onus fetch <issue>');
       process.exit(1);
     }
     console.log(`Fetching issue: ${issue}`);

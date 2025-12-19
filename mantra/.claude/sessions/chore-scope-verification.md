@@ -1,7 +1,7 @@
 # Session: Scope Verification
 
 ## Goal
-Verify claude-mantra plugin scope is correct: not too much, not too little.
+Verify mantra plugin scope is correct: not too much, not too little.
 
 ## Outcome
 Scope is correct for v1. Added one missing piece (config file loading) and documented deferred features.

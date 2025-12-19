@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * claude-onus init script
+ * onus init script
  *
  * Sets up work item integration configuration for a project.
  * - Creates .claude/ directory if missing
@@ -137,7 +137,7 @@ function init(targetDir = process.cwd()) {
   const claudeDir = path.join(targetDir, '.claude');
   const configPath = path.join(claudeDir, 'config.json');
 
-  console.log('claude-onus init');
+  console.log('onus init');
   console.log('================');
   console.log(`Target: ${targetDir}`);
   console.log();

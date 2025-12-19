@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * claude-mantra init script
+ * mantra init script
  *
  * Sets up the .claude/context/ directory structure for a project.
  * - Creates .claude/context/ if missing
@@ -24,7 +24,7 @@ function init(targetDir = process.cwd()) {
   const contextDir = path.join(targetDir, '.claude', 'context');
   const claudeMdPath = path.join(targetDir, 'CLAUDE.md');
 
-  console.log('claude-mantra init');
+  console.log('mantra init');
   console.log('==================');
   console.log(`Target: ${targetDir}`);
   console.log();

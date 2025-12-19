@@ -1,5 +1,5 @@
 /**
- * claude-onus - Work item automation for Claude Code
+ * onus - Work item automation for Claude Code
  *
  * This module exports the main functionality for programmatic usage.
  * For CLI usage, see bin/cli.js.

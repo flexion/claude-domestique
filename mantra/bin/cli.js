@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * claude-mantra CLI
+ * mantra CLI
  *
  * Usage:
- *   npx claude-mantra init [--force]
+ *   npx mantra init [--force]
  */
 
 const fs = require('fs');
@@ -21,7 +21,7 @@ const HOOKS_DIR = path.join(PACKAGE_ROOT, 'hooks');
 const SETTINGS_FILE = path.join(PACKAGE_ROOT, 'templates', 'settings.json');
 
 /**
- * Initialize claude-mantra in current directory
+ * Initialize mantra in current directory
  */
 function initCommand(args) {
   const force = args.includes('--force');
@@ -30,7 +30,7 @@ function initCommand(args) {
   const contextDir = path.join(targetDir, 'context');
   const hooksDir = path.join(targetDir, 'hooks');
 
-  console.log('Initializing claude-mantra...\n');
+  console.log('Initializing mantra...\n');
 
   // Check if .claude already exists
   if (fs.existsSync(targetDir) && !force) {
@@ -109,24 +109,24 @@ function initCommand(args) {
  */
 function helpCommand() {
   console.log(`
-claude-mantra - Periodic context refresh for Claude Code
+mantra - Periodic context refresh for Claude Code
 
 Usage:
-  npx claude-mantra <command> [options]
+  npx mantra <command> [options]
 
 Commands:
-  init [--force]    Initialize claude-mantra in current directory
+  init [--force]    Initialize mantra in current directory
   help              Show this help message
 
 Options:
   --force           Overwrite existing files
 
 Examples:
-  npx claude-mantra init          # Initialize in current directory
-  npx claude-mantra init --force  # Overwrite existing files
+  npx mantra init          # Initialize in current directory
+  npx mantra init --force  # Overwrite existing files
 
 Documentation:
-  https://github.com/flexion/claude-mantra
+  https://github.com/flexion/claude-domestique/tree/main/mantra
 `);
 }
 
@@ -149,7 +149,7 @@ function main() {
     COMMANDS[command](commandArgs);
   } else {
     console.error(`Unknown command: ${command}`);
-    console.error('Run "npx claude-mantra help" for usage.');
+    console.error('Run "npx mantra help" for usage.');
     process.exit(1);
   }
 }

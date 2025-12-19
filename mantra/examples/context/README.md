@@ -14,7 +14,7 @@ Each topic has TWO files:
 | `testing.yml` | `testing.md` | Testing patterns, what to test/skip |
 
 **How it works:**
-- `*.yml` files contain compact assertions (injected by claude-mantra)
+- `*.yml` files contain compact assertions (injected by mantra)
 - `*.md` files contain detailed examples and templates (read on-demand)
 - Each `.yml` file references its companion `.md` file in the header
 

@@ -53,7 +53,7 @@ Sessions are the long-term memory system for Claude projects. They persist work 
 - Title: Add context refresh mechanism
 - Created: 2024-12-07
 - Status: In Progress
-- GitHub URL: https://github.com/flexion/claude-mantra/issues/123
+- GitHub URL: https://github.com/flexion/claude-domestique/tree/main/mantra/issues/123
 
 ## Objective
 Implement periodic context refresh to prevent Claude drift
@@ -100,7 +100,7 @@ Implement periodic context refresh to prevent Claude drift
 # Session: Plugin Design
 
 ## Goal
-Design the claude-mantra plugin architecture
+Design the mantra plugin architecture
 
 ## Approach
 1. Review existing context-refresh agent

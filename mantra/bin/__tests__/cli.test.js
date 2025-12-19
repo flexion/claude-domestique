@@ -4,7 +4,7 @@ const os = require('os');
 
 const { initCommand, helpCommand, EXAMPLES_DIR, HOOKS_DIR, SETTINGS_FILE } = require('../cli');
 
-describe('claude-mantra CLI', () => {
+describe('mantra CLI', () => {
   let tmpDir;
   let originalCwd;
 
@@ -135,7 +135,7 @@ describe('claude-mantra CLI', () => {
 
       expect(consoleSpy).toHaveBeenCalled();
       const output = consoleSpy.mock.calls[0][0];
-      expect(output).toContain('claude-mantra');
+      expect(output).toContain('mantra');
       expect(output).toContain('init');
       expect(output).toContain('--force');
 

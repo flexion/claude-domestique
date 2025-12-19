@@ -1,10 +1,10 @@
 {
-  "name": "claude-onus",
+  "name": "@claude-domestique/onus",
   "version": "0.1.0",
   "description": "Work item automation plugin for Claude Code - fetches issues, generates commits/PRs, syncs progress",
   "main": "index.js",
   "bin": {
-    "claude-onus": "./bin/cli.js"
+    "onus": "./bin/cli.js"
   },
   "scripts": {
     "test": "jest",
@@ -13,7 +13,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/flexion/claude-onus.git"
+    "url": "git+https://github.com/flexion/claude-domestique.git",
+    "directory": "onus"
   },
   "keywords": [
     "claude",
@@ -29,9 +30,9 @@
   "license": "MIT",
   "type": "commonjs",
   "bugs": {
-    "url": "https://github.com/flexion/claude-onus/issues"
+    "url": "https://github.com/flexion/claude-domestique/issues"
   },
-  "homepage": "https://github.com/flexion/claude-onus#readme",
+  "homepage": "https://github.com/flexion/claude-domestique/tree/main/onus#readme",
   "devDependencies": {
     "jest": "^30.2.0"
   }

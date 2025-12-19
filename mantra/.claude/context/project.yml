@@ -1,7 +1,7 @@
-# claude-mantra Project Context
+# mantra Project Context
 
 ## Identity
-name: claude-mantra
+name: mantra
 tagline: "I told you. You agreed. You forgot. Repeat."
 purpose: periodic context refresh plugin for Claude Code sessions
 problem: Claude drifts from guidance as context window fills
@@ -53,4 +53,4 @@ cross-platform: node-based tooling
 
 ## Related Projects
 parent: claude-domestique (full workflow system)
-upstream: https://github.com/flexion/claude-mantra.git
+upstream: https://github.com/flexion/claude-domestique/tree/main/mantra.git
