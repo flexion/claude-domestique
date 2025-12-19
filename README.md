@@ -74,12 +74,12 @@ Each plugin works standalone but gains enhanced behavior when used together.
 
 ```bash
 # Install all three
-/plugin install memento@domestique
-/plugin install mantra@domestique
-/plugin install onus@domestique
+/plugin install memento@claude-domestique
+/plugin install mantra@claude-domestique
+/plugin install onus@claude-domestique
 
 # Or just the ones you need
-/plugin install mantra@domestique
+/plugin install mantra@claude-domestique
 ```
 
 ### Initialize in Your Project
