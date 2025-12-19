@@ -108,6 +108,34 @@ Each plugin works standalone but gains enhanced behavior when used together.
 
 ---
 
+## Development
+
+### Version Management
+
+Bump plugin versions consistently across all config files:
+
+```bash
+node scripts/bump-version.js <plugin> <patch|minor|major>
+
+# Examples:
+node scripts/bump-version.js memento patch   # 0.1.10 → 0.1.11
+node scripts/bump-version.js mantra minor    # 0.1.5 → 0.2.0
+```
+
+This updates `package.json`, `plugin.json`, and `marketplace.json` atomically.
+
+### Testing
+
+Each plugin has its own test suite:
+
+```bash
+cd mantra && npm test   # Jest
+cd memento && npm test  # Node test runner
+cd onus && npm test     # Jest
+```
+
+---
+
 ## Shared Conventions
 
 All plugins agree on this mapping:
