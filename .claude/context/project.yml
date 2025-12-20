@@ -36,6 +36,14 @@ mantra: ~/.claude/mantra-state.json
 memento: ~/.claude/memento-state.json
 onus: ~/.claude/onus/state.json, ~/.claude/onus/work-item-cache.json
 
+## VERSION BUMPING
+when: plugin-functionality-or-context-changes
+ask-user: "patch, minor, or major?" (before commit)
+command: node scripts/bump-version.js <plugin> <patch|minor|major>
+major: breaking-changes
+minor: new-features, backward-compatible
+patch: bug-fixes, docs, context-updates
+
 ## SHARED CODE
 branch-parsing: memento/scripts/session.js (parseBranchName)
 convention: 1-session = 1-issue = 1-branch
