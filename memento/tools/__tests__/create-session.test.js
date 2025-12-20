@@ -1,5 +1,3 @@
-const { describe, it, beforeEach, afterEach } = require('node:test');
-const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -55,20 +53,20 @@ describe('create-session.js', () => {
       const sessionPath = path.join(tempDir, '.claude/sessions/123-add-auth.md');
       const metaPath = path.join(tempDir, '.claude/branches/issue-feature-123-add-auth');
 
-      assert.ok(fs.existsSync(sessionPath), 'Session file should exist');
-      assert.ok(fs.existsSync(metaPath), 'Branch metadata should exist');
+      expect(fs.existsSync(sessionPath)).toBe(true);
+      expect(fs.existsSync(metaPath)).toBe(true);
 
       // Verify session content
       const sessionContent = fs.readFileSync(sessionPath, 'utf-8');
-      assert.ok(sessionContent.includes('# Session: add-auth'));
-      assert.ok(sessionContent.includes('#123'));
+      expect(sessionContent).toContain('# Session: add-auth');
+      expect(sessionContent).toContain('#123');
 
       // Verify metadata content
       const metaContent = fs.readFileSync(metaPath, 'utf-8');
-      assert.ok(metaContent.includes('branch: issue/feature-123/add-auth'));
-      assert.ok(metaContent.includes('session: 123-add-auth.md'));
-      assert.ok(metaContent.includes('type: feature'));
-      assert.ok(metaContent.includes('status: in-progress'));
+      expect(metaContent).toContain('branch: issue/feature-123/add-auth');
+      expect(metaContent).toContain('session: 123-add-auth.md');
+      expect(metaContent).toContain('type: feature');
+      expect(metaContent).toContain('status: in-progress');
     });
 
     it('creates session for simple chore branch', () => {
@@ -78,11 +76,11 @@ describe('create-session.js', () => {
       const sessionPath = path.join(tempDir, '.claude/sessions/chore-update-deps.md');
       const metaPath = path.join(tempDir, '.claude/branches/chore-update-deps');
 
-      assert.ok(fs.existsSync(sessionPath), 'Session file should exist');
-      assert.ok(fs.existsSync(metaPath), 'Branch metadata should exist');
+      expect(fs.existsSync(sessionPath)).toBe(true);
+      expect(fs.existsSync(metaPath)).toBe(true);
 
       const metaContent = fs.readFileSync(metaPath, 'utf-8');
-      assert.ok(metaContent.includes('type: chore'));
+      expect(metaContent).toContain('type: chore');
     });
 
     it('creates session for Jira branch', () => {
@@ -90,7 +88,7 @@ describe('create-session.js', () => {
       execSync('node .claude/tools/create-session.js', { cwd: tempDir, stdio: 'pipe' });
 
       const sessionPath = path.join(tempDir, '.claude/sessions/PROJ-456-new-feature.md');
-      assert.ok(fs.existsSync(sessionPath), 'Session file should exist');
+      expect(fs.existsSync(sessionPath)).toBe(true);
     });
 
     it('fails on main/master branch', () => {
@@ -103,15 +101,12 @@ describe('create-session.js', () => {
       // Make sure we're on the default branch
       execSync(`git checkout ${defaultBranch}`, { cwd: tempDir, stdio: 'pipe' });
 
-      try {
+      expect(() => {
         execSync('node .claude/tools/create-session.js', {
           cwd: tempDir,
           stdio: 'pipe',
         });
-        assert.fail('Should have thrown error');
-      } catch (error) {
-        assert.ok(error.status === 1);
-      }
+      }).toThrow();
     });
 
     it('fails if session already exists without --force', () => {
@@ -121,15 +116,12 @@ describe('create-session.js', () => {
       execSync('node .claude/tools/create-session.js', { cwd: tempDir, stdio: 'pipe' });
 
       // Try to create again without --force
-      try {
+      expect(() => {
         execSync('node .claude/tools/create-session.js', {
           cwd: tempDir,
           stdio: 'pipe',
         });
-        assert.fail('Should have thrown error');
-      } catch (error) {
-        assert.ok(error.status === 1);
-      }
+      }).toThrow();
     });
 
     it('overwrites with --force flag', () => {
@@ -147,8 +139,8 @@ describe('create-session.js', () => {
 
       // Verify it was overwritten
       const content = fs.readFileSync(sessionPath, 'utf-8');
-      assert.ok(content.includes('# Session:'), 'Should be regenerated template');
-      assert.ok(!content.includes('modified content'), 'Should not have old content');
+      expect(content).toContain('# Session:');
+      expect(content).not.toContain('modified content');
     });
   });
 });

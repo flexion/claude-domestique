@@ -1,5 +1,3 @@
-const { describe, it, beforeEach, afterEach } = require('node:test');
-const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -25,7 +23,7 @@ describe('session-startup.js', () => {
 ## Next Steps
 `;
       const result = extractLastLogEntry(content);
-      assert.strictEqual(result, 'Fixed edge case bug');
+      expect(result).toBe('Fixed edge case bug');
     });
 
     it('strips bullet markers from log entries', () => {
@@ -35,7 +33,7 @@ describe('session-startup.js', () => {
 ## Next Steps
 `;
       const result = extractLastLogEntry(content);
-      assert.strictEqual(result, 'Second entry');
+      expect(result).toBe('Second entry');
     });
 
     it('returns null when no session log section exists', () => {
@@ -44,7 +42,7 @@ describe('session-startup.js', () => {
 - Do something
 `;
       const result = extractLastLogEntry(content);
-      assert.strictEqual(result, null);
+      expect(result).toBe(null);
     });
 
     it('returns null when session log is empty', () => {
@@ -53,7 +51,7 @@ describe('session-startup.js', () => {
 ## Next Steps
 `;
       const result = extractLastLogEntry(content);
-      assert.strictEqual(result, null);
+      expect(result).toBe(null);
     });
 
     it('skips empty bullet lines', () => {
@@ -64,7 +62,7 @@ describe('session-startup.js', () => {
 ## Next Steps
 `;
       const result = extractLastLogEntry(content);
-      assert.strictEqual(result, 'Real entry');
+      expect(result).toBe('Real entry');
     });
   });
 
@@ -78,8 +76,8 @@ describe('session-startup.js', () => {
 - Third step
 `;
       const result = extractNextSteps(content);
-      assert.ok(result.includes('First step'));
-      assert.ok(result.includes('Second step'));
+      expect(result).toContain('First step');
+      expect(result).toContain('Second step');
     });
 
     it('returns null when no next steps section exists', () => {
@@ -87,7 +85,7 @@ describe('session-startup.js', () => {
 - did stuff
 `;
       const result = extractNextSteps(content);
-      assert.strictEqual(result, null);
+      expect(result).toBe(null);
     });
   });
 
@@ -102,8 +100,8 @@ describe('session-startup.js', () => {
         nextSteps: '- Add tests\n- Update docs'
       };
       const result = buildSessionSummary(info);
-      assert.ok(result.displayMsg.includes('📍 Memento:'));
-      assert.ok(result.displayMsg.includes('123-add-auth'));
+      expect(result.displayMsg).toContain('📍 Memento:');
+      expect(result.displayMsg).toContain('123-add-auth');
     });
 
     it('shows branch and status in context', () => {
@@ -116,8 +114,8 @@ describe('session-startup.js', () => {
         nextSteps: null
       };
       const result = buildSessionSummary(info);
-      assert.ok(result.context.includes('Branch: feature/new-dashboard'));
-      assert.ok(result.context.includes('Status: in-progress'));
+      expect(result.context).toContain('Branch: feature/new-dashboard');
+      expect(result.context).toContain('Status: in-progress');
     });
 
     it('includes issue ID in context when present', () => {
@@ -130,7 +128,7 @@ describe('session-startup.js', () => {
         nextSteps: null
       };
       const result = buildSessionSummary(info);
-      assert.ok(result.context.includes('Issue: #456'));
+      expect(result.context).toContain('Issue: #456');
     });
 
     it('shows "Left off" in context when lastLogEntry exists', () => {
@@ -143,7 +141,7 @@ describe('session-startup.js', () => {
         nextSteps: '- Write tests'
       };
       const result = buildSessionSummary(info);
-      assert.ok(result.context.includes('Left off: Added user validation'));
+      expect(result.context).toContain('Left off: Added user validation');
     });
 
     it('shows "Next" in context when no lastLogEntry but nextSteps exists', () => {
@@ -156,7 +154,7 @@ describe('session-startup.js', () => {
         nextSteps: '- Implement feature\n- Add tests'
       };
       const result = buildSessionSummary(info);
-      assert.ok(result.context.includes('Next: Implement feature'));
+      expect(result.context).toContain('Next: Implement feature');
     });
   });
 
@@ -179,9 +177,9 @@ describe('session-startup.js', () => {
         { stateFile }
       );
 
-      assert.ok(result.systemMessage.includes('📍 Memento:'));
-      assert.ok(result.systemMessage.includes('No active session'));
-      assert.ok(result.hookSpecificOutput.additionalContext.includes('/session'));
+      expect(result.systemMessage).toContain('📍 Memento:');
+      expect(result.systemMessage).toContain('No active session');
+      expect(result.hookSpecificOutput.additionalContext).toContain('/session');
     });
 
     it('explains what sessions are for when no session exists', () => {
@@ -190,8 +188,8 @@ describe('session-startup.js', () => {
         { stateFile }
       );
 
-      assert.ok(result.hookSpecificOutput.additionalContext.includes('track work context'));
-      assert.ok(result.hookSpecificOutput.additionalContext.includes('resume where you left off'));
+      expect(result.hookSpecificOutput.additionalContext).toContain('track work context');
+      expect(result.hookSpecificOutput.additionalContext).toContain('resume where you left off');
     });
 
     it('resets interaction counter on session start', () => {
@@ -204,7 +202,7 @@ describe('session-startup.js', () => {
       );
 
       const state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
-      assert.strictEqual(state.count, 0);
+      expect(state.count).toBe(0);
     });
 
     it('returns session summary when session exists', () => {
@@ -250,9 +248,9 @@ describe('session-startup.js', () => {
           { stateFile }
         );
 
-        assert.ok(result.systemMessage.includes('📍 Memento:'));
-        assert.ok(result.systemMessage.includes('123-add-auth'));
-        assert.ok(result.hookSpecificOutput.additionalContext.includes('issue/feature-123/add-auth'));
+        expect(result.systemMessage).toContain('📍 Memento:');
+        expect(result.systemMessage).toContain('123-add-auth');
+        expect(result.hookSpecificOutput.additionalContext).toContain('issue/feature-123/add-auth');
       } finally {
         process.chdir(originalCwd);
       }
@@ -265,7 +263,7 @@ describe('session-startup.js', () => {
         session: { path: '/project/.claude/sessions/123-feature.md' }
       };
       const result = buildUpdatePrompt(info);
-      assert.ok(result.includes('/project/.claude/sessions/123-feature.md'));
+      expect(result).toContain('/project/.claude/sessions/123-feature.md');
     });
 
     it('mentions Session Log section', () => {
@@ -273,7 +271,7 @@ describe('session-startup.js', () => {
         session: { path: '/project/.claude/sessions/test.md' }
       };
       const result = buildUpdatePrompt(info);
-      assert.ok(result.includes('Session Log'));
+      expect(result).toContain('Session Log');
     });
 
     it('mentions Files Changed section', () => {
@@ -281,7 +279,7 @@ describe('session-startup.js', () => {
         session: { path: '/project/.claude/sessions/test.md' }
       };
       const result = buildUpdatePrompt(info);
-      assert.ok(result.includes('Files Changed'));
+      expect(result).toContain('Files Changed');
     });
 
     it('mentions Next Steps section', () => {
@@ -289,7 +287,7 @@ describe('session-startup.js', () => {
         session: { path: '/project/.claude/sessions/test.md' }
       };
       const result = buildUpdatePrompt(info);
-      assert.ok(result.includes('Next Steps'));
+      expect(result).toContain('Next Steps');
     });
   });
 
@@ -315,7 +313,7 @@ describe('session-startup.js', () => {
       );
 
       const state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
-      assert.strictEqual(state.count, 1);
+      expect(state.count).toBe(1);
     });
 
     it('wraps counter at updateInterval', () => {
@@ -327,7 +325,7 @@ describe('session-startup.js', () => {
       );
 
       const state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
-      assert.strictEqual(state.count, 0);
+      expect(state.count).toBe(0);
     });
 
     it('returns no-session status when no session exists', () => {
@@ -339,9 +337,9 @@ describe('session-startup.js', () => {
       );
 
       // Should show Memento branding with no-session status (like other plugins)
-      assert.ok(result.systemMessage.includes('Memento'));
-      assert.ok(result.systemMessage.includes('No session'));
-      assert.strictEqual(result.hookSpecificOutput.additionalContext, '');
+      expect(result.systemMessage).toContain('Memento');
+      expect(result.systemMessage).toContain('No session');
+      expect(result.hookSpecificOutput.additionalContext).toBe('');
     });
 
     it('returns session guidance when not at update interval', () => {
@@ -373,11 +371,11 @@ describe('session-startup.js', () => {
       );
 
       // Should always include session path and resumption guidance
-      assert.ok(result.hookSpecificOutput.additionalContext.includes('Session:'));
-      assert.ok(result.hookSpecificOutput.additionalContext.includes('feature-test.md'));
-      assert.ok(result.hookSpecificOutput.additionalContext.includes('Read session file FIRST'));
+      expect(result.hookSpecificOutput.additionalContext).toContain('Session:');
+      expect(result.hookSpecificOutput.additionalContext).toContain('feature-test.md');
+      expect(result.hookSpecificOutput.additionalContext).toContain('Read session file FIRST');
       // Should NOT include update prompt since not at interval
-      assert.ok(!result.hookSpecificOutput.additionalContext.includes('Session Update Reminder'));
+      expect(result.hookSpecificOutput.additionalContext).not.toContain('Session Update Reminder');
     });
 
     it('returns update prompt when at update interval with session', () => {
@@ -408,8 +406,8 @@ describe('session-startup.js', () => {
         { stateFile, updateInterval: 10 }
       );
 
-      assert.ok(result.hookSpecificOutput.additionalContext.includes('Session Update Reminder'));
-      assert.ok(result.hookSpecificOutput.additionalContext.includes('feature-test.md'));
+      expect(result.hookSpecificOutput.additionalContext).toContain('Session Update Reminder');
+      expect(result.hookSpecificOutput.additionalContext).toContain('feature-test.md');
     });
   });
 });
