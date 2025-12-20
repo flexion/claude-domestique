@@ -285,6 +285,97 @@ describe('session-startup.js', () => {
         process.chdir(originalCwd);
       }
     });
+
+    it('warns when session status is complete', () => {
+      // Set up .claude directory structure with completed session
+      const claudeDir = path.join(tempDir, '.claude');
+      const sessionsDir = path.join(claudeDir, 'sessions');
+      const branchesDir = path.join(claudeDir, 'branches');
+      fs.mkdirSync(sessionsDir, { recursive: true });
+      fs.mkdirSync(branchesDir, { recursive: true });
+
+      // Create session file
+      const sessionContent = `# Session: completed-feature
+## Session Log
+- Finished implementation
+## Next Steps
+- [x] All done
+`;
+      fs.writeFileSync(path.join(sessionsDir, '999-completed-feature.md'), sessionContent);
+
+      // Create branch metadata with status: complete
+      fs.writeFileSync(
+        path.join(branchesDir, 'issue-feature-999-completed-feature'),
+        'session: 999-completed-feature.md\nstatus: complete'
+      );
+
+      // Initialize git repo with the branch
+      const { execSync } = require('child_process');
+      execSync('git init', { cwd: tempDir, stdio: 'pipe' });
+      execSync('git config user.email "test@test.com"', { cwd: tempDir, stdio: 'pipe' });
+      execSync('git config user.name "Test"', { cwd: tempDir, stdio: 'pipe' });
+      fs.writeFileSync(path.join(tempDir, '.gitkeep'), '');
+      execSync('git add .gitkeep', { cwd: tempDir, stdio: 'pipe' });
+      execSync('git commit -m "init"', { cwd: tempDir, stdio: 'pipe' });
+      execSync('git checkout -b issue/feature-999/completed-feature', { cwd: tempDir, stdio: 'pipe' });
+
+      const result = processSessionStart(
+        { cwd: tempDir, hook_event_name: 'SessionStart' },
+        { stateFile }
+      );
+
+      // Should still show session info
+      expect(result.systemMessage).toContain('📍 Memento:');
+      expect(result.systemMessage).toContain('999-completed-feature');
+
+      // Should include warning about completed session
+      expect(result.hookSpecificOutput.additionalContext).toContain('Session Complete');
+      expect(result.hookSpecificOutput.additionalContext).toContain('new branch from main');
+      expect(result.hookSpecificOutput.additionalContext).toContain('/session create');
+      expect(result.hookSpecificOutput.additionalContext).toContain('new task or continuing');
+    });
+
+    it('does not warn when session status is in-progress', () => {
+      // Set up .claude directory structure with in-progress session
+      const claudeDir = path.join(tempDir, '.claude');
+      const sessionsDir = path.join(claudeDir, 'sessions');
+      const branchesDir = path.join(claudeDir, 'branches');
+      fs.mkdirSync(sessionsDir, { recursive: true });
+      fs.mkdirSync(branchesDir, { recursive: true });
+
+      // Create session file
+      const sessionContent = `# Session: active-feature
+## Session Log
+- Started work
+## Next Steps
+- [ ] Continue implementation
+`;
+      fs.writeFileSync(path.join(sessionsDir, '888-active-feature.md'), sessionContent);
+
+      // Create branch metadata with status: in-progress
+      fs.writeFileSync(
+        path.join(branchesDir, 'issue-feature-888-active-feature'),
+        'session: 888-active-feature.md\nstatus: in-progress'
+      );
+
+      // Initialize git repo with the branch
+      const { execSync } = require('child_process');
+      execSync('git init', { cwd: tempDir, stdio: 'pipe' });
+      execSync('git config user.email "test@test.com"', { cwd: tempDir, stdio: 'pipe' });
+      execSync('git config user.name "Test"', { cwd: tempDir, stdio: 'pipe' });
+      fs.writeFileSync(path.join(tempDir, '.gitkeep'), '');
+      execSync('git add .gitkeep', { cwd: tempDir, stdio: 'pipe' });
+      execSync('git commit -m "init"', { cwd: tempDir, stdio: 'pipe' });
+      execSync('git checkout -b issue/feature-888/active-feature', { cwd: tempDir, stdio: 'pipe' });
+
+      const result = processSessionStart(
+        { cwd: tempDir, hook_event_name: 'SessionStart' },
+        { stateFile }
+      );
+
+      // Should NOT include warning about completed session
+      expect(result.hookSpecificOutput.additionalContext).not.toContain('Session Complete');
+    });
   });
 
   describe('buildUpdatePrompt', () => {

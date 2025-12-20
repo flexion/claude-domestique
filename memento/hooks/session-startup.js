@@ -252,11 +252,26 @@ function processSessionStart(input, config = {}) {
 
   const summary = buildSessionSummary(info);
 
+  // Build additional context
+  let additionalContext = summary.context;
+
+  // Warn if session is complete - new work needs new branch/session
+  if (info.status === 'complete') {
+    additionalContext += `
+
+⚠️ **Session Complete** - This session is marked complete.
+New work requires:
+1. Create a new branch from main: \`git checkout main && git pull && git checkout -b <branch>\`
+2. Create a new session: \`/session create\`
+
+Ask the user: "Is this a new task or continuing the completed work?"`;
+  }
+
   return {
     systemMessage: summary.displayMsg,
     hookSpecificOutput: {
       hookEventName: 'SessionStart',
-      additionalContext: summary.context
+      additionalContext
     }
   };
 }

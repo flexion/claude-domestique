@@ -4,6 +4,8 @@
 # Testing Conventions - Compact Reference
 # For patterns and examples, see: test.md
 
+MANDATORY-REREAD: before-implementation (use-thinking-block-verification)
+
 ## CORE PRINCIPLES
 independent: tests run in any order, parallelizable
 deterministic: same input → same output (no flaky tests)
