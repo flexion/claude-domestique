@@ -19,6 +19,7 @@ Decide on integration approach between onus and pr-review-toolkit plugin.
 - 2025-12-20: Researched pr-review-toolkit (6 agents, official Anthropic plugin)
 - 2025-12-20: Decided on companion recommendation approach (B+C)
 - 2025-12-20: Added Companion Plugins section to onus README
+- 2025-12-20: Tests pass (51/51), committed changes
 
 ## Research Findings
 - pr-review-toolkit is official Anthropic plugin with 6 specialized agents
@@ -40,5 +41,6 @@ Decide on integration approach between onus and pr-review-toolkit plugin.
 - [x] Evaluate integration options
 - [x] Make recommendation
 - [x] Add companion documentation to onus README
-- [ ] Run tests
-- [ ] Commit and create PR
+- [x] Run tests (51/51 pass)
+- [x] Commit changes
+- [ ] Push and create PR
