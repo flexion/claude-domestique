@@ -13,30 +13,26 @@ To fetch issue details, use the appropriate command based on your platform:
 
 ### GitHub Issues
 
+Use the GitHub CLI (recommended):
 ```bash
-# Fetch issue #42
 gh issue view 42 --json number,title,body,state,labels,assignees
-```
-
-Or via API:
-```bash
-curl -H "Authorization: token $GITHUB_TOKEN" \
-  "https://api.github.com/repos/{owner}/{repo}/issues/42"
 ```
 
 ### JIRA
 
-```bash
-curl -H "Authorization: Basic $JIRA_TOKEN" \
-  "https://{host}/rest/api/3/issue/PROJ-123"
-```
+Use WebFetch with the JIRA REST API:
+- URL: `https://{host}/rest/api/3/issue/PROJ-123`
+- Headers: `Authorization: Basic {JIRA_TOKEN}`
+
+Extract title, description, status, and acceptance criteria from the response.
 
 ### Azure DevOps
 
-```bash
-curl -H "Authorization: Basic $AZURE_DEVOPS_TOKEN" \
-  "https://dev.azure.com/{org}/{project}/_apis/wit/workitems/42?api-version=7.0"
-```
+Use WebFetch with the Azure DevOps API:
+- URL: `https://dev.azure.com/{org}/{project}/_apis/wit/workitems/42?api-version=7.0`
+- Headers: `Authorization: Basic {AZURE_DEVOPS_TOKEN}`
+
+Extract title, description, state, and work item type from the response.
 
 ## What to Extract
 
@@ -98,9 +94,9 @@ After fetching, the issue context is:
 - Ensure authentication token is set
 
 **Authentication failed?**
-- GitHub: `export GITHUB_TOKEN=ghp_...`
-- JIRA: `export JIRA_TOKEN=$(echo -n email:api_token | base64)`
-- Azure: `export AZURE_DEVOPS_TOKEN=$(echo -n :pat_token | base64)`
+- GitHub: `export GITHUB_TOKEN=ghp_...` ([Create PAT](https://github.com/settings/tokens))
+- JIRA: `export JIRA_TOKEN=$(echo -n "email:api_token" | base64)` ([Get API token](https://id.atlassian.com/manage-profile/security/api-tokens))
+- Azure: `export AZURE_DEVOPS_TOKEN=$(echo -n ":pat" | base64)` ([Create PAT](https://dev.azure.com/_usersSettings/tokens))
 
 **Stale data?**
 - Run `/fetch` again to refresh the cache

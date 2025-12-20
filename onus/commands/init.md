@@ -98,6 +98,6 @@ Claude: I'll create the configuration now...
 ## After Setup
 
 Remind the user to set up authentication:
-- GitHub: `export GITHUB_TOKEN=your_token`
-- JIRA: `export JIRA_TOKEN=your_token`
-- Azure: `export AZURE_DEVOPS_TOKEN=your_token`
+- GitHub: `export GITHUB_TOKEN=ghp_...` ([Create PAT](https://github.com/settings/tokens) with `repo` scope)
+- JIRA: `export JIRA_TOKEN=$(echo -n "email:api_token" | base64)` ([Get API token](https://id.atlassian.com/manage-profile/security/api-tokens))
+- Azure: `export AZURE_DEVOPS_TOKEN=$(echo -n ":pat" | base64)` ([Create PAT](https://dev.azure.com/_usersSettings/tokens) with Work Items Read)
