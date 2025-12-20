@@ -133,7 +133,7 @@ Each plugin maintains state in `~/.claude/`:
 
 ### Branch Parsing
 
-The `parseBranchName()` function in `memento/tools/session.js` extracts issue numbers, types, and descriptions from branch names. Used by both memento and onus.
+The `parseBranchName()` function in `memento/scripts/session.js` extracts issue numbers, types, and descriptions from branch names. Used by both memento and onus.
 
 ### Testing Approach
 

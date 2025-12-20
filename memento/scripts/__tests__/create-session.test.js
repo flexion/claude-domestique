@@ -21,15 +21,15 @@ describe('create-session.js', () => {
     execSync('git add .', { cwd: tempDir, stdio: 'pipe' });
     execSync('git commit -m "Initial commit"', { cwd: tempDir, stdio: 'pipe' });
 
-    // Copy tools to temp dir (from plugin root tools/ to consumer's .claude/tools/)
+    // Copy scripts to temp dir (from plugin root scripts/ to consumer's .claude/tools/)
     const toolsDir = path.join(tempDir, '.claude/tools');
     fs.mkdirSync(toolsDir, { recursive: true });
     fs.copyFileSync(
-      path.join(originalCwd, 'tools/session.js'),
+      path.join(originalCwd, 'scripts/session.js'),
       path.join(toolsDir, 'session.js')
     );
     fs.copyFileSync(
-      path.join(originalCwd, 'tools/create-session.js'),
+      path.join(originalCwd, 'scripts/create-session.js'),
       path.join(toolsDir, 'create-session.js')
     );
 
