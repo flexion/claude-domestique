@@ -4,7 +4,7 @@
 **Branch**: issue/feature-55/pr-review-toolkit-integration
 **Type**: feature
 **Created**: 2025-12-20
-**Status**: in-progress
+**Status**: complete
 
 ## Goal
 Decide on integration approach between onus and pr-review-toolkit plugin.
@@ -43,4 +43,4 @@ Decide on integration approach between onus and pr-review-toolkit plugin.
 - [x] Add companion documentation to onus README
 - [x] Run tests (51/51 pass)
 - [x] Commit changes
-- [ ] Push and create PR
+- [x] Push and create PR (#64)
