@@ -1,6 +1,6 @@
 {
   "name": "mantra",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Periodic context refresh for Claude Code sessions - prevents context drift by re-injecting key guidance files",
   "author": {
     "name": "David Puglielli"
@@ -8,7 +8,12 @@
   "repository": "https://github.com/flexion/claude-domestique",
   "homepage": "https://github.com/flexion/claude-domestique/tree/main/mantra",
   "license": "MIT",
-  "keywords": ["context", "refresh", "guidance", "drift-prevention"],
+  "keywords": [
+    "context",
+    "refresh",
+    "guidance",
+    "drift-prevention"
+  ],
   "hooks": "./hooks/hooks.json",
   "commands": [
     "./commands/init.md"

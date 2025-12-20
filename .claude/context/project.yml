@@ -24,10 +24,7 @@ plugin-pattern:
   .claude-plugin/plugin.json: manifest
 
 ## TESTING
-mantra: jest (cd mantra && npm test)
-memento: node-test-runner (cd memento && npm test)
-onus: jest (cd onus && npm test)
-pattern: dependency-injection for paths/filesystem
+see: test.yml (project-specific testing context)
 
 ## HOOK PATTERN
 input: JSON on stdin (hook_event_name, cwd, etc.)

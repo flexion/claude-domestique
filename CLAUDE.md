@@ -54,7 +54,7 @@ Each plugin has its own test suite:
 # mantra (uses Jest)
 cd mantra && npm test
 
-# memento (uses Node's built-in test runner)
+# memento (uses Jest)
 cd memento && npm test
 
 # onus (uses Jest)
@@ -137,8 +137,7 @@ The `parseBranchName()` function in `memento/scripts/session.js` extracts issue 
 
 ### Testing Approach
 
-- memento uses Node's built-in test runner with `node --test`
-- mantra and onus use Jest
+- All plugins use Jest
 - Tests use dependency injection for paths/filesystem to enable isolated testing
 
 ## Git Conventions
