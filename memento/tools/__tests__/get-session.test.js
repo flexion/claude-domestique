@@ -1,5 +1,3 @@
-const { describe, it, beforeEach, afterEach } = require('node:test');
-const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -59,12 +57,12 @@ describe('get-session.js', () => {
         encoding: 'utf-8',
       });
 
-      assert.ok(output.includes('Branch: issue/feature-123/test-feature'));
-      assert.ok(output.includes('Session:'));
-      assert.ok(output.includes('123-test-feature.md'));
-      assert.ok(output.includes('Status: in-progress'));
-      assert.ok(output.includes('Type: feature'));
-      assert.ok(output.includes('Issue: #123'));
+      expect(output).toContain('Branch: issue/feature-123/test-feature');
+      expect(output).toContain('Session:');
+      expect(output).toContain('123-test-feature.md');
+      expect(output).toContain('Status: in-progress');
+      expect(output).toContain('Type: feature');
+      expect(output).toContain('Issue: #123');
     });
 
     it('returns session info in JSON format', () => {
@@ -77,12 +75,12 @@ describe('get-session.js', () => {
       });
 
       const json = JSON.parse(output);
-      assert.strictEqual(json.branch, 'issue/feature-456/json-test');
-      assert.ok(json.sessionFile.includes('456-json-test.md'));
-      assert.strictEqual(json.status, 'in-progress');
-      assert.strictEqual(json.type, 'feature');
-      assert.strictEqual(json.issueId, '#456');
-      assert.strictEqual(json.platform, 'github');
+      expect(json.branch).toBe('issue/feature-456/json-test');
+      expect(json.sessionFile).toContain('456-json-test.md');
+      expect(json.status).toBe('in-progress');
+      expect(json.type).toBe('feature');
+      expect(json.issueId).toBe('#456');
+      expect(json.platform).toBe('github');
     });
 
     it('returns just the path with --path flag', () => {
@@ -94,8 +92,8 @@ describe('get-session.js', () => {
         encoding: 'utf-8',
       }).trim();
 
-      assert.ok(output.endsWith('789-path-test.md'));
-      assert.ok(!output.includes('Branch:'));
+      expect(output.endsWith('789-path-test.md')).toBe(true);
+      expect(output).not.toContain('Branch:');
     });
 
     it('returns session content with --content flag', () => {
@@ -107,39 +105,39 @@ describe('get-session.js', () => {
         encoding: 'utf-8',
       });
 
-      assert.ok(output.includes('# Session: content-test'));
-      assert.ok(output.includes('## Session Log'));
-      assert.ok(output.includes('## Next Steps'));
+      expect(output).toContain('# Session: content-test');
+      expect(output).toContain('## Session Log');
+      expect(output).toContain('## Next Steps');
     });
 
     it('fails when no session exists', () => {
       execSync('git checkout -b feature/no-session', { cwd: tempDir, stdio: 'pipe' });
 
-      try {
+      expect(() => {
         execSync('node .claude/tools/get-session.js', {
           cwd: tempDir,
           stdio: 'pipe',
         });
-        assert.fail('Should have thrown error');
-      } catch (error) {
-        assert.strictEqual(error.status, 1);
-      }
+      }).toThrow();
     });
 
     it('exits quietly with --quiet when no session', () => {
       execSync('git checkout -b feature/quiet-test', { cwd: tempDir, stdio: 'pipe' });
 
+      let error;
       try {
         execSync('node .claude/tools/get-session.js --quiet', {
           cwd: tempDir,
           stdio: 'pipe',
         });
-        assert.fail('Should have thrown error');
-      } catch (error) {
-        assert.strictEqual(error.status, 1);
-        // Should not have error output with --quiet
-        assert.strictEqual(error.stderr.length, 0);
+      } catch (e) {
+        error = e;
       }
+
+      expect(error).toBeDefined();
+      expect(error.status).toBe(1);
+      // Should not have error output with --quiet
+      expect(error.stderr.length).toBe(0);
     });
 
     it('works with Jira branch pattern', () => {
@@ -152,8 +150,8 @@ describe('get-session.js', () => {
       });
 
       const json = JSON.parse(output);
-      assert.strictEqual(json.platform, 'jira');
-      assert.strictEqual(json.issueId, 'PROJ-123');
+      expect(json.platform).toBe('jira');
+      expect(json.issueId).toBe('PROJ-123');
     });
 
     it('works with simple chore branch', () => {
@@ -166,9 +164,9 @@ describe('get-session.js', () => {
       });
 
       const json = JSON.parse(output);
-      assert.strictEqual(json.type, 'chore');
-      assert.strictEqual(json.issueId, null);
-      assert.strictEqual(json.platform, 'none');
+      expect(json.type).toBe('chore');
+      expect(json.issueId).toBe(null);
+      expect(json.platform).toBe('none');
     });
   });
 });
