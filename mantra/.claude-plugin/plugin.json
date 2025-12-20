@@ -5,6 +5,11 @@
   "author": {
     "name": "David Puglielli"
   },
+  "repository": "https://github.com/flexion/claude-domestique",
+  "homepage": "https://github.com/flexion/claude-domestique/tree/main/mantra",
+  "license": "MIT",
+  "keywords": ["context", "refresh", "guidance", "drift-prevention"],
+  "hooks": "./hooks/hooks.json",
   "commands": [
     "./commands/init.md"
   ]

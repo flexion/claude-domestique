@@ -5,5 +5,9 @@
   "author": {
     "name": "David Puglielli"
   },
+  "repository": "https://github.com/flexion/claude-domestique",
+  "homepage": "https://github.com/flexion/claude-domestique",
+  "license": "MIT",
+  "keywords": ["marketplace", "session", "context", "work-items"],
   "marketplace": true
 }
