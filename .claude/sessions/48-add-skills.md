@@ -4,7 +4,7 @@
 **Branch**: issue/feature-48/add-skills
 **Type**: feature
 **Created**: 2025-12-20
-**Status**: in-progress
+**Status**: complete
 
 ## Goal
 Add model-invoked skills to memento and onus plugins, allowing Claude to autonomously decide when to use session management and work item capabilities.
@@ -47,4 +47,4 @@ Add model-invoked skills to memento and onus plugins, allowing Claude to autonom
 - [x] Create memento session-manager skill
 - [x] Create onus work-item-handler skill
 - [x] Update plugin.json manifests
-- [ ] Commit and create PR
+- [x] Commit and create PR → PR #60
