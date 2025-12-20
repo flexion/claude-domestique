@@ -4,14 +4,23 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-// Consumer project paths (where sessions/branches are stored)
-const CLAUDE_DIR = path.join(process.cwd(), '.claude');
-const SESSIONS_DIR = path.join(CLAUDE_DIR, 'sessions');
-const BRANCHES_DIR = path.join(CLAUDE_DIR, 'branches');
-
 // Plugin paths (where templates live - relative to this script)
 const PLUGIN_ROOT = path.resolve(__dirname, '..');
 const TEMPLATES_DIR = path.join(PLUGIN_ROOT, 'templates');
+
+/**
+ * Get consumer project paths (supports DI for testing)
+ * @param {string} cwd - Working directory (defaults to process.cwd())
+ * @returns {object} Path configuration
+ */
+function getProjectPaths(cwd = process.cwd()) {
+  const claudeDir = path.join(cwd, '.claude');
+  return {
+    claudeDir,
+    sessionsDir: path.join(claudeDir, 'sessions'),
+    branchesDir: path.join(claudeDir, 'branches'),
+  };
+}
 
 // Branch patterns for different platforms/types
 const BRANCH_PATTERNS = {
@@ -27,13 +36,15 @@ const BRANCH_PATTERNS = {
 
 /**
  * Get the current git branch name
+ * @param {string} cwd - Working directory (defaults to process.cwd())
  * @returns {string|null} Branch name or null if not in a git repo
  */
-function getCurrentBranch() {
+function getCurrentBranch(cwd = process.cwd()) {
   try {
     const branch = execSync('git rev-parse --abbrev-ref HEAD', {
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
+      cwd,
     }).trim();
     return branch;
   } catch (error) {
@@ -118,14 +129,16 @@ function parseBranchName(branchName) {
 
 /**
  * Get paths for session-related files
+ * @param {string} cwd - Working directory (defaults to process.cwd())
  * @returns {object} Path configuration
  */
-function getPaths() {
+function getPaths(cwd = process.cwd()) {
+  const projectPaths = getProjectPaths(cwd);
   return {
     // Consumer project paths
-    claudeDir: CLAUDE_DIR,
-    sessionsDir: SESSIONS_DIR,
-    branchesDir: BRANCHES_DIR,
+    claudeDir: projectPaths.claudeDir,
+    sessionsDir: projectPaths.sessionsDir,
+    branchesDir: projectPaths.branchesDir,
     // Plugin paths
     pluginRoot: PLUGIN_ROOT,
     templatesDir: TEMPLATES_DIR,
@@ -135,21 +148,25 @@ function getPaths() {
 /**
  * Get the session file path for a branch
  * @param {string} branchName - Branch name
+ * @param {string} cwd - Working directory (defaults to process.cwd())
  * @returns {string} Full path to session file
  */
-function getSessionPath(branchName) {
+function getSessionPath(branchName, cwd = process.cwd()) {
   const parsed = parseBranchName(branchName);
-  return path.join(SESSIONS_DIR, parsed.sessionFile);
+  const projectPaths = getProjectPaths(cwd);
+  return path.join(projectPaths.sessionsDir, parsed.sessionFile);
 }
 
 /**
  * Get the branch metadata file path for a branch
  * @param {string} branchName - Branch name
+ * @param {string} cwd - Working directory (defaults to process.cwd())
  * @returns {string} Full path to branch metadata file
  */
-function getBranchMetaPath(branchName) {
+function getBranchMetaPath(branchName, cwd = process.cwd()) {
   const parsed = parseBranchName(branchName);
-  return path.join(BRANCHES_DIR, parsed.branchMetaFile);
+  const projectPaths = getProjectPaths(cwd);
+  return path.join(projectPaths.branchesDir, parsed.branchMetaFile);
 }
 
 /**
@@ -215,9 +232,11 @@ ${issueLink}
 /**
  * Ensure required directories exist in consumer project
  * Note: Templates are in the plugin, not copied to consumer
+ * @param {string} cwd - Working directory (defaults to process.cwd())
  */
-function ensureDirectories() {
-  [SESSIONS_DIR, BRANCHES_DIR].forEach(dir => {
+function ensureDirectories(cwd = process.cwd()) {
+  const projectPaths = getProjectPaths(cwd);
+  [projectPaths.sessionsDir, projectPaths.branchesDir].forEach(dir => {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
@@ -227,10 +246,11 @@ function ensureDirectories() {
 /**
  * Read branch metadata file
  * @param {string} branchName - Branch name
+ * @param {string} cwd - Working directory (defaults to process.cwd())
  * @returns {object|null} Parsed metadata or null
  */
-function readBranchMeta(branchName) {
-  const metaPath = getBranchMetaPath(branchName);
+function readBranchMeta(branchName, cwd = process.cwd()) {
+  const metaPath = getBranchMetaPath(branchName, cwd);
   try {
     const content = fs.readFileSync(metaPath, 'utf-8');
     const meta = {};
@@ -249,11 +269,12 @@ function readBranchMeta(branchName) {
 /**
  * Check if a session exists for the current branch
  * @param {string} branchName - Branch name
+ * @param {string} cwd - Working directory (defaults to process.cwd())
  * @returns {boolean} True if session exists
  */
-function sessionExists(branchName) {
-  const sessionPath = getSessionPath(branchName);
-  const metaPath = getBranchMetaPath(branchName);
+function sessionExists(branchName, cwd = process.cwd()) {
+  const sessionPath = getSessionPath(branchName, cwd);
+  const metaPath = getBranchMetaPath(branchName, cwd);
   return fs.existsSync(sessionPath) || fs.existsSync(metaPath);
 }
 
@@ -261,6 +282,7 @@ module.exports = {
   getCurrentBranch,
   parseBranchName,
   getPaths,
+  getProjectPaths,
   getSessionPath,
   getBranchMetaPath,
   loadTemplate,

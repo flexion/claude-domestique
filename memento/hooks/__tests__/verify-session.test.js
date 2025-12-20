@@ -624,3 +624,78 @@ describe('parseCliInput', () => {
     expect(result.hook_event_name).toBe('CustomEvent');
   });
 });
+
+describe('sessionExists edge cases', () => {
+  let tempDir;
+
+  beforeEach(() => {
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'memento-edge-test-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('handles metadata file with invalid format lines', () => {
+    const claudeDir = path.join(tempDir, '.claude');
+    const branchesDir = path.join(claudeDir, 'branches');
+    const sessionsDir = path.join(claudeDir, 'sessions');
+    fs.mkdirSync(branchesDir, { recursive: true });
+    fs.mkdirSync(sessionsDir, { recursive: true });
+
+    // Create metadata with some invalid lines (no key-value format)
+    fs.writeFileSync(
+      path.join(branchesDir, 'feature-test'),
+      'session: test.md\ninvalid line without colon\nstatus: in-progress\n# comment line'
+    );
+    fs.writeFileSync(path.join(sessionsDir, 'test.md'), '# Session');
+
+    const branchInfo = {
+      branchMetaFile: 'feature-test',
+      sessionFile: 'test.md'
+    };
+
+    // Should still work because session: line is valid
+    expect(sessionExists(tempDir, branchInfo)).toBe(true);
+  });
+
+  it('handles metadata pointing to non-existent session file', () => {
+    const claudeDir = path.join(tempDir, '.claude');
+    const branchesDir = path.join(claudeDir, 'branches');
+    const sessionsDir = path.join(claudeDir, 'sessions');
+    fs.mkdirSync(branchesDir, { recursive: true });
+    fs.mkdirSync(sessionsDir, { recursive: true });
+
+    // Create metadata pointing to non-existent session
+    fs.writeFileSync(
+      path.join(branchesDir, 'feature-missing'),
+      'session: missing.md\nstatus: in-progress'
+    );
+
+    const branchInfo = {
+      branchMetaFile: 'feature-missing',
+      sessionFile: 'feature-missing.md'
+    };
+
+    // Should return false since neither meta.session nor fallback exists
+    expect(sessionExists(tempDir, branchInfo)).toBe(false);
+  });
+});
+
+describe('isAllowedPath edge cases', () => {
+  it('matches exact file at root', () => {
+    expect(isAllowedPath('/project/.gitignore', '/project')).toBe(true);
+  });
+
+  it('rejects files similar to but not matching allowed patterns', () => {
+    expect(isAllowedPath('/project/CLAUDE.txt', '/project')).toBe(false);
+    expect(isAllowedPath('/project/src/package.json.bak', '/project')).toBe(false);
+  });
+
+  it('handles .claude/config correctly', () => {
+    // .claude/config is an exact match pattern
+    expect(isAllowedPath('/project/.claude/config', '/project')).toBe(true);
+    // .claude/config.json does NOT match .claude/config (not a prefix pattern)
+    expect(isAllowedPath('/project/.claude/config.json', '/project')).toBe(false);
+  });
+});

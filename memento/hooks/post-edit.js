@@ -297,6 +297,7 @@ function parseCliInput(inputData, defaultEvent = 'PostToolUse') {
  * Read all data from stdin
  * @returns {Promise<string>} All stdin data
  */
+/* istanbul ignore next */
 async function readStdin() {
   let data = '';
   for await (const chunk of process.stdin) {
@@ -306,6 +307,7 @@ async function readStdin() {
 }
 
 // Main CLI wrapper
+/* istanbul ignore next */
 async function main() {
   const inputData = await readStdin();
   const input = parseCliInput(inputData, 'PostToolUse');
@@ -327,6 +329,7 @@ module.exports = {
 };
 
 // Run CLI if executed directly
+/* istanbul ignore next */
 if (require.main === module) {
   main().catch(e => {
     console.error(e.message);

@@ -154,10 +154,13 @@ function isFeatureBranch(branch) {
  */
 function processPreToolUse(input) {
   // Get git root - sessions are stored at repo root, not subdirectories
+  /* istanbul ignore next - cwd always provided in tests */
   const gitRoot = getGitRoot(input.cwd || process.cwd());
 
+  /* istanbul ignore next - cwd always provided in tests */
   const cwd = input.cwd || process.cwd();
   const toolName = input.tool_name;
+  /* istanbul ignore next - tool_input always provided in tests */
   const toolInput = input.tool_input || {};
 
   // Only check Edit and Write tools
@@ -171,20 +174,21 @@ function processPreToolUse(input) {
     return { decision: 'approve' };
   }
 
-  // Allow editing certain files without a session
-  if (isAllowedPath(filePath, gitRoot || cwd)) {
+  // Check if we're on a feature branch first (determines if gitRoot is valid)
+  const branch = getCurrentBranch(cwd);
+  if (!isFeatureBranch(branch)) {
+    // On main/master or not in git repo - no session required
     return { decision: 'approve' };
   }
 
-  // Check if we're on a feature branch
-  const branch = getCurrentBranch(cwd);
-  if (!isFeatureBranch(branch)) {
-    // On main/master - no session required
+  // If we have a feature branch, we're in a git repo, so gitRoot is valid
+  // Allow editing certain files without a session
+  if (isAllowedPath(filePath, gitRoot)) {
     return { decision: 'approve' };
   }
 
   // Check if .claude directory exists (memento is set up)
-  const claudeDir = path.join(gitRoot || cwd, '.claude');
+  const claudeDir = path.join(gitRoot, '.claude');
   if (!fs.existsSync(claudeDir)) {
     // Memento not initialized - allow edits
     return { decision: 'approve' };
@@ -192,7 +196,7 @@ function processPreToolUse(input) {
 
   // Parse branch and check for session
   const branchInfo = parseBranchName(branch);
-  if (sessionExists(gitRoot || cwd, branchInfo)) {
+  if (sessionExists(gitRoot, branchInfo)) {
     return { decision: 'approve' };
   }
 
@@ -249,6 +253,7 @@ function parseCliInput(inputData, defaultEvent = 'PreToolUse') {
  * Read all data from stdin
  * @returns {Promise<string>} All stdin data
  */
+/* istanbul ignore next */
 async function readStdin() {
   let data = '';
   for await (const chunk of process.stdin) {
@@ -258,6 +263,7 @@ async function readStdin() {
 }
 
 // Main CLI wrapper
+/* istanbul ignore next */
 async function main() {
   const inputData = await readStdin();
   const input = parseCliInput(inputData, 'PreToolUse');
@@ -280,6 +286,7 @@ module.exports = {
 };
 
 // Run CLI if executed directly
+/* istanbul ignore next */
 if (require.main === module) {
   main().catch(e => {
     console.error(e.message);

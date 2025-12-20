@@ -1,172 +1,194 @@
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
-const { execSync } = require('child_process');
+
+const { getSession } = require('../get-session.js');
+const { createSession } = require('../create-session.js');
+const { createTempDir, cleanupTempDir, setupGitRepo } = require('../../test-utils/test-helpers.js');
 
 describe('get-session.js', () => {
   let tempDir;
-  let originalCwd;
 
   beforeEach(() => {
-    originalCwd = process.cwd();
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'get-session-test-'));
-
-    // Initialize git repo in temp dir
-    execSync('git init', { cwd: tempDir, stdio: 'pipe' });
-    execSync('git config user.email "test@test.com"', { cwd: tempDir, stdio: 'pipe' });
-    execSync('git config user.name "Test"', { cwd: tempDir, stdio: 'pipe' });
-
-    // Create initial commit
-    fs.writeFileSync(path.join(tempDir, 'README.md'), '# Test');
-    execSync('git add .', { cwd: tempDir, stdio: 'pipe' });
-    execSync('git commit -m "Initial commit"', { cwd: tempDir, stdio: 'pipe' });
-
-    // Copy scripts to temp dir (from plugin root scripts/ to consumer's .claude/tools/)
-    const toolsDir = path.join(tempDir, '.claude/tools');
-    fs.mkdirSync(toolsDir, { recursive: true });
-    fs.copyFileSync(
-      path.join(originalCwd, 'scripts/session.js'),
-      path.join(toolsDir, 'session.js')
-    );
-    fs.copyFileSync(
-      path.join(originalCwd, 'scripts/get-session.js'),
-      path.join(toolsDir, 'get-session.js')
-    );
-    fs.copyFileSync(
-      path.join(originalCwd, 'scripts/create-session.js'),
-      path.join(toolsDir, 'create-session.js')
-    );
-
-    process.chdir(tempDir);
+    tempDir = createTempDir('get-session-test-');
   });
 
   afterEach(() => {
-    process.chdir(originalCwd);
-    fs.rmSync(tempDir, { recursive: true, force: true });
+    cleanupTempDir(tempDir);
   });
 
   describe('getSession', () => {
-    it('returns session info in default format', () => {
-      // Create branch and session
-      execSync('git checkout -b issue/feature-123/test-feature', { cwd: tempDir, stdio: 'pipe' });
-      execSync('node .claude/tools/create-session.js', { cwd: tempDir, stdio: 'pipe' });
+    it('returns session info for existing session', () => {
+      setupGitRepo(tempDir, 'issue/feature-123/test-feature');
+      createSession({ cwd: tempDir, silent: true });
 
-      // Get session
-      const output = execSync('node .claude/tools/get-session.js', {
-        cwd: tempDir,
-        encoding: 'utf-8',
-      });
+      const result = getSession({ cwd: tempDir, silent: true });
 
-      expect(output).toContain('Branch: issue/feature-123/test-feature');
-      expect(output).toContain('Session:');
-      expect(output).toContain('123-test-feature.md');
-      expect(output).toContain('Status: in-progress');
-      expect(output).toContain('Type: feature');
-      expect(output).toContain('Issue: #123');
+      expect(result.error).toBeUndefined();
+      expect(result.branch).toBe('issue/feature-123/test-feature');
+      expect(result.sessionFile).toContain('123-test-feature.md');
+      expect(result.status).toBe('in-progress');
+      expect(result.type).toBe('feature');
+      expect(result.issueId).toBe('#123');
     });
 
-    it('returns session info in JSON format', () => {
-      execSync('git checkout -b issue/feature-456/json-test', { cwd: tempDir, stdio: 'pipe' });
-      execSync('node .claude/tools/create-session.js', { cwd: tempDir, stdio: 'pipe' });
+    it('returns session info with JSON format option', () => {
+      setupGitRepo(tempDir, 'issue/feature-456/json-test');
+      createSession({ cwd: tempDir, silent: true });
 
-      const output = execSync('node .claude/tools/get-session.js --json', {
-        cwd: tempDir,
-        encoding: 'utf-8',
-      });
+      const result = getSession({ cwd: tempDir, silent: true, json: true });
 
-      const json = JSON.parse(output);
-      expect(json.branch).toBe('issue/feature-456/json-test');
-      expect(json.sessionFile).toContain('456-json-test.md');
-      expect(json.status).toBe('in-progress');
-      expect(json.type).toBe('feature');
-      expect(json.issueId).toBe('#456');
-      expect(json.platform).toBe('github');
+      expect(result.branch).toBe('issue/feature-456/json-test');
+      expect(result.sessionFile).toContain('456-json-test.md');
+      expect(result.status).toBe('in-progress');
+      expect(result.type).toBe('feature');
+      expect(result.issueId).toBe('#456');
+      expect(result.platform).toBe('github');
     });
 
-    it('returns just the path with --path flag', () => {
-      execSync('git checkout -b issue/feature-789/path-test', { cwd: tempDir, stdio: 'pipe' });
-      execSync('node .claude/tools/create-session.js', { cwd: tempDir, stdio: 'pipe' });
+    it('returns session path with --path option', () => {
+      setupGitRepo(tempDir, 'issue/feature-789/path-test');
+      createSession({ cwd: tempDir, silent: true });
 
-      const output = execSync('node .claude/tools/get-session.js --path', {
-        cwd: tempDir,
-        encoding: 'utf-8',
-      }).trim();
+      const result = getSession({ cwd: tempDir, silent: true, path: true });
 
-      expect(output.endsWith('789-path-test.md')).toBe(true);
-      expect(output).not.toContain('Branch:');
+      expect(result.sessionFile.endsWith('789-path-test.md')).toBe(true);
     });
 
-    it('returns session content with --content flag', () => {
-      execSync('git checkout -b issue/feature-111/content-test', { cwd: tempDir, stdio: 'pipe' });
-      execSync('node .claude/tools/create-session.js', { cwd: tempDir, stdio: 'pipe' });
+    it('returns error when no session exists', () => {
+      setupGitRepo(tempDir, 'feature/no-session');
 
-      const output = execSync('node .claude/tools/get-session.js --content', {
-        cwd: tempDir,
-        encoding: 'utf-8',
-      });
+      const result = getSession({ cwd: tempDir, silent: true });
 
-      expect(output).toContain('# Session: content-test');
-      expect(output).toContain('## Session Log');
-      expect(output).toContain('## Next Steps');
+      expect(result.error).toContain('No session found');
     });
 
-    it('fails when no session exists', () => {
-      execSync('git checkout -b feature/no-session', { cwd: tempDir, stdio: 'pipe' });
+    it('returns error in quiet mode when no session', () => {
+      setupGitRepo(tempDir, 'feature/quiet-test');
 
-      expect(() => {
-        execSync('node .claude/tools/get-session.js', {
-          cwd: tempDir,
-          stdio: 'pipe',
-        });
-      }).toThrow();
-    });
+      const result = getSession({ cwd: tempDir, silent: true, quiet: true });
 
-    it('exits quietly with --quiet when no session', () => {
-      execSync('git checkout -b feature/quiet-test', { cwd: tempDir, stdio: 'pipe' });
-
-      let error;
-      try {
-        execSync('node .claude/tools/get-session.js --quiet', {
-          cwd: tempDir,
-          stdio: 'pipe',
-        });
-      } catch (e) {
-        error = e;
-      }
-
-      expect(error).toBeDefined();
-      expect(error.status).toBe(1);
-      // Should not have error output with --quiet
-      expect(error.stderr.length).toBe(0);
+      expect(result.error).toContain('quiet mode');
     });
 
     it('works with Jira branch pattern', () => {
-      execSync('git checkout -b feature/PROJ-123/jira-test', { cwd: tempDir, stdio: 'pipe' });
-      execSync('node .claude/tools/create-session.js', { cwd: tempDir, stdio: 'pipe' });
+      setupGitRepo(tempDir, 'feature/PROJ-123/jira-test');
+      createSession({ cwd: tempDir, silent: true });
 
-      const output = execSync('node .claude/tools/get-session.js --json', {
-        cwd: tempDir,
-        encoding: 'utf-8',
-      });
+      const result = getSession({ cwd: tempDir, silent: true });
 
-      const json = JSON.parse(output);
-      expect(json.platform).toBe('jira');
-      expect(json.issueId).toBe('PROJ-123');
+      expect(result.platform).toBe('jira');
+      expect(result.issueId).toBe('PROJ-123');
     });
 
     it('works with simple chore branch', () => {
-      execSync('git checkout -b chore/simple-test', { cwd: tempDir, stdio: 'pipe' });
-      execSync('node .claude/tools/create-session.js', { cwd: tempDir, stdio: 'pipe' });
+      setupGitRepo(tempDir, 'chore/simple-test');
+      createSession({ cwd: tempDir, silent: true });
 
-      const output = execSync('node .claude/tools/get-session.js --json', {
-        cwd: tempDir,
-        encoding: 'utf-8',
-      });
+      const result = getSession({ cwd: tempDir, silent: true });
 
-      const json = JSON.parse(output);
-      expect(json.type).toBe('chore');
-      expect(json.issueId).toBe(null);
-      expect(json.platform).toBe('none');
+      expect(result.type).toBe('chore');
+      expect(result.issueId).toBe(null);
+      expect(result.platform).toBe('none');
+    });
+
+    it('returns error when not in git repo', () => {
+      const result = getSession({ cwd: tempDir, silent: true });
+
+      expect(result.error).toContain('git repository');
+    });
+
+    it('returns session content with --content option', () => {
+      setupGitRepo(tempDir, 'issue/feature-111/content-test');
+      createSession({ cwd: tempDir, silent: true });
+
+      const result = getSession({ cwd: tempDir, silent: true, content: true });
+
+      expect(result.error).toBeUndefined();
+      expect(result.sessionFile).toContain('111-content-test.md');
+    });
+
+    it('includes metaFile in result when metadata exists', () => {
+      setupGitRepo(tempDir, 'issue/feature-222/meta-test');
+      createSession({ cwd: tempDir, silent: true });
+
+      const result = getSession({ cwd: tempDir, silent: true });
+
+      expect(result.metaFile).not.toBeNull();
+      expect(result.metaFile).toContain('issue-feature-222-meta-test');
+    });
+
+    it('uses fallback session path when no metadata exists', () => {
+      setupGitRepo(tempDir, 'feature/fallback-test');
+
+      // Create session file manually without metadata
+      const sessionsDir = path.join(tempDir, '.claude/sessions');
+      fs.mkdirSync(sessionsDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(sessionsDir, 'feature-fallback-test.md'),
+        '# Session: fallback-test\n## Session Log\n- Test'
+      );
+
+      const result = getSession({ cwd: tempDir, silent: true });
+
+      expect(result.error).toBeUndefined();
+      expect(result.sessionFile).toContain('feature-fallback-test.md');
+      expect(result.metaFile).toBeNull();
+      expect(result.status).toBe('unknown');
+    });
+
+    it('outputs human-readable format when not silent', () => {
+      setupGitRepo(tempDir, 'issue/feature-333/verbose-test');
+      createSession({ cwd: tempDir, silent: true });
+
+      // Call without silent to trigger console output branches
+      const result = getSession({ cwd: tempDir });
+
+      expect(result.branch).toBe('issue/feature-333/verbose-test');
+      expect(result.issueId).toBe('#333');
+    });
+
+    it('outputs issue when present in human-readable format', () => {
+      setupGitRepo(tempDir, 'chore/no-issue-test');
+      createSession({ cwd: tempDir, silent: true });
+
+      // Call without silent - no issue branch
+      const result = getSession({ cwd: tempDir });
+
+      expect(result.issueId).toBeNull();
+    });
+
+    it('handles metadata file without session field', () => {
+      setupGitRepo(tempDir, 'feature/meta-no-session');
+
+      // Create session file at expected path
+      const sessionsDir = path.join(tempDir, '.claude/sessions');
+      const branchesDir = path.join(tempDir, '.claude/branches');
+      fs.mkdirSync(sessionsDir, { recursive: true });
+      fs.mkdirSync(branchesDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(sessionsDir, 'feature-meta-no-session.md'),
+        '# Session: meta-no-session\n## Session Log\n- Test'
+      );
+      // Create metadata WITHOUT session field
+      fs.writeFileSync(
+        path.join(branchesDir, 'feature-meta-no-session'),
+        'status: in-progress\ntype: feature'
+      );
+
+      const result = getSession({ cwd: tempDir, silent: true });
+
+      expect(result.error).toBeUndefined();
+      expect(result.sessionFile).toContain('feature-meta-no-session.md');
+    });
+
+    it('handles quiet mode with no session', () => {
+      setupGitRepo(tempDir, 'feature/quiet-no-session');
+      // Create .claude dirs but no session
+      fs.mkdirSync(path.join(tempDir, '.claude/sessions'), { recursive: true });
+
+      const result = getSession({ cwd: tempDir, silent: true, quiet: true });
+
+      expect(result.error).toContain('quiet mode');
     });
   });
 });

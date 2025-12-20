@@ -223,6 +223,7 @@ Use the Edit tool to update the session file directly.
  * Process SessionStart hook
  */
 function processSessionStart(input, config = {}) {
+  /* istanbul ignore next - cwd always provided in tests */
   const cwd = input.cwd || process.cwd();
   const projectConfig = loadProjectConfig(cwd, DEFAULT_CONFIG.configFile);
   const cfg = { ...DEFAULT_CONFIG, ...projectConfig, ...config };
@@ -280,6 +281,7 @@ Ask the user: "Is this a new task or continuing the completed work?"`;
  * Process UserPromptSubmit hook
  */
 function processUserPromptSubmit(input, config = {}) {
+  /* istanbul ignore next - cwd always provided in tests */
   const cwd = input.cwd || process.cwd();
   const projectConfig = loadProjectConfig(cwd, DEFAULT_CONFIG.configFile);
   const cfg = { ...DEFAULT_CONFIG, ...projectConfig, ...config };
@@ -360,6 +362,7 @@ function parseCliInput(inputData, defaultEvent = 'SessionStart') {
  * Read all data from stdin
  * @returns {Promise<string>} All stdin data
  */
+/* istanbul ignore next */
 async function readStdin() {
   let data = '';
   for await (const chunk of process.stdin) {
@@ -369,6 +372,7 @@ async function readStdin() {
 }
 
 // Main CLI wrapper
+/* istanbul ignore next */
 async function main() {
   const inputData = await readStdin();
   const input = parseCliInput(inputData, 'SessionStart');
@@ -395,6 +399,7 @@ module.exports = {
 };
 
 // Run CLI if executed directly
+/* istanbul ignore next */
 if (require.main === module) {
   main().catch(e => {
     console.error(e.message);

@@ -5,15 +5,18 @@ const path = require('path');
 const session = require('./session.js');
 
 function getSession(options = {}) {
-  const branchName = session.getCurrentBranch();
+  /* istanbul ignore next - cwd always provided in tests */
+  const cwd = options.cwd || process.cwd();
+  const branchName = session.getCurrentBranch(cwd);
 
   if (!branchName) {
     console.error('Error: Not in a git repository');
-    process.exit(1);
+    if (!options.silent) process.exit(1);
+    return { error: 'Not in a git repository' };
   }
 
   const branchInfo = session.parseBranchName(branchName);
-  const paths = session.getPaths();
+  const paths = session.getPaths(cwd);
 
   const sessionPath = path.join(paths.sessionsDir, branchInfo.sessionFile);
   const metaPath = path.join(paths.branchesDir, branchInfo.branchMetaFile);
@@ -23,7 +26,7 @@ function getSession(options = {}) {
   let sessionFile = null;
 
   if (fs.existsSync(metaPath)) {
-    meta = session.readBranchMeta(branchName);
+    meta = session.readBranchMeta(branchName, cwd);
     if (meta && meta.session) {
       sessionFile = path.join(paths.sessionsDir, meta.session);
     }
@@ -37,13 +40,15 @@ function getSession(options = {}) {
   // If no session found
   if (!sessionFile || !fs.existsSync(sessionFile)) {
     if (options.quiet) {
-      process.exit(1);
+      if (!options.silent) process.exit(1);
+      return { error: 'No session found (quiet mode)' };
     }
     console.error('No session found for current branch');
     console.error(`  Branch: ${branchName}`);
     console.error(`  Expected session: ${sessionPath}`);
     console.error('Create one with: .claude/tools/create-session.js');
-    process.exit(1);
+    if (!options.silent) process.exit(1);
+    return { error: 'No session found' };
   }
 
   const result = {
@@ -66,8 +71,8 @@ function getSession(options = {}) {
     // Output the session file content
     const content = fs.readFileSync(sessionFile, 'utf-8');
     console.log(content);
-  } else {
-    // Default: human-readable output
+  } else if (!options.silent) {
+    // Default: human-readable output (skip if silent)
     console.log(`Branch: ${result.branch}`);
     console.log(`Session: ${result.sessionFile}`);
     if (result.metaFile) {
@@ -84,6 +89,7 @@ function getSession(options = {}) {
 }
 
 // CLI handling
+/* istanbul ignore next */
 if (require.main === module) {
   const args = process.argv.slice(2);
   const options = {

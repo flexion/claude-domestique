@@ -1,53 +1,28 @@
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
-const { execSync } = require('child_process');
+
+const { createSession } = require('../create-session.js');
+const { createTempDir, cleanupTempDir, setupGitRepo } = require('../../test-utils/test-helpers.js');
 
 describe('create-session.js', () => {
   let tempDir;
-  let originalCwd;
 
   beforeEach(() => {
-    originalCwd = process.cwd();
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'create-session-test-'));
-
-    // Initialize git repo in temp dir
-    execSync('git init', { cwd: tempDir, stdio: 'pipe' });
-    execSync('git config user.email "test@test.com"', { cwd: tempDir, stdio: 'pipe' });
-    execSync('git config user.name "Test"', { cwd: tempDir, stdio: 'pipe' });
-
-    // Create initial commit so we can create branches
-    fs.writeFileSync(path.join(tempDir, 'README.md'), '# Test');
-    execSync('git add .', { cwd: tempDir, stdio: 'pipe' });
-    execSync('git commit -m "Initial commit"', { cwd: tempDir, stdio: 'pipe' });
-
-    // Copy scripts to temp dir (from plugin root scripts/ to consumer's .claude/tools/)
-    const toolsDir = path.join(tempDir, '.claude/tools');
-    fs.mkdirSync(toolsDir, { recursive: true });
-    fs.copyFileSync(
-      path.join(originalCwd, 'scripts/session.js'),
-      path.join(toolsDir, 'session.js')
-    );
-    fs.copyFileSync(
-      path.join(originalCwd, 'scripts/create-session.js'),
-      path.join(toolsDir, 'create-session.js')
-    );
-
-    process.chdir(tempDir);
+    tempDir = createTempDir('create-session-test-');
   });
 
   afterEach(() => {
-    process.chdir(originalCwd);
-    fs.rmSync(tempDir, { recursive: true, force: true });
+    cleanupTempDir(tempDir);
   });
 
   describe('createSession', () => {
     it('creates session and metadata for GitHub issue branch', () => {
-      // Create and checkout feature branch
-      execSync('git checkout -b issue/feature-123/add-auth', { cwd: tempDir, stdio: 'pipe' });
+      setupGitRepo(tempDir, 'issue/feature-123/add-auth');
 
-      // Run create-session
-      execSync('node .claude/tools/create-session.js', { cwd: tempDir, stdio: 'pipe' });
+      const result = createSession({ cwd: tempDir, silent: true });
+
+      // Verify no error
+      expect(result.error).toBeUndefined();
 
       // Verify files created
       const sessionPath = path.join(tempDir, '.claude/sessions/123-add-auth.md');
@@ -70,8 +45,11 @@ describe('create-session.js', () => {
     });
 
     it('creates session for simple chore branch', () => {
-      execSync('git checkout -b chore/update-deps', { cwd: tempDir, stdio: 'pipe' });
-      execSync('node .claude/tools/create-session.js', { cwd: tempDir, stdio: 'pipe' });
+      setupGitRepo(tempDir, 'chore/update-deps');
+
+      const result = createSession({ cwd: tempDir, silent: true });
+
+      expect(result.error).toBeUndefined();
 
       const sessionPath = path.join(tempDir, '.claude/sessions/chore-update-deps.md');
       const metaPath = path.join(tempDir, '.claude/branches/chore-update-deps');
@@ -84,63 +62,103 @@ describe('create-session.js', () => {
     });
 
     it('creates session for Jira branch', () => {
-      execSync('git checkout -b feature/PROJ-456/new-feature', { cwd: tempDir, stdio: 'pipe' });
-      execSync('node .claude/tools/create-session.js', { cwd: tempDir, stdio: 'pipe' });
+      setupGitRepo(tempDir, 'feature/PROJ-456/new-feature');
+
+      const result = createSession({ cwd: tempDir, silent: true });
+
+      expect(result.error).toBeUndefined();
 
       const sessionPath = path.join(tempDir, '.claude/sessions/PROJ-456-new-feature.md');
       expect(fs.existsSync(sessionPath)).toBe(true);
     });
 
-    it('fails on main/master branch', () => {
-      // Get current default branch (could be main or master)
-      const defaultBranch = execSync('git branch --show-current', {
-        cwd: tempDir,
-        encoding: 'utf-8',
-      }).trim();
+    it('returns error on main branch', () => {
+      setupGitRepo(tempDir);
+      // We're on main after setup (initial commit)
 
-      // Make sure we're on the default branch
-      execSync(`git checkout ${defaultBranch}`, { cwd: tempDir, stdio: 'pipe' });
+      const result = createSession({ cwd: tempDir, silent: true });
 
-      expect(() => {
-        execSync('node .claude/tools/create-session.js', {
-          cwd: tempDir,
-          stdio: 'pipe',
-        });
-      }).toThrow();
+      expect(result.error).toContain('main/master');
     });
 
-    it('fails if session already exists without --force', () => {
-      execSync('git checkout -b issue/feature-789/test', { cwd: tempDir, stdio: 'pipe' });
+    it('returns error on master branch', () => {
+      setupGitRepo(tempDir);
+      // Rename main to master to test the master branch check
+      const { execSync } = require('child_process');
+      execSync('git branch -m main master', { cwd: tempDir, stdio: 'pipe' });
+
+      const result = createSession({ cwd: tempDir, silent: true });
+
+      expect(result.error).toContain('main/master');
+    });
+
+    it('returns error if session already exists without --force', () => {
+      setupGitRepo(tempDir, 'issue/feature-789/test');
 
       // Create session first time
-      execSync('node .claude/tools/create-session.js', { cwd: tempDir, stdio: 'pipe' });
+      const firstResult = createSession({ cwd: tempDir, silent: true });
+      expect(firstResult.error).toBeUndefined();
 
       // Try to create again without --force
-      expect(() => {
-        execSync('node .claude/tools/create-session.js', {
-          cwd: tempDir,
-          stdio: 'pipe',
-        });
-      }).toThrow();
+      const secondResult = createSession({ cwd: tempDir, silent: true });
+      expect(secondResult.error).toContain('already exists');
     });
 
     it('overwrites with --force flag', () => {
-      execSync('git checkout -b issue/feature-111/test', { cwd: tempDir, stdio: 'pipe' });
+      setupGitRepo(tempDir, 'issue/feature-111/test');
 
       // Create session first time
-      execSync('node .claude/tools/create-session.js', { cwd: tempDir, stdio: 'pipe' });
+      createSession({ cwd: tempDir, silent: true });
 
       // Modify the session file
       const sessionPath = path.join(tempDir, '.claude/sessions/111-test.md');
       fs.writeFileSync(sessionPath, 'modified content');
 
       // Create again with --force
-      execSync('node .claude/tools/create-session.js --force', { cwd: tempDir, stdio: 'pipe' });
+      const result = createSession({ cwd: tempDir, force: true, silent: true });
+      expect(result.error).toBeUndefined();
 
       // Verify it was overwritten
       const content = fs.readFileSync(sessionPath, 'utf-8');
       expect(content).toContain('# Session:');
       expect(content).not.toContain('modified content');
+    });
+
+    it('returns error when not in git repo', () => {
+      // tempDir is not a git repo
+      const result = createSession({ cwd: tempDir, silent: true });
+
+      expect(result.error).toContain('git repository');
+    });
+
+    it('returns branchInfo in result on success', () => {
+      setupGitRepo(tempDir, 'issue/feature-42/api-endpoint');
+
+      const result = createSession({ cwd: tempDir, silent: true });
+
+      expect(result.branchName).toBe('issue/feature-42/api-endpoint');
+      expect(result.branchInfo.type).toBe('feature');
+      expect(result.branchInfo.issueId).toBe('#42');
+      expect(result.sessionPath).toContain('42-api-endpoint.md');
+      expect(result.metaPath).toContain('issue-feature-42-api-endpoint');
+    });
+
+    it('uses default template for unknown branch types', () => {
+      // Branch name that doesn't match any known pattern
+      setupGitRepo(tempDir, 'random/something');
+
+      const result = createSession({ cwd: tempDir, silent: true });
+
+      expect(result.error).toBeUndefined();
+      expect(result.branchInfo.type).toBe('unknown');
+
+      // Verify session file was created with default template
+      const sessionPath = path.join(tempDir, '.claude/sessions/random-something.md');
+      expect(fs.existsSync(sessionPath)).toBe(true);
+
+      const content = fs.readFileSync(sessionPath, 'utf-8');
+      expect(content).toContain('# Session:');
+      expect(content).toContain('## Objective');
     });
   });
 });

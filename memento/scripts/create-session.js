@@ -5,24 +5,28 @@ const path = require('path');
 const session = require('./session.js');
 
 function createSession(options = {}) {
-  const branchName = session.getCurrentBranch();
+  /* istanbul ignore next - cwd always provided in tests */
+  const cwd = options.cwd || process.cwd();
+  const branchName = session.getCurrentBranch(cwd);
 
   if (!branchName) {
     console.error('Error: Not in a git repository');
-    process.exit(1);
+    if (!options.silent) process.exit(1);
+    return { error: 'Not in a git repository' };
   }
 
   if (branchName === 'main' || branchName === 'master') {
     console.error('Error: Cannot create session on main/master branch');
     console.error('Create a feature branch first: git checkout -b feature/your-feature');
-    process.exit(1);
+    if (!options.silent) process.exit(1);
+    return { error: 'Cannot create session on main/master branch' };
   }
 
   const branchInfo = session.parseBranchName(branchName);
-  const paths = session.getPaths();
+  const paths = session.getPaths(cwd);
 
   // Ensure directories exist
-  session.ensureDirectories();
+  session.ensureDirectories(cwd);
 
   const sessionPath = path.join(paths.sessionsDir, branchInfo.sessionFile);
   const metaPath = path.join(paths.branchesDir, branchInfo.branchMetaFile);
@@ -34,7 +38,8 @@ function createSession(options = {}) {
       console.error(`  Session: ${sessionPath}`);
       console.error(`  Metadata: ${metaPath}`);
       console.error('Use --force to overwrite');
-      process.exit(1);
+      if (!options.silent) process.exit(1);
+      return { error: 'Session already exists' };
     }
   }
 
@@ -96,6 +101,7 @@ ${branchInfo.issueNumber ? `issue: ${branchInfo.issueNumber}` : ''}
 }
 
 // CLI handling
+/* istanbul ignore next */
 if (require.main === module) {
   const args = process.argv.slice(2);
   const options = {

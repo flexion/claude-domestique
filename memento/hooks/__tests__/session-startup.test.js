@@ -162,6 +162,34 @@ describe('session-startup.js', () => {
       const result = buildSessionSummary(info);
       expect(result.context).toContain('Next: Implement feature');
     });
+
+    it('does not show Left off or Next when both are null', () => {
+      const info = {
+        branch: 'feature/empty',
+        branchInfo: { type: 'feature', issueId: null },
+        session: { path: '/project/.claude/sessions/feature-empty.md' },
+        status: 'in-progress',
+        lastLogEntry: null,
+        nextSteps: null
+      };
+      const result = buildSessionSummary(info);
+      expect(result.context).not.toContain('Left off:');
+      expect(result.context).not.toContain('Next:');
+    });
+
+    it('handles nextSteps with empty first line', () => {
+      const info = {
+        branch: 'feature/empty-line',
+        branchInfo: { type: 'feature', issueId: null },
+        session: { path: '/project/.claude/sessions/feature-empty-line.md' },
+        status: 'in-progress',
+        lastLogEntry: null,
+        nextSteps: '-   \n- Real step'  // First line is just a dash with whitespace
+      };
+      const result = buildSessionSummary(info);
+      // Should not include empty step
+      expect(result.context).not.toContain('Next:   ');
+    });
   });
 
   describe('processSessionStart', () => {
@@ -258,11 +286,7 @@ describe('session-startup.js', () => {
         'session: 123-add-auth.md\nstatus: in-progress'
       );
 
-      // Mock git to return our branch name
-      const originalCwd = process.cwd();
-      process.chdir(tempDir);
-
-      // Initialize git repo with the branch (need a commit for HEAD to be valid)
+      // Initialize git repo with the branch
       const { execSync } = require('child_process');
       execSync('git init', { cwd: tempDir, stdio: 'pipe' });
       execSync('git config user.email "test@test.com"', { cwd: tempDir, stdio: 'pipe' });
@@ -272,18 +296,14 @@ describe('session-startup.js', () => {
       execSync('git commit -m "init"', { cwd: tempDir, stdio: 'pipe' });
       execSync('git checkout -b issue/feature-123/add-auth', { cwd: tempDir, stdio: 'pipe' });
 
-      try {
-        const result = processSessionStart(
-          { cwd: tempDir, hook_event_name: 'SessionStart' },
-          { stateFile }
-        );
+      const result = processSessionStart(
+        { cwd: tempDir, hook_event_name: 'SessionStart' },
+        { stateFile }
+      );
 
-        expect(result.systemMessage).toContain('📍 Memento:');
-        expect(result.systemMessage).toContain('123-add-auth');
-        expect(result.hookSpecificOutput.additionalContext).toContain('issue/feature-123/add-auth');
-      } finally {
-        process.chdir(originalCwd);
-      }
+      expect(result.systemMessage).toContain('📍 Memento:');
+      expect(result.systemMessage).toContain('123-add-auth');
+      expect(result.hookSpecificOutput.additionalContext).toContain('issue/feature-123/add-auth');
     });
 
     it('warns when session status is complete', () => {
@@ -438,6 +458,18 @@ describe('session-startup.js', () => {
 
       const result = loadProjectConfig(tempDir, '.claude/config.json');
       expect(result.updateInterval).toBe(15);
+    });
+
+    it('returns updateInterval when it is 0 (falsy but defined)', () => {
+      const configDir = path.join(tempDir, '.claude');
+      fs.mkdirSync(configDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(configDir, 'config.json'),
+        JSON.stringify({ session: { updateInterval: 0 } })
+      );
+
+      const result = loadProjectConfig(tempDir, '.claude/config.json');
+      expect(result.updateInterval).toBe(0);
     });
 
     it('returns empty object when config has no session key', () => {
@@ -642,6 +674,32 @@ describe('session-startup.js', () => {
       expect(result.session.path).toContain('feature-test.md');
       expect(result.session.meta).toBeDefined(); // Metadata exists but without session field
       expect(result.session.meta.status).toBe('in-progress');
+    });
+
+    it('returns null when metadata has session field but file does not exist', () => {
+      const claudeDir = path.join(tempDir, '.claude');
+      const sessionsDir = path.join(claudeDir, 'sessions');
+      const branchesDir = path.join(claudeDir, 'branches');
+      fs.mkdirSync(sessionsDir, { recursive: true });
+      fs.mkdirSync(branchesDir, { recursive: true });
+
+      // Create metadata pointing to non-existent session file
+      fs.writeFileSync(path.join(branchesDir, 'feature-missing'), 'session: missing.md\nstatus: in-progress');
+      // Don't create the session file - it should fall through to fallback
+
+      // Initialize git on feature branch
+      const { execSync } = require('child_process');
+      execSync('git init', { cwd: tempDir, stdio: 'pipe' });
+      execSync('git config user.email "test@test.com"', { cwd: tempDir, stdio: 'pipe' });
+      execSync('git config user.name "Test"', { cwd: tempDir, stdio: 'pipe' });
+      fs.writeFileSync(path.join(tempDir, '.gitkeep'), '');
+      execSync('git add .gitkeep', { cwd: tempDir, stdio: 'pipe' });
+      execSync('git commit -m "init"', { cwd: tempDir, stdio: 'pipe' });
+      execSync('git checkout -b feature/missing', { cwd: tempDir, stdio: 'pipe' });
+
+      const result = getSessionInfo(tempDir);
+      // Should return null since neither the metadata-referenced file nor fallback exists
+      expect(result).toBeNull();
     });
   });
 
