@@ -8,13 +8,13 @@
       "name": "memento",
       "source": "./memento",
       "description": "Session persistence - persist context across conversation resets with branch-based session tracking",
-      "version": "0.1.20"
+      "version": "0.1.21"
     },
     {
       "name": "mantra",
       "source": "./mantra",
       "description": "Context refresh - periodic re-injection of behavioral guidance to prevent context drift",
-      "version": "0.1.8"
+      "version": "0.1.9"
     },
     {
       "name": "onus",

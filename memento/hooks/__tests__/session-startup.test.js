@@ -114,31 +114,31 @@ describe('session-startup', () => {
   });
 
   describe('processHook', () => {
-    it('returns empty on main branch', () => {
+    it('shows no session on main branch', () => {
       execSync.mockReturnValue('main\n');
       const result = hook.processHook({ cwd: '/test' });
-      expect(result.systemMessage).toBe('');
+      expect(result.systemMessage).toBe('📍 Memento: No session (main)');
     });
 
-    it('returns empty on master branch', () => {
+    it('shows no session on master branch', () => {
       execSync.mockReturnValue('master\n');
       const result = hook.processHook({ cwd: '/test' });
-      expect(result.systemMessage).toBe('');
+      expect(result.systemMessage).toBe('📍 Memento: No session (master)');
     });
 
-    it('returns empty when no git root', () => {
+    it('shows not a git repo when no git root', () => {
       execSync.mockImplementation((cmd) => {
         if (cmd.includes('show-toplevel')) throw new Error();
         return 'feature/test\n';
       });
       const result = hook.processHook({ cwd: '/test' });
-      expect(result.systemMessage).toBe('');
+      expect(result.systemMessage).toBe('📍 Memento: No session (not a git repo)');
     });
 
-    it('returns empty when no branch', () => {
+    it('shows not a git repo when no branch', () => {
       execSync.mockImplementation(() => { throw new Error(); });
       const result = hook.processHook({ cwd: '/test' });
-      expect(result.systemMessage).toBe('');
+      expect(result.systemMessage).toBe('📍 Memento: No session (not a git repo)');
     });
 
     it('creates session when missing', () => {
@@ -191,7 +191,7 @@ describe('session-startup', () => {
     it('uses default cwd when not provided', () => {
       execSync.mockReturnValue('main\n');
       const result = hook.processHook({});
-      expect(result.systemMessage).toBe('');
+      expect(result.systemMessage).toBe('📍 Memento: No session (main)');
     });
 
     it('uses default event when not provided', () => {
