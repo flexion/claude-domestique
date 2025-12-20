@@ -3,85 +3,87 @@ const path = require('path');
 const os = require('os');
 const { execSync } = require('child_process');
 
+// Mock child_process
+jest.mock('child_process', () => ({
+  execSync: jest.fn()
+}));
+
+// Import the module to be tested AFTER mocking
+const verifySession = require('../verify-session.js');
+
+// Destructure for convenience (these are the actual implementations for pure function tests)
 const {
-  processPreToolUse,
-  processHook,
-  sessionExists,
-  ensureBranchMeta,
   isAllowedPath,
   isFeatureBranch,
-  getGitRoot,
   parseCliInput,
   ALLOWED_PATHS
-} = require('../verify-session.js');
+} = verifySession;
 
 describe('verify-session.js', () => {
   describe('isFeatureBranch', () => {
-    it('returns false for main branch', () => {
-      expect(isFeatureBranch('main')).toBe(false);
-    });
-
-    it('returns false for master branch', () => {
-      expect(isFeatureBranch('master')).toBe(false);
-    });
-
-    it('returns false for HEAD (detached)', () => {
-      expect(isFeatureBranch('HEAD')).toBe(false);
-    });
-
-    it('returns false for null', () => {
-      expect(isFeatureBranch(null)).toBe(false);
-    });
-
-    it('returns true for feature branches', () => {
-      expect(isFeatureBranch('feature/add-auth')).toBe(true);
-      expect(isFeatureBranch('issue/fix-123/bug')).toBe(true);
-      expect(isFeatureBranch('chore/update-deps')).toBe(true);
+    it.each([
+      ['main', false],
+      ['master', false],
+      ['HEAD', false],
+      [null, false],
+      ['feature/add-auth', true],
+      ['issue/fix-123/bug', true],
+      ['chore/update-deps', true],
+    ])('isFeatureBranch(%s) returns %s', (branch, expected) => {
+      expect(isFeatureBranch(branch)).toBe(expected);
     });
   });
 
   describe('isAllowedPath', () => {
     const cwd = '/project';
 
-    it('allows session files', () => {
-      expect(isAllowedPath('/project/.claude/sessions/123-auth.md', cwd)).toBe(true);
+    it.each([
+      ['/project/.claude/sessions/123-auth.md', true, 'session files'],
+      ['/project/.claude/branches/feature-auth', true, 'branch metadata files'],
+      ['/project/.claude/context/project.yml', true, 'context files'],
+      ['/project/CLAUDE.md', true, 'CLAUDE.md'],
+      ['/project/package.json', true, 'package.json'],
+      ['/project/README.md', true, 'README.md'],
+      ['/project/.gitignore', true, '.gitignore'],
+      ['/project/docs/README.md', true, 'README.md in subdirectories'],
+      ['/project/packages/core/package.json', true, 'package.json in subdirectories'],
+      ['/project/src/index.js', false, 'source files'],
+      ['/project/tools/session.js', false, 'tool files'],
+      ['/project/tests/unit.test.js', false, 'test files'],
+      ['/project/CLAUDE.txt', false, 'similar but not allowed files'],
+      ['/project/src/package.json.bak', false, 'backup files'],
+    ])('isAllowedPath(%s) returns %s (%s)', (filePath, expected) => {
+      expect(isAllowedPath(filePath, cwd)).toBe(expected);
     });
 
-    it('allows branch metadata files', () => {
-      expect(isAllowedPath('/project/.claude/branches/feature-auth', cwd)).toBe(true);
+    it('handles .claude/config correctly', () => {
+      expect(isAllowedPath('/project/.claude/config', cwd)).toBe(true);
+      expect(isAllowedPath('/project/.claude/config.json', cwd)).toBe(false);
+    });
+  });
+
+  describe('parseCliInput', () => {
+    it('parses valid JSON input', () => {
+      const input = JSON.stringify({ cwd: '/test', tool_name: 'Edit' });
+      const result = parseCliInput(input);
+      expect(result.cwd).toBe('/test');
+      expect(result.tool_name).toBe('Edit');
     });
 
-    it('allows context files', () => {
-      expect(isAllowedPath('/project/.claude/context/project.yml', cwd)).toBe(true);
+    it('returns default on invalid JSON', () => {
+      const result = parseCliInput('not valid json');
+      expect(result.hook_event_name).toBe('PreToolUse');
+      expect(result.cwd).toBe(process.cwd());
     });
 
-    it('allows CLAUDE.md', () => {
-      expect(isAllowedPath('/project/CLAUDE.md', cwd)).toBe(true);
+    it('returns default on empty string', () => {
+      const result = parseCliInput('');
+      expect(result.hook_event_name).toBe('PreToolUse');
     });
 
-    it('allows package.json', () => {
-      expect(isAllowedPath('/project/package.json', cwd)).toBe(true);
-    });
-
-    it('allows README.md', () => {
-      expect(isAllowedPath('/project/README.md', cwd)).toBe(true);
-    });
-
-    it('blocks source files', () => {
-      expect(isAllowedPath('/project/src/index.js', cwd)).toBe(false);
-      expect(isAllowedPath('/project/tools/session.js', cwd)).toBe(false);
-    });
-
-    it('blocks test files', () => {
-      expect(isAllowedPath('/project/tests/unit.test.js', cwd)).toBe(false);
-    });
-
-    it('allows README.md in subdirectories', () => {
-      expect(isAllowedPath('/project/docs/README.md', cwd)).toBe(true);
-    });
-
-    it('allows package.json in subdirectories', () => {
-      expect(isAllowedPath('/project/packages/core/package.json', cwd)).toBe(true);
+    it('uses custom default event', () => {
+      const result = parseCliInput('invalid', 'CustomEvent');
+      expect(result.hook_event_name).toBe('CustomEvent');
     });
   });
 
@@ -105,7 +107,7 @@ describe('verify-session.js', () => {
         sessionFile: 'feature-test.md'
       };
 
-      expect(sessionExists(tempDir, branchInfo)).toBe(false);
+      expect(verifySession.sessionExists(tempDir, branchInfo)).toBe(false);
     });
 
     it('returns true when session file exists via metadata', () => {
@@ -115,10 +117,7 @@ describe('verify-session.js', () => {
       fs.mkdirSync(sessionsDir, { recursive: true });
       fs.mkdirSync(branchesDir, { recursive: true });
 
-      // Create session file
       fs.writeFileSync(path.join(sessionsDir, '123-auth.md'), '# Session');
-
-      // Create branch metadata pointing to session
       fs.writeFileSync(
         path.join(branchesDir, 'issue-feature-123-auth'),
         'session: 123-auth.md\nstatus: in-progress'
@@ -129,7 +128,7 @@ describe('verify-session.js', () => {
         sessionFile: '123-auth.md'
       };
 
-      expect(sessionExists(tempDir, branchInfo)).toBe(true);
+      expect(verifySession.sessionExists(tempDir, branchInfo)).toBe(true);
     });
 
     it('returns true when session file exists via fallback path', () => {
@@ -137,7 +136,6 @@ describe('verify-session.js', () => {
       const sessionsDir = path.join(claudeDir, 'sessions');
       fs.mkdirSync(sessionsDir, { recursive: true });
 
-      // Create session file (no metadata)
       fs.writeFileSync(path.join(sessionsDir, 'feature-test.md'), '# Session');
 
       const branchInfo = {
@@ -145,7 +143,7 @@ describe('verify-session.js', () => {
         sessionFile: 'feature-test.md'
       };
 
-      expect(sessionExists(tempDir, branchInfo)).toBe(true);
+      expect(verifySession.sessionExists(tempDir, branchInfo)).toBe(true);
     });
 
     it('creates branch metadata when session exists but metadata does not', () => {
@@ -155,7 +153,6 @@ describe('verify-session.js', () => {
       fs.mkdirSync(sessionsDir, { recursive: true });
       fs.mkdirSync(branchesDir, { recursive: true });
 
-      // Create session file without metadata
       fs.writeFileSync(path.join(sessionsDir, 'feature-new.md'), '# Session');
 
       const branchInfo = {
@@ -163,14 +160,53 @@ describe('verify-session.js', () => {
         sessionFile: 'feature-new.md'
       };
 
-      // Call sessionExists which should create metadata
-      expect(sessionExists(tempDir, branchInfo)).toBe(true);
+      expect(verifySession.sessionExists(tempDir, branchInfo)).toBe(true);
 
-      // Check metadata was created
       const metaPath = path.join(branchesDir, 'feature-new');
       expect(fs.existsSync(metaPath)).toBe(true);
       const content = fs.readFileSync(metaPath, 'utf-8');
       expect(content).toContain('session: feature-new.md');
+    });
+
+    it('handles metadata file with invalid format lines', () => {
+      const claudeDir = path.join(tempDir, '.claude');
+      const branchesDir = path.join(claudeDir, 'branches');
+      const sessionsDir = path.join(claudeDir, 'sessions');
+      fs.mkdirSync(branchesDir, { recursive: true });
+      fs.mkdirSync(sessionsDir, { recursive: true });
+
+      fs.writeFileSync(
+        path.join(branchesDir, 'feature-test'),
+        'session: test.md\ninvalid line without colon\nstatus: in-progress\n# comment line'
+      );
+      fs.writeFileSync(path.join(sessionsDir, 'test.md'), '# Session');
+
+      const branchInfo = {
+        branchMetaFile: 'feature-test',
+        sessionFile: 'test.md'
+      };
+
+      expect(verifySession.sessionExists(tempDir, branchInfo)).toBe(true);
+    });
+
+    it('handles metadata pointing to non-existent session file', () => {
+      const claudeDir = path.join(tempDir, '.claude');
+      const branchesDir = path.join(claudeDir, 'branches');
+      const sessionsDir = path.join(claudeDir, 'sessions');
+      fs.mkdirSync(branchesDir, { recursive: true });
+      fs.mkdirSync(sessionsDir, { recursive: true });
+
+      fs.writeFileSync(
+        path.join(branchesDir, 'feature-missing'),
+        'session: missing.md\nstatus: in-progress'
+      );
+
+      const branchInfo = {
+        branchMetaFile: 'feature-missing',
+        sessionFile: 'feature-missing.md'
+      };
+
+      expect(verifySession.sessionExists(tempDir, branchInfo)).toBe(false);
     });
   });
 
@@ -190,7 +226,6 @@ describe('verify-session.js', () => {
       const branchesDir = path.join(claudeDir, 'branches');
       fs.mkdirSync(branchesDir, { recursive: true });
 
-      // Pre-create metadata
       const metaPath = path.join(branchesDir, 'feature-existing');
       fs.writeFileSync(metaPath, 'session: existing.md\nstatus: complete');
 
@@ -199,9 +234,8 @@ describe('verify-session.js', () => {
         sessionFile: 'feature-existing.md'
       };
 
-      ensureBranchMeta(tempDir, branchInfo);
+      verifySession.ensureBranchMeta(tempDir, branchInfo);
 
-      // Verify original content unchanged
       const content = fs.readFileSync(metaPath, 'utf-8');
       expect(content).toContain('status: complete');
     });
@@ -209,14 +243,13 @@ describe('verify-session.js', () => {
     it('creates branches directory if needed', () => {
       const claudeDir = path.join(tempDir, '.claude');
       fs.mkdirSync(claudeDir, { recursive: true });
-      // Note: not creating branches dir
 
       const branchInfo = {
         branchMetaFile: 'feature-new',
         sessionFile: 'feature-new.md'
       };
 
-      ensureBranchMeta(tempDir, branchInfo);
+      verifySession.ensureBranchMeta(tempDir, branchInfo);
 
       const branchesDir = path.join(claudeDir, 'branches');
       expect(fs.existsSync(branchesDir)).toBe(true);
@@ -232,7 +265,7 @@ describe('verify-session.js', () => {
         sessionFile: '42-auth.md'
       };
 
-      ensureBranchMeta(tempDir, branchInfo);
+      verifySession.ensureBranchMeta(tempDir, branchInfo);
 
       const metaPath = path.join(branchesDir, 'issue-feature-42-auth');
       const content = fs.readFileSync(metaPath, 'utf-8');
@@ -242,29 +275,29 @@ describe('verify-session.js', () => {
   });
 
   describe('processHook', () => {
-    let tempDir;
-
     beforeEach(() => {
-      tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'memento-hook-test-'));
-    });
-
-    afterEach(() => {
-      fs.rmSync(tempDir, { recursive: true, force: true });
+      jest.clearAllMocks();
     });
 
     it('routes PreToolUse to processPreToolUse', () => {
-      const result = processHook({
-        cwd: tempDir,
+      // Mock to simulate not in git repo (execSync throws)
+      execSync.mockImplementation(() => {
+        throw new Error('not a git repo');
+      });
+
+      const result = verifySession.processHook({
+        cwd: '/mock/project',
         hook_event_name: 'PreToolUse',
         tool_name: 'Read',
         tool_input: {}
       });
+
       expect(result.decision).toBe('approve');
     });
 
     it('approves unknown event types', () => {
-      const result = processHook({
-        cwd: tempDir,
+      const result = verifySession.processHook({
+        cwd: '/mock/project',
         hook_event_name: 'UnknownEvent'
       });
       expect(result.decision).toBe('approve');
@@ -275,6 +308,7 @@ describe('verify-session.js', () => {
     let tempDir;
 
     beforeEach(() => {
+      jest.clearAllMocks();
       tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'memento-pretool-test-'));
     });
 
@@ -283,7 +317,7 @@ describe('verify-session.js', () => {
     });
 
     it('approves non-Edit/Write tools', () => {
-      const result = processPreToolUse({
+      const result = verifySession.processPreToolUse({
         cwd: tempDir,
         hook_event_name: 'PreToolUse',
         tool_name: 'Read',
@@ -294,7 +328,7 @@ describe('verify-session.js', () => {
     });
 
     it('approves when no file_path in tool_input', () => {
-      const result = processPreToolUse({
+      const result = verifySession.processPreToolUse({
         cwd: tempDir,
         hook_event_name: 'PreToolUse',
         tool_name: 'Edit',
@@ -305,7 +339,14 @@ describe('verify-session.js', () => {
     });
 
     it('approves Edit when no .claude directory exists', () => {
-      const result = processPreToolUse({
+      // Mock git commands - on feature branch
+      execSync.mockImplementation((cmd) => {
+        if (cmd.includes('rev-parse --abbrev-ref HEAD')) return 'feature/test';
+        if (cmd.includes('rev-parse --show-toplevel')) return tempDir;
+        return '';
+      });
+
+      const result = verifySession.processPreToolUse({
         cwd: tempDir,
         hook_event_name: 'PreToolUse',
         tool_name: 'Edit',
@@ -316,10 +357,16 @@ describe('verify-session.js', () => {
     });
 
     it('approves Edit when editing allowed paths', () => {
-      // Set up .claude directory
       fs.mkdirSync(path.join(tempDir, '.claude', 'sessions'), { recursive: true });
 
-      const result = processPreToolUse({
+      // Mock to simulate being on main - doesn't need session
+      execSync.mockImplementation((cmd) => {
+        if (cmd.includes('rev-parse --abbrev-ref HEAD')) return 'main';
+        if (cmd.includes('rev-parse --show-toplevel')) return tempDir;
+        return '';
+      });
+
+      const result = verifySession.processPreToolUse({
         cwd: tempDir,
         hook_event_name: 'PreToolUse',
         tool_name: 'Edit',
@@ -330,18 +377,16 @@ describe('verify-session.js', () => {
     });
 
     it('approves Edit on main branch without session', () => {
-      // Set up .claude directory
       fs.mkdirSync(path.join(tempDir, '.claude', 'sessions'), { recursive: true });
 
-      // Initialize git on main
-      execSync('git init', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git config user.email "test@test.com"', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git config user.name "Test"', { cwd: tempDir, stdio: 'pipe' });
-      fs.writeFileSync(path.join(tempDir, '.gitkeep'), '');
-      execSync('git add .gitkeep', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git commit -m "init"', { cwd: tempDir, stdio: 'pipe' });
+      // Mock git commands - on main branch
+      execSync.mockImplementation((cmd) => {
+        if (cmd.includes('rev-parse --abbrev-ref HEAD')) return 'main';
+        if (cmd.includes('rev-parse --show-toplevel')) return tempDir;
+        return '';
+      });
 
-      const result = processPreToolUse({
+      const result = verifySession.processPreToolUse({
         cwd: tempDir,
         hook_event_name: 'PreToolUse',
         tool_name: 'Edit',
@@ -352,32 +397,26 @@ describe('verify-session.js', () => {
     });
 
     it('approves Edit on feature branch with session', () => {
-      // Set up .claude directory with session
       const claudeDir = path.join(tempDir, '.claude');
       const sessionsDir = path.join(claudeDir, 'sessions');
       const branchesDir = path.join(claudeDir, 'branches');
       fs.mkdirSync(sessionsDir, { recursive: true });
       fs.mkdirSync(branchesDir, { recursive: true });
 
-      // Create session file
       fs.writeFileSync(path.join(sessionsDir, '123-auth.md'), '# Session');
-
-      // Create branch metadata
       fs.writeFileSync(
         path.join(branchesDir, 'issue-feature-123-auth'),
         'session: 123-auth.md\nstatus: in-progress'
       );
 
-      // Initialize git on feature branch
-      execSync('git init', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git config user.email "test@test.com"', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git config user.name "Test"', { cwd: tempDir, stdio: 'pipe' });
-      fs.writeFileSync(path.join(tempDir, '.gitkeep'), '');
-      execSync('git add .gitkeep', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git commit -m "init"', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git checkout -b issue/feature-123/auth', { cwd: tempDir, stdio: 'pipe' });
+      // Mock git commands - on feature branch
+      execSync.mockImplementation((cmd) => {
+        if (cmd.includes('rev-parse --abbrev-ref HEAD')) return 'issue/feature-123/auth';
+        if (cmd.includes('rev-parse --show-toplevel')) return tempDir;
+        return '';
+      });
 
-      const result = processPreToolUse({
+      const result = verifySession.processPreToolUse({
         cwd: tempDir,
         hook_event_name: 'PreToolUse',
         tool_name: 'Edit',
@@ -388,41 +427,36 @@ describe('verify-session.js', () => {
     });
 
     it('approves Edit on feature branch when memento not initialized', () => {
-      // Do NOT create .claude directory - memento not initialized
-      // Initialize git on feature branch
-      execSync('git init', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git config user.email "test@test.com"', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git config user.name "Test"', { cwd: tempDir, stdio: 'pipe' });
-      fs.writeFileSync(path.join(tempDir, '.gitkeep'), '');
-      execSync('git add .gitkeep', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git commit -m "init"', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git checkout -b feature/new-feature', { cwd: tempDir, stdio: 'pipe' });
+      // No .claude directory
 
-      const result = processPreToolUse({
+      // Mock git commands - on feature branch
+      execSync.mockImplementation((cmd) => {
+        if (cmd.includes('rev-parse --abbrev-ref HEAD')) return 'feature/new-feature';
+        if (cmd.includes('rev-parse --show-toplevel')) return tempDir;
+        return '';
+      });
+
+      const result = verifySession.processPreToolUse({
         cwd: tempDir,
         hook_event_name: 'PreToolUse',
         tool_name: 'Edit',
         tool_input: { file_path: path.join(tempDir, 'src/index.js') }
       });
 
-      // Should approve because memento isn't initialized (no .claude dir)
       expect(result.decision).toBe('approve');
     });
 
     it('blocks Edit on feature branch without session', () => {
-      // Set up .claude directory (no session)
       fs.mkdirSync(path.join(tempDir, '.claude', 'sessions'), { recursive: true });
 
-      // Initialize git on feature branch
-      execSync('git init', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git config user.email "test@test.com"', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git config user.name "Test"', { cwd: tempDir, stdio: 'pipe' });
-      fs.writeFileSync(path.join(tempDir, '.gitkeep'), '');
-      execSync('git add .gitkeep', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git commit -m "init"', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git checkout -b feature/new-feature', { cwd: tempDir, stdio: 'pipe' });
+      // Mock git commands - on feature branch
+      execSync.mockImplementation((cmd) => {
+        if (cmd.includes('rev-parse --abbrev-ref HEAD')) return 'feature/new-feature';
+        if (cmd.includes('rev-parse --show-toplevel')) return tempDir;
+        return '';
+      });
 
-      const result = processPreToolUse({
+      const result = verifySession.processPreToolUse({
         cwd: tempDir,
         hook_event_name: 'PreToolUse',
         tool_name: 'Edit',
@@ -436,19 +470,16 @@ describe('verify-session.js', () => {
     });
 
     it('blocks Write on feature branch without session', () => {
-      // Set up .claude directory (no session)
       fs.mkdirSync(path.join(tempDir, '.claude', 'sessions'), { recursive: true });
 
-      // Initialize git on feature branch
-      execSync('git init', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git config user.email "test@test.com"', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git config user.name "Test"', { cwd: tempDir, stdio: 'pipe' });
-      fs.writeFileSync(path.join(tempDir, '.gitkeep'), '');
-      execSync('git add .gitkeep', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git commit -m "init"', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git checkout -b feature/new-feature', { cwd: tempDir, stdio: 'pipe' });
+      // Mock git commands - on feature branch
+      execSync.mockImplementation((cmd) => {
+        if (cmd.includes('rev-parse --abbrev-ref HEAD')) return 'feature/new-feature';
+        if (cmd.includes('rev-parse --show-toplevel')) return tempDir;
+        return '';
+      });
 
-      const result = processPreToolUse({
+      const result = verifySession.processPreToolUse({
         cwd: tempDir,
         hook_event_name: 'PreToolUse',
         tool_name: 'Write',
@@ -460,19 +491,16 @@ describe('verify-session.js', () => {
     });
 
     it('includes helpful instructions in block message', () => {
-      // Set up .claude directory (no session)
       fs.mkdirSync(path.join(tempDir, '.claude', 'sessions'), { recursive: true });
 
-      // Initialize git on feature branch
-      execSync('git init', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git config user.email "test@test.com"', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git config user.name "Test"', { cwd: tempDir, stdio: 'pipe' });
-      fs.writeFileSync(path.join(tempDir, '.gitkeep'), '');
-      execSync('git add .gitkeep', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git commit -m "init"', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git checkout -b feature/test', { cwd: tempDir, stdio: 'pipe' });
+      // Mock git commands - on feature branch
+      execSync.mockImplementation((cmd) => {
+        if (cmd.includes('rev-parse --abbrev-ref HEAD')) return 'feature/test';
+        if (cmd.includes('rev-parse --show-toplevel')) return tempDir;
+        return '';
+      });
 
-      const result = processPreToolUse({
+      const result = verifySession.processPreToolUse({
         cwd: tempDir,
         hook_event_name: 'PreToolUse',
         tool_name: 'Edit',
@@ -483,219 +511,98 @@ describe('verify-session.js', () => {
       expect(result.reason).toContain('work context is preserved');
     });
   });
-});
 
-describe('getGitRoot', () => {
-  let tempDir;
-
-  beforeEach(() => {
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'memento-gitroot-test-'));
-  });
-
-  afterEach(() => {
-    fs.rmSync(tempDir, { recursive: true, force: true });
-  });
-
-  it('returns git root from subdirectory', () => {
-    // Initialize git at tempDir
-    execSync('git init', { cwd: tempDir, stdio: 'pipe' });
-    execSync('git config user.email "test@test.com"', { cwd: tempDir, stdio: 'pipe' });
-    execSync('git config user.name "Test"', { cwd: tempDir, stdio: 'pipe' });
-
-    // Create subdirectory
-    const subDir = path.join(tempDir, 'packages', 'core');
-    fs.mkdirSync(subDir, { recursive: true });
-
-    // Get git root from subdirectory
-    const gitRoot = getGitRoot(subDir);
-
-    expect(fs.realpathSync(gitRoot)).toBe(fs.realpathSync(tempDir));
-  });
-
-  it('returns null when not in a git repo', () => {
-    const gitRoot = getGitRoot(tempDir);
-    expect(gitRoot).toBe(null);
-  });
-});
-
-describe('processPreToolUse with subdirectories', () => {
-  let tempDir;
-
-  beforeEach(() => {
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'memento-subdir-test-'));
-  });
-
-  afterEach(() => {
-    fs.rmSync(tempDir, { recursive: true, force: true });
-  });
-
-  it('finds session at git root when cwd is subdirectory', () => {
-    // Set up .claude directory with session at root
-    const claudeDir = path.join(tempDir, '.claude');
-    const sessionsDir = path.join(claudeDir, 'sessions');
-    const branchesDir = path.join(claudeDir, 'branches');
-    fs.mkdirSync(sessionsDir, { recursive: true });
-    fs.mkdirSync(branchesDir, { recursive: true });
-
-    // Create session file
-    fs.writeFileSync(path.join(sessionsDir, 'chore-update-deps.md'), '# Session');
-
-    // Create branch metadata
-    fs.writeFileSync(
-      path.join(branchesDir, 'chore-update-deps'),
-      'session: chore-update-deps.md\nstatus: in-progress'
-    );
-
-    // Create subdirectory (simulating monorepo package)
-    const subDir = path.join(tempDir, 'packages', 'core');
-    fs.mkdirSync(subDir, { recursive: true });
-
-    // Initialize git on feature branch
-    execSync('git init', { cwd: tempDir, stdio: 'pipe' });
-    execSync('git config user.email "test@test.com"', { cwd: tempDir, stdio: 'pipe' });
-    execSync('git config user.name "Test"', { cwd: tempDir, stdio: 'pipe' });
-    fs.writeFileSync(path.join(tempDir, '.gitkeep'), '');
-    execSync('git add .gitkeep', { cwd: tempDir, stdio: 'pipe' });
-    execSync('git commit -m "init"', { cwd: tempDir, stdio: 'pipe' });
-    execSync('git checkout -b chore/update-deps', { cwd: tempDir, stdio: 'pipe' });
-
-    // Call from subdirectory - should find session at git root
-    const result = processPreToolUse({
-      cwd: subDir,  // subdirectory, not git root
-      hook_event_name: 'PreToolUse',
-      tool_name: 'Edit',
-      tool_input: { file_path: path.join(subDir, 'src/index.js') }
+  describe('getGitRoot', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
     });
 
-    expect(result.decision).toBe('approve');
-  });
+    it('returns null when not in a git repo', () => {
+      // Mock execSync to throw (simulating not being in a git repo)
+      execSync.mockImplementation(() => {
+        throw new Error('fatal: not a git repository');
+      });
 
-  it('blocks when no session exists even from subdirectory', () => {
-    // Set up .claude directory at root (no session)
-    fs.mkdirSync(path.join(tempDir, '.claude', 'sessions'), { recursive: true });
-
-    // Create subdirectory
-    const subDir = path.join(tempDir, 'packages', 'core');
-    fs.mkdirSync(subDir, { recursive: true });
-
-    // Initialize git on feature branch
-    execSync('git init', { cwd: tempDir, stdio: 'pipe' });
-    execSync('git config user.email "test@test.com"', { cwd: tempDir, stdio: 'pipe' });
-    execSync('git config user.name "Test"', { cwd: tempDir, stdio: 'pipe' });
-    fs.writeFileSync(path.join(tempDir, '.gitkeep'), '');
-    execSync('git add .gitkeep', { cwd: tempDir, stdio: 'pipe' });
-    execSync('git commit -m "init"', { cwd: tempDir, stdio: 'pipe' });
-    execSync('git checkout -b feature/new-feature', { cwd: tempDir, stdio: 'pipe' });
-
-    // Call from subdirectory - should still block (no session at git root)
-    const result = processPreToolUse({
-      cwd: subDir,
-      hook_event_name: 'PreToolUse',
-      tool_name: 'Edit',
-      tool_input: { file_path: path.join(subDir, 'src/index.js') }
+      const gitRoot = verifySession.getGitRoot('/some/path');
+      expect(gitRoot).toBe(null);
     });
 
-    expect(result.decision).toBe('block');
-    expect(result.reason).toContain('Session Required');
-  });
-});
+    it('returns git root path when in repo', () => {
+      // Mock execSync to return a path
+      execSync.mockReturnValue('/mock/repo\n');
 
-describe('parseCliInput', () => {
-  it('parses valid JSON input', () => {
-    const input = JSON.stringify({ cwd: '/test', tool_name: 'Edit' });
-    const result = parseCliInput(input);
-    expect(result.cwd).toBe('/test');
-    expect(result.tool_name).toBe('Edit');
+      const gitRoot = verifySession.getGitRoot('/mock/repo/packages/core');
+      expect(gitRoot).toBe('/mock/repo');
+    });
   });
 
-  it('returns default on invalid JSON', () => {
-    const result = parseCliInput('not valid json');
-    expect(result.hook_event_name).toBe('PreToolUse');
-    expect(result.cwd).toBe(process.cwd());
-  });
+  describe('processPreToolUse with subdirectories', () => {
+    let tempDir;
 
-  it('returns default on empty string', () => {
-    const result = parseCliInput('');
-    expect(result.hook_event_name).toBe('PreToolUse');
-  });
+    beforeEach(() => {
+      jest.clearAllMocks();
+      tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'memento-subdir-test-'));
+    });
 
-  it('uses custom default event', () => {
-    const result = parseCliInput('invalid', 'CustomEvent');
-    expect(result.hook_event_name).toBe('CustomEvent');
-  });
-});
+    afterEach(() => {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    });
 
-describe('sessionExists edge cases', () => {
-  let tempDir;
+    it('finds session at git root when cwd is subdirectory', () => {
+      const claudeDir = path.join(tempDir, '.claude');
+      const sessionsDir = path.join(claudeDir, 'sessions');
+      const branchesDir = path.join(claudeDir, 'branches');
+      fs.mkdirSync(sessionsDir, { recursive: true });
+      fs.mkdirSync(branchesDir, { recursive: true });
 
-  beforeEach(() => {
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'memento-edge-test-'));
-  });
+      fs.writeFileSync(path.join(sessionsDir, 'chore-update-deps.md'), '# Session');
+      fs.writeFileSync(
+        path.join(branchesDir, 'chore-update-deps'),
+        'session: chore-update-deps.md\nstatus: in-progress'
+      );
 
-  afterEach(() => {
-    fs.rmSync(tempDir, { recursive: true, force: true });
-  });
+      const subDir = path.join(tempDir, 'packages', 'core');
+      fs.mkdirSync(subDir, { recursive: true });
 
-  it('handles metadata file with invalid format lines', () => {
-    const claudeDir = path.join(tempDir, '.claude');
-    const branchesDir = path.join(claudeDir, 'branches');
-    const sessionsDir = path.join(claudeDir, 'sessions');
-    fs.mkdirSync(branchesDir, { recursive: true });
-    fs.mkdirSync(sessionsDir, { recursive: true });
+      // Mock git commands
+      execSync.mockImplementation((cmd) => {
+        if (cmd.includes('rev-parse --abbrev-ref HEAD')) return 'chore/update-deps';
+        if (cmd.includes('rev-parse --show-toplevel')) return tempDir;
+        return '';
+      });
 
-    // Create metadata with some invalid lines (no key-value format)
-    fs.writeFileSync(
-      path.join(branchesDir, 'feature-test'),
-      'session: test.md\ninvalid line without colon\nstatus: in-progress\n# comment line'
-    );
-    fs.writeFileSync(path.join(sessionsDir, 'test.md'), '# Session');
+      const result = verifySession.processPreToolUse({
+        cwd: subDir,
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Edit',
+        tool_input: { file_path: path.join(subDir, 'src/index.js') }
+      });
 
-    const branchInfo = {
-      branchMetaFile: 'feature-test',
-      sessionFile: 'test.md'
-    };
+      expect(result.decision).toBe('approve');
+    });
 
-    // Should still work because session: line is valid
-    expect(sessionExists(tempDir, branchInfo)).toBe(true);
-  });
+    it('blocks when no session exists even from subdirectory', () => {
+      fs.mkdirSync(path.join(tempDir, '.claude', 'sessions'), { recursive: true });
 
-  it('handles metadata pointing to non-existent session file', () => {
-    const claudeDir = path.join(tempDir, '.claude');
-    const branchesDir = path.join(claudeDir, 'branches');
-    const sessionsDir = path.join(claudeDir, 'sessions');
-    fs.mkdirSync(branchesDir, { recursive: true });
-    fs.mkdirSync(sessionsDir, { recursive: true });
+      const subDir = path.join(tempDir, 'packages', 'core');
+      fs.mkdirSync(subDir, { recursive: true });
 
-    // Create metadata pointing to non-existent session
-    fs.writeFileSync(
-      path.join(branchesDir, 'feature-missing'),
-      'session: missing.md\nstatus: in-progress'
-    );
+      // Mock git commands
+      execSync.mockImplementation((cmd) => {
+        if (cmd.includes('rev-parse --abbrev-ref HEAD')) return 'feature/new-feature';
+        if (cmd.includes('rev-parse --show-toplevel')) return tempDir;
+        return '';
+      });
 
-    const branchInfo = {
-      branchMetaFile: 'feature-missing',
-      sessionFile: 'feature-missing.md'
-    };
+      const result = verifySession.processPreToolUse({
+        cwd: subDir,
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Edit',
+        tool_input: { file_path: path.join(subDir, 'src/index.js') }
+      });
 
-    // Should return false since neither meta.session nor fallback exists
-    expect(sessionExists(tempDir, branchInfo)).toBe(false);
-  });
-});
-
-describe('isAllowedPath edge cases', () => {
-  it('matches exact file at root', () => {
-    expect(isAllowedPath('/project/.gitignore', '/project')).toBe(true);
-  });
-
-  it('rejects files similar to but not matching allowed patterns', () => {
-    expect(isAllowedPath('/project/CLAUDE.txt', '/project')).toBe(false);
-    expect(isAllowedPath('/project/src/package.json.bak', '/project')).toBe(false);
-  });
-
-  it('handles .claude/config correctly', () => {
-    // .claude/config is an exact match pattern
-    expect(isAllowedPath('/project/.claude/config', '/project')).toBe(true);
-    // .claude/config.json does NOT match .claude/config (not a prefix pattern)
-    expect(isAllowedPath('/project/.claude/config.json', '/project')).toBe(false);
+      expect(result.decision).toBe('block');
+      expect(result.reason).toContain('Session Required');
+    });
   });
 });

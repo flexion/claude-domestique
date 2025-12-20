@@ -26,12 +26,20 @@ Refactor memento tests to conform to test guidelines (test.yml): DI pattern, no 
 - Added DI support to session.js, create-session.js, get-session.js
 - Added `silent` option to prevent process.exit() in tests
 - Converted parseBranchName tests to table-driven format
-- Created test-utils/test-helpers.js with setupGitRepo, createTempDir, cleanupTempDir
 - Removed process.chdir usage from all tests
 - Added tests for uncovered branches (unknown branch type, metadata edge cases)
 - Added istanbul ignore comments for unreachable fallback branches
-- Branch coverage: 93.38% (exceeds 92% threshold)
-- 184 tests passing
+
+### 2025-12-20 - Deterministic Testing Refactor
+- Removed test-utils/test-helpers.js that used real git commands
+- Refactored create-session.test.js to use jest.mock('../session.js')
+- Refactored get-session.test.js to use jest.mock('../session.js')
+- Refactored verify-session.test.js to use jest.mock('child_process')
+- All tests now mock git operations instead of running real git
+- Console output suppressed using jest.spyOn(console, 'log/error')
+- Tests are now platform-independent and deterministic
+- Branch coverage: 92.63% (meets 92% threshold)
+- 190 tests passing
 
 ## Notes
 - Default parameter fallbacks (e.g., `cwd || process.cwd()`) are hard to test since we always provide cwd in tests
@@ -43,14 +51,14 @@ Refactor memento tests to conform to test guidelines (test.yml): DI pattern, no 
 - memento/scripts/create-session.js - Added cwd and silent options
 - memento/scripts/get-session.js - Added cwd, silent, json, path, content, quiet options
 - memento/scripts/__tests__/session.test.js - Table-driven tests for parseBranchName
-- memento/scripts/__tests__/create-session.test.js - DI-based tests with temp directories
-- memento/scripts/__tests__/get-session.test.js - DI-based tests with edge case coverage
+- memento/scripts/__tests__/create-session.test.js - Mock-based deterministic tests
+- memento/scripts/__tests__/get-session.test.js - Mock-based deterministic tests
 - memento/hooks/__tests__/session-startup.test.js - Removed process.chdir, added edge cases
-- memento/hooks/__tests__/verify-session.test.js - Added edge case tests
+- memento/hooks/__tests__/verify-session.test.js - Mock-based deterministic tests with edge cases
 - memento/hooks/session-startup.js - Istanbul ignore for fallback branches
 - memento/hooks/verify-session.js - Istanbul ignore for unreachable fallbacks
 - memento/hooks/post-edit.js - Istanbul ignore for CLI blocks
-- memento/test-utils/test-helpers.js - Shared test utilities
+- DELETED: memento/test-utils/test-helpers.js - Removed (used real git commands)
 
 ## Next Steps
 1. Commit changes
