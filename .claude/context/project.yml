@@ -40,5 +40,5 @@ memento: ~/.claude/memento-state.json
 onus: ~/.claude/onus/state.json, ~/.claude/onus/work-item-cache.json
 
 ## SHARED CODE
-branch-parsing: memento/tools/session.js (parseBranchName)
+branch-parsing: memento/scripts/session.js (parseBranchName)
 convention: 1-session = 1-issue = 1-branch
