@@ -1,91 +1,16 @@
-# AI-managed context file - optimized for token efficiency
-# To modify: describe changes to Claude in natural language
-#
-# Session Workflow - Compact Reference
-# For examples and workflow details, see: sessions.md
+# Session Management - Compact Reference
+# Sessions persist work context across conversation resets
 
-MANDATORY-REREAD: before-implementation-start, before-whats-next-queries (use-thinking-block)
+## CONVENTION
+location: {git-root}/.claude/sessions/<branch-sanitized>.md
+auto-create: hook creates on first prompt for feature branches
+one-session: 1 branch = 1 session
 
-## WHAT'S-NEXT RESPONSE (BLOCKING - FIRST ACTION)
-when-user-asks: "what's next", "where were we", "continue", any-resumption-query
-FIRST: read session file (use Read tool on .claude/sessions/<session>.md)
-THEN: optionally fetch issue (only if details needed beyond session)
-NEVER: fetch issue, explore code, or answer before reading session file
-rationale: session-file-is-truth (captures decisions, context, next-steps already)
-steps:
-  1. Check .claude/branches/<current-branch-sanitized> for session mapping
-  2. Read the session file from .claude/sessions/ (find "Next Steps" section)
-  3. Answer based on session content
-NEVER guess or assume current branch - ALWAYS check git branch first
+## UPDATE TRIGGERS
+update-when: after-milestone, before-commit, when-blocked, on-reminder
+sections: Session Log (what), Files Changed (where), Next Steps (todo)
+skill: /memento:session update
 
-## Session = Long-term Memory
-purpose: persist state across conversation resets (context window cleanup)
-mapping: 1 session = 1 issue = 1 branch = 1 branch-metadata-file
-
-## BLOCKING REQUIREMENTS (ENFORCE BEFORE IMPLEMENTATION)
-before-implementation:
-  - verify: session-file-exists
-  - if-missing: run create-session.js BEFORE any code changes
-  - enforcement: NEVER edit source files without active session
-required-before: implementation-start, source-file-edits
-must-show: "Verifying session exists per sessions.yml"
-
-## Auto-Detection
-on-startup: git branch → .claude/branches/<sanitized> → load session file
-manual: "Read .claude/sessions/<file>.md"
-
-## Session Files
-location: .claude/sessions/
-format: <IssueNum>-<desc>.md OR <type>-<desc>.md
-content: goal, log, decisions, learnings, files-changed, next-steps
-creation: /session slash command
-update: collaborative (Claude edits directly, user reviews)
-commit: atomic (session+code in same commit)
-
-## Branch Metadata
-location: .claude/branches/
-format: <branch-name-sanitized> (/ → -)
-content: session:<file>, status:<state>, next:<step>
-size: compact lookup file
-
-## Workflow
-
-### Starting New Work (BLOCKING)
-CRITICAL: These steps are SEQUENTIAL and MANDATORY
-1. create branch (git checkout -b issue/{type}-{number}/{slug})
-2. create session (/session slash command) ← BLOCKING
-3. ONLY THEN: begin implementation
-
-NEVER: edit source files before session exists
-
-work: implement → update session after each major task
-pause: update session file directly
-resume: switch branch → get-session.js → auto-loads correct session
-complete: mark-complete → final-commit → push → PR → merge
-
-## Session Completion (CRITICAL TIMING)
-when-to-mark-complete: BEFORE final commit (not after PR merge)
-reason: feature-branch-changes-cannot-push-after-merge
-sequence: all-work-done → mark-status-complete → commit-with-session → push → create-PR
-never: try-to-update-session-after-PR-merged (branch is stale)
-
-## Update Triggers
-when: beginning-work, after-milestone, before-pause, when-blocked, before-commit
-how: Claude edits session file directly (Edit tool), user reviews changes
-
-## Key Patterns
-fresh-conversation-not-equal-lost-context: session file persists state
-reset-context-window: start new conversation, read session, quality restored
-branch-switch-equal-session-switch: automatic via metadata
-commit-regularly: session updates are code documentation
-
-## Tools
-get: read .claude/branches/<branch> then .claude/sessions/<session>.md
-create: /session slash command (creates branch metadata + session file)
-update: direct edit (Claude + user collaboration)
-
-## Benefits
-resumable: pick up exactly where left off
-traceable: maps to github issues, jira tickets, azure devops work items
-handoff: teammates read session, understand work
-memory: external state outside context window
+## RESUMPTION
+on-start: read session file FIRST (not issue)
+use: Next Steps, Left off context
