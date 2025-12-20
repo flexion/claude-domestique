@@ -327,21 +327,36 @@ function processHook(input, config = {}) {
   return processUserPromptSubmit(input, config);
 }
 
+/**
+ * Parse CLI input with fallback for invalid JSON
+ * @param {string} inputData - Raw input string
+ * @param {string} defaultEvent - Default hook event name
+ * @returns {object} Parsed input object
+ */
+function parseCliInput(inputData, defaultEvent = 'SessionStart') {
+  try {
+    return JSON.parse(inputData);
+  } catch {
+    return { cwd: process.cwd(), hook_event_name: defaultEvent };
+  }
+}
+
+/**
+ * Read all data from stdin
+ * @returns {Promise<string>} All stdin data
+ */
+async function readStdin() {
+  let data = '';
+  for await (const chunk of process.stdin) {
+    data += chunk;
+  }
+  return data;
+}
+
 // Main CLI wrapper
 async function main() {
-  let inputData = '';
-  for await (const chunk of process.stdin) {
-    inputData += chunk;
-  }
-
-  let input;
-  try {
-    input = JSON.parse(inputData);
-  } catch (e) {
-    // Fallback for direct CLI execution (testing)
-    input = { cwd: process.cwd(), hook_event_name: 'SessionStart' };
-  }
-
+  const inputData = await readStdin();
+  const input = parseCliInput(inputData, 'SessionStart');
   const output = processHook(input);
   console.log(JSON.stringify(output));
   process.exit(0);
@@ -360,6 +375,7 @@ module.exports = {
   loadState,
   saveState,
   loadProjectConfig,
+  parseCliInput,
   DEFAULT_CONFIG
 };
 

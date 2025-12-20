@@ -74,6 +74,37 @@ function readBranchMeta(cwd, branchMetaFile) {
   }
 }
 
+/**
+ * Create branch metadata file if it doesn't exist
+ * @param {string} cwd - Working directory
+ * @param {object} branchInfo - Parsed branch info
+ */
+function ensureBranchMeta(cwd, branchInfo) {
+  const branchesDir = path.join(cwd, '.claude', 'branches');
+  const metaPath = path.join(branchesDir, branchInfo.branchMetaFile);
+
+  // Skip if metadata already exists
+  if (fs.existsSync(metaPath)) {
+    return;
+  }
+
+  // Ensure branches directory exists
+  if (!fs.existsSync(branchesDir)) {
+    fs.mkdirSync(branchesDir, { recursive: true });
+  }
+
+  // Create minimal metadata
+  const metaContent = `session: ${branchInfo.sessionFile}
+status: in-progress
+`;
+
+  try {
+    fs.writeFileSync(metaPath, metaContent);
+  } catch {
+    // Ignore write errors - metadata is optional
+  }
+}
+
 function sessionExists(cwd, branchInfo) {
   const sessionsDir = path.join(cwd, '.claude', 'sessions');
 
@@ -88,7 +119,13 @@ function sessionExists(cwd, branchInfo) {
 
   // Fallback to guessed session path
   const sessionPath = path.join(sessionsDir, branchInfo.sessionFile);
-  return fs.existsSync(sessionPath);
+  if (fs.existsSync(sessionPath)) {
+    // Session exists but metadata doesn't - create it
+    ensureBranchMeta(cwd, branchInfo);
+    return true;
+  }
+
+  return false;
 }
 
 function isAllowedPath(filePath, cwd) {
@@ -194,21 +231,36 @@ function processHook(input) {
   return { decision: 'approve' };
 }
 
+/**
+ * Parse CLI input with fallback for invalid JSON
+ * @param {string} inputData - Raw input string
+ * @param {string} defaultEvent - Default hook event name
+ * @returns {object} Parsed input object
+ */
+function parseCliInput(inputData, defaultEvent = 'PreToolUse') {
+  try {
+    return JSON.parse(inputData);
+  } catch {
+    return { cwd: process.cwd(), hook_event_name: defaultEvent };
+  }
+}
+
+/**
+ * Read all data from stdin
+ * @returns {Promise<string>} All stdin data
+ */
+async function readStdin() {
+  let data = '';
+  for await (const chunk of process.stdin) {
+    data += chunk;
+  }
+  return data;
+}
+
 // Main CLI wrapper
 async function main() {
-  let inputData = '';
-  for await (const chunk of process.stdin) {
-    inputData += chunk;
-  }
-
-  let input;
-  try {
-    input = JSON.parse(inputData);
-  } catch (e) {
-    // Fallback for direct CLI execution (testing)
-    input = { cwd: process.cwd(), hook_event_name: 'PreToolUse' };
-  }
-
+  const inputData = await readStdin();
+  const input = parseCliInput(inputData, 'PreToolUse');
   const output = processHook(input);
   console.log(JSON.stringify(output));
   process.exit(0);
@@ -220,8 +272,10 @@ module.exports = {
   processHook,
   processPreToolUse,
   sessionExists,
+  ensureBranchMeta,
   isAllowedPath,
   isFeatureBranch,
+  parseCliInput,
   ALLOWED_PATHS
 };
 
@@ -232,3 +286,4 @@ if (require.main === module) {
     process.exit(1);
   });
 }
+

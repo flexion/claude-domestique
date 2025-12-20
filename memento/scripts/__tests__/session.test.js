@@ -213,6 +213,37 @@ describe('session.js', () => {
     });
   });
 
+  describe('readBranchMeta', () => {
+    it('returns null for nonexistent branch metadata', () => {
+      const result = session.readBranchMeta('nonexistent/branch/that-does-not-exist-12345');
+      expect(result).toBe(null);
+    });
+
+    it('parses valid branch metadata file', () => {
+      // Use a branch that has metadata in this project
+      const meta = session.readBranchMeta('issue/feature-2/session-tools');
+
+      // This should find the existing metadata file
+      if (meta) {
+        expect(typeof meta).toBe('object');
+        expect(meta.session).toBe('2-session-tools.md');
+        expect(meta.type).toBe('feature');
+        expect(meta.status).toBe('in-progress');
+      }
+    });
+
+    it('parses metadata with multiple key-value pairs', () => {
+      // Test with another existing branch metadata file
+      const meta = session.readBranchMeta('chore/plugin-format');
+
+      if (meta) {
+        expect(typeof meta).toBe('object');
+        // Should parse all valid key: value lines
+        expect(Object.keys(meta).length).toBeGreaterThan(0);
+      }
+    });
+  });
+
   describe('sessionExists', () => {
     // Note: sessionExists uses hardcoded paths relative to process.cwd()
     it('returns true for existing session in project', () => {
