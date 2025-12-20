@@ -82,8 +82,12 @@ function processHook(input) {
   const event = input.hook_event_name || 'SessionStart';
   const isStart = event === 'SessionStart';
   
-  if (!gitRoot || !branch || branch === 'main' || branch === 'master') {
-    return { systemMessage: '', hookSpecificOutput: { hookEventName: event, additionalContext: '' } };
+  if (!gitRoot || !branch) {
+    return { systemMessage: '📍 Memento: No session (not a git repo)', hookSpecificOutput: { hookEventName: event, additionalContext: '' } };
+  }
+
+  if (branch === 'main' || branch === 'master') {
+    return { systemMessage: `📍 Memento: No session (${branch})`, hookSpecificOutput: { hookEventName: event, additionalContext: '' } };
   }
   
   const sessionPath = getSessionPath(gitRoot, branch);
