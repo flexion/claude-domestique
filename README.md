@@ -66,6 +66,50 @@ Each plugin works standalone but gains enhanced behavior when used together.
 
 ---
 
+## Requirements
+
+### Required
+
+| Tool | Version | Used By | Purpose |
+|------|---------|---------|---------|
+| [Claude Code](https://claude.ai/code) | 2.0.12+ | All | Plugin host (plugin system introduced in v2.0.12) |
+| [Node.js](https://nodejs.org/) | 18+ | All | Runtime for hooks and scripts |
+| [git](https://git-scm.com/) | 2.x | All | Branch detection, commits, session tracking |
+
+### Platform-Specific (onus)
+
+When using `/onus:fetch`, Claude will use these tools to retrieve work items:
+
+| Tool | Platform | Purpose |
+|------|----------|---------|
+| [GitHub CLI (gh)](https://cli.github.com/) | GitHub | Fetch issues, create PRs (recommended) |
+| Claude's WebFetch | JIRA, Azure DevOps | Built-in HTTP tool for API calls |
+
+> **Note**: For JIRA/Azure DevOps, Claude uses its built-in WebFetch capability. No additional tools required.
+
+### Environment Variables (for onus)
+
+| Variable | Platform | How to Get |
+|----------|----------|------------|
+| `GITHUB_TOKEN` | GitHub | [Create PAT](https://github.com/settings/tokens) with `repo` scope |
+| `JIRA_TOKEN` | JIRA | `echo -n "email:api_token" \| base64` ([Get API token](https://id.atlassian.com/manage-profile/security/api-tokens)) |
+| `AZURE_DEVOPS_TOKEN` | Azure DevOps | `echo -n ":pat" \| base64` ([Create PAT](https://dev.azure.com/_usersSettings/tokens) with Work Items Read) |
+
+### Verification
+
+```bash
+# Check required tools
+git --version          # git version 2.x
+node --version         # v18.x or higher
+claude --version       # Claude Code 2.x
+
+# Check GitHub CLI (optional, for onus with GitHub)
+gh --version           # gh version 2.x
+gh auth status         # Verify authentication
+```
+
+---
+
 ## Installation
 
 ### Add the Marketplace

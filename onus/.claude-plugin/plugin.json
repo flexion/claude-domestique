@@ -1,6 +1,6 @@
 {
   "name": "onus",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Work item automation for Claude Code - fetches issues, generates commits/PRs, syncs progress",
   "author": {
     "name": "David Puglielli"
