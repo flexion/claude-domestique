@@ -14,13 +14,13 @@
       "name": "mantra",
       "source": "./mantra",
       "description": "Context refresh - periodic re-injection of behavioral guidance to prevent context drift",
-      "version": "0.1.8"
+      "version": "0.1.9"
     },
     {
       "name": "onus",
       "source": "./onus",
       "description": "Work-item automation - fetches issues, generates commits/PRs, syncs progress",
-      "version": "0.1.6"
+      "version": "0.1.7"
     }
   ]
 }

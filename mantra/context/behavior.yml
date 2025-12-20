@@ -18,6 +18,12 @@ must-verify: format-requirements (PR title lowercase, commit format, zero attrib
 enforcement: if user says "commit/PR/troubleshoot" → thinking block showing checklist verification
 enforcement: if implementing code → thinking block showing "TDD: write test first, run to fail, then implement"
 
+## ZERO ATTRIBUTION (BLOCKING - applies to ALL git operations)
+scan-before: git-commit, gh-pr-create (in thinking block)
+never-include: "Co-Authored-By", "Generated with", "Claude Code", "Claude", emojis
+if-found: STOP, remove violations, redraft message
+cross-ref: see git.yml for full commit/PR checklists
+
 ## IMPLEMENTATION BEHAVIOR
 mode: discuss-approach-first (non-trivial), build-first (trivial)
 order: syntax → runtime → logic → optimize

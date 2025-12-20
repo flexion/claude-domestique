@@ -7,19 +7,25 @@
 
 MANDATORY-REREAD: before-commit, before-PR (use-thinking-block-verification)
 
+## ZERO ATTRIBUTION (BLOCKING - non-negotiable)
+never-include: "Co-Authored-By", "Generated with", "Claude Code", "Claude", emojis
+verify: scan-message-in-thinking-block-before-git-command
+if-found: REMOVE-and-redraft (do not proceed with violations)
+
 ## COMMIT CHECKLIST (you are reading this because you're about to commit):
 ✓ Tests run if applicable (npm test)
 ✓ Session file updated (atomic commit: session+code together)
 ✓ Format: "#N - verb desc" OR "chore - desc" (lowercase!)
 ✓ HEREDOC with bullets
-✓ ZERO attribution/co-authored-by/emojis
+✓ ZERO attribution (verify: no Co-Authored-By, Generated, Claude, emojis)
+✓ Scan message in thinking block before running git commit
 
 ## PR CHECKLIST (you are reading this because you're about to create PR):
 ✓ Tests run if applicable (npm test)
 ✓ Title format: "#N - lowercase desc" OR "chore - lowercase desc" (MATCHES commit format)
 ✓ Body has ZERO: attribution, emojis, AI mentions, co-authored-by
+✓ Scan PR body in thinking block before running gh pr create
 ✓ Base branch: main (or project default)
-✓ Re-read this checklist in thinking block BEFORE running gh pr create
 
 branch-from: main (git-fetch-first, remote-main)
 branch: issue/feature-N/desc | chore/desc

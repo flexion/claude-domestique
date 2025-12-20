@@ -1,6 +1,19 @@
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
+const { execSync } = require('child_process');
+
+// Mock child_process
+jest.mock('child_process', () => ({
+  execSync: jest.fn()
+}));
+
+// Mock fs
+jest.mock('fs', () => ({
+  existsSync: jest.fn(),
+  mkdirSync: jest.fn(),
+  readFileSync: jest.fn(),
+  realpathSync: jest.fn((p) => p),
+}));
 
 const session = require('../session.js');
 
@@ -144,22 +157,66 @@ describe('session.js', () => {
   });
 
   describe('getCurrentBranch', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
     it('returns current git branch', () => {
+      execSync.mockReturnValue('feature/test-branch\n');
+
       const branch = session.getCurrentBranch();
-      // Should return a string (the actual branch name)
-      expect(typeof branch).toBe('string');
-      expect(branch.length).toBeGreaterThan(0);
+
+      expect(branch).toBe('feature/test-branch');
+      expect(execSync).toHaveBeenCalledWith(
+        'git rev-parse --abbrev-ref HEAD',
+        expect.objectContaining({ encoding: 'utf-8' })
+      );
+    });
+
+    it('returns null when not in a git repo', () => {
+      execSync.mockImplementation(() => {
+        throw new Error('fatal: not a git repository');
+      });
+
+      const branch = session.getCurrentBranch('/tmp');
+
+      expect(branch).toBe(null);
+    });
+
+    it('trims whitespace from branch name', () => {
+      execSync.mockReturnValue('  main  \n');
+
+      const branch = session.getCurrentBranch();
+
+      expect(branch).toBe('main');
     });
   });
 
   describe('getPaths', () => {
     it('returns path configuration object', () => {
+      const paths = session.getPaths('/mock/project');
+
+      expect(paths.claudeDir).toBe('/mock/project/.claude');
+      expect(paths.sessionsDir).toBe('/mock/project/.claude/sessions');
+      expect(paths.branchesDir).toBe('/mock/project/.claude/branches');
+      expect(paths.templatesDir).toContain('templates');
+    });
+
+    it('uses process.cwd() when cwd not provided', () => {
       const paths = session.getPaths();
 
-      expect(paths.claudeDir.endsWith('.claude')).toBe(true);
-      expect(paths.sessionsDir.endsWith('sessions')).toBe(true);
-      expect(paths.branchesDir.endsWith('branches')).toBe(true);
-      expect(paths.templatesDir.endsWith('templates')).toBe(true);
+      expect(paths.claudeDir).toContain('.claude');
+      expect(paths.sessionsDir).toContain('sessions');
+    });
+  });
+
+  describe('getProjectPaths', () => {
+    it('uses process.cwd() when cwd not provided', () => {
+      const paths = session.getProjectPaths();
+
+      expect(paths.claudeDir).toContain('.claude');
+      expect(paths.sessionsDir).toContain('sessions');
+      expect(paths.branchesDir).toContain('branches');
     });
   });
 
@@ -213,33 +270,65 @@ describe('session.js', () => {
   });
 
   describe('ensureDirectories', () => {
-    // Note: This function uses hardcoded paths based on process.cwd()
-    // Full integration testing would require source changes to support DI
-    // We verify the directories exist after calling (they may already exist)
-    it('ensures directories exist in project', () => {
-      session.ensureDirectories();
-      const paths = session.getPaths();
-
-      expect(fs.existsSync(paths.sessionsDir)).toBe(true);
-      expect(fs.existsSync(paths.branchesDir)).toBe(true);
+    beforeEach(() => {
+      jest.clearAllMocks();
     });
 
-    it('plugin templates directory exists', () => {
-      const paths = session.getPaths();
-      expect(fs.existsSync(paths.templatesDir)).toBe(true);
+    it('creates sessions and branches directories when they do not exist', () => {
+      fs.existsSync.mockReturnValue(false);
+
+      session.ensureDirectories('/mock/project');
+
+      expect(fs.mkdirSync).toHaveBeenCalledTimes(2);
+      expect(fs.mkdirSync).toHaveBeenCalledWith(
+        '/mock/project/.claude/sessions',
+        { recursive: true }
+      );
+      expect(fs.mkdirSync).toHaveBeenCalledWith(
+        '/mock/project/.claude/branches',
+        { recursive: true }
+      );
+    });
+
+    it('does nothing when directories already exist', () => {
+      fs.existsSync.mockReturnValue(true);
+
+      session.ensureDirectories('/mock/project');
+
+      expect(fs.mkdirSync).not.toHaveBeenCalled();
+    });
+
+    it('uses process.cwd() when cwd not provided', () => {
+      fs.existsSync.mockReturnValue(true);
+
+      session.ensureDirectories();
+
+      expect(fs.existsSync).toHaveBeenCalled();
     });
   });
 
   describe('loadTemplate', () => {
-    // Note: Reads from plugin's templates directory (acceptable integration test)
-    it('loads existing feature template from plugin', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('loads existing template', () => {
+      fs.readFileSync.mockReturnValue('# {{description}}\n\nTemplate content');
+
       const content = session.loadTemplate('feature');
 
-      expect(content).not.toBe(null);
-      expect(content).toContain('{{description}}');
+      expect(content).toBe('# {{description}}\n\nTemplate content');
+      expect(fs.readFileSync).toHaveBeenCalledWith(
+        expect.stringContaining('templates/feature.md'),
+        'utf-8'
+      );
     });
 
     it('returns null if template does not exist', () => {
+      fs.readFileSync.mockImplementation(() => {
+        throw new Error('ENOENT: no such file or directory');
+      });
+
       const content = session.loadTemplate('nonexistent');
 
       expect(content).toBe(null);
@@ -247,39 +336,101 @@ describe('session.js', () => {
   });
 
   describe('readBranchMeta', () => {
-    // Note: Uses hardcoded paths based on process.cwd()
-    // Only testing null case to avoid dependency on specific project state
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
     it('returns null for nonexistent branch metadata', () => {
-      const result = session.readBranchMeta('nonexistent/branch/that-does-not-exist-12345');
+      fs.readFileSync.mockImplementation(() => {
+        throw new Error('ENOENT: no such file or directory');
+      });
+
+      const result = session.readBranchMeta('nonexistent/branch/name', '/mock/project');
+
       expect(result).toBe(null);
     });
 
-    // Integration test: reads actual branch metadata if it exists
-    it('returns object or null for current branch', () => {
-      const branch = session.getCurrentBranch();
-      if (branch && branch !== 'main' && branch !== 'master') {
-        const meta = session.readBranchMeta(branch);
-        // Should return either null or a valid metadata object
-        if (meta !== null) {
-          expect(typeof meta).toBe('object');
-          expect(meta).toHaveProperty('session');
-        }
-      }
+    it('parses metadata file correctly', () => {
+      const metaContent = `session: test-session.md
+status: in-progress
+type: feature
+created: 2025-01-01`;
+      fs.readFileSync.mockReturnValue(metaContent);
+
+      const meta = session.readBranchMeta('feature/test-branch', '/mock/project');
+
+      expect(meta).not.toBe(null);
+      expect(meta.session).toBe('test-session.md');
+      expect(meta.status).toBe('in-progress');
+      expect(meta.type).toBe('feature');
+      expect(meta.created).toBe('2025-01-01');
+    });
+
+    it('ignores invalid lines in metadata', () => {
+      const metaContent = `session: valid.md
+invalid line without colon
+status: complete
+# comment line`;
+      fs.readFileSync.mockReturnValue(metaContent);
+
+      const meta = session.readBranchMeta('chore/cleanup', '/mock/project');
+
+      expect(meta.session).toBe('valid.md');
+      expect(meta.status).toBe('complete');
+      expect(Object.keys(meta)).toHaveLength(2);
+    });
+
+    it('uses process.cwd() when cwd not provided', () => {
+      fs.readFileSync.mockImplementation(() => {
+        throw new Error('ENOENT: no such file or directory');
+      });
+
+      const result = session.readBranchMeta('feature/test');
+
+      expect(result).toBe(null);
     });
   });
 
   describe('sessionExists', () => {
-    // Note: Uses hardcoded paths based on process.cwd()
-    it('returns false for nonexistent session', () => {
-      expect(session.sessionExists('nonexistent/branch/name-12345')).toBe(false);
+    beforeEach(() => {
+      jest.clearAllMocks();
     });
 
-    it('returns boolean for any branch name', () => {
-      const branch = session.getCurrentBranch();
-      if (branch) {
-        const exists = session.sessionExists(branch);
-        expect(typeof exists).toBe('boolean');
-      }
+    it('returns false when neither session nor meta file exists', () => {
+      fs.existsSync.mockReturnValue(false);
+
+      const exists = session.sessionExists('feature/test-branch', '/mock/project');
+
+      expect(exists).toBe(false);
+      expect(fs.existsSync).toHaveBeenCalled();
+    });
+
+    it('returns true when session file exists', () => {
+      // First call (session path) returns true
+      fs.existsSync.mockReturnValueOnce(true);
+
+      const exists = session.sessionExists('issue/feature-123/add-auth', '/mock/project');
+
+      expect(exists).toBe(true);
+    });
+
+    it('returns true when only meta file exists', () => {
+      // First call (session path) returns false, second call (meta path) returns true
+      fs.existsSync
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce(true);
+
+      const exists = session.sessionExists('chore/update-deps', '/mock/project');
+
+      expect(exists).toBe(true);
+    });
+
+    it('uses process.cwd() when cwd not provided', () => {
+      fs.existsSync.mockReturnValue(false);
+
+      const exists = session.sessionExists('feature/test');
+
+      expect(exists).toBe(false);
     });
   });
 

@@ -49,6 +49,8 @@ Refactor the tests in memento to conform to project test guidelines (test.yml).
 - memento/hooks/verify-session.js
 - memento/hooks/__tests__/verify-session.test.js
 - memento/.claude/sessions/chore-refactor-memento-tests.md
+- onus/context/git.yml
+- mantra/context/behavior.yml
 
 ## Next Steps
 - [x] Review test.yml guidelines
