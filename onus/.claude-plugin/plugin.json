@@ -1,6 +1,6 @@
 {
   "name": "onus",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Work item automation for Claude Code - fetches issues, generates commits/PRs, syncs progress",
   "author": {
     "name": "David Puglielli"
@@ -8,10 +8,18 @@
   "repository": "https://github.com/flexion/claude-domestique",
   "homepage": "https://github.com/flexion/claude-domestique/tree/main/onus",
   "license": "MIT",
-  "keywords": ["issues", "work-items", "commits", "pull-requests", "github", "jira"],
+  "keywords": [
+    "issues",
+    "work-items",
+    "commits",
+    "pull-requests",
+    "github",
+    "jira"
+  ],
   "hooks": "./hooks/hooks.json",
   "commands": [
     "./commands/init.md",
     "./commands/fetch.md"
-  ]
+  ],
+  "skills": "./skills/"
 }
