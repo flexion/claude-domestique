@@ -763,6 +763,39 @@ describe('context-refresh hook', () => {
       expect(siblings).toEqual([]); // No context dir
     });
 
+    it('findSiblingPlugins includes user-scoped plugins without projectPath', () => {
+      const registryDir = path.join(tmpDir, '.claude', 'plugins');
+      fs.mkdirSync(registryDir, { recursive: true });
+      const registryFile = path.join(registryDir, 'installed_plugins.json');
+
+      // Create own plugin directory
+      const ownPluginDir = path.join(tmpDir, 'own-plugin');
+      fs.mkdirSync(ownPluginDir, { recursive: true });
+
+      // Create sibling plugin with context directory
+      const siblingDir = path.join(tmpDir, 'sibling-plugin');
+      fs.mkdirSync(path.join(siblingDir, 'context'), { recursive: true });
+      fs.writeFileSync(path.join(siblingDir, 'context', 'sessions.yml'), 'sessions: true');
+
+      // User-scoped plugins have scope: "user" but no projectPath
+      fs.writeFileSync(registryFile, JSON.stringify({
+        plugins: {
+          'mantra@claude-domestique': [{ scope: 'user', installPath: ownPluginDir }],
+          'memento@claude-domestique': [{ scope: 'user', installPath: siblingDir }]
+        }
+      }));
+
+      _setPathsForTesting({
+        installedPluginsFile: registryFile,
+        pluginRoot: ownPluginDir
+      });
+
+      // User-scoped siblings should be found even without projectPath
+      const siblings = findSiblingPlugins(tmpDir);
+      expect(siblings).toHaveLength(1);
+      expect(siblings[0].pluginId).toBe('memento@claude-domestique');
+    });
+
     it('findSiblingContextFiles returns sibling context files', () => {
       const registryDir = path.join(tmpDir, '.claude', 'plugins');
       fs.mkdirSync(registryDir, { recursive: true });

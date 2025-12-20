@@ -217,27 +217,33 @@ function findSiblingPlugins(cwd) {
 
   for (const [pluginId, installations] of Object.entries(registry.plugins)) {
     for (const installation of installations) {
-      // Only include plugins installed for the same project
-      if (installation.projectPath === cwd) {
-        // Skip our own plugin (avoid duplicate loading)
-        if (installation.installPath === _paths.pluginRoot) {
-          continue;
-        }
+      // User-scoped plugins apply to all projects
+      // Project-scoped plugins only apply if projectPath matches cwd
+      const isUserScoped = installation.scope === 'user';
+      const isProjectMatch = installation.projectPath === cwd;
 
-        // Only include plugins from the same marketplace family
-        if (!isPluginFamilyMember(pluginId, ownMarketplace)) {
-          continue;
-        }
+      if (!isUserScoped && !isProjectMatch) {
+        continue;
+      }
 
-        const contextDir = path.join(installation.installPath, 'context');
-        // Only include if plugin has a context directory
-        if (fs.existsSync(contextDir)) {
-          siblings.push({
-            pluginId,
-            installPath: installation.installPath,
-            contextDir
-          });
-        }
+      // Skip our own plugin (avoid duplicate loading)
+      if (installation.installPath === _paths.pluginRoot) {
+        continue;
+      }
+
+      // Only include plugins from the same marketplace family
+      if (!isPluginFamilyMember(pluginId, ownMarketplace)) {
+        continue;
+      }
+
+      const contextDir = path.join(installation.installPath, 'context');
+      // Only include if plugin has a context directory
+      if (fs.existsSync(contextDir)) {
+        siblings.push({
+          pluginId,
+          installPath: installation.installPath,
+          contextDir
+        });
       }
     }
   }
