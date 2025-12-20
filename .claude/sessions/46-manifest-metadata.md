@@ -4,7 +4,7 @@
 **Branch**: issue/feature-46/manifest-metadata
 **Type**: feature
 **Created**: 2025-12-20
-**Status**: in-progress
+**Status**: complete
 
 ## Goal
 Add optional metadata fields to all plugin.json manifests for better discoverability and documentation.
@@ -38,4 +38,4 @@ Add these fields to memento, mantra, onus, and root plugin.json:
 - [x] Update mantra plugin.json
 - [x] Update onus plugin.json
 - [x] Update root plugin.json
-- [ ] Commit and create PR
+- [x] Commit and create PR → PR #57
