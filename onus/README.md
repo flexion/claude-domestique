@@ -83,6 +83,31 @@ Session: .claude/sessions/42-description.md
 
 Each plugin works standalone but gains enhanced behavior when used together.
 
+## Companion Plugins
+
+These external plugins complement onus workflows:
+
+| Plugin | Purpose | When to Use |
+|--------|---------|-------------|
+| **[pr-review-toolkit](https://github.com/anthropics/claude-code/tree/main/plugins/pr-review-toolkit)** | Code quality review | Before creating PRs |
+
+### pr-review-toolkit
+
+Official Anthropic plugin with 6 specialized review agents (comment accuracy, test coverage, error handling, type design, code review, simplification). Install it for thorough code review before PR creation:
+
+```bash
+/plugins
+# Search for "pr-review-toolkit" and install
+```
+
+When onus generates a PR, consider running a review first:
+```
+# Review before PR
+/pr-review-toolkit:review-pr
+
+# Then create PR with onus
+```
+
 ## Installation
 
 ```bash
