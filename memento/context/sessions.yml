@@ -61,7 +61,13 @@ NEVER: edit source files before session exists
 work: implement → update session after each major task
 pause: update session file directly
 resume: switch branch → get-session.js → auto-loads correct session
-complete: mark session complete, merge PR
+complete: mark-complete → final-commit → push → PR → merge
+
+## Session Completion (CRITICAL TIMING)
+when-to-mark-complete: BEFORE final commit (not after PR merge)
+reason: feature-branch-changes-cannot-push-after-merge
+sequence: all-work-done → mark-status-complete → commit-with-session → push → create-PR
+never: try-to-update-session-after-PR-merged (branch is stale)
 
 ## Update Triggers
 when: beginning-work, after-milestone, before-pause, when-blocked, before-commit
