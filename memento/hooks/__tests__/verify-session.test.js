@@ -1,5 +1,3 @@
-const { describe, it, beforeEach, afterEach } = require('node:test');
-const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -10,31 +8,32 @@ const {
   sessionExists,
   isAllowedPath,
   isFeatureBranch,
+  getGitRoot,
   ALLOWED_PATHS
 } = require('../verify-session.js');
 
 describe('verify-session.js', () => {
   describe('isFeatureBranch', () => {
     it('returns false for main branch', () => {
-      assert.strictEqual(isFeatureBranch('main'), false);
+      expect(isFeatureBranch('main')).toBe(false);
     });
 
     it('returns false for master branch', () => {
-      assert.strictEqual(isFeatureBranch('master'), false);
+      expect(isFeatureBranch('master')).toBe(false);
     });
 
     it('returns false for HEAD (detached)', () => {
-      assert.strictEqual(isFeatureBranch('HEAD'), false);
+      expect(isFeatureBranch('HEAD')).toBe(false);
     });
 
     it('returns false for null', () => {
-      assert.strictEqual(isFeatureBranch(null), false);
+      expect(isFeatureBranch(null)).toBe(false);
     });
 
     it('returns true for feature branches', () => {
-      assert.strictEqual(isFeatureBranch('feature/add-auth'), true);
-      assert.strictEqual(isFeatureBranch('issue/fix-123/bug'), true);
-      assert.strictEqual(isFeatureBranch('chore/update-deps'), true);
+      expect(isFeatureBranch('feature/add-auth')).toBe(true);
+      expect(isFeatureBranch('issue/fix-123/bug')).toBe(true);
+      expect(isFeatureBranch('chore/update-deps')).toBe(true);
     });
   });
 
@@ -42,36 +41,36 @@ describe('verify-session.js', () => {
     const cwd = '/project';
 
     it('allows session files', () => {
-      assert.strictEqual(isAllowedPath('/project/.claude/sessions/123-auth.md', cwd), true);
+      expect(isAllowedPath('/project/.claude/sessions/123-auth.md', cwd)).toBe(true);
     });
 
     it('allows branch metadata files', () => {
-      assert.strictEqual(isAllowedPath('/project/.claude/branches/feature-auth', cwd), true);
+      expect(isAllowedPath('/project/.claude/branches/feature-auth', cwd)).toBe(true);
     });
 
     it('allows context files', () => {
-      assert.strictEqual(isAllowedPath('/project/.claude/context/project.yml', cwd), true);
+      expect(isAllowedPath('/project/.claude/context/project.yml', cwd)).toBe(true);
     });
 
     it('allows CLAUDE.md', () => {
-      assert.strictEqual(isAllowedPath('/project/CLAUDE.md', cwd), true);
+      expect(isAllowedPath('/project/CLAUDE.md', cwd)).toBe(true);
     });
 
     it('allows package.json', () => {
-      assert.strictEqual(isAllowedPath('/project/package.json', cwd), true);
+      expect(isAllowedPath('/project/package.json', cwd)).toBe(true);
     });
 
     it('allows README.md', () => {
-      assert.strictEqual(isAllowedPath('/project/README.md', cwd), true);
+      expect(isAllowedPath('/project/README.md', cwd)).toBe(true);
     });
 
     it('blocks source files', () => {
-      assert.strictEqual(isAllowedPath('/project/src/index.js', cwd), false);
-      assert.strictEqual(isAllowedPath('/project/tools/session.js', cwd), false);
+      expect(isAllowedPath('/project/src/index.js', cwd)).toBe(false);
+      expect(isAllowedPath('/project/tools/session.js', cwd)).toBe(false);
     });
 
     it('blocks test files', () => {
-      assert.strictEqual(isAllowedPath('/project/tests/unit.test.js', cwd), false);
+      expect(isAllowedPath('/project/tests/unit.test.js', cwd)).toBe(false);
     });
   });
 
@@ -95,7 +94,7 @@ describe('verify-session.js', () => {
         sessionFile: 'feature-test.md'
       };
 
-      assert.strictEqual(sessionExists(tempDir, branchInfo), false);
+      expect(sessionExists(tempDir, branchInfo)).toBe(false);
     });
 
     it('returns true when session file exists via metadata', () => {
@@ -119,7 +118,7 @@ describe('verify-session.js', () => {
         sessionFile: '123-auth.md'
       };
 
-      assert.strictEqual(sessionExists(tempDir, branchInfo), true);
+      expect(sessionExists(tempDir, branchInfo)).toBe(true);
     });
 
     it('returns true when session file exists via fallback path', () => {
@@ -135,7 +134,7 @@ describe('verify-session.js', () => {
         sessionFile: 'feature-test.md'
       };
 
-      assert.strictEqual(sessionExists(tempDir, branchInfo), true);
+      expect(sessionExists(tempDir, branchInfo)).toBe(true);
     });
   });
 
@@ -158,7 +157,7 @@ describe('verify-session.js', () => {
         tool_input: { file_path: '/project/src/index.js' }
       });
 
-      assert.strictEqual(result.decision, 'approve');
+      expect(result.decision).toBe('approve');
     });
 
     it('approves Edit when no .claude directory exists', () => {
@@ -169,7 +168,7 @@ describe('verify-session.js', () => {
         tool_input: { file_path: path.join(tempDir, 'src/index.js') }
       });
 
-      assert.strictEqual(result.decision, 'approve');
+      expect(result.decision).toBe('approve');
     });
 
     it('approves Edit when editing allowed paths', () => {
@@ -183,7 +182,7 @@ describe('verify-session.js', () => {
         tool_input: { file_path: path.join(tempDir, '.claude/sessions/test.md') }
       });
 
-      assert.strictEqual(result.decision, 'approve');
+      expect(result.decision).toBe('approve');
     });
 
     it('approves Edit on main branch without session', () => {
@@ -205,7 +204,7 @@ describe('verify-session.js', () => {
         tool_input: { file_path: path.join(tempDir, 'src/index.js') }
       });
 
-      assert.strictEqual(result.decision, 'approve');
+      expect(result.decision).toBe('approve');
     });
 
     it('approves Edit on feature branch with session', () => {
@@ -241,7 +240,7 @@ describe('verify-session.js', () => {
         tool_input: { file_path: path.join(tempDir, 'src/index.js') }
       });
 
-      assert.strictEqual(result.decision, 'approve');
+      expect(result.decision).toBe('approve');
     });
 
     it('blocks Edit on feature branch without session', () => {
@@ -264,10 +263,10 @@ describe('verify-session.js', () => {
         tool_input: { file_path: path.join(tempDir, 'src/index.js') }
       });
 
-      assert.strictEqual(result.decision, 'block');
-      assert.ok(result.reason.includes('Session Required'));
-      assert.ok(result.reason.includes('feature/new-feature'));
-      assert.ok(result.reason.includes('create-session.js'));
+      expect(result.decision).toBe('block');
+      expect(result.reason).toContain('Session Required');
+      expect(result.reason).toContain('feature/new-feature');
+      expect(result.reason).toContain('create-session.js');
     });
 
     it('blocks Write on feature branch without session', () => {
@@ -290,8 +289,8 @@ describe('verify-session.js', () => {
         tool_input: { file_path: path.join(tempDir, 'src/new-file.js') }
       });
 
-      assert.strictEqual(result.decision, 'block');
-      assert.ok(result.reason.includes('Session Required'));
+      expect(result.decision).toBe('block');
+      expect(result.reason).toContain('Session Required');
     });
 
     it('includes helpful instructions in block message', () => {
@@ -314,124 +313,123 @@ describe('verify-session.js', () => {
         tool_input: { file_path: path.join(tempDir, 'src/index.js') }
       });
 
-      assert.ok(result.reason.includes('/session'));
-      assert.ok(result.reason.includes('work context is preserved'));
+      expect(result.reason).toContain('/session');
+      expect(result.reason).toContain('work context is preserved');
     });
   });
 });
 
-  describe('getGitRoot', () => {
-    const { getGitRoot } = require('../verify-session.js');
-    let tempDir;
+describe('getGitRoot', () => {
+  let tempDir;
 
-    beforeEach(() => {
-      tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'memento-gitroot-test-'));
-    });
-
-    afterEach(() => {
-      fs.rmSync(tempDir, { recursive: true, force: true });
-    });
-
-    it('returns git root from subdirectory', () => {
-      // Initialize git at tempDir
-      execSync('git init', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git config user.email "test@test.com"', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git config user.name "Test"', { cwd: tempDir, stdio: 'pipe' });
-      
-      // Create subdirectory
-      const subDir = path.join(tempDir, 'packages', 'core');
-      fs.mkdirSync(subDir, { recursive: true });
-      
-      // Get git root from subdirectory
-      const gitRoot = getGitRoot(subDir);
-      
-      assert.strictEqual(fs.realpathSync(gitRoot), fs.realpathSync(tempDir));
-    });
-
-    it('returns null when not in a git repo', () => {
-      const gitRoot = getGitRoot(tempDir);
-      assert.strictEqual(gitRoot, null);
-    });
+  beforeEach(() => {
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'memento-gitroot-test-'));
   });
 
-  describe('processPreToolUse with subdirectories', () => {
-    let tempDir;
-
-    beforeEach(() => {
-      tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'memento-subdir-test-'));
-    });
-
-    afterEach(() => {
-      fs.rmSync(tempDir, { recursive: true, force: true });
-    });
-
-    it('finds session at git root when cwd is subdirectory', () => {
-      // Set up .claude directory with session at root
-      const claudeDir = path.join(tempDir, '.claude');
-      const sessionsDir = path.join(claudeDir, 'sessions');
-      const branchesDir = path.join(claudeDir, 'branches');
-      fs.mkdirSync(sessionsDir, { recursive: true });
-      fs.mkdirSync(branchesDir, { recursive: true });
-
-      // Create session file
-      fs.writeFileSync(path.join(sessionsDir, 'chore-update-deps.md'), '# Session');
-
-      // Create branch metadata
-      fs.writeFileSync(
-        path.join(branchesDir, 'chore-update-deps'),
-        'session: chore-update-deps.md\nstatus: in-progress'
-      );
-
-      // Create subdirectory (simulating monorepo package)
-      const subDir = path.join(tempDir, 'packages', 'core');
-      fs.mkdirSync(subDir, { recursive: true });
-
-      // Initialize git on feature branch
-      execSync('git init', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git config user.email "test@test.com"', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git config user.name "Test"', { cwd: tempDir, stdio: 'pipe' });
-      fs.writeFileSync(path.join(tempDir, '.gitkeep'), '');
-      execSync('git add .gitkeep', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git commit -m "init"', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git checkout -b chore/update-deps', { cwd: tempDir, stdio: 'pipe' });
-
-      // Call from subdirectory - should find session at git root
-      const result = processPreToolUse({
-        cwd: subDir,  // subdirectory, not git root
-        hook_event_name: 'PreToolUse',
-        tool_name: 'Edit',
-        tool_input: { file_path: path.join(subDir, 'src/index.js') }
-      });
-
-      assert.strictEqual(result.decision, 'approve');
-    });
-
-    it('blocks when no session exists even from subdirectory', () => {
-      // Set up .claude directory at root (no session)
-      fs.mkdirSync(path.join(tempDir, '.claude', 'sessions'), { recursive: true });
-
-      // Create subdirectory
-      const subDir = path.join(tempDir, 'packages', 'core');
-      fs.mkdirSync(subDir, { recursive: true });
-
-      // Initialize git on feature branch
-      execSync('git init', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git config user.email "test@test.com"', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git config user.name "Test"', { cwd: tempDir, stdio: 'pipe' });
-      fs.writeFileSync(path.join(tempDir, '.gitkeep'), '');
-      execSync('git add .gitkeep', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git commit -m "init"', { cwd: tempDir, stdio: 'pipe' });
-      execSync('git checkout -b feature/new-feature', { cwd: tempDir, stdio: 'pipe' });
-
-      // Call from subdirectory - should still block (no session at git root)
-      const result = processPreToolUse({
-        cwd: subDir,
-        hook_event_name: 'PreToolUse',
-        tool_name: 'Edit',
-        tool_input: { file_path: path.join(subDir, 'src/index.js') }
-      });
-
-      assert.strictEqual(result.decision, 'block');
-      assert.ok(result.reason.includes('Session Required'));
-    });
+  afterEach(() => {
+    fs.rmSync(tempDir, { recursive: true, force: true });
   });
+
+  it('returns git root from subdirectory', () => {
+    // Initialize git at tempDir
+    execSync('git init', { cwd: tempDir, stdio: 'pipe' });
+    execSync('git config user.email "test@test.com"', { cwd: tempDir, stdio: 'pipe' });
+    execSync('git config user.name "Test"', { cwd: tempDir, stdio: 'pipe' });
+
+    // Create subdirectory
+    const subDir = path.join(tempDir, 'packages', 'core');
+    fs.mkdirSync(subDir, { recursive: true });
+
+    // Get git root from subdirectory
+    const gitRoot = getGitRoot(subDir);
+
+    expect(fs.realpathSync(gitRoot)).toBe(fs.realpathSync(tempDir));
+  });
+
+  it('returns null when not in a git repo', () => {
+    const gitRoot = getGitRoot(tempDir);
+    expect(gitRoot).toBe(null);
+  });
+});
+
+describe('processPreToolUse with subdirectories', () => {
+  let tempDir;
+
+  beforeEach(() => {
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'memento-subdir-test-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('finds session at git root when cwd is subdirectory', () => {
+    // Set up .claude directory with session at root
+    const claudeDir = path.join(tempDir, '.claude');
+    const sessionsDir = path.join(claudeDir, 'sessions');
+    const branchesDir = path.join(claudeDir, 'branches');
+    fs.mkdirSync(sessionsDir, { recursive: true });
+    fs.mkdirSync(branchesDir, { recursive: true });
+
+    // Create session file
+    fs.writeFileSync(path.join(sessionsDir, 'chore-update-deps.md'), '# Session');
+
+    // Create branch metadata
+    fs.writeFileSync(
+      path.join(branchesDir, 'chore-update-deps'),
+      'session: chore-update-deps.md\nstatus: in-progress'
+    );
+
+    // Create subdirectory (simulating monorepo package)
+    const subDir = path.join(tempDir, 'packages', 'core');
+    fs.mkdirSync(subDir, { recursive: true });
+
+    // Initialize git on feature branch
+    execSync('git init', { cwd: tempDir, stdio: 'pipe' });
+    execSync('git config user.email "test@test.com"', { cwd: tempDir, stdio: 'pipe' });
+    execSync('git config user.name "Test"', { cwd: tempDir, stdio: 'pipe' });
+    fs.writeFileSync(path.join(tempDir, '.gitkeep'), '');
+    execSync('git add .gitkeep', { cwd: tempDir, stdio: 'pipe' });
+    execSync('git commit -m "init"', { cwd: tempDir, stdio: 'pipe' });
+    execSync('git checkout -b chore/update-deps', { cwd: tempDir, stdio: 'pipe' });
+
+    // Call from subdirectory - should find session at git root
+    const result = processPreToolUse({
+      cwd: subDir,  // subdirectory, not git root
+      hook_event_name: 'PreToolUse',
+      tool_name: 'Edit',
+      tool_input: { file_path: path.join(subDir, 'src/index.js') }
+    });
+
+    expect(result.decision).toBe('approve');
+  });
+
+  it('blocks when no session exists even from subdirectory', () => {
+    // Set up .claude directory at root (no session)
+    fs.mkdirSync(path.join(tempDir, '.claude', 'sessions'), { recursive: true });
+
+    // Create subdirectory
+    const subDir = path.join(tempDir, 'packages', 'core');
+    fs.mkdirSync(subDir, { recursive: true });
+
+    // Initialize git on feature branch
+    execSync('git init', { cwd: tempDir, stdio: 'pipe' });
+    execSync('git config user.email "test@test.com"', { cwd: tempDir, stdio: 'pipe' });
+    execSync('git config user.name "Test"', { cwd: tempDir, stdio: 'pipe' });
+    fs.writeFileSync(path.join(tempDir, '.gitkeep'), '');
+    execSync('git add .gitkeep', { cwd: tempDir, stdio: 'pipe' });
+    execSync('git commit -m "init"', { cwd: tempDir, stdio: 'pipe' });
+    execSync('git checkout -b feature/new-feature', { cwd: tempDir, stdio: 'pipe' });
+
+    // Call from subdirectory - should still block (no session at git root)
+    const result = processPreToolUse({
+      cwd: subDir,
+      hook_event_name: 'PreToolUse',
+      tool_name: 'Edit',
+      tool_input: { file_path: path.join(subDir, 'src/index.js') }
+    });
+
+    expect(result.decision).toBe('block');
+    expect(result.reason).toContain('Session Required');
+  });
+});

@@ -14,6 +14,7 @@ Thumbs.db
 # Testing
 test-results/
 .coverage
+coverage/
 
 # Build artifacts
 dist/
