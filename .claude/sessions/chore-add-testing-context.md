@@ -74,5 +74,5 @@ Potential testing skills considered but deferred:
 - [x] Add async testing patterns to base
 - [x] Add error testing patterns to base
 - [x] Deduplicate project test.md (reference base)
-- [ ] Commit changes
-- [ ] Create PR
+- [x] Commit changes
+- [x] Create PR: https://github.com/flexion/claude-domestique/pull/66
