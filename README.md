@@ -327,6 +327,20 @@ Context files use compact YAML optimized for Claude:
 
 Keep files compact: 10-30 lines, no prose, one fact per line.
 
+### AI-Managed Files
+
+The `*.yml` context files are **AI-managed**—optimized for Claude, not human editing. The compact format achieves ~89% token reduction compared to prose.
+
+**To modify context files:**
+1. Describe your changes to Claude in natural language
+2. Claude writes the compact YAML
+3. Review and commit the result
+
+Example:
+> "Add a rule that we always run integration tests before PRs"
+
+Claude translates this to the appropriate compact YAML format.
+
 ---
 
 ## License
