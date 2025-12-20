@@ -13,7 +13,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Import shared utilities from session.js
-const { parseBranchName } = require('../tools/session.js');
+const { parseBranchName } = require('../scripts/session.js');
 
 // Default configuration
 const DEFAULT_CONFIG = {

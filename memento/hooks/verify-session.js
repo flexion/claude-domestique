@@ -12,7 +12,7 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const { parseBranchName } = require('../tools/session.js');
+const { parseBranchName } = require('../scripts/session.js');
 
 // Files/directories that are allowed without a session
 const ALLOWED_PATHS = [
