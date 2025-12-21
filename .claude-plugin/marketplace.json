@@ -8,7 +8,7 @@
       "name": "memento",
       "source": "./memento",
       "description": "Session persistence - persist context across conversation resets with branch-based session tracking",
-      "version": "0.1.23"
+      "version": "0.1.24"
     },
     {
       "name": "mantra",

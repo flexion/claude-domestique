@@ -50,40 +50,35 @@ describe('session-startup', () => {
     });
   });
 
-  describe('loadCount', () => {
-    it('returns count from file', () => {
-      fs.readFileSync.mockReturnValue('{"count": 5}');
-      expect(hook.loadCount()).toBe(5);
+  describe('loadState', () => {
+    it('returns state from file', () => {
+      fs.readFileSync.mockReturnValue('{"branch": "feature/test"}');
+      expect(hook.loadState()).toEqual({ branch: 'feature/test' });
     });
 
-    it('returns 0 on error', () => {
+    it('returns empty object on error', () => {
       fs.readFileSync.mockImplementation(() => { throw new Error(); });
-      expect(hook.loadCount()).toBe(0);
-    });
-
-    it('returns 0 when count missing', () => {
-      fs.readFileSync.mockReturnValue('{}');
-      expect(hook.loadCount()).toBe(0);
+      expect(hook.loadState()).toEqual({});
     });
   });
 
-  describe('saveCount', () => {
+  describe('saveState', () => {
     it('creates directory if needed', () => {
       fs.existsSync.mockReturnValue(false);
-      hook.saveCount(5);
+      hook.saveState({ branch: 'test' });
       expect(fs.mkdirSync).toHaveBeenCalled();
     });
 
-    it('writes count to file', () => {
+    it('writes state to file', () => {
       fs.existsSync.mockReturnValue(true);
-      hook.saveCount(5);
-      expect(fs.writeFileSync).toHaveBeenCalledWith(expect.any(String), '{"count":5}');
+      hook.saveState({ branch: 'test' });
+      expect(fs.writeFileSync).toHaveBeenCalledWith(expect.any(String), '{"branch":"test"}');
     });
 
     it('handles errors silently', () => {
       fs.existsSync.mockReturnValue(true);
       fs.writeFileSync.mockImplementationOnce(() => { throw new Error(); });
-      expect(() => hook.saveCount(5)).not.toThrow();
+      expect(() => hook.saveState({ branch: 'test' })).not.toThrow();
     });
   });
 
@@ -141,51 +136,54 @@ describe('session-startup', () => {
       expect(result.systemMessage).toBe('📍 Memento: No session (not a git repo)');
     });
 
-    it('creates session when missing', () => {
-      execSync.mockImplementation((cmd) => 
+    it('creates session when missing and shows NEW', () => {
+      execSync.mockImplementation((cmd) =>
         cmd.includes('show-toplevel') ? '/project\n' : 'feature/test\n'
       );
       fs.existsSync.mockReturnValue(false);
 
       const result = hook.processHook({ cwd: '/project', hook_event_name: 'SessionStart' });
-      
+
       expect(fs.writeFileSync).toHaveBeenCalled();
-      expect(result.systemMessage).toContain('Created session');
+      expect(result.systemMessage).toBe('📍 Memento: NEW → feature-test.md');
     });
 
-    it('resets counter on SessionStart', () => {
-      execSync.mockImplementation((cmd) => 
+    it('shows normal status for existing session', () => {
+      execSync.mockImplementation((cmd) =>
         cmd.includes('show-toplevel') ? '/project\n' : 'feature/test\n'
       );
       fs.existsSync.mockReturnValue(true);
-      fs.readFileSync.mockReturnValue('{"count": 5}');
-
-      hook.processHook({ cwd: '/project', hook_event_name: 'SessionStart' });
-      
-      expect(fs.writeFileSync).toHaveBeenCalledWith(expect.any(String), '{"count":0}');
-    });
-
-    it('shows counter on UserPromptSubmit', () => {
-      execSync.mockImplementation((cmd) => 
-        cmd.includes('show-toplevel') ? '/project\n' : 'feature/test\n'
-      );
-      fs.existsSync.mockReturnValue(true);
+      fs.readFileSync.mockReturnValue('{"branch": "feature/test"}');
 
       const result = hook.processHook({ cwd: '/project', hook_event_name: 'UserPromptSubmit' });
-      
-      expect(result.systemMessage).toMatch(/\d+\/10/);
+
+      expect(result.systemMessage).toBe('📍 Memento: feature-test.md');
     });
 
-    it('shows update reminder when counter hits 0', () => {
-      execSync.mockImplementation((cmd) => 
+    it('detects branch switch and shows SWITCHED', () => {
+      execSync.mockImplementation((cmd) =>
+        cmd.includes('show-toplevel') ? '/project\n' : 'feature/new\n'
+      );
+      fs.existsSync.mockReturnValue(true);
+      fs.readFileSync.mockReturnValue('{"branch": "feature/old"}');
+
+      const result = hook.processHook({ cwd: '/project', hook_event_name: 'UserPromptSubmit' });
+
+      expect(result.systemMessage).toBe('📍 Memento: SWITCHED → feature-new.md');
+    });
+
+    it('saves current branch to state', () => {
+      execSync.mockImplementation((cmd) =>
         cmd.includes('show-toplevel') ? '/project\n' : 'feature/test\n'
       );
       fs.existsSync.mockReturnValue(true);
-      fs.readFileSync.mockReturnValue('{"count": 9}');
 
-      const result = hook.processHook({ cwd: '/project', hook_event_name: 'UserPromptSubmit' });
-      
-      expect(result.hookSpecificOutput.additionalContext).toContain('Update Reminder');
+      hook.processHook({ cwd: '/project', hook_event_name: 'UserPromptSubmit' });
+
+      expect(fs.writeFileSync).toHaveBeenCalledWith(
+        expect.stringContaining('memento-state.json'),
+        '{"branch":"feature/test"}'
+      );
     });
 
     it('uses default cwd when not provided', () => {
@@ -201,25 +199,48 @@ describe('session-startup', () => {
     });
 
     it('shows new session message for new sessions', () => {
-      execSync.mockImplementation((cmd) => 
+      execSync.mockImplementation((cmd) =>
         cmd.includes('show-toplevel') ? '/project\n' : 'feature/test\n'
       );
       fs.existsSync.mockReturnValue(false);
 
       const result = hook.processHook({ cwd: '/project', hook_event_name: 'SessionStart' });
-      
+
       expect(result.hookSpecificOutput.additionalContext).toContain('New session created');
     });
 
     it('shows resumption message for existing sessions', () => {
-      execSync.mockImplementation((cmd) => 
+      execSync.mockImplementation((cmd) =>
         cmd.includes('show-toplevel') ? '/project\n' : 'feature/test\n'
       );
       fs.existsSync.mockReturnValue(true);
 
       const result = hook.processHook({ cwd: '/project', hook_event_name: 'UserPromptSubmit' });
-      
+
       expect(result.hookSpecificOutput.additionalContext).toContain('resumption');
+    });
+
+    it('does not show SWITCHED when no previous branch in state', () => {
+      execSync.mockImplementation((cmd) =>
+        cmd.includes('show-toplevel') ? '/project\n' : 'feature/test\n'
+      );
+      fs.existsSync.mockReturnValue(true);
+      fs.readFileSync.mockReturnValue('{}');
+
+      const result = hook.processHook({ cwd: '/project', hook_event_name: 'UserPromptSubmit' });
+
+      expect(result.systemMessage).toBe('📍 Memento: feature-test.md');
+    });
+
+    it('includes self-assessment prompt in context', () => {
+      execSync.mockImplementation((cmd) =>
+        cmd.includes('show-toplevel') ? '/project\n' : 'feature/test\n'
+      );
+      fs.existsSync.mockReturnValue(true);
+
+      const result = hook.processHook({ cwd: '/project', hook_event_name: 'UserPromptSubmit' });
+
+      expect(result.hookSpecificOutput.additionalContext).toContain('assess if work warrants session update');
     });
   });
 });
