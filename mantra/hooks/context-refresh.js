@@ -4,7 +4,7 @@
  *
  * - Tracks interaction count
  * - Calculates context sizes by source
- * - Hands off to skill for content loading/injection
+ * - Directly injects context content on refresh
  */
 
 const fs = require('fs');
@@ -16,42 +16,84 @@ const STATE_FILE = path.join(process.env.HOME || '/tmp', '.claude', 'mantra-stat
 const INSTALLED_PLUGINS_FILE = path.join(process.env.HOME || '/tmp', '.claude', 'plugins', 'installed_plugins.json');
 const REFRESH_INTERVAL = 5;
 
-// Injectable paths for testing
-let _paths = { pluginRoot: PLUGIN_ROOT, baseContextDir: BASE_CONTEXT_DIR, installedPluginsFile: INSTALLED_PLUGINS_FILE };
-function _setPathsForTesting(overrides) { _paths = { ..._paths, ...overrides }; }
-function _resetPaths() { _paths = { pluginRoot: PLUGIN_ROOT, baseContextDir: BASE_CONTEXT_DIR, installedPluginsFile: INSTALLED_PLUGINS_FILE }; }
+// Injectable dependencies for testing
+let _deps = {
+  fs,
+  paths: { pluginRoot: PLUGIN_ROOT, baseContextDir: BASE_CONTEXT_DIR, installedPluginsFile: INSTALLED_PLUGINS_FILE }
+};
+
+function _setDepsForTesting(overrides) {
+  _deps = {
+    fs: overrides.fs || _deps.fs,
+    paths: { ..._deps.paths, ...overrides.paths }
+  };
+}
+
+function _resetDeps() {
+  _deps = {
+    fs,
+    paths: { pluginRoot: PLUGIN_ROOT, baseContextDir: BASE_CONTEXT_DIR, installedPluginsFile: INSTALLED_PLUGINS_FILE }
+  };
+}
+
+// Legacy alias for backward compatibility
+function _setPathsForTesting(overrides) { _setDepsForTesting({ paths: overrides }); }
+function _resetPaths() { _resetDeps(); }
 
 function loadState(stateFile = STATE_FILE) {
-  try { return fs.existsSync(stateFile) ? JSON.parse(fs.readFileSync(stateFile, 'utf8')) : { count: 0 }; }
-  catch { return { count: 0 }; }
+  try {
+    return _deps.fs.existsSync(stateFile) ? JSON.parse(_deps.fs.readFileSync(stateFile, 'utf8')) : { count: 0 };
+  } catch {
+    return { count: 0 };
+  }
 }
 
 function saveState(stateFile, state) {
   try {
     const dir = path.dirname(stateFile);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(stateFile, JSON.stringify(state));
+    if (!_deps.fs.existsSync(dir)) _deps.fs.mkdirSync(dir, { recursive: true });
+    _deps.fs.writeFileSync(stateFile, JSON.stringify(state));
   } catch {}
 }
 
 function findYmlFiles(dirPath) {
   try {
-    if (!fs.existsSync(dirPath)) return [];
-    return fs.readdirSync(dirPath).filter(f => f.endsWith('.yml')).sort().map(f => path.join(dirPath, f));
-  } catch { return []; }
+    if (!_deps.fs.existsSync(dirPath)) return [];
+    return _deps.fs.readdirSync(dirPath).filter(f => f.endsWith('.yml')).sort().map(f => path.join(dirPath, f));
+  } catch {
+    return [];
+  }
+}
+
+function readContextFiles(files) {
+  const contents = [];
+  for (const file of files) {
+    try {
+      const content = _deps.fs.readFileSync(file, 'utf8');
+      const basename = path.basename(file);
+      contents.push(`### ${basename}\n${content}`);
+    } catch {
+      // Skip unreadable files
+    }
+  }
+  return contents.join('\n\n');
 }
 
 function calculateDirSize(dirPath) {
   const files = findYmlFiles(dirPath);
   return files.reduce((sum, f) => {
-    try { return sum + fs.statSync(f).size; } catch { return sum; }
+    try {
+      return sum + _deps.fs.statSync(f).size;
+    } catch {
+      return sum;
+    }
   }, 0);
 }
 
 function readInstalledPluginsRegistry() {
   try {
-    if (fs.existsSync(_paths.installedPluginsFile)) {
-      return JSON.parse(fs.readFileSync(_paths.installedPluginsFile, 'utf8'));
+    if (_deps.fs.existsSync(_deps.paths.installedPluginsFile)) {
+      return JSON.parse(_deps.fs.readFileSync(_deps.paths.installedPluginsFile, 'utf8'));
     }
   } catch {}
   return null;
@@ -68,7 +110,7 @@ function getOwnMarketplace() {
   if (!registry?.plugins) return null;
   for (const [pluginId, installations] of Object.entries(registry.plugins)) {
     for (const inst of installations) {
-      if (inst.installPath === _paths.pluginRoot) return getMarketplaceFromPluginId(pluginId);
+      if (inst.installPath === _deps.paths.pluginRoot) return getMarketplaceFromPluginId(pluginId);
     }
   }
   return null;
@@ -84,11 +126,11 @@ function findSiblingContextDirs(cwd) {
       const isUserScoped = inst.scope === 'user';
       const isProjectMatch = inst.projectPath === cwd;
       if (!isUserScoped && !isProjectMatch) continue;
-      if (inst.installPath === _paths.pluginRoot) continue;
+      if (inst.installPath === _deps.paths.pluginRoot) continue;
       const siblingMarketplace = getMarketplaceFromPluginId(pluginId);
       if (siblingMarketplace !== ownMarketplace) continue;
       const contextDir = path.join(inst.installPath, 'context');
-      if (fs.existsSync(contextDir)) dirs.push({ pluginId, contextDir });
+      if (_deps.fs.existsSync(contextDir)) dirs.push({ pluginId, contextDir });
     }
   }
   return dirs;
@@ -98,7 +140,7 @@ function calculateSizes(cwd) {
   const sizes = {};
 
   // Base context
-  const baseSize = calculateDirSize(_paths.baseContextDir);
+  const baseSize = calculateDirSize(_deps.paths.baseContextDir);
   if (baseSize > 0) sizes.base = baseSize;
 
   // Sibling plugins
@@ -115,6 +157,37 @@ function calculateSizes(cwd) {
   return sizes;
 }
 
+function loadAllContextContent(cwd) {
+  const sections = [];
+
+  // Base context
+  const baseFiles = findYmlFiles(_deps.paths.baseContextDir);
+  if (baseFiles.length > 0) {
+    const baseContent = readContextFiles(baseFiles);
+    sections.push(baseContent);
+  }
+
+  // Sibling plugins
+  const siblings = findSiblingContextDirs(cwd);
+  for (const s of siblings) {
+    const siblingFiles = findYmlFiles(s.contextDir);
+    if (siblingFiles.length > 0) {
+      const siblingContent = readContextFiles(siblingFiles);
+      sections.push(siblingContent);
+    }
+  }
+
+  // Project context
+  const projectDir = path.join(cwd, '.claude', 'context');
+  const projectFiles = findYmlFiles(projectDir);
+  if (projectFiles.length > 0) {
+    const projectContent = readContextFiles(projectFiles);
+    sections.push(projectContent);
+  }
+
+  return sections.join('\n\n');
+}
+
 function formatSizes(sizes) {
   const parts = [];
   if (sizes.base) parts.push(`base(${sizes.base})`);
@@ -123,16 +196,11 @@ function formatSizes(sizes) {
   return parts.length > 0 ? parts.join(' ') : 'no context';
 }
 
-function statusLine(count, refreshed, sizes, skillConfirmed) {
+function statusLine(count, sizes, refreshed) {
   const sizeStr = formatSizes(sizes);
-  // Show ✅ if skill confirmed, ⏳ if refresh pending, nothing otherwise
-  let statusMarker = '';
-  if (skillConfirmed) {
-    statusMarker = ' ✅';
-  } else if (refreshed) {
-    statusMarker = ' ⏳';
-  }
-  return `Mantra: ${count}/${REFRESH_INTERVAL}${statusMarker} | ${sizeStr}`;
+  // Show ✅ when context was injected this prompt
+  const marker = refreshed ? ' ✅' : '';
+  return `Mantra: ${count}/${REFRESH_INTERVAL}${marker} | ${sizeStr}`;
 }
 
 function processHook(input, config = {}) {
@@ -142,31 +210,26 @@ function processHook(input, config = {}) {
   const isStart = event === 'SessionStart';
 
   // State management
-  let state = isStart ? { count: 0, refreshPending: false, skillConfirmed: false } : loadState(stateFile);
+  let state = isStart ? { count: 0 } : loadState(stateFile);
   if (!isStart) state.count = (state.count + 1) % REFRESH_INTERVAL;
   const refreshDue = state.count === 0;
-
-  // Track skill confirmation status
-  // If refresh is due, set pending. If skill ran, it will have set skillConfirmed.
-  const skillConfirmed = state.skillConfirmed === true;
-  if (refreshDue || isStart) {
-    state.refreshPending = true;
-    state.skillConfirmed = false; // Reset for new refresh cycle
-  }
+  const shouldRefresh = refreshDue || isStart;
   saveState(stateFile, state);
 
   // Calculate sizes
   const sizes = calculateSizes(cwd);
 
   // Build output
-  const msg = statusLine(state.count, refreshDue || isStart, sizes, skillConfirmed);
+  const msg = statusLine(state.count, sizes, shouldRefresh);
   let context = msg;
 
-  if (refreshDue || isStart) {
+  // Inject actual context content on refresh
+  if (shouldRefresh) {
     const reason = isStart ? `session ${input.source || 'startup'}` : 'periodic';
-    context += `\n\n---\n**Context Refresh** (${reason})\n`;
-    context += `Use context-refresh skill to load and inject context files.`;
-    context += `\n\n**Skill Confirmation**: After loading context, skill should confirm by setting state.`;
+    const content = loadAllContextContent(cwd);
+    if (content) {
+      context += `\n\n---\n**Context Refresh** (${reason})\n${content}`;
+    }
   }
 
   return {
@@ -174,8 +237,7 @@ function processHook(input, config = {}) {
     hookSpecificOutput: {
       hookEventName: event,
       additionalContext: context,
-      refreshDue: refreshDue || isStart,
-      skillConfirmed,
+      refreshDue: shouldRefresh,
       sizes
     }
   };
@@ -202,8 +264,10 @@ module.exports = {
   loadState,
   saveState,
   findYmlFiles,
+  readContextFiles,
   calculateDirSize,
   calculateSizes,
+  loadAllContextContent,
   formatSizes,
   statusLine,
   readInstalledPluginsRegistry,
@@ -214,6 +278,8 @@ module.exports = {
   parseInput,
   main,
   REFRESH_INTERVAL,
+  _setDepsForTesting,
+  _resetDeps,
   _setPathsForTesting,
   _resetPaths
 };
