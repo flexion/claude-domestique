@@ -4,6 +4,11 @@
 # Assistant Behavior - Compact Reference
 # For patterns and examples, see: behavior.md
 
+## CONTEXT CANARY (BLOCKING REQUIREMENT)
+every-response: MUST end with ✅ (proves context active)
+missing-checkmark: indicates context drift (refresh needed)
+format: single ✅ at very end of response (after all content)
+
 MANDATORY-REREAD: before-implementation-proposal-response (use-thinking-block)
 
 ## CRITICAL ASSESSMENT (BLOCKING REQUIREMENT)

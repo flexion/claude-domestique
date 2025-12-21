@@ -1,6 +1,6 @@
 {
   "name": "mantra",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "Periodic context refresh for Claude Code sessions - prevents context drift by re-injecting key guidance files",
   "author": {
     "name": "David Puglielli"
@@ -17,5 +17,6 @@
   "hooks": "./hooks/hooks.json",
   "commands": [
     "./commands/init.md"
-  ]
+  ],
+  "skills": "./skills/"
 }
