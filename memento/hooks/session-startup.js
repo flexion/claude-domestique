@@ -2,10 +2,10 @@
 
 /**
  * memento: Minimal session hook
- * 
+ *
  * - Creates session file at git root if missing
- * - Tracks interactions, reminds to update periodically
- * - Hands off to skill for session management
+ * - Detects branch switches
+ * - Status line shows session state (NEW, SWITCHED, or normal)
  */
 
 const { execSync } = require('child_process');
@@ -13,7 +13,6 @@ const fs = require('fs');
 const path = require('path');
 
 const STATE_FILE = path.join(process.env.HOME || '/tmp', '.claude', 'memento-state.json');
-const UPDATE_INTERVAL = 10;
 
 function getBranch(cwd) {
   try {
@@ -35,27 +34,27 @@ function getSessionPath(gitRoot, branch) {
   return path.join(gitRoot, '.claude', 'sessions', `${branch.replace(/\//g, '-')}.md`);
 }
 
-function loadCount() {
-  try { return JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')).count || 0; }
-  catch { return 0; }
+function loadState() {
+  try { return JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')); }
+  catch { return {}; }
 }
 
-function saveCount(count) {
+function saveState(state) {
   try {
     const dir = path.dirname(STATE_FILE);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(STATE_FILE, JSON.stringify({ count }));
+    fs.writeFileSync(STATE_FILE, JSON.stringify(state));
   } catch {}
 }
 
 function createSession(sessionPath, branch) {
   const dir = path.dirname(sessionPath);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  
+
   const type = branch.match(/^(?:issue\/)?(feature|fix|chore)/)?.[1] || 'unknown';
   const desc = branch.replace(/^(?:issue\/)?(feature|fix|chore)[-\/]/, '').replace(/^\d+[-\/]/, '');
   const today = new Date().toISOString().split('T')[0];
-  
+
   fs.writeFileSync(sessionPath, `# Session: ${desc}
 
 ## Details
@@ -80,8 +79,7 @@ function processHook(input) {
   const gitRoot = getGitRoot(cwd);
   const branch = getBranch(cwd);
   const event = input.hook_event_name || 'SessionStart';
-  const isStart = event === 'SessionStart';
-  
+
   if (!gitRoot || !branch) {
     return { systemMessage: '📍 Memento: No session (not a git repo)', hookSpecificOutput: { hookEventName: event, additionalContext: '' } };
   }
@@ -89,31 +87,41 @@ function processHook(input) {
   if (branch === 'main' || branch === 'master') {
     return { systemMessage: `📍 Memento: No session (${branch})`, hookSpecificOutput: { hookEventName: event, additionalContext: '' } };
   }
-  
+
   const sessionPath = getSessionPath(gitRoot, branch);
+  const sessionName = path.basename(sessionPath);
   const isNew = !fs.existsSync(sessionPath);
-  
+
+  // Load state and detect branch switch
+  const state = loadState();
+  const previousBranch = state.branch;
+  const switched = previousBranch && previousBranch !== branch;
+
+  // Save current branch
+  saveState({ branch });
+
+  // Create session if missing
   if (isNew) createSession(sessionPath, branch);
-  
-  // Track interactions
-  let count = isStart ? 0 : (loadCount() + 1) % UPDATE_INTERVAL;
-  saveCount(count);
-  
-  const sessionName = path.basename(sessionPath, '.md');
-  const msg = isNew 
-    ? `📍 Memento: Created session for \`${branch}\``
-    : `📍 Memento: ${sessionName}` + (isStart ? '' : ` (${count}/${UPDATE_INTERVAL})`);
-  
+
+  // Status line format
+  let msg;
+  if (isNew) {
+    msg = `📍 Memento: NEW → ${sessionName}`;
+  } else if (switched) {
+    msg = `📍 Memento: SWITCHED → ${sessionName}`;
+  } else {
+    msg = `📍 Memento: ${sessionName}`;
+  }
+
+  // Additional context
   let context = `📂 Session: ${sessionPath}`;
   if (isNew) {
     context += '\nNew session created. Update Goal and Next Steps.';
-  } else if (!isStart) {
+  } else {
     context += '\nFor resumption: Read session file FIRST.';
-    if (count === 0) {
-      context += '\n\n**Update Reminder**: Run `/memento:session update` to log progress.';
-    }
   }
-  
+  context += '\nAfter responding: assess if work warrants session update (milestones, decisions, blockers).';
+
   return {
     systemMessage: msg,
     hookSpecificOutput: { hookEventName: event, additionalContext: context }
@@ -127,6 +135,6 @@ async function main() {
   console.log(JSON.stringify(processHook(input)));
 }
 
-module.exports = { processHook, getBranch, getGitRoot, getSessionPath, createSession, loadCount, saveCount };
+module.exports = { processHook, getBranch, getGitRoot, getSessionPath, createSession, loadState, saveState };
 
 if (require.main === module) main().catch(() => process.exit(1));
