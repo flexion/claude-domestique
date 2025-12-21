@@ -114,7 +114,7 @@ Each plugin owns specific context domains. When adding or modifying context, res
 All plugins share these conventions:
 - 1 session = 1 issue = 1 branch
 - Branch format: `issue/feature-N/desc` or `chore/desc`
-- Session files: `.claude/sessions/N-description.md`
+- Session files: `.claude/sessions/<branch-sanitized>.md`
 - Branch metadata: `.claude/branches/<branch-sanitized>`
 
 ### Plugin Family Detection
