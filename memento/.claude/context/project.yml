@@ -56,5 +56,5 @@ onus: sibling plugin for work-item/issue integration
 ## Session Workflow
 # 1 Session = 1 Issue = 1 Branch
 # Branch naming: type/scope-number/description
-# Session file: .claude/sessions/{number}-{description}.md
+# Session file: .claude/sessions/{branch-sanitized}.md
 # Branch metadata: .claude/branches/{branch-slug}
