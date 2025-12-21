@@ -400,39 +400,48 @@ function buildContextContent(cwd, cfg, workItem, reason) {
 /**
  * Generate session start message
  */
-function generateSessionStartMessage(state, workItem) {
+function generateSessionStartMessage(state, workItem, isNew = false) {
   if (!state.currentIssue) {
-    return '📍 Onus: No issue detected';
+    return '📍 Onus: no issue';
   }
 
-  if (workItem && !workItem.placeholder) {
-    return `📍 Onus: #${workItem.key} - ${workItem.title || 'Untitled'}`;
+  const issueRef = workItem && !workItem.placeholder
+    ? `#${workItem.key} - ${workItem.title || 'Untitled'}`
+    : `#${state.currentIssue}`;
+
+  if (isNew) {
+    return `📍 Onus: NEW → ${issueRef}`;
   }
 
-  return `📍 Onus: #${state.currentIssue} (not fetched)`;
+  return `📍 Onus: ${issueRef}`;
 }
 
 /**
  * Generate prompt submit message
  */
 function generatePromptSubmitMessage(state, workItem, hasStagedChanges, branchChanged = false) {
-  const parts = [];
-
-  if (state.currentIssue) {
-    parts.push(`📍 Onus: #${state.currentIssue}`);
-  } else {
-    parts.push('📍 Onus: No issue');
+  if (!state.currentIssue) {
+    return '📍 Onus: no issue';
   }
 
+  const issueRef = workItem && !workItem.placeholder
+    ? `#${workItem.key} - ${workItem.title || 'Untitled'}`
+    : `#${state.currentIssue}`;
+
+  // Build status line with SWITCHED indicator if branch changed
+  let msg;
   if (branchChanged) {
-    parts.push('branch switched');
+    msg = `📍 Onus: SWITCHED → ${issueRef}`;
+  } else {
+    msg = `📍 Onus: ${issueRef}`;
   }
 
+  // Append staged indicator if applicable
   if (hasStagedChanges) {
-    parts.push('staged');
+    msg += ' | staged';
   }
 
-  return parts.join(' | ');
+  return msg;
 }
 
 /**
@@ -456,11 +465,13 @@ function processSessionStart(input, config = {}) {
   // Load cache and state
   const cache = loadWorkItemCache(cfg.cacheFile);
   let workItem = null;
+  let isNewIssue = false;
 
   if (issueKey) {
     workItem = getCachedWorkItem(cache, issueKey, platform);
     if (!workItem) {
       workItem = createPlaceholderWorkItem(issueKey, platform);
+      isNewIssue = true;
       // Save placeholder to cache
       const cacheKey = `${platform}:${issueKey}`;
       cache.items[cacheKey] = workItem;
@@ -483,7 +494,7 @@ function processSessionStart(input, config = {}) {
   const contextContent = buildContextContent(cwd, cfg, workItem, reason);
 
   return {
-    systemMessage: generateSessionStartMessage(state, workItem),
+    systemMessage: generateSessionStartMessage(state, workItem, isNewIssue),
     hookSpecificOutput: {
       hookEventName: 'SessionStart',
       additionalContext: contextContent
