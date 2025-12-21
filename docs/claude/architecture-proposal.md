@@ -11,6 +11,59 @@
 | User-initiated complex ops | Slash Command | Explicit control |
 | Auto-triggered complex ops | Skill | Context-based discovery |
 
+## Design Principles
+
+### Plugin Independence
+Each plugin MUST function standalone. Sibling plugins enhance but are never required.
+
+| Plugin | Standalone Behavior | Enhanced by |
+|--------|---------------------|-------------|
+| mantra | Injects own context, tracks refresh | - |
+| memento | Detects branch, manages sessions | mantra (periodic refresh) |
+| onus | Detects work items, CRUD operations | mantra (context refresh), memento (session integration) |
+
+### Context Injection Ownership
+- **Each plugin injects its own context** when running standalone
+- **Mantra aggregates** sibling context when installed (enhancement, not requirement)
+- If mantra is present: mantra collects context from all plugins and injects together
+- If mantra is absent: each plugin injects its own context/*.yml files
+
+### Single Responsibility
+| Plugin | Owns | Does NOT own |
+|--------|------|--------------|
+| mantra | Context refresh, behavior guidance | Sessions, work items |
+| memento | Session files, branch→session mapping | Issue numbers, commit formats |
+| onus | Work items, issue numbers, commit/PR formats | Session content |
+
+Memento creates sessions for ALL branches — it doesn't distinguish between `issue/feature-73/...` and `chore/whatever`. Everything gets a session.
+
+### Minimal Code Principle
+**Hooks delegate to skills as soon as possible.**
+
+Hook responsibilities (ONLY):
+1. Intercept the event
+2. Do ONLY what ABSOLUTELY MUST be deterministic (counter increment, file existence check)
+3. Hand off to skill immediately
+
+Skill responsibilities:
+- Receive the GOAL, not just the task
+- Optimize for the outcome, not myopic sub-tasks
+
+**Example - Wrong (task-focused):**
+```
+Skill: "Create a session file for branch X"
+→ Claude creates file mechanically
+```
+
+**Example - Right (goal-focused):**
+```
+Skill: "Help developer resume work efficiently after interruption.
+       Current branch: X. Session file: Y (exists/missing)."
+→ Claude understands PURPOSE and can make intelligent decisions
+```
+
+**Target:** Hooks should be <50 LOC each. All intelligence lives in skills.
+
 ## Current Problem
 
 All three plugins use command hooks for EVERYTHING:
@@ -195,63 +248,205 @@ Command Hook ─────── Slash+Bash ─────── Slash ──
 - Hook: Event-driven detection + status reporting
 - Skill: Knowledge-driven persistence + intelligent updates
 
-### onus - Mixed (Hook + Skill)
+### onus - Hybrid (Hook + Skill)
 
-| Behavior | Determinism | Tool |
-|----------|-------------|------|
-| Detect current branch | **YES** - exact branch name | Hook |
-| Extract issue from branch | **YES** - pattern matching | Hook |
-| Detect platform (github/jira) | **YES** - deterministic | Hook |
-| Check for staged changes | **YES** - boolean | Hook |
-| Load/save work item cache | **YES** - exact data | Hook |
-| Return issue number | **YES** - exact number | Hook |
-| Create placeholder work item | **MAYBE** - could be smarter | Could be skill |
-| Format work item context | **MAYBE** - could adapt | Could be skill |
-| Fetch issue from GitHub/JIRA | **NO** - external API | Skill |
-| Suggest commit message | **NO** - context-aware | Skill |
-| Track acceptance criteria | **NO** - requires judgment | Skill |
+**Purpose:** Full work item integration layer for Claude Code sessions.
+
+**Core Principle:** When onus is installed, it owns all tooling integration. Memento maintains lightweight git awareness for standalone use, but defers to onus when present.
+
+**Use Cases:**
+- Full CRUD operations on work items (read, create, update, delete)
+- Download complete work items (title, body, comments, images, attachments)
+- Reference downloaded work items throughout session without API calls
+- Know active work item at all times, including surprise branch switches
+- Generate properly formatted branches, commits, and PRs
+
+**Supported Platforms:**
+- GitHub Issues
+- Azure DevOps Boards
+- JIRA Issues
+- (Configurable per project via `/onus:init`)
+
+**Work Item Storage:**
+- Download location: `~/.claude/onus/work-items/{project}/{key}/`
+- NOT in source repo (prevents leaking sensitive info)
+- Manual refresh only (user controls when to re-fetch)
+- Full content: title, body, comments, images, attachments
+
+**Configurable Formats (with defaults):**
+| Format | Default | Override via |
+|--------|---------|--------------|
+| Branch naming | `issue/feature-{N}/{slug}` | `.claude/config.json` |
+| Commit title | `#{N} - {verb} {desc}` | `.claude/config.json` |
+| Commit body | Bullet list | `.claude/config.json` |
+| PR title | `#{N} - {desc}` | `.claude/config.json` |
+| PR body | Summary + Test plan | `.claude/config.json` |
+
+**Commit Requirements:**
+- No attribution to Claude (no co-authored-by, no AI mentions)
+- Recommend SSH/GPG signing (surface in init and context)
+
+**Plugin Relationships:**
+
+Memento-Onus:
+- Memento standalone: branch detection, session creation for ALL branches
+- Memento + onus: no change — memento doesn't know about onus
+- Memento does NOT delegate to onus; they operate independently
+- Onus adds work item awareness; memento adds session persistence
+
+Onus-Mantra:
+- Onus standalone: injects own context/*.yml, detects work items
+- Onus + mantra: mantra aggregates onus context with others (enhancement)
+- Onus does NOT depend on mantra for context injection
+
+**Deterministic (Hook):**
+
+| Behavior | Event | Implementation |
+|----------|-------|----------------|
+| Get current branch | All events | `git rev-parse --abbrev-ref HEAD` |
+| Get git root | SessionStart | `git rev-parse --show-toplevel` |
+| Extract issue from branch | All events | Configurable regex patterns |
+| Detect platform | All events | From project config or pattern match |
+| Check staged changes | UserPromptSubmit | `git diff --cached --name-only` |
+| Detect branch switch | UserPromptSubmit | Compare current vs saved |
+| Load project config | SessionStart | `.claude/config.json` |
+| Check for downloaded work item | All events | `~/.claude/onus/work-items/{project}/{key}/` |
+| Load/save state | All events | `~/.claude/onus/state.json` |
+| Generate status line | All events | Exact format output |
+
+**Non-Deterministic (Skill):**
+
+| Behavior | Trigger | Skill |
+|----------|---------|-------|
+| Download work item (full) | `/onus:fetch {N}` | work-item-handler |
+| Refresh work item | `/onus:fetch {N} --refresh` | work-item-handler |
+| Create work item | `/onus:create` | work-item-handler |
+| Update work item | `/onus:update {N}` | work-item-handler |
+| Close/delete work item | `/onus:close {N}` | work-item-handler |
+| Suggest commit message | Staged changes + work item context | work-item-handler |
+| Generate branch name | New work item or `/onus:branch` | work-item-handler |
+| Format PR | `/onus:pr` or commit flow | work-item-handler |
+| Track acceptance criteria | Code changes vs AC checklist | work-item-handler |
+
+**Status Line:**
+```
+📋 Onus: 73 (downloaded) | staged
+📋 Onus: 73 (not downloaded) → /onus:fetch 73
+📋 Onus: PROJ-123 (jira, downloaded 2h ago)
+📋 Onus: no work item → /onus:fetch or /onus:create
+```
+
+**Init Flow (`/onus:init`):**
+1. Detect or ask: GitHub / Azure DevOps / JIRA
+2. Configure authentication (token location, etc.)
+3. Set format overrides (branch, commit, PR)
+4. Recommend SSH/GPG commit signing
+5. Write to `.claude/config.json`
 
 **Recommendation:**
-- Hook: Branch detection + issue extraction + cache management
-- Skill: Issue fetching, context formatting, commit suggestions
+- Hook: Detection only (branch, root, switch, downloaded-check)
+- Skill: All CRUD operations, formatting, suggestions
 
 ## Specific Recommendations
 
 ### mantra
-**Hybrid: Hook + Skill**
+**Minimal Hook → Skill Handoff**
 
-Hook changes:
-- Remove configurable refresh interval (hardcode to 5)
-- Add size reporting per source: `mantra(423), memento(231), onus(121), project(43)`
-- Keep yml injection deterministic
-- Simplify: remove config file loading for interval
+Hook (~30 LOC):
+```
+SessionStart/UserPromptSubmit:
+  1. Increment counter
+  2. Check if refresh due (counter % interval === 0)
+  3. Return: { counter, refreshDue, contextPaths[] }
+  → Skill handles context loading and injection
+```
 
-New skill:
-- `context-refresh` skill for on-demand md loading
-- Triggers on drift detection or explicit request
-- Loads verbose examples when Claude needs detail
+Skill goal:
+```
+"Keep Claude aligned with project conventions throughout long sessions.
+ Prevent context drift where Claude forgets guidance as conversation grows.
+ Counter: N. Refresh due: yes/no. Context locations: [paths]."
+```
+
+Skill responsibilities:
+- Load and inject context/*.yml files
+- Aggregate sibling plugin context when present
+- Load verbose *.md files on-demand when Claude needs examples
+- Detect behavior drift and reinforce guidance
 
 ### memento
-**Hybrid: Hook + Skill**
+**Minimal Hook → Skill Handoff**
 
-Hook changes:
-- Remove counter-based reminder (wrong model for purpose)
-- Add PreCompact event hook for pre-compaction persistence
-- Event-driven: detect branch, session existence, branch switch
-- Status line shows: filename + last modified time
+Hook (~40 LOC):
+```
+SessionStart/UserPromptSubmit:
+  1. Get current branch
+  2. Get git root
+  3. Calculate session path
+  4. Check if session exists
+  5. Detect branch switch (compare to saved)
+  6. Return: { branch, gitRoot, sessionPath, exists, switched }
+  → Skill handles session creation, content, updates
+```
 
-New/enhanced skill:
-- Populate new sessions with inferred goal/approach
-- Update session with requirements, decisions, debugging findings
-- Respond to PreCompact signal to preserve context
-- Knowledge-driven, not interval-driven
+Skill goal:
+```
+"Help developer resume work efficiently after any interruption.
+ Preserve working context so knowledge isn't lost when conversation resets.
+ Branch: X. Session: Y (exists/missing/switched). Git root: Z."
+```
+
+Skill responsibilities:
+- Create new sessions with meaningful structure (not just template)
+- Populate with inferred goal based on branch name
+- Update with requirements, decisions, debugging findings
+- Read session for resumption context
+- Respond to PreCompact signal to preserve context before reset
 
 ### onus
-**Split: hook + skill**
-- Hook: Extract issue from branch, check cache, return status line
-- Skill: Format work item context, suggest commits (already `/onus:fetch`)
-- Hook suggests: "Use /onus:fetch to load issue details"
-- Skill handles API calls, formatting, suggestions
+**Minimal Hook → Skill Handoff**
+
+Hook (~50 LOC):
+```
+SessionStart/UserPromptSubmit:
+  1. Get current branch
+  2. Extract issue key from branch (regex)
+  3. Detect platform (github/jira/azure from key format)
+  4. Check if work item downloaded (~/.claude/onus/work-items/{project}/{key}/)
+  5. Check staged changes (git diff --cached)
+  6. Return: { branch, issueKey, platform, downloaded, staged }
+  → Skill handles everything else
+```
+
+Skill goal:
+```
+"Connect developer's work to the tracking system (GitHub/JIRA/Azure).
+ Ensure commits, branches, and PRs follow project conventions.
+ Keep work item context available without repeated API calls.
+ Issue: N. Platform: X. Downloaded: yes/no. Staged: yes/no."
+```
+
+Skill responsibilities:
+- CRUD operations on work items (fetch, create, update, close)
+- Download complete work items (title, body, comments, images, attachments)
+- Format commits/branches/PRs according to project config
+- Suggest commit messages based on staged changes + work item
+- Track acceptance criteria progress
+
+Commands:
+- `/onus:fetch {N}` - download full work item
+- `/onus:create` - create new work item
+- `/onus:update {N}` - update work item
+- `/onus:close {N}` - close work item
+- `/onus:init` - configure project (platform, auth, formats)
+
+Storage:
+- Work items: `~/.claude/onus/work-items/{project}/{key}/`
+  - `item.json` - title, body, status, labels
+  - `comments.json` - all comments
+  - `attachments/` - downloaded images/files
+- State: `~/.claude/onus/state.json`
+- Config: `.claude/config.json` (in project)
 
 ## Implementation Questions
 
@@ -271,8 +466,8 @@ New/enhanced skill:
 
 ## Metrics for Success
 
-- Fewer LOC in hooks (target: 50% reduction for memento/onus)
-- Clearer separation of concerns (deterministic vs judgment)
-- Skills handle judgment, hooks handle data
-- Reduced parallel execution overhead
-- Better user experience (smarter suggestions)
+- **Hook LOC targets:** mantra ~30, memento ~40, onus ~50 (vs current ~500 each)
+- **Skills receive goals**, not tasks — Claude optimizes for outcomes
+- **Clear separation:** hooks detect, skills decide and act
+- **Independence verified:** each plugin works standalone
+- **Less code = less maintenance** — intelligence lives in skills, not hooks
