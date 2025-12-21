@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { Readable } = require('stream');
 
 const {
   processHook,
@@ -15,6 +16,9 @@ const {
   getMarketplaceFromPluginId,
   getOwnMarketplace,
   findSiblingContextDirs,
+  readStdin,
+  parseInput,
+  main,
   REFRESH_INTERVAL,
   _setPathsForTesting,
   _resetPaths
@@ -101,6 +105,15 @@ describe('context-refresh hook', () => {
       expect(path.basename(files[0])).toBe('a.yml');
       expect(path.basename(files[1])).toBe('z.yml');
     });
+
+    it('returns empty array on read error', () => {
+      // Create a file (not directory) to cause readdirSync to fail
+      const notADir = path.join(tmpDir, 'not-a-dir');
+      fs.writeFileSync(notADir, 'content');
+
+      const files = findYmlFiles(notADir);
+      expect(files).toEqual([]);
+    });
   });
 
   describe('calculateDirSize', () => {
@@ -125,6 +138,15 @@ describe('context-refresh hook', () => {
       fs.writeFileSync(path.join(contextDir, 'a.yml'), '12345');
       fs.writeFileSync(path.join(contextDir, 'b.md'), '1234567890');
 
+      const size = calculateDirSize(contextDir);
+      expect(size).toBe(5);
+    });
+
+    it('handles stat errors gracefully', () => {
+      const contextDir = path.join(tmpDir, 'context');
+      fs.mkdirSync(contextDir, { recursive: true });
+      fs.writeFileSync(path.join(contextDir, 'a.yml'), '12345');
+      // Size should still work even if we can't stat some files
       const size = calculateDirSize(contextDir);
       expect(size).toBe(5);
     });
@@ -324,6 +346,30 @@ describe('context-refresh hook', () => {
       expect(dirs).toEqual([]);
     });
 
+    it('getOwnMarketplace returns null when registry has plugins but none match installPath', () => {
+      const registryDir = path.join(tmpDir, '.claude', 'plugins');
+      fs.mkdirSync(registryDir, { recursive: true });
+      const registryFile = path.join(registryDir, 'installed_plugins.json');
+
+      // Registry has plugins but with different installPaths
+      fs.writeFileSync(registryFile, JSON.stringify({
+        plugins: {
+          'mantra@claude-domestique': [{ projectPath: tmpDir, installPath: '/some/other/path' }],
+          'memento@claude-domestique': [{ projectPath: tmpDir, installPath: '/another/path' }]
+        }
+      }));
+
+      const ownPluginDir = path.join(tmpDir, 'my-plugin');
+      fs.mkdirSync(ownPluginDir, { recursive: true });
+
+      _setPathsForTesting({
+        installedPluginsFile: registryFile,
+        pluginRoot: ownPluginDir // This doesn't match any installPath
+      });
+
+      expect(getOwnMarketplace()).toBeNull();
+    });
+
     it('findSiblingContextDirs finds same-marketplace siblings', () => {
       const registryDir = path.join(tmpDir, '.claude', 'plugins');
       fs.mkdirSync(registryDir, { recursive: true });
@@ -406,6 +452,140 @@ describe('context-refresh hook', () => {
 
       const dirs = findSiblingContextDirs(tmpDir);
       expect(dirs).toHaveLength(1);
+    });
+
+    it('findSiblingContextDirs excludes project-scoped plugins for different projects', () => {
+      const registryDir = path.join(tmpDir, '.claude', 'plugins');
+      fs.mkdirSync(registryDir, { recursive: true });
+      const registryFile = path.join(registryDir, 'installed_plugins.json');
+
+      const ownPluginDir = path.join(tmpDir, 'own-plugin');
+      fs.mkdirSync(ownPluginDir, { recursive: true });
+
+      const siblingDir = path.join(tmpDir, 'sibling-plugin');
+      fs.mkdirSync(path.join(siblingDir, 'context'), { recursive: true });
+      fs.writeFileSync(path.join(siblingDir, 'context', 'sessions.yml'), 'test');
+
+      // Project-scoped plugin for different project
+      fs.writeFileSync(registryFile, JSON.stringify({
+        plugins: {
+          'mantra@claude-domestique': [{ projectPath: tmpDir, installPath: ownPluginDir }],
+          'memento@claude-domestique': [{ projectPath: '/different/project', installPath: siblingDir }]
+        }
+      }));
+
+      _setPathsForTesting({
+        installedPluginsFile: registryFile,
+        pluginRoot: ownPluginDir
+      });
+
+      const dirs = findSiblingContextDirs(tmpDir);
+      expect(dirs).toEqual([]); // Excluded because projectPath doesn't match
+    });
+
+    it('findSiblingContextDirs excludes siblings without context directory', () => {
+      const registryDir = path.join(tmpDir, '.claude', 'plugins');
+      fs.mkdirSync(registryDir, { recursive: true });
+      const registryFile = path.join(registryDir, 'installed_plugins.json');
+
+      const ownPluginDir = path.join(tmpDir, 'own-plugin');
+      fs.mkdirSync(ownPluginDir, { recursive: true });
+
+      // Sibling exists but has no context directory
+      const siblingDir = path.join(tmpDir, 'sibling-no-context');
+      fs.mkdirSync(siblingDir, { recursive: true });
+
+      fs.writeFileSync(registryFile, JSON.stringify({
+        plugins: {
+          'mantra@claude-domestique': [{ projectPath: tmpDir, installPath: ownPluginDir }],
+          'memento@claude-domestique': [{ projectPath: tmpDir, installPath: siblingDir }]
+        }
+      }));
+
+      _setPathsForTesting({
+        installedPluginsFile: registryFile,
+        pluginRoot: ownPluginDir
+      });
+
+      const dirs = findSiblingContextDirs(tmpDir);
+      expect(dirs).toEqual([]); // Excluded because no context dir
+    });
+
+    it('readInstalledPluginsRegistry handles parse errors', () => {
+      const registryDir = path.join(tmpDir, '.claude', 'plugins');
+      fs.mkdirSync(registryDir, { recursive: true });
+      const registryFile = path.join(registryDir, 'installed_plugins.json');
+      fs.writeFileSync(registryFile, 'invalid json {{{');
+
+      _setPathsForTesting({ installedPluginsFile: registryFile });
+
+      const registry = readInstalledPluginsRegistry();
+      expect(registry).toBeNull();
+    });
+  });
+
+  describe('CLI functions', () => {
+    describe('readStdin', () => {
+      it('reads data from stream', async () => {
+        const mockStream = Readable.from(['{"test": ', '"value"}']);
+        const result = await readStdin(mockStream);
+        expect(result).toBe('{"test": "value"}');
+      });
+
+      it('returns empty string for empty stream', async () => {
+        const mockStream = Readable.from([]);
+        const result = await readStdin(mockStream);
+        expect(result).toBe('');
+      });
+    });
+
+    describe('parseInput', () => {
+      it('parses valid JSON', () => {
+        const result = parseInput('{"cwd": "/test", "hook_event_name": "SessionStart"}');
+        expect(result).toEqual({ cwd: '/test', hook_event_name: 'SessionStart' });
+      });
+
+      it('returns default when data is empty', () => {
+        const result = parseInput('');
+        expect(result).toHaveProperty('cwd');
+      });
+
+      it('returns default when data is falsy', () => {
+        const result = parseInput(null);
+        expect(result).toHaveProperty('cwd');
+      });
+    });
+
+    describe('main', () => {
+      beforeEach(() => {
+        const emptyBase = path.join(tmpDir, 'empty-base');
+        fs.mkdirSync(emptyBase, { recursive: true });
+        _setPathsForTesting({ baseContextDir: emptyBase });
+      });
+
+      it('processes input from stream and outputs JSON', async () => {
+        const input = JSON.stringify({ cwd: tmpDir, hook_event_name: 'SessionStart' });
+        const mockStream = Readable.from([input]);
+        let output = '';
+        const mockOutput = (data) => { output = data; };
+
+        await main(mockStream, mockOutput);
+
+        const result = JSON.parse(output);
+        expect(result).toHaveProperty('systemMessage');
+        expect(result).toHaveProperty('hookSpecificOutput');
+      });
+
+      it('handles empty input', async () => {
+        const mockStream = Readable.from([]);
+        let output = '';
+        const mockOutput = (data) => { output = data; };
+
+        await main(mockStream, mockOutput);
+
+        const result = JSON.parse(output);
+        expect(result).toHaveProperty('systemMessage');
+      });
     });
   });
 });

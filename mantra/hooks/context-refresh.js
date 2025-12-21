@@ -181,11 +181,20 @@ function processHook(input, config = {}) {
   };
 }
 
-async function main() {
+async function readStdin(stream = process.stdin) {
   let data = '';
-  for await (const chunk of process.stdin) data += chunk;
-  const input = data ? JSON.parse(data) : { cwd: process.cwd() };
-  console.log(JSON.stringify(processHook(input)));
+  for await (const chunk of stream) data += chunk;
+  return data;
+}
+
+function parseInput(data) {
+  return data ? JSON.parse(data) : { cwd: process.cwd() };
+}
+
+async function main(stream = process.stdin, output = console.log) {
+  const data = await readStdin(stream);
+  const input = parseInput(data);
+  output(JSON.stringify(processHook(input)));
 }
 
 module.exports = {
@@ -201,6 +210,9 @@ module.exports = {
   getMarketplaceFromPluginId,
   getOwnMarketplace,
   findSiblingContextDirs,
+  readStdin,
+  parseInput,
+  main,
   REFRESH_INTERVAL,
   _setPathsForTesting,
   _resetPaths
