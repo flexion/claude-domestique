@@ -79,11 +79,31 @@ function readContextFiles(files) {
   return contents.join('\n\n');
 }
 
-function calculateDirSize(dirPath) {
+/**
+ * Estimate token count for text using word + punctuation heuristic
+ * More accurate than bytes/4 for mixed content
+ */
+function estimateTokens(text) {
+  if (!text) return 0;
+
+  // Split into words
+  const words = text.split(/\s+/).filter(w => w.length > 0);
+
+  // Long words (>10 chars) likely split into multiple tokens
+  const longWordExtra = words.filter(w => w.length > 10).length;
+
+  // Punctuation often separate tokens
+  const punctuation = (text.match(/[.,!?;:'"()\[\]{}<>\/\\@#$%^&*+=|~`-]/g) || []).length;
+
+  return words.length + longWordExtra + Math.ceil(punctuation * 0.5);
+}
+
+function calculateDirTokens(dirPath) {
   const files = findYmlFiles(dirPath);
   return files.reduce((sum, f) => {
     try {
-      return sum + _deps.fs.statSync(f).size;
+      const content = _deps.fs.readFileSync(f, 'utf8');
+      return sum + estimateTokens(content);
     } catch {
       return sum;
     }
@@ -136,25 +156,25 @@ function findSiblingContextDirs(cwd) {
   return dirs;
 }
 
-function calculateSizes(cwd) {
-  const sizes = {};
+function calculateTokens(cwd) {
+  const tokens = {};
 
   // Base context
-  const baseSize = calculateDirSize(_deps.paths.baseContextDir);
-  if (baseSize > 0) sizes.base = baseSize;
+  const baseTokens = calculateDirTokens(_deps.paths.baseContextDir);
+  if (baseTokens > 0) tokens.base = baseTokens;
 
   // Sibling plugins
   const siblings = findSiblingContextDirs(cwd);
   let siblingTotal = 0;
-  for (const s of siblings) siblingTotal += calculateDirSize(s.contextDir);
-  if (siblingTotal > 0) sizes.sibling = siblingTotal;
+  for (const s of siblings) siblingTotal += calculateDirTokens(s.contextDir);
+  if (siblingTotal > 0) tokens.sibling = siblingTotal;
 
   // Project context
   const projectDir = path.join(cwd, '.claude', 'context');
-  const projectSize = calculateDirSize(projectDir);
-  if (projectSize > 0) sizes.project = projectSize;
+  const projectTokens = calculateDirTokens(projectDir);
+  if (projectTokens > 0) tokens.project = projectTokens;
 
-  return sizes;
+  return tokens;
 }
 
 function loadAllContextContent(cwd) {
@@ -188,19 +208,19 @@ function loadAllContextContent(cwd) {
   return sections.join('\n\n');
 }
 
-function formatSizes(sizes) {
+function formatTokens(tokens) {
   const parts = [];
-  if (sizes.base) parts.push(`base(${sizes.base})`);
-  if (sizes.sibling) parts.push(`sibling(${sizes.sibling})`);
-  if (sizes.project) parts.push(`project(${sizes.project})`);
+  if (tokens.base) parts.push(`base(~${tokens.base} tokens)`);
+  if (tokens.sibling) parts.push(`sibling(~${tokens.sibling} tokens)`);
+  if (tokens.project) parts.push(`project(~${tokens.project} tokens)`);
   return parts.length > 0 ? parts.join(' ') : 'no context';
 }
 
-function statusLine(count, sizes, refreshed) {
-  const sizeStr = formatSizes(sizes);
+function statusLine(count, tokens, refreshed) {
+  const tokenStr = formatTokens(tokens);
   // Show ✅ when context was injected this prompt
   const marker = refreshed ? ' ✅' : '';
-  return `Mantra: ${count}/${REFRESH_INTERVAL}${marker} | ${sizeStr}`;
+  return `📍 Mantra: ${count}/${REFRESH_INTERVAL}${marker} | ${tokenStr}`;
 }
 
 function processHook(input, config = {}) {
@@ -216,11 +236,11 @@ function processHook(input, config = {}) {
   const shouldRefresh = refreshDue || isStart;
   saveState(stateFile, state);
 
-  // Calculate sizes
-  const sizes = calculateSizes(cwd);
+  // Calculate estimated tokens
+  const tokens = calculateTokens(cwd);
 
   // Build output
-  const msg = statusLine(state.count, sizes, shouldRefresh);
+  const msg = statusLine(state.count, tokens, shouldRefresh);
   let context = msg;
 
   // Inject actual context content on refresh
@@ -238,7 +258,7 @@ function processHook(input, config = {}) {
       hookEventName: event,
       additionalContext: context,
       refreshDue: shouldRefresh,
-      sizes
+      tokens
     }
   };
 }
@@ -265,10 +285,11 @@ module.exports = {
   saveState,
   findYmlFiles,
   readContextFiles,
-  calculateDirSize,
-  calculateSizes,
+  estimateTokens,
+  calculateDirTokens,
+  calculateTokens,
   loadAllContextContent,
-  formatSizes,
+  formatTokens,
   statusLine,
   readInstalledPluginsRegistry,
   getMarketplaceFromPluginId,

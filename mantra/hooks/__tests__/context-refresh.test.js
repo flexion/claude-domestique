@@ -9,10 +9,11 @@ const {
   saveState,
   findYmlFiles,
   readContextFiles,
-  calculateDirSize,
-  calculateSizes,
+  estimateTokens,
+  calculateDirTokens,
+  calculateTokens,
   loadAllContextContent,
-  formatSizes,
+  formatTokens,
   statusLine,
   readInstalledPluginsRegistry,
   getMarketplaceFromPluginId,
@@ -120,39 +121,59 @@ describe('context-refresh hook', () => {
     });
   });
 
-  describe('calculateDirSize', () => {
-    it('returns 0 when directory does not exist', () => {
-      const size = calculateDirSize(path.join(tmpDir, 'nonexistent'));
-      expect(size).toBe(0);
+  describe('estimateTokens', () => {
+    it('returns 0 for empty or null text', () => {
+      expect(estimateTokens('')).toBe(0);
+      expect(estimateTokens(null)).toBe(0);
     });
 
-    it('calculates total size of yml files', () => {
+    it('counts words as tokens', () => {
+      expect(estimateTokens('one two three')).toBe(3);
+    });
+
+    it('adds extra token for long words', () => {
+      // "verylongwordhere" is >10 chars, so counts as 2 tokens
+      expect(estimateTokens('verylongwordhere')).toBe(2);
+    });
+
+    it('counts punctuation as half tokens', () => {
+      // "hello, world!" = 2 words + 2 punct = 2 + 1 = 3 tokens
+      expect(estimateTokens('hello, world!')).toBe(3);
+    });
+  });
+
+  describe('calculateDirTokens', () => {
+    it('returns 0 when directory does not exist', () => {
+      const tokens = calculateDirTokens(path.join(tmpDir, 'nonexistent'));
+      expect(tokens).toBe(0);
+    });
+
+    it('calculates total tokens of yml files', () => {
       const contextDir = path.join(tmpDir, 'context');
       fs.mkdirSync(contextDir, { recursive: true });
-      fs.writeFileSync(path.join(contextDir, 'a.yml'), '12345'); // 5 bytes
-      fs.writeFileSync(path.join(contextDir, 'b.yml'), '1234567890'); // 10 bytes
+      fs.writeFileSync(path.join(contextDir, 'a.yml'), 'one two three'); // 3 tokens
+      fs.writeFileSync(path.join(contextDir, 'b.yml'), 'four five'); // 2 tokens
 
-      const size = calculateDirSize(contextDir);
-      expect(size).toBe(15);
+      const tokens = calculateDirTokens(contextDir);
+      expect(tokens).toBe(5);
     });
 
     it('ignores non-yml files', () => {
       const contextDir = path.join(tmpDir, 'context');
       fs.mkdirSync(contextDir, { recursive: true });
-      fs.writeFileSync(path.join(contextDir, 'a.yml'), '12345');
-      fs.writeFileSync(path.join(contextDir, 'b.md'), '1234567890');
+      fs.writeFileSync(path.join(contextDir, 'a.yml'), 'one two three'); // 3 tokens
+      fs.writeFileSync(path.join(contextDir, 'b.md'), 'should be ignored');
 
-      const size = calculateDirSize(contextDir);
-      expect(size).toBe(5);
+      const tokens = calculateDirTokens(contextDir);
+      expect(tokens).toBe(3);
     });
 
-    it('handles stat errors gracefully', () => {
+    it('handles read errors gracefully', () => {
       const contextDir = path.join(tmpDir, 'context');
       fs.mkdirSync(contextDir, { recursive: true });
-      fs.writeFileSync(path.join(contextDir, 'a.yml'), '12345');
-      // Size should still work even if we can't stat some files
-      const size = calculateDirSize(contextDir);
-      expect(size).toBe(5);
+      fs.writeFileSync(path.join(contextDir, 'a.yml'), 'one two');
+      const tokens = calculateDirTokens(contextDir);
+      expect(tokens).toBe(2);
     });
   });
 
@@ -189,38 +210,38 @@ describe('context-refresh hook', () => {
     });
   });
 
-  describe('calculateSizes', () => {
+  describe('calculateTokens', () => {
     it('returns empty object when no context exists', () => {
       const emptyDir = path.join(tmpDir, 'empty');
       fs.mkdirSync(emptyDir, { recursive: true });
       _setPathsForTesting({ baseContextDir: emptyDir });
 
-      const sizes = calculateSizes(tmpDir);
+      const sizes = calculateTokens(tmpDir);
       expect(sizes).toEqual({});
     });
 
-    it('calculates base context size', () => {
+    it('calculates base context tokens', () => {
       const baseDir = path.join(tmpDir, 'base-context');
       fs.mkdirSync(baseDir, { recursive: true });
-      fs.writeFileSync(path.join(baseDir, 'behavior.yml'), '12345');
+      fs.writeFileSync(path.join(baseDir, 'behavior.yml'), 'one two three four five'); // 5 tokens
 
       _setPathsForTesting({ baseContextDir: baseDir });
 
-      const sizes = calculateSizes(tmpDir);
-      expect(sizes.base).toBe(5);
+      const tokens = calculateTokens(tmpDir);
+      expect(tokens.base).toBe(5);
     });
 
-    it('calculates project context size', () => {
+    it('calculates project context tokens', () => {
       const emptyBase = path.join(tmpDir, 'empty-base');
       fs.mkdirSync(emptyBase, { recursive: true });
       _setPathsForTesting({ baseContextDir: emptyBase });
 
       const projectDir = path.join(tmpDir, '.claude', 'context');
       fs.mkdirSync(projectDir, { recursive: true });
-      fs.writeFileSync(path.join(projectDir, 'project.yml'), '1234567890');
+      fs.writeFileSync(path.join(projectDir, 'project.yml'), 'one two three four five six seven eight nine ten'); // 10 tokens
 
-      const sizes = calculateSizes(tmpDir);
-      expect(sizes.project).toBe(10);
+      const tokens = calculateTokens(tmpDir);
+      expect(tokens.project).toBe(10);
     });
   });
 
@@ -273,39 +294,39 @@ describe('context-refresh hook', () => {
     });
   });
 
-  describe('formatSizes', () => {
+  describe('formatTokens', () => {
     it('returns "no context" when sizes is empty', () => {
-      expect(formatSizes({})).toBe('no context');
+      expect(formatTokens({})).toBe('no context');
     });
 
-    it('formats base size', () => {
-      expect(formatSizes({ base: 100 })).toBe('base(100)');
+    it('formats base tokens', () => {
+      expect(formatTokens({ base: 100 })).toBe('base(~100 tokens)');
     });
 
-    it('formats multiple sizes', () => {
-      expect(formatSizes({ base: 100, sibling: 50, project: 25 }))
-        .toBe('base(100) sibling(50) project(25)');
+    it('formats multiple token counts', () => {
+      expect(formatTokens({ base: 100, sibling: 50, project: 25 }))
+        .toBe('base(~100 tokens) sibling(~50 tokens) project(~25 tokens)');
     });
 
     it('omits zero values', () => {
-      expect(formatSizes({ base: 100, project: 0 })).toBe('base(100)');
+      expect(formatTokens({ base: 100, project: 0 })).toBe('base(~100 tokens)');
     });
   });
 
   describe('statusLine', () => {
     it('shows count without marker when not refreshed', () => {
       expect(statusLine(3, { base: 100 }, false))
-        .toBe('Mantra: 3/5 | base(100)');
+        .toBe('📍 Mantra: 3/5 | base(~100 tokens)');
     });
 
     it('shows checkmark when refreshed', () => {
       expect(statusLine(0, { base: 100 }, true))
-        .toBe('Mantra: 0/5 ✅ | base(100)');
+        .toBe('📍 Mantra: 0/5 ✅ | base(~100 tokens)');
     });
 
     it('shows no context when sizes is empty', () => {
       expect(statusLine(2, {}, false))
-        .toBe('Mantra: 2/5 | no context');
+        .toBe('📍 Mantra: 2/5 | no context');
     });
   });
 
@@ -339,14 +360,14 @@ describe('context-refresh hook', () => {
       expect(result.systemMessage).toContain('✅'); // context injected marker
     });
 
-    it('returns sizes in hookSpecificOutput', () => {
+    it('returns tokens in hookSpecificOutput', () => {
       const projectDir = path.join(tmpDir, '.claude', 'context');
       fs.mkdirSync(projectDir, { recursive: true });
-      fs.writeFileSync(path.join(projectDir, 'test.yml'), '12345');
+      fs.writeFileSync(path.join(projectDir, 'test.yml'), 'one two three four five'); // 5 tokens
 
       const config = { stateFile };
       const result = processHook({ cwd: tmpDir }, config);
-      expect(result.hookSpecificOutput.sizes.project).toBe(5);
+      expect(result.hookSpecificOutput.tokens.project).toBe(5);
     });
 
     it('includes refresh reason on SessionStart with context', () => {
@@ -703,19 +724,19 @@ describe('context-refresh hook', () => {
       expect(files).toEqual([]);
     });
 
-    it('calculateDirSize handles statSync errors', () => {
+    it('calculateDirTokens handles readFileSync errors', () => {
       const mockFs = {
         existsSync: () => true,
         readdirSync: () => ['a.yml', 'b.yml'],
-        statSync: (f) => {
-          if (f.includes('a.yml')) return { size: 100 };
+        readFileSync: (f) => {
+          if (f.includes('a.yml')) return 'one two three'; // 3 tokens
           throw new Error('File not found');
         }
       };
       _setDepsForTesting({ fs: mockFs, paths: { baseContextDir: '/fake/base' } });
 
-      const size = calculateDirSize('/fake/base');
-      expect(size).toBe(100); // Only a.yml counted, b.yml error handled
+      const tokens = calculateDirTokens('/fake/base');
+      expect(tokens).toBe(3); // Only a.yml counted, b.yml error handled
     });
 
     it('readInstalledPluginsRegistry handles read errors', () => {
