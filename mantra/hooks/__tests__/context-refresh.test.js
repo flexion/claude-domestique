@@ -8,9 +8,12 @@ const {
   loadState,
   saveState,
   findYmlFiles,
-  calculateDirSize,
-  calculateSizes,
-  formatSizes,
+  readContextFiles,
+  estimateTokens,
+  calculateDirTokens,
+  calculateTokens,
+  loadAllContextContent,
+  formatTokens,
   statusLine,
   readInstalledPluginsRegistry,
   getMarketplaceFromPluginId,
@@ -20,6 +23,8 @@ const {
   parseInput,
   main,
   REFRESH_INTERVAL,
+  _setDepsForTesting,
+  _resetDeps,
   _setPathsForTesting,
   _resetPaths
 } = require('../context-refresh');
@@ -34,7 +39,7 @@ describe('context-refresh hook', () => {
   });
 
   afterEach(() => {
-    _resetPaths();
+    _resetDeps();
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
@@ -116,115 +121,212 @@ describe('context-refresh hook', () => {
     });
   });
 
-  describe('calculateDirSize', () => {
-    it('returns 0 when directory does not exist', () => {
-      const size = calculateDirSize(path.join(tmpDir, 'nonexistent'));
-      expect(size).toBe(0);
+  describe('estimateTokens', () => {
+    it('returns 0 for empty or null text', () => {
+      expect(estimateTokens('')).toBe(0);
+      expect(estimateTokens(null)).toBe(0);
     });
 
-    it('calculates total size of yml files', () => {
+    it('counts words as tokens', () => {
+      expect(estimateTokens('one two three')).toBe(3);
+    });
+
+    it('adds extra token for long words', () => {
+      // "verylongwordhere" is >10 chars, so counts as 2 tokens
+      expect(estimateTokens('verylongwordhere')).toBe(2);
+    });
+
+    it('counts punctuation as half tokens', () => {
+      // "hello, world!" = 2 words + 2 punct = 2 + 1 = 3 tokens
+      expect(estimateTokens('hello, world!')).toBe(3);
+    });
+  });
+
+  describe('calculateDirTokens', () => {
+    it('returns 0 when directory does not exist', () => {
+      const tokens = calculateDirTokens(path.join(tmpDir, 'nonexistent'));
+      expect(tokens).toBe(0);
+    });
+
+    it('calculates total tokens of yml files', () => {
       const contextDir = path.join(tmpDir, 'context');
       fs.mkdirSync(contextDir, { recursive: true });
-      fs.writeFileSync(path.join(contextDir, 'a.yml'), '12345'); // 5 bytes
-      fs.writeFileSync(path.join(contextDir, 'b.yml'), '1234567890'); // 10 bytes
+      fs.writeFileSync(path.join(contextDir, 'a.yml'), 'one two three'); // 3 tokens
+      fs.writeFileSync(path.join(contextDir, 'b.yml'), 'four five'); // 2 tokens
 
-      const size = calculateDirSize(contextDir);
-      expect(size).toBe(15);
+      const tokens = calculateDirTokens(contextDir);
+      expect(tokens).toBe(5);
     });
 
     it('ignores non-yml files', () => {
       const contextDir = path.join(tmpDir, 'context');
       fs.mkdirSync(contextDir, { recursive: true });
-      fs.writeFileSync(path.join(contextDir, 'a.yml'), '12345');
-      fs.writeFileSync(path.join(contextDir, 'b.md'), '1234567890');
+      fs.writeFileSync(path.join(contextDir, 'a.yml'), 'one two three'); // 3 tokens
+      fs.writeFileSync(path.join(contextDir, 'b.md'), 'should be ignored');
 
-      const size = calculateDirSize(contextDir);
-      expect(size).toBe(5);
+      const tokens = calculateDirTokens(contextDir);
+      expect(tokens).toBe(3);
     });
 
-    it('handles stat errors gracefully', () => {
+    it('handles read errors gracefully', () => {
       const contextDir = path.join(tmpDir, 'context');
       fs.mkdirSync(contextDir, { recursive: true });
-      fs.writeFileSync(path.join(contextDir, 'a.yml'), '12345');
-      // Size should still work even if we can't stat some files
-      const size = calculateDirSize(contextDir);
-      expect(size).toBe(5);
+      fs.writeFileSync(path.join(contextDir, 'a.yml'), 'one two');
+      const tokens = calculateDirTokens(contextDir);
+      expect(tokens).toBe(2);
     });
   });
 
-  describe('calculateSizes', () => {
+  describe('readContextFiles', () => {
+    it('reads and formats yml file contents', () => {
+      const contextDir = path.join(tmpDir, 'context');
+      fs.mkdirSync(contextDir, { recursive: true });
+      fs.writeFileSync(path.join(contextDir, 'test.yml'), 'key: value');
+
+      const files = [path.join(contextDir, 'test.yml')];
+      const content = readContextFiles(files);
+      expect(content).toContain('### test.yml');
+      expect(content).toContain('key: value');
+    });
+
+    it('skips unreadable files gracefully', () => {
+      const contextDir = path.join(tmpDir, 'context');
+      fs.mkdirSync(contextDir, { recursive: true });
+      fs.writeFileSync(path.join(contextDir, 'good.yml'), 'good: content');
+
+      const files = [
+        path.join(contextDir, 'good.yml'),
+        path.join(contextDir, 'nonexistent.yml')  // This file doesn't exist
+      ];
+      const content = readContextFiles(files);
+      expect(content).toContain('good.yml');
+      expect(content).toContain('good: content');
+      expect(content).not.toContain('nonexistent');
+    });
+
+    it('returns empty string for empty file list', () => {
+      const content = readContextFiles([]);
+      expect(content).toBe('');
+    });
+  });
+
+  describe('calculateTokens', () => {
     it('returns empty object when no context exists', () => {
       const emptyDir = path.join(tmpDir, 'empty');
       fs.mkdirSync(emptyDir, { recursive: true });
       _setPathsForTesting({ baseContextDir: emptyDir });
 
-      const sizes = calculateSizes(tmpDir);
+      const sizes = calculateTokens(tmpDir);
       expect(sizes).toEqual({});
     });
 
-    it('calculates base context size', () => {
+    it('calculates base context tokens', () => {
       const baseDir = path.join(tmpDir, 'base-context');
       fs.mkdirSync(baseDir, { recursive: true });
-      fs.writeFileSync(path.join(baseDir, 'behavior.yml'), '12345');
+      fs.writeFileSync(path.join(baseDir, 'behavior.yml'), 'one two three four five'); // 5 tokens
 
       _setPathsForTesting({ baseContextDir: baseDir });
 
-      const sizes = calculateSizes(tmpDir);
-      expect(sizes.base).toBe(5);
+      const tokens = calculateTokens(tmpDir);
+      expect(tokens.base).toBe(5);
     });
 
-    it('calculates project context size', () => {
+    it('calculates project context tokens', () => {
       const emptyBase = path.join(tmpDir, 'empty-base');
       fs.mkdirSync(emptyBase, { recursive: true });
       _setPathsForTesting({ baseContextDir: emptyBase });
 
       const projectDir = path.join(tmpDir, '.claude', 'context');
       fs.mkdirSync(projectDir, { recursive: true });
-      fs.writeFileSync(path.join(projectDir, 'project.yml'), '1234567890');
+      fs.writeFileSync(path.join(projectDir, 'project.yml'), 'one two three four five six seven eight nine ten'); // 10 tokens
 
-      const sizes = calculateSizes(tmpDir);
-      expect(sizes.project).toBe(10);
+      const tokens = calculateTokens(tmpDir);
+      expect(tokens.project).toBe(10);
     });
   });
 
-  describe('formatSizes', () => {
+  describe('loadAllContextContent', () => {
+    it('loads project context content', () => {
+      const emptyBase = path.join(tmpDir, 'empty-base');
+      fs.mkdirSync(emptyBase, { recursive: true });
+      _setPathsForTesting({ baseContextDir: emptyBase });
+
+      const projectDir = path.join(tmpDir, '.claude', 'context');
+      fs.mkdirSync(projectDir, { recursive: true });
+      fs.writeFileSync(path.join(projectDir, 'project.yml'), 'key: project-value');
+
+      const content = loadAllContextContent(tmpDir);
+      expect(content).toContain('project.yml');
+      expect(content).toContain('key: project-value');
+    });
+
+    it('loads sibling plugin context', () => {
+      const registryDir = path.join(tmpDir, '.claude', 'plugins');
+      fs.mkdirSync(registryDir, { recursive: true });
+      const registryFile = path.join(registryDir, 'installed_plugins.json');
+
+      const ownPluginDir = path.join(tmpDir, 'own-plugin');
+      const ownContextDir = path.join(ownPluginDir, 'context');
+      fs.mkdirSync(ownContextDir, { recursive: true });
+      fs.writeFileSync(path.join(ownContextDir, 'own.yml'), 'own: value');
+
+      const siblingDir = path.join(tmpDir, 'sibling-plugin');
+      const siblingContextDir = path.join(siblingDir, 'context');
+      fs.mkdirSync(siblingContextDir, { recursive: true });
+      fs.writeFileSync(path.join(siblingContextDir, 'sibling.yml'), 'sibling: content');
+
+      fs.writeFileSync(registryFile, JSON.stringify({
+        plugins: {
+          'mantra@claude-domestique': [{ projectPath: tmpDir, installPath: ownPluginDir }],
+          'memento@claude-domestique': [{ projectPath: tmpDir, installPath: siblingDir }]
+        }
+      }));
+
+      _setPathsForTesting({
+        installedPluginsFile: registryFile,
+        pluginRoot: ownPluginDir,
+        baseContextDir: ownContextDir
+      });
+
+      const content = loadAllContextContent(tmpDir);
+      expect(content).toContain('sibling.yml');
+      expect(content).toContain('sibling: content');
+    });
+  });
+
+  describe('formatTokens', () => {
     it('returns "no context" when sizes is empty', () => {
-      expect(formatSizes({})).toBe('no context');
+      expect(formatTokens({})).toBe('no context');
     });
 
-    it('formats base size', () => {
-      expect(formatSizes({ base: 100 })).toBe('base(100)');
+    it('formats base tokens', () => {
+      expect(formatTokens({ base: 100 })).toBe('base(~100 tokens)');
     });
 
-    it('formats multiple sizes', () => {
-      expect(formatSizes({ base: 100, sibling: 50, project: 25 }))
-        .toBe('base(100) sibling(50) project(25)');
+    it('formats multiple token counts', () => {
+      expect(formatTokens({ base: 100, sibling: 50, project: 25 }))
+        .toBe('base(~100 tokens) sibling(~50 tokens) project(~25 tokens)');
     });
 
     it('omits zero values', () => {
-      expect(formatSizes({ base: 100, project: 0 })).toBe('base(100)');
+      expect(formatTokens({ base: 100, project: 0 })).toBe('base(~100 tokens)');
     });
   });
 
   describe('statusLine', () => {
     it('shows count without marker when not refreshed', () => {
-      expect(statusLine(3, false, { base: 100 }, false))
-        .toBe('Mantra: 3/5 | base(100)');
+      expect(statusLine(3, { base: 100 }, false))
+        .toBe('📍 Mantra: 3/5 | base(~100 tokens)');
     });
 
-    it('shows pending marker when refresh due but not confirmed', () => {
-      expect(statusLine(0, true, { base: 100 }, false))
-        .toBe('Mantra: 0/5 ⏳ | base(100)');
-    });
-
-    it('shows confirmed marker when skill confirmed', () => {
-      expect(statusLine(1, false, { base: 100 }, true))
-        .toBe('Mantra: 1/5 ✅ | base(100)');
+    it('shows checkmark when refreshed', () => {
+      expect(statusLine(0, { base: 100 }, true))
+        .toBe('📍 Mantra: 0/5 ✅ | base(~100 tokens)');
     });
 
     it('shows no context when sizes is empty', () => {
-      expect(statusLine(2, false, {}, false))
-        .toBe('Mantra: 2/5 | no context');
+      expect(statusLine(2, {}, false))
+        .toBe('📍 Mantra: 2/5 | no context');
     });
   });
 
@@ -255,20 +357,26 @@ describe('context-refresh hook', () => {
       const config = { stateFile };
       const result = processHook({ cwd: tmpDir }, config);
       expect(result.hookSpecificOutput.refreshDue).toBe(true);
-      expect(result.hookSpecificOutput.additionalContext).toContain('⏳'); // pending marker
+      expect(result.systemMessage).toContain('✅'); // context injected marker
     });
 
-    it('returns sizes in hookSpecificOutput', () => {
+    it('returns tokens in hookSpecificOutput', () => {
       const projectDir = path.join(tmpDir, '.claude', 'context');
       fs.mkdirSync(projectDir, { recursive: true });
-      fs.writeFileSync(path.join(projectDir, 'test.yml'), '12345');
+      fs.writeFileSync(path.join(projectDir, 'test.yml'), 'one two three four five'); // 5 tokens
 
       const config = { stateFile };
       const result = processHook({ cwd: tmpDir }, config);
-      expect(result.hookSpecificOutput.sizes.project).toBe(5);
+      expect(result.hookSpecificOutput.tokens.project).toBe(5);
     });
 
-    it('includes refresh reason on SessionStart', () => {
+    it('includes refresh reason on SessionStart with context', () => {
+      // Create context file to inject
+      const baseDir = path.join(tmpDir, 'base-context');
+      fs.mkdirSync(baseDir, { recursive: true });
+      fs.writeFileSync(path.join(baseDir, 'test.yml'), 'test: value');
+      _setPathsForTesting({ baseContextDir: baseDir });
+
       const config = { stateFile };
       const result = processHook({
         cwd: tmpDir,
@@ -276,56 +384,48 @@ describe('context-refresh hook', () => {
         source: 'startup'
       }, config);
       expect(result.hookSpecificOutput.additionalContext).toContain('session startup');
+      expect(result.hookSpecificOutput.additionalContext).toContain('test.yml');
     });
 
     it('includes refresh reason periodic when counter hits 0', () => {
+      // Create context file to inject
+      const baseDir = path.join(tmpDir, 'base-context');
+      fs.mkdirSync(baseDir, { recursive: true });
+      fs.writeFileSync(path.join(baseDir, 'test.yml'), 'test: value');
+      _setPathsForTesting({ baseContextDir: baseDir });
+
       fs.writeFileSync(stateFile, JSON.stringify({ count: 4 }));
       const config = { stateFile };
       const result = processHook({ cwd: tmpDir }, config);
       expect(result.hookSpecificOutput.additionalContext).toContain('periodic');
     });
 
-    it('mentions skill for context loading on refresh', () => {
+    it('injects context content on refresh', () => {
+      // Create context file to inject
+      const baseDir = path.join(tmpDir, 'base-context');
+      fs.mkdirSync(baseDir, { recursive: true });
+      fs.writeFileSync(path.join(baseDir, 'behavior.yml'), 'rule: be-helpful');
+      _setPathsForTesting({ baseContextDir: baseDir });
+
       fs.writeFileSync(stateFile, JSON.stringify({ count: 4 }));
       const config = { stateFile };
       const result = processHook({ cwd: tmpDir }, config);
-      expect(result.hookSpecificOutput.additionalContext).toContain('context-refresh skill');
+      expect(result.hookSpecificOutput.additionalContext).toContain('behavior.yml');
+      expect(result.hookSpecificOutput.additionalContext).toContain('rule: be-helpful');
     });
 
-    it('returns skillConfirmed false when not confirmed', () => {
-      const config = { stateFile };
-      const result = processHook({ cwd: tmpDir }, config);
-      expect(result.hookSpecificOutput.skillConfirmed).toBe(false);
-    });
-
-    it('returns skillConfirmed true when state has skillConfirmed', () => {
-      fs.writeFileSync(stateFile, JSON.stringify({ count: 1, skillConfirmed: true }));
-      const config = { stateFile };
-      const result = processHook({ cwd: tmpDir }, config);
-      expect(result.hookSpecificOutput.skillConfirmed).toBe(true);
-    });
-
-    it('resets skillConfirmed on refresh', () => {
-      fs.writeFileSync(stateFile, JSON.stringify({ count: 4, skillConfirmed: true }));
-      const config = { stateFile };
-      processHook({ cwd: tmpDir }, config); // triggers refresh
-      const state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
-      expect(state.skillConfirmed).toBe(false);
-      expect(state.refreshPending).toBe(true);
-    });
-
-    it('shows pending marker in status when refresh due', () => {
+    it('shows checkmark in status when refresh happens', () => {
       fs.writeFileSync(stateFile, JSON.stringify({ count: 4 }));
-      const config = { stateFile };
-      const result = processHook({ cwd: tmpDir }, config);
-      expect(result.systemMessage).toContain('⏳');
-    });
-
-    it('shows confirmed marker when skill has confirmed', () => {
-      fs.writeFileSync(stateFile, JSON.stringify({ count: 1, skillConfirmed: true }));
       const config = { stateFile };
       const result = processHook({ cwd: tmpDir }, config);
       expect(result.systemMessage).toContain('✅');
+    });
+
+    it('shows no checkmark when not refreshing', () => {
+      fs.writeFileSync(stateFile, JSON.stringify({ count: 1 }));
+      const config = { stateFile };
+      const result = processHook({ cwd: tmpDir }, config);
+      expect(result.systemMessage).not.toContain('✅');
     });
   });
 
@@ -586,6 +686,72 @@ describe('context-refresh hook', () => {
         const result = JSON.parse(output);
         expect(result).toHaveProperty('systemMessage');
       });
+    });
+  });
+
+  describe('error handling with mocked fs', () => {
+    it('loadState handles JSON parse errors', () => {
+      const mockFs = {
+        existsSync: () => true,
+        readFileSync: () => 'invalid json {{{'
+      };
+      _setDepsForTesting({ fs: mockFs });
+
+      const state = loadState('/fake/state.json');
+      expect(state).toEqual({ count: 0 });
+    });
+
+    it('saveState handles write errors silently', () => {
+      const mockFs = {
+        existsSync: () => false,
+        mkdirSync: () => { throw new Error('Permission denied'); },
+        writeFileSync: () => { throw new Error('Permission denied'); }
+      };
+      _setDepsForTesting({ fs: mockFs });
+
+      // Should not throw
+      expect(() => saveState('/fake/state.json', { count: 1 })).not.toThrow();
+    });
+
+    it('findYmlFiles handles readdirSync errors', () => {
+      const mockFs = {
+        existsSync: () => true,
+        readdirSync: () => { throw new Error('Permission denied'); }
+      };
+      _setDepsForTesting({ fs: mockFs });
+
+      const files = findYmlFiles('/fake/dir');
+      expect(files).toEqual([]);
+    });
+
+    it('calculateDirTokens handles readFileSync errors', () => {
+      const mockFs = {
+        existsSync: () => true,
+        readdirSync: () => ['a.yml', 'b.yml'],
+        readFileSync: (f) => {
+          if (f.includes('a.yml')) return 'one two three'; // 3 tokens
+          throw new Error('File not found');
+        }
+      };
+      _setDepsForTesting({ fs: mockFs, paths: { baseContextDir: '/fake/base' } });
+
+      const tokens = calculateDirTokens('/fake/base');
+      expect(tokens).toBe(3); // Only a.yml counted, b.yml error handled
+    });
+
+    it('readInstalledPluginsRegistry handles read errors', () => {
+      const mockFs = {
+        existsSync: () => true,
+        readFileSync: () => { throw new Error('Permission denied'); }
+      };
+      _setDepsForTesting({ fs: mockFs, paths: { installedPluginsFile: '/fake/registry.json' } });
+
+      const registry = readInstalledPluginsRegistry();
+      expect(registry).toBeNull();
+    });
+
+    it('getMarketplaceFromPluginId handles edge case with trailing @', () => {
+      expect(getMarketplaceFromPluginId('plugin@')).toBeNull();
     });
   });
 });

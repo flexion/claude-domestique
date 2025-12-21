@@ -1,6 +1,6 @@
 {
   "name": "@claude-domestique/mantra",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "description": "Periodic context refresh plugin for Claude Code sessions",
   "main": "index.js",
   "bin": {
