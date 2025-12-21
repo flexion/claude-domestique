@@ -275,7 +275,7 @@ describe('work-item hook', () => {
     it('shows no issue message when no issue detected', () => {
       const state = { currentIssue: null };
       const msg = generateSessionStartMessage(state, null);
-      expect(msg).toContain('No issue detected');
+      expect(msg).toContain('no issue');
     });
 
     it('shows issue with title when available', () => {
@@ -290,8 +290,15 @@ describe('work-item hook', () => {
       const state = { currentIssue: '42' };
       const workItem = createPlaceholderWorkItem('42', 'github');
       const msg = generateSessionStartMessage(state, workItem);
-      expect(msg).toContain('42');
-      expect(msg).toContain('not fetched');
+      expect(msg).toContain('#42');
+    });
+
+    it('shows NEW indicator for new issues', () => {
+      const state = { currentIssue: '42' };
+      const workItem = createPlaceholderWorkItem('42', 'github');
+      const msg = generateSessionStartMessage(state, workItem, true);
+      expect(msg).toContain('NEW →');
+      expect(msg).toContain('#42');
     });
   });
 
@@ -299,7 +306,7 @@ describe('work-item hook', () => {
     it('shows no issue when none detected', () => {
       const state = { currentIssue: null };
       const msg = generatePromptSubmitMessage(state, null, false);
-      expect(msg).toContain('Onus: No issue');
+      expect(msg).toContain('no issue');
     });
 
     it('shows issue number when present', () => {
@@ -314,17 +321,17 @@ describe('work-item hook', () => {
       expect(msg).toContain('staged');
     });
 
-    it('shows branch switched indicator', () => {
+    it('shows SWITCHED indicator when branch changed', () => {
       const state = { currentIssue: '99' };
       const msg = generatePromptSubmitMessage(state, null, false, true);
-      expect(msg).toContain('branch switched');
+      expect(msg).toContain('SWITCHED →');
       expect(msg).toContain('#99');
     });
 
-    it('shows both branch switched and staged indicators', () => {
+    it('shows both SWITCHED and staged indicators', () => {
       const state = { currentIssue: '42' };
       const msg = generatePromptSubmitMessage(state, null, true, true);
-      expect(msg).toContain('branch switched');
+      expect(msg).toContain('SWITCHED →');
       expect(msg).toContain('staged');
     });
   });
