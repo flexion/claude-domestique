@@ -17,5 +17,6 @@
   "hooks": "./hooks/hooks.json",
   "commands": [
     "./commands/init.md"
-  ]
+  ],
+  "skills": "./skills/"
 }
