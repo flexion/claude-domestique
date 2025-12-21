@@ -1,0 +1,80 @@
+# Claude Code Commands Reference - Compact Format
+# Source: https://code.claude.com/docs/en/slash-commands
+# Purpose: AI-optimized reference for command development
+
+## COMMAND TYPES
+built-in: /help, /clear, /compact, /config, /hooks, /mcp, /plugin, /resume, /exit
+custom-project: .claude/commands/*.md (shows "project")
+custom-user: ~/.claude/commands/*.md (shows "user")
+plugin: commands/*.md (namespaced /plugin:command)
+mcp: /mcp__server__prompt
+
+## PRECEDENCE
+project > user (same name)
+plugin: namespaced, no conflict
+
+## FILE FORMAT
+location: .claude/commands/*.md | ~/.claude/commands/*.md | plugin/commands/*.md
+naming: filename.md → /filename
+
+structure: |
+  ---
+  description: Brief description
+  allowed-tools: Bash(git:*), Read, Edit
+  argument-hint: [filename] [options]
+  model: claude-3-5-haiku-20241022
+  disable-model-invocation: false
+  ---
+
+  # Command Content
+  Instructions for Claude...
+
+## ARGUMENTS
+$ARGUMENTS: all-args-concatenated
+$1, $2, $3: positional-args
+example: /command foo bar → $1=foo, $2=bar, $ARGUMENTS="foo bar"
+
+## BASH EXECUTION
+syntax: !`command`
+requires: allowed-tools with Bash
+example: |
+  Current branch: !`git branch --show-current`
+  Git status: !`git status`
+
+## FILE REFERENCES
+syntax: @path/to/file
+includes: file-contents-inline
+example: Review @src/utils.js
+
+## SUBDIRECTORIES
+path: .claude/commands/frontend/component.md
+display: /component (project:frontend)
+command-name: filename-only
+
+## SLASHCOMMAND TOOL
+purpose: claude-invokes-commands-automatically
+requires: description-frontmatter
+disable: disable-model-invocation: true
+permissions:
+  exact: SlashCommand:/commit
+  prefix: SlashCommand:/review:*
+budget: SLASH_COMMAND_TOOL_CHAR_BUDGET (default 15000)
+
+## MCP COMMANDS
+format: /mcp__<server>__<prompt>
+example: /mcp__github__list_prs, /mcp__jira__create_issue "title" high
+manage: /mcp (view servers, auth, status)
+
+## SKILLS vs COMMANDS
+commands: single-file, explicit-invocation, simple-prompts
+skills: multi-file, auto-discovery, complex-workflows
+
+use-commands: frequent-simple-prompts, explicit-control
+use-skills: complex-workflows, multiple-files, auto-discovery
+
+## BUILT-IN COMMANDS (partial)
+session: /clear, /compact, /resume, /exit, /export
+config: /config, /hooks, /mcp, /permissions, /plugin
+debug: /doctor, /context, /cost, /usage, /stats
+code: /review, /init, /todos
+account: /login, /logout

@@ -1,0 +1,164 @@
+# Claude Code Settings Reference - Compact Format
+# Source: https://code.claude.com/docs/en/settings
+# Purpose: AI-optimized reference for configuration
+
+## FILE LOCATIONS
+user: ~/.claude/settings.json
+project: .claude/settings.json
+local: .claude/settings.local.json (gitignored)
+enterprise-mac: /Library/Application Support/ClaudeCode/managed-settings.json
+enterprise-linux: /etc/claude-code/managed-settings.json
+
+## PRECEDENCE (high → low)
+enterprise → cli-args → local → project → user → defaults
+
+## PERMISSIONS
+schema: |
+  {
+    "permissions": {
+      "allow": ["Bash(npm:*)", "Read(~/.zshrc)"],
+      "deny": ["Bash(curl:*)", "Read(.env)", "WebFetch"],
+      "ask": ["Bash(git push:*)"],
+      "additionalDirectories": ["../docs/"],
+      "defaultMode": "acceptEdits",
+      "disableBypassPermissionsMode": "disable"
+    }
+  }
+
+modes: default, plan, acceptEdits, bypassPermissions
+pattern-syntax: Tool(pattern:*) | Tool (deny-all)
+
+## SANDBOX
+schema: |
+  {
+    "sandbox": {
+      "enabled": true,
+      "autoAllowBashIfSandboxed": true,
+      "excludedCommands": ["git", "docker"],
+      "allowUnsandboxedCommands": false,
+      "network": {
+        "allowUnixSockets": ["~/.ssh/agent-socket"],
+        "allowLocalBinding": true
+      }
+    }
+  }
+
+## HOOKS
+schema: |
+  {
+    "hooks": { ... },
+    "disableAllHooks": false,
+    "allowManagedHooksOnly": true
+  }
+see: hooks.yml
+
+## PLUGINS
+schema: |
+  {
+    "enabledPlugins": {
+      "plugin@marketplace": true|false
+    },
+    "extraKnownMarketplaces": {
+      "name": { "source": {...} }
+    },
+    "strictKnownMarketplaces": [...]
+  }
+
+## MCP SERVERS
+schema: |
+  {
+    "enableAllProjectMcpServers": true,
+    "enabledMcpjsonServers": ["memory", "github"],
+    "disabledMcpjsonServers": ["filesystem"],
+    "allowedMcpServers": [{"serverName": "..."}],
+    "deniedMcpServers": [{"serverName": "..."}]
+  }
+
+## CORE SETTINGS
+apiKeyHelper: script-for-auth
+cleanupPeriodDays: 30 (session-cleanup)
+companyAnnouncements: [strings]
+env: {key: value}
+model: default-model-override
+outputStyle: Explanatory|Concise|etc
+forceLoginMethod: claudeai|console
+forceLoginOrgUUID: uuid-string
+
+## ATTRIBUTION
+schema: |
+  {
+    "attribution": {
+      "commit": "Generated with AI\n\nCo-Authored-By: ...",
+      "pr": "Generated with Claude Code"
+    }
+  }
+
+## FILE SUGGESTION
+schema: |
+  {
+    "fileSuggestion": {
+      "type": "command",
+      "command": "~/.claude/file-suggestion.sh"
+    }
+  }
+input: {"query": "src/comp"}
+output: newline-separated-paths (max 15)
+
+## STATUS LINE
+schema: |
+  {
+    "statusLine": {
+      "type": "command",
+      "command": "~/.claude/statusline.sh"
+    }
+  }
+
+## ENV VARS - AUTH
+ANTHROPIC_API_KEY: api-key
+ANTHROPIC_AUTH_TOKEN: custom-auth-header
+ANTHROPIC_CUSTOM_HEADERS: Name: Value
+
+## ENV VARS - MODEL
+ANTHROPIC_MODEL: model-name
+ANTHROPIC_DEFAULT_SONNET_MODEL: sonnet-override
+ANTHROPIC_DEFAULT_OPUS_MODEL: opus-override
+ANTHROPIC_DEFAULT_HAIKU_MODEL: haiku-override
+CLAUDE_CODE_SUBAGENT_MODEL: subagent-model
+MAX_THINKING_TOKENS: extended-thinking-budget
+
+## ENV VARS - BASH
+BASH_DEFAULT_TIMEOUT_MS: default-timeout
+BASH_MAX_TIMEOUT_MS: max-timeout
+BASH_MAX_OUTPUT_LENGTH: max-chars
+CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR: reset-cwd
+CLAUDE_CODE_SHELL_PREFIX: wrap-commands
+
+## ENV VARS - NETWORK
+HTTP_PROXY, HTTPS_PROXY: proxy-servers
+NO_PROXY: bypass-domains
+CLAUDE_CODE_CLIENT_CERT: mtls-cert
+CLAUDE_CODE_CLIENT_KEY: mtls-key
+
+## ENV VARS - PROVIDERS
+CLAUDE_CODE_USE_BEDROCK: aws
+CLAUDE_CODE_USE_VERTEX: google
+CLAUDE_CODE_USE_FOUNDRY: azure
+CLAUDE_CODE_SKIP_*_AUTH: skip-auth-for-gateways
+
+## ENV VARS - CACHE
+DISABLE_PROMPT_CACHING: all
+DISABLE_PROMPT_CACHING_HAIKU|OPUS|SONNET: per-model
+
+## ENV VARS - TELEMETRY
+DISABLE_TELEMETRY: statsig
+DISABLE_ERROR_REPORTING: sentry
+CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: all
+
+## ENV VARS - TIMEOUTS
+MCP_TIMEOUT: server-startup (ms)
+MCP_TOOL_TIMEOUT: tool-execution (ms)
+MAX_MCP_OUTPUT_TOKENS: 25000
+
+## TOOLS
+no-permission: AskUserQuestion, BashOutput, Glob, Grep, KillShell, Read, Task, TodoWrite
+permission-required: Bash, Edit, ExitPlanMode, NotebookEdit, Skill, SlashCommand, WebFetch, WebSearch, Write

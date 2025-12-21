@@ -1,0 +1,139 @@
+# Claude Code Skills Reference - Compact Format
+# Source: https://code.claude.com/docs/en/skills, plugins-reference
+# Purpose: AI-optimized reference for skill development
+
+## OVERVIEW
+what: model-invoked capabilities (claude-decides-when)
+vs-commands: automatic-discovery vs explicit-/invocation
+trigger: context-matches-description → claude-reads-SKILL.md → executes
+
+## LOCATIONS
+personal: ~/.claude/skills/<skill-name>/SKILL.md
+project: .claude/skills/<skill-name>/SKILL.md (git-tracked, team-shared)
+plugin: skills/<skill-name>/SKILL.md
+
+## STRUCTURE
+required: SKILL.md
+optional: reference.md, examples.md, scripts/, templates/
+
+layout: |
+  my-skill/
+  ├── SKILL.md (required)
+  ├── reference.md (optional)
+  ├── scripts/helper.py (optional)
+  └── templates/template.txt (optional)
+
+## SKILL.md FORMAT
+structure: |
+  ---
+  name: skill-name
+  description: What it does and WHEN to use it
+  allowed-tools: Read, Grep, Glob (optional)
+  ---
+
+  # Skill Name
+
+  ## Instructions
+  Step-by-step guidance for Claude.
+
+  ## Examples
+  Concrete usage examples.
+
+## FRONTMATTER FIELDS
+name: lowercase, numbers, hyphens only, max-64-chars (required)
+description: max-1024-chars, include WHAT + WHEN (critical for discovery)
+allowed-tools: comma-separated (optional, restricts tool access)
+
+## DESCRIPTION BEST PRACTICES
+bad: "Helps with documents"
+good: "Extract text and tables from PDF files, fill forms, merge documents. Use when working with PDF files or when the user mentions PDFs, forms, or document extraction."
+
+include:
+  - what-it-does
+  - when-to-use
+  - trigger-keywords
+  - file-types-handled
+
+## ALLOWED-TOOLS
+purpose: restrict-tools-when-skill-active
+benefit: read-only-access-no-prompts, security-scoped
+format: comma-separated-tool-names
+example: "Read, Grep, Glob"
+default: asks-permission-normally
+
+## FILE REFERENCES
+syntax: relative-paths in markdown
+example: "[reference.md](reference.md)"
+loading: progressive (only-when-needed)
+
+## DISCOVERY FLOW
+1: claude-reads-skill-descriptions
+2: user-request-matches-description → skill-selected
+3: claude-reads-SKILL.md-instructions
+4: supporting-files-loaded-as-needed
+5: execution-per-instructions
+
+## PLUGIN INTEGRATION
+manifest: "skills": "./skills/" or ["./skills1/", "./skills2/"]
+discovery: automatic-on-plugin-install
+behavior: supplements-default-skills/ (not-replaces)
+
+## DEBUGGING
+skill-not-used:
+  - check-description-specificity
+  - verify-path-exists
+  - validate-yaml-syntax (no-tabs)
+  - check ---markers
+view-errors: claude --debug
+conflicts: make-descriptions-distinct, specific-triggers
+
+## LIFECYCLE
+create: mkdir -p ~/.claude/skills/my-skill && edit SKILL.md
+update: edit SKILL.md → restart-claude
+remove: rm -rf ~/.claude/skills/my-skill
+
+## SKILLS vs COMMANDS
+| Aspect | Skills | Commands |
+|--------|--------|----------|
+| invocation | model-decides | user-explicit (/) |
+| location | skills/*/SKILL.md | commands/*.md |
+| discovery | automatic-context | manual |
+| use-case | background-capabilities | interactive-actions |
+| files | multi-file-directory | single-md-file |
+
+## TEAM SHARING
+project-skills:
+  create: .claude/skills/my-skill/SKILL.md
+  share: git add .claude/skills/ && git commit && git push
+  receive: git pull → skills-available
+
+plugin-skills:
+  bundle: skills/ in plugin
+  distribute: marketplace
+  install: /plugin install
+
+## EXAMPLES
+
+### simple-skill
+frontmatter: |
+  ---
+  name: commit-messages
+  description: Generates clear commit messages from git diffs. Use when writing commit messages or reviewing staged changes.
+  ---
+
+### tool-restricted-skill
+frontmatter: |
+  ---
+  name: code-reviewer
+  description: Review code for best practices. Use when reviewing code, checking PRs, or analyzing code quality.
+  allowed-tools: Read, Grep, Glob
+  ---
+
+### multi-file-skill
+frontmatter: |
+  ---
+  name: pdf-processing
+  description: Extract text, fill forms, merge PDFs. Use when working with PDF files, forms, or document extraction.
+  ---
+
+supporting-files: FORMS.md, REFERENCE.md, scripts/extract.py

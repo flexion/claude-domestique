@@ -1,0 +1,85 @@
+# Claude Code Plugins Reference - Compact Format
+# Source: https://code.claude.com/docs/en/plugins
+# Purpose: AI-optimized reference for plugin development
+
+## STRUCTURE
+root:
+  .claude-plugin/plugin.json: required-manifest (only-file-in-this-dir)
+  commands/: slash-commands (*.md)
+  agents/: custom-subagents
+  skills/: SKILL.md + resources
+  hooks/: hooks.json
+  context/: context-files (*.yml, *.md)
+  .mcp.json: MCP-servers
+  .lsp.json: LSP-servers
+
+## MANIFEST (plugin.json)
+required: name, description, version
+optional: author, homepage, repository, license, keywords
+paths: hooks, commands[], skills
+
+example: |
+  {
+    "name": "my-plugin",
+    "version": "1.0.0",
+    "description": "Plugin description",
+    "hooks": "./hooks/hooks.json",
+    "commands": ["./commands/init.md"],
+    "skills": "./skills/"
+  }
+
+## NAMESPACING
+command-format: /plugin-name:command-name
+conflict-resolution: namespace-prefixed
+short-form: /command (when-unique)
+
+## COMMANDS
+location: commands/*.md
+format: frontmatter + markdown-body
+naming: filename → command-name (hello.md → /plugin:hello)
+
+frontmatter:
+  description: shown-in-help
+  allowed-tools: tool-permissions
+  argument-hint: expected-args
+  model: override-model
+  disable-model-invocation: bool
+
+arguments:
+  $ARGUMENTS: all-args-as-string
+  $1, $2: positional-args
+  !`command`: bash-execution (requires allowed-tools)
+  @file: include-file-contents
+
+## SKILLS
+location: skills/*/SKILL.md
+discovery: automatic (context-based)
+structure: SKILL.md + supporting-files + scripts
+vs-commands: complex-multi-file-workflows vs simple-prompts
+
+## HOOKS
+location: hooks/hooks.json
+format: see hooks.yml for schema
+env-vars: ${CLAUDE_PLUGIN_ROOT}, ${CLAUDE_PROJECT_DIR}
+
+## INSTALLATION
+local-dev: claude --plugin-dir ./my-plugin
+multiple: claude --plugin-dir ./one --plugin-dir ./two
+marketplace: /plugin install
+
+## TESTING
+verify: /help (lists commands)
+debug: restart-claude-for-changes
+common-errors:
+  - files-in-.claude-plugin (only plugin.json allowed)
+  - missing-manifest
+  - invalid-json
+
+## STANDALONE vs PLUGIN
+standalone: .claude/ (project-specific, short-names)
+plugin: distributable, versioned, namespaced
+
+## DISTRIBUTION
+versioning: semver
+docs: README.md
+marketplace: see plugin-marketplaces docs
