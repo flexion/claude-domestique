@@ -72,7 +72,7 @@ Branch: issue/feature-42/description
     ↓
 Metadata: .claude/branches/issue-feature-42-description
     ↓
-Session: .claude/sessions/42-description.md
+Session: .claude/sessions/issue-feature-42-description.md
 ```
 
 ### Interoperability

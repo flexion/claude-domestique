@@ -1,0 +1,152 @@
+# Claude Code Hooks Reference - Compact Format
+# Source: https://code.claude.com/docs/en/hooks
+# Purpose: AI-optimized reference for hook development
+
+## HOOK TYPES
+command: bash-script, JSON-stdin → JSON-stdout, exit-codes-matter
+prompt: LLM-evaluated (Haiku), returns {decision, reason}, subset-of-events-only
+
+prompt-supported: Stop, SubagentStop, UserPromptSubmit, PreToolUse, PermissionRequest
+prompt-response: { decision: approve|block, reason: string, continue?: bool, stopReason?: string }
+
+## CONFIG LOCATIONS (merge order)
+load: enterprise → user (~/.claude/settings.json) → project (.claude/settings.json) → local (.claude/settings.local.json)
+plugin: hooks/hooks.json (or custom path in plugin.json)
+
+## CONFIG FORMAT
+structure: hooks.EventName[].matcher + hooks.EventName[].hooks[]
+matcher: exact-string | regex (Edit|Write) | wildcard (*) | empty ("")
+hook-def: { type: command|prompt, command|prompt: string, timeout?: 60 }
+
+## EVENTS (10 total)
+
+### PreToolUse
+when: after-params-created, before-execution
+matcher-targets: Task, Bash, Glob, Grep, Read, Edit, Write, WebFetch, WebSearch, mcp__*
+input: session_id, transcript_path, cwd, permission_mode, tool_name, tool_input, tool_use_id
+output: hookSpecificOutput.permissionDecision (allow|deny|ask), updatedInput
+use-for: validation, input-modification, auto-approve
+
+### PermissionRequest
+when: permission-dialog-shown-to-user
+matcher-targets: same-as-PreToolUse
+output: hookSpecificOutput.decision.behavior (allow|deny), message, interrupt
+
+### PostToolUse
+when: after-tool-success
+matcher-targets: same-as-PreToolUse
+input: adds tool_response to PreToolUse-input
+output: decision (block|undefined), hookSpecificOutput.additionalContext
+use-for: logging, context-injection, side-effects
+
+### UserPromptSubmit
+when: user-submits-prompt, before-claude-processes
+input: hook_event_name, prompt
+output: decision (block|undefined), reason (shown-to-user), hookSpecificOutput.additionalContext
+context-injection: plain-stdout (exit-0) | JSON-additionalContext-field
+use-for: validation, context-injection, prompt-augmentation
+
+### SessionStart
+when: startup | resume | clear | compact
+matcher-targets: startup, resume, clear, compact
+input: hook_event_name, source
+output: hookSpecificOutput.additionalContext
+env-persistence: write to $CLAUDE_ENV_FILE for subsequent bash
+use-for: context-loading, env-setup, session-init
+
+### SessionEnd
+when: session-terminates (clear | logout | prompt_input_exit | other)
+input: hook_event_name, reason
+capability: cannot-block, cleanup-only
+use-for: logging, cleanup, state-persistence
+
+### Stop
+when: main-agent-finishes (not user-interrupt)
+input: hook_event_name, stop_hook_active
+output: decision (block → continue-working), reason (required-if-blocking)
+use-for: task-completion-validation, auto-continue
+
+### SubagentStop
+when: Task-tool-subagent-finishes
+input: same-as-Stop
+output: same-as-Stop
+use-for: subagent-completion-validation
+
+### PreCompact
+when: before-context-compaction
+matcher-targets: manual, auto
+input: hook_event_name, trigger, custom_instructions
+use-for: context-preservation
+
+### Notification
+when: claude-sends-notification
+matcher-targets: permission_prompt, idle_prompt, auth_success, elicitation_dialog
+input: hook_event_name, message, notification_type
+use-for: external-notifications, logging
+
+## EXIT CODES
+0: success, stdout-parsed (JSON or plain-text)
+2: blocking-error, stderr-as-message, stdout-ignored
+other: non-blocking-error, stderr-in-verbose, continue-execution
+
+## COMMON OUTPUT FIELDS
+continue: true (default) | false (stops-claude)
+stopReason: shown-when-continue=false
+suppressOutput: hide-stdout-from-transcript
+systemMessage: warning-shown-to-user
+decision: block | undefined (event-specific)
+reason: explanation (required-with-block)
+
+## PLUGIN HOOKS
+manifest: hooks/hooks.json (default) | custom-path-in-plugin.json
+env-vars: ${CLAUDE_PLUGIN_ROOT}, ${CLAUDE_PROJECT_DIR}
+merge: with-user/project-hooks, all-matching-run-parallel
+
+## MCP TOOLS
+pattern: mcp__<server>__<tool>
+examples: mcp__memory__create_entities, mcp__filesystem__read_file
+match: mcp__memory__.*, mcp__.*__write.*
+
+## EXECUTION
+timeout: 60s-default, configurable
+parallel: all-matching-hooks-run-parallel
+dedup: identical-hooks-auto-deduplicated
+env: CLAUDE_PROJECT_DIR, CLAUDE_CODE_REMOTE (true if web)
+
+## CONTEXT INJECTION PATTERNS
+
+### UserPromptSubmit (preferred)
+plain-text: stdout (exit-0) → injected-as-system-reminder
+json: { hookSpecificOutput: { additionalContext: "..." } }
+visibility: user-sees-in-verbose (ctrl+o)
+
+### SessionStart (session-init)
+same-as: UserPromptSubmit
+extra: $CLAUDE_ENV_FILE for env-persistence
+
+### PostToolUse (tool-response-augmentation)
+json: { hookSpecificOutput: { additionalContext: "..." } }
+use: augment-tool-results-with-context
+
+## PROMPT vs COMMAND COMPARISON
+
+prompt-advantages:
+  - natural-language-evaluation
+  - context-aware-decisions
+  - no-script-maintenance
+  - handles-ambiguity-well
+
+command-advantages:
+  - deterministic-behavior
+  - external-system-integration
+  - file-system-operations
+  - complex-validation-logic
+
+prefer-prompt: Stop, SubagentStop (completion-validation), ambiguous-decisions
+prefer-command: PreToolUse (validation), PostToolUse (side-effects), SessionStart (env-setup)
+
+## SECURITY
+quote-vars: always "$VAR" not $VAR
+validate-paths: block ".." traversal
+skip-sensitive: .env, .git/, keys
+absolute-paths: for script-references
