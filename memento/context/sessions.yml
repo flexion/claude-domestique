@@ -1,6 +1,8 @@
 # Session Management - Compact Reference
 # Sessions persist work context across conversation resets
 
+companion: sessions.md
+
 ## CONVENTION
 location: {git-root}/.claude/sessions/<branch-sanitized>.md
 auto-create: hook creates on first prompt for feature branches
