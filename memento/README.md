@@ -8,9 +8,9 @@ Like Leonard in *Memento*, Claude can't form long-term memories. memento gives C
 
 memento helps developers embody Flexion fundamentals across conversation boundaries:
 
-- **Lead by example** — Persists decisions and progress so nothing is lost to "fixed bug" amnesia
-- **Empower customers to adapt** — Enables team handoffs with full context of what was done and why
-- **Design as you go** — Captures evolving understanding as key details emerge during work
+- **Design as you go** — Session files are **living design documents** that evolve from requirements through implementation
+- **Lead by example** — Persists decisions and design rationale so nothing is lost to "fixed bug" amnesia
+- **Empower customers to adapt** — Enables team handoffs with full design context and history
 
 ## The Problem
 
