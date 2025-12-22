@@ -3,6 +3,8 @@
 #
 # .claude/context Format Guide - Compact Reference
 
+companion: format-guide.md
+
 ## Reading Compact YAML
 patterns:
   flow: "→" (hook → inject → refresh)
