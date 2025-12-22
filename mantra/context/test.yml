@@ -2,7 +2,8 @@
 # To modify: describe changes to Claude in natural language
 #
 # Testing Conventions - Compact Reference
-# For patterns and examples, see: test.md
+
+companion: test.md
 
 MANDATORY-REREAD: before-implementation (use-thinking-block-verification)
 

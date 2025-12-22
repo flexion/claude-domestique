@@ -1,6 +1,8 @@
 # Claude Domestique - Testing Context
 # Extends: mantra/context/test.yml (base testing conventions)
 
+companion: test.md
+
 ## FRAMEWORKS
 all-plugins: jest
 

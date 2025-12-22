@@ -2,7 +2,8 @@
 # To modify: describe changes to Claude in natural language
 #
 # Context Module Format - Compact Reference
-# For detailed examples, see: context-format.md
+
+companion: context-format.md
 
 ## Purpose
 what: modular context injection system for Claude Code
@@ -17,6 +18,7 @@ md: detailed examples, templates, edge cases (human-readable, on-demand)
 tier-1-yml: always loaded on refresh (small, frequent)
 tier-2-md: loaded on-demand when Claude needs depth (large, occasional)
 pairing: topic.yml + topic.md (yml for rules, md for elaboration)
+companion-key: 'companion: <filename>.md' (structured reference to md file)
 
 ## Loading Order
 base: plugin provides default behavior (context/)

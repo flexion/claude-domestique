@@ -2,7 +2,8 @@
 # To modify: describe changes to Claude in natural language
 #
 # Assistant Behavior - Compact Reference
-# For patterns and examples, see: behavior.md
+
+companion: behavior.md
 
 MANDATORY-REREAD: before-implementation-proposal-response (use-thinking-block)
 
