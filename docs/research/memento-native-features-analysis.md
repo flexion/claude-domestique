@@ -12,11 +12,24 @@ memento's unique value enables these Flexion fundamentals:
 
 | Fundamental | How memento Enables It |
 |-------------|----------------------|
-| **Lead by example** | Persists decisions and progress so nothing is lost to "fixed bug" amnesia |
-| **Empower customers to adapt** | Enables team handoffs with full context of what was done and why |
-| **Design as you go** | Captures evolving understanding as key details emerge during work |
+| **Design as you go** | Session file is a **living design document** that evolves from requirements through implementation |
+| **Lead by example** | Persists decisions and design rationale so nothing is lost |
+| **Empower customers to adapt** | Enables team handoffs with full design context |
 
-Native sessions store *conversation transcripts* (JSONL). memento creates *work documentation* (structured markdown) that embodies how Flexion developers communicate and hand off work.
+### Critical Use Case: Design As You Go (PRIMARY)
+
+The most important memento use case: Sessions capture iterative design BEFORE code is written.
+
+**Workflow:**
+1. **Pre-implementation design** - Hours of discussion working through requirements, inconsistencies, high-level design
+2. **Session captures design** - Decisions, trade-offs, and rationale persisted in session file
+3. **Design guides implementation** - When coding starts, session provides the design context
+4. **Implementation informs design** - Work reveals new insights → session updated with refined design
+5. **Final state** - Session contains up-to-date, consistent design document
+
+**Key insight**: The session file is a **living design document**, not just post-hoc documentation. It evolves throughout the entire lifecycle—from initial requirements through implementation.
+
+Native sessions store *conversation transcripts* (JSONL). memento creates *living design documents* (structured markdown) that embody how Flexion developers design, iterate, and communicate.
 
 ## memento's Stated Goals
 
