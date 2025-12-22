@@ -4,6 +4,14 @@
 
 The awful-but-important work that developers hate: JIRA tickets, Azure DevOps work items, commit messages, PR descriptions. Someone has to carry this load. Now Claude does.
 
+### Flexion Fundamentals
+
+onus helps developers embody Flexion fundamentals while staying in flow:
+
+- **Never compromise on quality** — Ensures proper commit messages, ticket updates, and PR descriptions
+- **Lead by example** — Handles PM accountability work so it actually gets done
+- **Empower customers to adapt** — Keeps stakeholders informed via trackers without breaking developer focus
+
 ## The Problem
 
 You're in flow. You've just solved an elegant problem. Now you need to:

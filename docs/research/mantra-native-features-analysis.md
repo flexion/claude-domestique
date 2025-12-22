@@ -4,6 +4,18 @@
 
 **Key Discovery**: Claude Code's native features cover ~70% of mantra's goals. The remaining value is in sibling plugin discovery and YAML compactness. Most critically, **SessionStart fires with `source: "compact"` after compaction**, making periodic re-injection potentially unnecessary.
 
+## Flexion Fundamentals Alignment
+
+mantra's unique value enables these Flexion fundamentals:
+
+| Fundamental | How mantra Enables It |
+|-------------|----------------------|
+| **Be skeptical and curious** | Anti-sycophancy rules keep Claude questioning assumptions, not pattern-matching |
+| **Never compromise on quality** | Consistent behavioral standards from turn 1 to turn 100, preventing drift |
+| **Listen with humility** | Peer-not-subordinate stance enforced; Claude defers to evidence over agreement |
+
+Native features provide *capability* (memory loading, status line). mantra provides *behavioral guardrails* that align Claude with how Flexion developers work.
+
 ## mantra's Stated Goals
 
 From README:
@@ -85,73 +97,192 @@ This means:
 
 **Implication**: Periodic re-injection (every N prompts) may be unnecessary. Context is re-injected when it matters most: after compaction.
 
-## Proposed Architecture Revision
+## Goal-Focused Analysis
 
-### Option A: Minimal Hook (Recommended)
+The question isn't "what can mantra do?" but "what delivers the Flexion fundamentals to the installed project?"
+
+### What Actually Delivers Value
+
+| Flexion Fundamental | What Delivers It | Simplest Implementation |
+|---------------------|------------------|------------------------|
+| **Be skeptical and curious** | Anti-sycophancy rules in `behavior.yml` | Rules content, not mechanism |
+| **Never compromise on quality** | Consistent behavioral standards | Rules loaded at session start |
+| **Listen with humility** | Peer-not-subordinate rules | Rules content, not refresh frequency |
+
+**Key Insight**: The *content* (behavioral rules) delivers value. The *mechanism* (hooks, periodic refresh) is implementation overhead. A project gets the Flexion value by having the right rules loaded, not by having them refreshed every N prompts.
+
+### Native Features That Deliver This
+
+1. **`.claude/rules/*.md`** - Auto-loaded, hierarchical, path-scoped
+2. **CLAUDE.md** - Auto-loaded at session start
+3. **SessionStart(compact)** - Fires after compaction, enabling re-injection when needed
+
+### What Remains Unique to mantra
+
+1. **Sibling plugin discovery** - Loading context from memento/onus when co-installed
+2. **YAML compactness** - ~89% token reduction vs markdown prose
+3. **Curated behavioral rules** - The actual content that enforces skeptical-first, evidence-based behavior
+
+## Simplest Architecture Recommendation
+
+**Principle**: Use native features for loading; use plugin only for what native can't do.
+
+### The Update Problem
+
+When mantra ships improved behavioral rules, how do installed projects get updates?
+
+| Approach | Update Mechanism | Pros | Cons |
+|----------|-----------------|------|------|
+| **CLAUDE.md instructions** | Points to plugin path | Automatic; keeps YML compact | Requires CLAUDE.md modification |
+| **Symlink to plugin** | Automatic | No version tracking | Converts YML→MD; loses compactness |
+| **Copy with version marker** | SessionStart checks version | Explicit control | Still needs hook; manual step |
+| **PostInstall hook** | Runs on plugin update | Automatic | [Not implemented yet](https://github.com/anthropics/claude-code/issues/11240) |
+
+### Discovery: CLAUDE.md Instruction Pattern
+
+A working example from `client-backend/CLAUDE.md` shows a simpler approach:
+
+```markdown
+## ⚠️ MANDATORY - Load Immediately (Every Session)
+
+**YOU MUST read these files in parallel on EVERY session start using a single message with multiple Read tool calls:**
+
+.claude/context/README.yml       - How to read compact YAML
+.claude/context/sessions.yml     - Session workflow & branch tracking
+.claude/context/git.yml          - Git workflow rules
+.claude/context/behavior.yml     - AI behavior/preferences
+.claude/context/test.yml         - Testing strategy
+```
+
+**How it works:**
+1. CLAUDE.md is auto-loaded by native loading (no hooks)
+2. CLAUDE.md contains instructions telling Claude to read YML files
+3. Claude complies and reads the YML files at session start
+4. YML content loaded into context (token-efficient format preserved)
+
+**Key insight:** The "loading mechanism" IS Claude following instructions. No symlinks, no hooks, just CLAUDE.md telling Claude what to read.
+
+### Recommended: Instruction-Based Distribution
+
+**`/mantra:init` adds to project's CLAUDE.md:**
+
+```markdown
+## ⚠️ MANDATORY - Mantra Context (Load Every Session)
+
+**Read these files at session start using parallel Read calls:**
+
+~/.claude/plugins/mantra@claude-domestique/context/behavior.yml
+~/.claude/plugins/mantra@claude-domestique/context/test.yml
+~/.claude/plugins/mantra@claude-domestique/context/format-guide.yml
+```
+
+**Update mechanism:**
+- Instructions point to plugin installation path
+- When plugin updates, YML files at that path change
+- Same instructions → new content loaded automatically
+
+### Implementation: `/mantra:init` Skill
+
+```javascript
+// Get plugin installation path
+const pluginsFile = path.join(os.homedir(), '.claude/plugins/installed_plugins.json');
+const plugins = JSON.parse(fs.readFileSync(pluginsFile, 'utf8'));
+const mantraPlugin = plugins.find(p => p.name === 'mantra@claude-domestique');
+
+// Read existing CLAUDE.md or create new
+const claudeMdPath = path.join(cwd, 'CLAUDE.md');
+let content = fs.existsSync(claudeMdPath) ? fs.readFileSync(claudeMdPath, 'utf8') : '';
+
+// Check if mantra section already exists
+if (content.includes('## ⚠️ MANDATORY - Mantra Context')) {
+  console.log('✅ mantra already configured in CLAUDE.md');
+  return;
+}
+
+// Add mantra section
+const mantraSection = `
+## ⚠️ MANDATORY - Mantra Context (Load Every Session)
+
+**Read these files at session start using parallel Read calls:**
+
+${mantraPlugin.path}/context/behavior.yml
+${mantraPlugin.path}/context/test.yml
+${mantraPlugin.path}/context/format-guide.yml
+`;
+
+content = mantraSection + '\n' + content;
+fs.writeFileSync(claudeMdPath, content);
+
+console.log('✅ mantra context instructions added to CLAUDE.md');
+console.log('📍 YML files will auto-update when plugin updates');
+```
+
+### Why This Is Better Than Symlinks
+
+| Aspect | Symlinks | CLAUDE.md Instructions |
+|--------|----------|------------------------|
+| **YML compactness** | ❌ Must convert to MD | ✅ Keep YML (89% token savings) |
+| **Native loading** | ✅ Auto-discovered | ✅ Via CLAUDE.md |
+| **Updates** | ✅ Automatic | ✅ Automatic |
+| **Hooks needed** | ⚠️ Health check | ❌ None for loading |
+| **Cross-platform** | ⚠️ Symlink issues | ✅ Just file paths |
+
+### Architecture After Migration
 
 ```
-Native Features:
-├── ~/.claude/rules/behavior.md      ← Behavioral rules (native loading)
-├── .claude/rules/*.md               ← Project rules (native, path-scoped)
-├── ~/.claude/statusline.sh          ← Display script (native)
-└── CLAUDE.md                        ← Project context (native)
+Native (handles automatically):
+├── CLAUDE.md                        ← Auto-loaded; contains read instructions
+└── .claude/rules/*.md               ← Project rules (auto-loaded)
 
-mantra Hook (minimal):
-├── SessionStart                     ← Inject sibling plugin context only
-└── (remove UserPromptSubmit)        ← Not needed for periodic refresh
+mantra (minimal plugin):
+├── context/*.yml                    ← Curated behavioral rules (YML preserved!)
+├── /mantra:init skill               ← Adds instructions to CLAUDE.md
+└── SessionStart hook                ← Sibling discovery only (optional)
 ```
 
-**What changes:**
-1. Move behavioral rules to `~/.claude/rules/`
-2. Use native status line for display
-3. Keep hook only for sibling plugin discovery
-4. Remove periodic refresh logic
+### Implementation Changes
 
-### Option B: Status Line + Minimal Hook
+| Current | Recommended | Rationale |
+|---------|-------------|-----------|
+| UserPromptSubmit hook for periodic refresh | **Remove** | CLAUDE.md instructions + SessionStart(compact) handles drift |
+| Hook-based context injection | **CLAUDE.md instructions** | Claude reads YML files as instructed |
+| Hook-based status display | **Native statusline** | Simpler, no hook overhead |
+| Custom context loading | **CLAUDE.md instructions** | Native loading triggers instructions |
 
-```
-~/.claude/statusline.sh              ← Shows context freshness
-mantra/hooks/context-refresh.js      ← Writes state for statusline + sibling discovery
-```
+### Migration Path
 
-Status line script reads mantra's state file to display freshness.
+1. **Immediate**: Update `/mantra:init` to add read instructions to CLAUDE.md
+2. **Short-term**: Keep context/*.yml (no conversion needed!)
+3. **Medium-term**: Simplify SessionStart hook to sibling discovery only
+4. **Long-term**: Remove UserPromptSubmit hook entirely; CLAUDE.md instructions are sufficient
 
-### Option C: Keep Current Design
+## Conclusion
 
-If periodic re-injection provides value BEYOND SessionStart(compact), keep current design but:
-1. Validate the hypothesis: Does SessionStart(compact) actually fire with full context?
-2. Add PreCompact hook to save critical state
-3. Consider reducing refresh interval since SessionStart(compact) handles major drift
+mantra's job is to deliver skeptical-first, evidence-based behavioral guardrails to projects. The **content** delivers this value—the mechanism should be as simple as possible.
 
-## Questions to Validate
+### The CLAUDE.md Instruction Pattern (Best of Both Worlds)
 
-1. **Does SessionStart(compact) re-inject CLAUDE.md?**
-   - If yes, periodic refresh is redundant
-   - If no, mantra's value is confirmed
+| Format | Token Efficiency | Native Loading | Update Mechanism |
+|--------|-----------------|----------------|------------------|
+| **YAML + Hook injection** | ✅ ~89% reduction | ❌ Requires hook | Hook injects on SessionStart |
+| **Markdown + Symlinks** | ❌ Verbose | ✅ Auto-loaded | Symlink auto-updates |
+| **YAML + CLAUDE.md instructions** | ✅ ~89% reduction | ✅ Via CLAUDE.md | ✅ Auto-updates |
 
-2. **Is YAML compactness worth maintaining?**
-   - `.claude/rules/` uses markdown (verbose)
-   - `.claude/context/` uses YAML (compact)
-   - Trade-off: token efficiency vs native features
+**Discovery**: CLAUDE.md can instruct Claude to read YML files. This preserves token efficiency AND enables native loading AND auto-updates.
 
-3. **How often does compaction actually occur?**
-   - If rare, periodic refresh has value
-   - If frequent, SessionStart(compact) is sufficient
+### Final Architecture
 
-## Recommendation
+- **Keep**: Curated behavioral rules in YML format (token-efficient!)
+- **New**: `/mantra:init` adds read instructions to project's CLAUDE.md
+- **Delegate to native**: CLAUDE.md auto-loading triggers instructions
+- **Remove**: UserPromptSubmit periodic refresh, custom hook-based injection
 
-**Short-term**: Validate whether SessionStart(compact) properly re-injects context.
-
-**If yes (SessionStart handles it)**:
-- Deprecate periodic refresh
-- Move behavioral rules to native `~/.claude/rules/`
-- Keep hook minimal (sibling discovery only)
-- Use native status line for display
-
-**If no (context lost after compact)**:
-- Keep current design
-- Add PreCompact hook to preserve critical context
-- Consider adding custom instructions to compact: `/compact preserve behavioral rules`
+**The simplest reliable mantra:**
+1. `/mantra:init` adds instructions to CLAUDE.md pointing to plugin's context/*.yml
+2. Native CLAUDE.md loading triggers the instructions
+3. Claude reads YML files as instructed (token-efficient)
+4. Plugin updates automatically propagate (same paths, new content)
+5. SessionStart hook only needed for sibling discovery (optional)
 
 ## Sources
 

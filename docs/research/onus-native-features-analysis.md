@@ -4,6 +4,18 @@
 
 **Key Discovery**: Native Claude Code has extensive work-item capabilities via `gh` CLI and MCP servers. onus provides a **convenience layer**: zero-config branch→issue mapping, automatic context injection, and multi-platform abstraction. The unique value is workflow automation, not raw capability.
 
+## Flexion Fundamentals Alignment
+
+onus's unique value enables these Flexion fundamentals:
+
+| Fundamental | How onus Enables It |
+|-------------|----------------------|
+| **Never compromise on quality** | Ensures proper commit messages, ticket updates, and PR descriptions |
+| **Lead by example** | Handles PM accountability work so it actually gets done |
+| **Empower customers to adapt** | Keeps stakeholders informed via trackers without breaking developer focus |
+
+Native tools provide *raw capability* (fetch issues, create PRs). onus provides *workflow automation* that ensures the "awful-but-important" accountability work aligns with how Flexion developers maintain quality.
+
 ## onus's Stated Goals
 
 From README:
@@ -186,48 +198,111 @@ But this requires:
 - No branch auto-detection
 - No caching
 
-## Recommendations
+## Goal-Focused Analysis
 
-### Keep onus's Core Value
+The question isn't "what can onus do?" but "what delivers the Flexion fundamentals to the installed project?"
 
-onus provides **workflow automation**:
-1. **Branch → Issue auto-detection** (unique)
-2. **Session integration** (unique with memento)
-3. **Multi-platform abstraction** (unique)
-4. **Acceptance criteria tracking** (unique)
+### What Actually Delivers Value
 
-### Potential Simplifications
+| Flexion Fundamental | What Delivers It | Simplest Implementation |
+|---------------------|------------------|------------------------|
+| **Never compromise on quality** | Proper commit format, PR descriptions | Git convention rules (could be just `.claude/rules/`) |
+| **Lead by example** | PM work actually gets done | Reminders + easy invocation (skills) |
+| **Empower customers to adapt** | Stakeholder visibility via trackers | Issue updates when milestones hit |
 
-1. **Use gh CLI directly for GitHub ops**
-   - `/onus:fetch` could wrap `gh issue view`
-   - PR creation could use `gh pr create`
+**Key Insight**: Most of onus's "quality" value is just **git conventions** (commit format, PR template). This could be delivered by `.claude/rules/git.md` without any plugin. The unique onus value is **workflow automation**: zero-friction from branch to issue context.
 
-2. **Document MCP setup for JIRA/Azure**
-   - Instead of building fetchers, document MCP setup
-   - Use MCPs for actual API calls
+### What Native Features Already Provide
 
-3. **Focus on unique value**
-   - Branch parsing
-   - Context injection
-   - Session integration
-   - Format enforcement
+| Capability | Native Solution | Sufficient? |
+|------------|-----------------|-------------|
+| Fetch GitHub issues | `gh issue view #N` | ✅ Yes |
+| Create PRs | `gh pr create` | ✅ Yes |
+| Commit with format | Manual with rules | ✅ If rules loaded |
+| JIRA/Azure fetch | MCPs (setup required) | ⚠️ Depends on MCP maturity |
 
-### Architecture Options
+### What Remains Unique to onus
 
-**Option A: Thin Wrapper (Recommended)**
-- Keep branch parsing and context injection
-- Delegate actual fetching to gh CLI / MCPs
-- Focus on workflow, not API calls
+1. **Branch → issue auto-detection** - Extract `#42` from `issue/feature-42/desc` automatically
+2. **Session integration** - Populate memento session from issue (bridges the two)
+3. **Cached issue context** - Don't re-fetch every session start
+4. **Multi-platform abstraction** - Same workflow for GitHub/JIRA/Azure
 
-**Option B: Full Integration**
-- Keep current architecture
-- Add MCP-based fetchers for JIRA/Azure
-- More complex but self-contained
+## Simplest Architecture Recommendation
 
-**Option C: Slash Commands Only**
-- Convert to slash commands
-- Use gh CLI / MCPs directly
-- Lose auto-injection on session start
+**Principle**: Delegate fetching to native tools; focus on workflow glue.
+
+### What onus Should Be
+
+```
+onus (workflow glue):
+├── Branch parsing                   ← Extract issue from branch name
+├── Issue caching                    ← Store fetched issue locally
+├── Session integration              ← Populate memento Goal/Acceptance from issue
+└── Context injection                ← SessionStart reminds about issue
+
+Skills (user-invoked):
+├── /onus:fetch                      ← Fetch issue, populate session
+├── /onus:init                       ← Setup config
+└── (future) /onus:update            ← Push comment to tracker
+```
+
+### What onus Should NOT Be
+
+| Temptation | Why Avoid |
+|------------|-----------|
+| Custom GitHub API client | `gh` CLI does this better |
+| Custom JIRA/Azure clients | MCPs do this; don't duplicate |
+| PR creation automation | `gh pr create` is native; just enforce format via rules |
+| Complex state management | Cache issue, that's it |
+
+### Git Conventions: Plugin or Native?
+
+**Current**: onus owns `git.yml` (commit format, branch naming, PR format)
+
+**Question**: Should this be onus or just `.claude/rules/git.md`?
+
+| Approach | Pros | Cons |
+|----------|------|------|
+| Keep in onus | Packaged with workflow automation | Extra plugin just for rules |
+| Move to native rules | Simpler, native loading | Loses plugin coherence |
+
+**Recommendation**: Keep git conventions in onus context, but recognize they could work standalone. The packaging is valuable—install onus, get the full "PM accountability" workflow.
+
+### Simplest `/onus:fetch` Implementation
+
+```markdown
+# /onus:fetch skill
+
+1. Detect platform from branch or config
+2. GitHub: `gh issue view $N --json title,body,labels`
+3. JIRA/Azure: Use MCP or WebFetch
+4. Cache result in `.claude/onus/issue-$N.json`
+5. Populate memento session Goal from title
+6. Extract acceptance criteria from body
+7. Output: "📍 Issue #N loaded. Acceptance criteria tracked."
+```
+
+No custom HTTP clients. No complex auth handling. Just wrap native tools.
+
+### Migration Path
+
+1. **Immediate**: Simplify `/onus:fetch` to wrap `gh` CLI
+2. **Short-term**: Document MCP setup for JIRA/Azure instead of building fetchers
+3. **Medium-term**: Validate if SessionStart hook is needed vs just using `/onus:fetch`
+4. **Long-term**: Consider if git rules should live in onus or be standalone
+
+## Conclusion
+
+onus's job is to ensure the "awful-but-important" PM work gets done. The **workflow automation** delivers this—zero-friction from branch name to issue context to session file to properly-formatted commit.
+
+As Claude Code's native capabilities expand (gh CLI, MCPs), onus should simplify:
+
+- **Keep**: Branch→issue detection, session integration, cached context, git conventions
+- **Delegate to native**: Issue fetching (gh/MCP), PR creation (gh), status updates (gh)
+- **Avoid**: Custom API clients, complex multi-platform abstraction, duplicate capabilities
+
+The simplest onus is: parse branch → fetch with native tools → cache → integrate with memento. Everything else is optional.
 
 ## Summary Matrix
 
