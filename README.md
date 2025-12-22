@@ -14,10 +14,10 @@ Like a cycling domestique, it carries the water, stays focused on your goals, an
 
 Like Leonard in *Memento*, Claude can't form long-term memories. Context window fills up, conversation resets, everything vanishes. **memento** gives Claude its tattoos—session files that persist decisions, progress, and context across resets.
 
-- 1 Session = 1 Issue = 1 Branch
-- Automatic context restoration on startup
-- Survives conversation resets and compaction
-- Team handoffs with full context
+Helps developers embody Flexion fundamentals across conversation boundaries:
+- **Lead by example** — Persists decisions and progress so nothing is lost to "fixed bug" amnesia
+- **Empower customers to adapt** — Enables team handoffs with full context of what was done and why
+- **Design as you go** — Captures evolving understanding as key details emerge during work
 
 ### [mantra](./mantra) — Context Refresh
 
@@ -25,10 +25,10 @@ Like Leonard in *Memento*, Claude can't form long-term memories. Context window 
 
 You've written the perfect CLAUDE.md. Claude reads it. Claude agrees. By turn 47, Claude ignores half of it. **mantra** periodically re-injects behavioral guidance before it fades into the abyss of distant tokens.
 
-- Session start and periodic refresh
-- Anti-sycophancy rules (skeptical-peer, not helpful-subordinate)
-- Evidence-based troubleshooting enforcement
-- Freshness indicator on every prompt
+Helps developers embody Flexion fundamentals throughout long sessions:
+- **Be skeptical and curious** — Keeps Claude questioning assumptions and seeking evidence, not pattern-matching
+- **Never compromise on quality** — Maintains consistent standards from turn 1 to turn 100
+- **Listen with humility** — Enforces peer-not-subordinate stance, deferring to evidence over agreement
 
 ### [onus](./onus) — Work-Item Automation
 
@@ -36,10 +36,10 @@ You've written the perfect CLAUDE.md. Claude reads it. Claude agrees. By turn 47
 
 JIRA tickets, Azure DevOps work items, commit messages, PR descriptions. The awful-but-important work that kills your flow. **onus** handles the project management bureaucracy so you can code.
 
-- Fetches issues from GitHub, JIRA, Azure DevOps
-- Auto-populates session files with requirements
-- Generates commit messages and PR descriptions
-- Bidirectional sync with trackers
+Helps developers embody Flexion fundamentals while staying in flow:
+- **Never compromise on quality** — Ensures proper commit messages, ticket updates, and PR descriptions
+- **Lead by example** — Handles PM accountability work so it actually gets done
+- **Empower customers to adapt** — Keeps stakeholders informed via trackers without breaking developer focus
 
 ---
 

@@ -4,6 +4,14 @@
 
 Like Leonard in *Memento*, Claude can't form long-term memories. memento gives Claude its tattoos—session files that persist decisions, progress, and context across conversation resets.
 
+### Flexion Fundamentals
+
+memento helps developers embody Flexion fundamentals across conversation boundaries:
+
+- **Lead by example** — Persists decisions and progress so nothing is lost to "fixed bug" amnesia
+- **Empower customers to adapt** — Enables team handoffs with full context of what was done and why
+- **Design as you go** — Captures evolving understanding as key details emerge during work
+
 ## The Problem
 
 In Christopher Nolan's *Memento* (2000), Leonard Shelby suffers from anterograde amnesia—he can't form new memories. Every few minutes, his slate wipes clean. To function, he tattoos critical facts on his body and leaves himself Polaroids and notes.

@@ -8,6 +8,14 @@ Claude is brilliant. Claude is helpful. Claude also has the memory of a goldfish
 
 **mantra** solves this by periodically re-injecting key instruction files into Claude's working context—reinforcing the behavioral guidance before it fades into the abyss of distant tokens.
 
+### Flexion Fundamentals
+
+mantra helps developers embody Flexion fundamentals throughout long sessions:
+
+- **Be skeptical and curious** — Keeps Claude questioning assumptions and seeking evidence, not pattern-matching
+- **Never compromise on quality** — Maintains consistent standards from turn 1 to turn 100
+- **Listen with humility** — Enforces peer-not-subordinate stance, deferring to evidence over agreement
+
 ## Features
 
 - **Session start refresh** - Injects context immediately when sessions start, resume, or reset
