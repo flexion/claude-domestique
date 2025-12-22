@@ -6,6 +6,18 @@
 
 A similar open-source project ([claude-sessions](https://github.com/iannuttall/claude-sessions)) validates this need exists.
 
+## Flexion Fundamentals Alignment
+
+memento's unique value enables these Flexion fundamentals:
+
+| Fundamental | How memento Enables It |
+|-------------|----------------------|
+| **Lead by example** | Persists decisions and progress so nothing is lost to "fixed bug" amnesia |
+| **Empower customers to adapt** | Enables team handoffs with full context of what was done and why |
+| **Design as you go** | Captures evolving understanding as key details emerge during work |
+
+Native sessions store *conversation transcripts* (JSONL). memento creates *work documentation* (structured markdown) that embodies how Flexion developers communicate and hand off work.
+
 ## memento's Stated Goals
 
 From README:
@@ -112,68 +124,106 @@ The open-source [claude-sessions](https://github.com/iannuttall/claude-sessions)
 
 This validates that the need memento addresses is real and not covered by native features.
 
-## What memento Could Leverage
+## Goal-Focused Analysis
 
-### 1. Status Line (Native)
-Replace hook status output with native status line script:
-```bash
-# ~/.claude/statusline.sh
-#!/bin/bash
-input=$(cat)
-BRANCH=$(git branch --show-current 2>/dev/null)
-if [ -f ".claude/sessions/${BRANCH//\//-}.md" ]; then
-  echo "📂 Session: ${BRANCH//\//-}.md"
-else
-  echo "📂 No session"
-fi
+The question isn't "what can memento do?" but "what delivers the Flexion fundamentals to the installed project?"
+
+### What Actually Delivers Value
+
+| Flexion Fundamental | What Delivers It | Simplest Implementation |
+|---------------------|------------------|------------------------|
+| **Lead by example** | Git-committed session files that persist decisions | Structured markdown in `.claude/sessions/` |
+| **Empower customers to adapt** | Team-readable handoff documentation | Human-readable format, not JSONL |
+| **Design as you go** | Evolving session log, next steps, blockers | Template sections that capture learning |
+
+**Key Insight**: The *session file format* delivers value. A teammate checking out a branch can read `.claude/sessions/feature-42.md` and understand what was done, why, and what's next. Native transcripts (JSONL) cannot provide this.
+
+### Native Features That Don't Replace This
+
+| Native Feature | Why It's Different |
+|----------------|-------------------|
+| `~/.claude/projects/*.jsonl` | Machine-readable transcript, not human-readable documentation |
+| `claude --resume` | Resumes YOUR conversation, doesn't help teammates |
+| Checkpoints | Point-in-time snapshots, not structured knowledge transfer |
+| Branch filter (`B` key) | Filters sessions, doesn't create branch→session mapping |
+
+### What Remains Unique to memento
+
+1. **Structured session files** - Goal, Log, Decisions, Next Steps, Files Changed
+2. **Git-committed documentation** - `.claude/sessions/` lives in repo, not `~/.claude/`
+3. **Branch→session mapping** - Automatic lookup from branch name
+4. **Team handoffs** - Readable by any teammate, not user-specific
+
+## Simplest Architecture Recommendation
+
+**Principle**: memento IS the documentation layer. Keep it simple; don't over-engineer.
+
+```
+memento (core deliverable):
+├── .claude/sessions/*.md            ← Structured session files (THE VALUE)
+├── .claude/branches/*               ← Branch→session mapping
+└── SessionStart hook                ← Remind about session file
+
+Skills (user-invoked):
+├── /memento:init                    ← Create directories
+└── /memento:session                 ← Create/update/show session
 ```
 
-### 2. transcript_path (Hook Data)
-Could read native transcript to auto-extract:
-- Recent tool usages → Files Changed
-- Key decisions from conversation
-- Auto-populate session log
+### Reliability Over Simplicity
 
-### 3. SessionStart Sources
-Handle all sources for context restoration:
-- `startup` - New session start
-- `resume` - Returning to existing session
-- `clear` - After /clear
-- `compact` - **Critical**: After compaction, remind about session file
+**Critical insight**: Users don't reliably invoke skills manually. If the Flexion goal is "Lead by example" (decisions persist), the mechanism must **ensure** documentation happens, not hope users remember.
 
-### 4. Git Branch Filter
-Native picker already has `B` to filter by branch - document this.
+| Approach | Reliability | Why |
+|----------|-------------|-----|
+| Skills only (`/memento:session`) | ❌ Low | Users forget; session files go stale |
+| Hooks with reminders | ✅ High | Persistent prompts; hard to ignore |
+| Automatic updates | ⚠️ Medium | May capture noise; less intentional |
 
-## Architecture Recommendation
+**Recommendation**: Hooks are essential for reliability. The hook's job is to make session updates **unavoidable** without being annoying.
 
-### Keep memento's Core Value
-memento provides **documentation**, not **transcription**:
-- Human-readable
-- Git-committed
-- Branch-organized
-- Team-shareable
+### What Hooks Should Do
 
-Native sessions don't replace this.
+| Trigger | Hook Action | Purpose |
+|---------|-------------|---------|
+| **SessionStart** | Show session path, Next Steps | Context restoration |
+| **SessionStart(compact)** | Remind to check session accuracy | Post-compaction recovery |
+| **Branch switch** | Prompt for session file if missing | Auto-create for new work |
+| **Stop (after commits)** | Suggest session update | Capture milestone |
 
-### Potential Enhancements
+### What memento Could Leverage (Native)
 
-1. **Auto-sync session name** - When creating memento session, also `/rename` native session to match
+1. **Native statusline** - Persistent session indicator (supplements hooks, doesn't replace)
+   ```bash
+   # ~/.claude/statusline.sh
+   BRANCH=$(git branch --show-current 2>/dev/null)
+   SESSION=".claude/sessions/${BRANCH//\//-}.md"
+   [ -f "$SESSION" ] && echo "📂 ${SESSION##*/}" || echo "📂 No session"
+   ```
 
-2. **Transcript mining** - Read `transcript_path` to auto-suggest:
-   - Files changed (from Write/Edit tool uses)
-   - Decisions made (extract from conversation)
+2. **SessionStart(compact)** - Already fires; use it to remind about session freshness
 
-3. **Native status line** - Move status display to native statusline feature
+3. **Stop hook** - Detect commits and suggest session update (milestone trigger)
 
-4. **Checkpoint integration** - Link memento sessions to native checkpoints for rewind
+### Migration Path
 
-### Minimal Changes Needed
+1. **Immediate**: Keep hooks for reliability; they're essential
+2. **Short-term**: Add native statusline as persistent indicator (supplement, not replace)
+3. **Medium-term**: Explore Stop hook for commit-triggered session prompts
+4. **Long-term**: Explore transcript mining to suggest "Files Changed" (reduce manual work)
 
-memento is already well-positioned:
-- Hooks provide session_id and transcript_path
-- Could enhance with transcript mining
-- Status line could migrate to native
-- Core value (documentation layer) is unique
+## Conclusion
+
+memento's job is to deliver team-shareable work documentation. The **session file format** is the value—it enables "Lead by example" (decisions persist), "Empower customers to adapt" (teammates can read it), and "Design as you go" (captures learning).
+
+**Reliability is paramount.** Skills alone won't ensure documentation happens. Hooks provide the persistent reminders that make session updates unavoidable.
+
+As Claude Code's native features expand, memento should:
+
+- **Keep**: Session file format, branch→session mapping, git-committed storage, **hooks for reliability**
+- **Delegate to native**: Status display (supplement), compaction handling
+- **Explore**: Stop hook for milestone detection, transcript mining for auto-suggestions
+
+The simplest **reliable** memento is: session file template + hooks that ensure updates happen + skills for manual invocation. Reliability trumps simplicity.
 
 ## Summary Matrix
 
