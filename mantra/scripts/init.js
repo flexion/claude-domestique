@@ -15,6 +15,7 @@ const path = require('path');
 // Find plugin root (where this script lives is scripts/, go up one)
 const PLUGIN_ROOT = path.join(__dirname, '..');
 const RULES_DIR = path.join(PLUGIN_ROOT, 'rules');
+const CONTEXT_DIR = path.join(PLUGIN_ROOT, 'context');
 
 /**
  * Initialize .claude/rules in target directory
@@ -127,13 +128,73 @@ function init(targetDir = process.cwd(), options = {}) {
   if (updated > 0) console.log(`  Updated: ${updated}`);
   if (skipped > 0) console.log(`  Skipped: ${skipped}`);
 
+  // Copy companion/verbose files to .claude/context/
+  const projectContextDir = path.join(targetDir, '.claude', 'context');
+
+  if (fs.existsSync(CONTEXT_DIR)) {
+    const contextFiles = fs.readdirSync(CONTEXT_DIR)
+      .filter(f => f.endsWith('.md'));
+
+    if (contextFiles.length > 0) {
+      // Create .claude/context/ directory
+      if (!fs.existsSync(projectContextDir)) {
+        fs.mkdirSync(projectContextDir, { recursive: true });
+        console.log();
+        console.log('Created: .claude/context/');
+      } else {
+        console.log();
+        console.log('Exists:  .claude/context/');
+      }
+
+      console.log();
+      console.log(`Copying ${contextFiles.length} companion files...`);
+
+      let contextCopied = 0;
+      let contextSkipped = 0;
+      let contextUpdated = 0;
+
+      for (const file of contextFiles) {
+        const srcPath = path.join(CONTEXT_DIR, file);
+        const dstPath = path.join(projectContextDir, file);
+
+        if (fs.existsSync(dstPath) && !force) {
+          const srcContent = fs.readFileSync(srcPath, 'utf8');
+          const dstContent = fs.readFileSync(dstPath, 'utf8');
+
+          if (srcContent === dstContent) {
+            console.log(`  Skip:   ${file} (unchanged)`);
+            contextSkipped++;
+          } else {
+            console.log(`  Exists: ${file} (use --force to update)`);
+            contextSkipped++;
+          }
+        } else {
+          fs.copyFileSync(srcPath, dstPath);
+          if (force && fs.existsSync(dstPath)) {
+            console.log(`  Update: ${file}`);
+            contextUpdated++;
+          } else {
+            console.log(`  Create: ${file}`);
+            contextCopied++;
+          }
+        }
+      }
+
+      console.log();
+      console.log('Companion files:');
+      console.log(`  Created: ${contextCopied}`);
+      if (contextUpdated > 0) console.log(`  Updated: ${contextUpdated}`);
+      if (contextSkipped > 0) console.log(`  Skipped: ${contextSkipped}`);
+    }
+  }
+
   console.log();
   console.log('Init complete!');
   console.log();
   console.log('How it works:');
   console.log('- .claude/rules/*.md files are auto-loaded by Claude Code');
   console.log('- Each rule file has compact YAML in frontmatter');
-  console.log('- Detailed examples in companion files (loaded on-demand)');
+  console.log('- Companion files in .claude/context/ provide detailed examples');
   console.log();
   console.log('To update rules after plugin update:');
   console.log('  Run /mantra:init --force');

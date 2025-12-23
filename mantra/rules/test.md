@@ -4,7 +4,7 @@
 #
 # Testing Conventions - Compact Reference
 
-companion: test.md
+companion: .claude/context/test.md
 
 MANDATORY-REREAD: before-implementation (use-thinking-block-verification)
 
