@@ -4,7 +4,7 @@
 #
 # Context Module Format - Compact Reference
 
-companion: context-format.md
+companion: .claude/context/context-format.md
 
 ## Purpose
 what: modular context injection system for Claude Code
