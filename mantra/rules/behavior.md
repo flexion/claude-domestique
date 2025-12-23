@@ -4,7 +4,7 @@
 #
 # Assistant Behavior - Compact Reference
 
-companion: behavior.md
+companion: .claude/context/behavior.md
 
 MANDATORY-REREAD: before-implementation-proposal-response (use-thinking-block)
 

@@ -4,7 +4,7 @@
 #
 # Format Guide - Compact Reference
 
-companion: format-guide.md
+companion: .claude/context/format-guide.md
 
 ## Reading Compact YAML
 patterns:
