@@ -16,92 +16,114 @@ const COMMANDS = {
 
 // Paths
 const PACKAGE_ROOT = path.join(__dirname, '..');
-const EXAMPLES_DIR = path.join(PACKAGE_ROOT, 'examples', 'context');
-const HOOKS_DIR = path.join(PACKAGE_ROOT, 'hooks');
-const SETTINGS_FILE = path.join(PACKAGE_ROOT, 'templates', 'settings.json');
+const RULES_DIR = path.join(PACKAGE_ROOT, 'rules');
 
 /**
  * Initialize mantra in current directory
+ * @param {string[]} args - Command line arguments
+ * @param {Object} options - Options for testing
+ * @param {string} options.rulesSourceDir - Override source directory (testing only)
  */
-function initCommand(args) {
+function initCommand(args, options = {}) {
   const force = args.includes('--force');
   const cwd = process.cwd();
   const targetDir = path.join(cwd, '.claude');
-  const contextDir = path.join(targetDir, 'context');
-  const hooksDir = path.join(targetDir, 'hooks');
+  const rulesDir = path.join(targetDir, 'rules');
+  const rulesSourceDir = options.rulesSourceDir || RULES_DIR;
 
   console.log('Initializing mantra...\n');
 
-  // Check if .claude already exists
-  if (fs.existsSync(targetDir) && !force) {
-    console.log('⚠️  .claude/ directory already exists.');
-    console.log('   Use --force to overwrite existing files.\n');
-    console.log('   Existing files will NOT be overwritten without --force.');
+  // Check for old setup and provide migration guidance
+  const oldContextDir = path.join(targetDir, 'context');
+  if (fs.existsSync(oldContextDir)) {
+    console.log('NOTE: Detected .claude/context/ (legacy mantra setup)');
+    console.log('      The new version uses .claude/rules/ for native loading.');
+    console.log('      Your custom context files will still work.');
     console.log('');
   }
 
-  // Create directories
-  mkdirSafe(contextDir);
-  mkdirSafe(hooksDir);
-
-  // Copy example context files
-  console.log('📁 Creating context files...');
-  const exampleFiles = fs.readdirSync(EXAMPLES_DIR);
-  let copiedCount = 0;
-  let skippedCount = 0;
-
-  for (const file of exampleFiles) {
-    if (file === 'README.md') continue; // Skip the examples README
-
-    const src = path.join(EXAMPLES_DIR, file);
-    const dest = path.join(contextDir, file);
-
-    if (fs.existsSync(dest) && !force) {
-      console.log(`   ⏭️  ${file} (exists, skipped)`);
-      skippedCount++;
-    } else {
-      fs.copyFileSync(src, dest);
-      console.log(`   ✅ ${file}`);
-      copiedCount++;
+  // Check for old hooks in settings.json
+  const settingsPath = path.join(targetDir, 'settings.json');
+  if (fs.existsSync(settingsPath)) {
+    try {
+      const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+      if (settings.hooks) {
+        const hasMantraHook = JSON.stringify(settings.hooks).includes('context-refresh');
+        if (hasMantraHook) {
+          console.log('WARNING: Found old mantra hook in .claude/settings.json');
+          console.log('         Remove the context-refresh hook - it\'s no longer needed.');
+          console.log('');
+        }
+      }
+    } catch (e) {
+      // Ignore parse errors
     }
   }
 
-  // Copy hook
-  console.log('\n📁 Creating hook...');
-  const hookSrc = path.join(HOOKS_DIR, 'context-refresh.js');
-  const hookDest = path.join(hooksDir, 'context-refresh.js');
-
-  if (fs.existsSync(hookDest) && !force) {
-    console.log('   ⏭️  context-refresh.js (exists, skipped)');
-    skippedCount++;
+  // Create rules directory
+  if (!fs.existsSync(rulesDir)) {
+    fs.mkdirSync(rulesDir, { recursive: true });
+    console.log('Created: .claude/rules/');
   } else {
-    fs.copyFileSync(hookSrc, hookDest);
-    fs.chmodSync(hookDest, 0o755);
-    console.log('   ✅ context-refresh.js');
-    copiedCount++;
+    console.log('Exists:  .claude/rules/');
   }
 
-  // Copy settings
-  console.log('\n📁 Creating settings...');
-  const settingsDest = path.join(targetDir, 'settings.json');
-
-  if (fs.existsSync(settingsDest) && !force) {
-    console.log('   ⏭️  settings.json (exists, skipped)');
-    skippedCount++;
-  } else {
-    fs.copyFileSync(SETTINGS_FILE, settingsDest);
-    console.log('   ✅ settings.json');
-    copiedCount++;
+  // Check if rules source directory exists
+  if (!fs.existsSync(rulesSourceDir)) {
+    console.error('ERROR: Rules directory not found at:', rulesSourceDir);
+    console.error('       Plugin may be corrupted. Try reinstalling.');
+    process.exit(1);
   }
 
-  // Summary
+  // Get list of rule files to copy
+  const ruleFiles = fs.readdirSync(rulesSourceDir).filter(f => f.endsWith('.md'));
+
+  if (ruleFiles.length === 0) {
+    console.log('WARNING: No rule files found in plugin');
+    return;
+  }
+
+  console.log(`\nCopying ${ruleFiles.length} rule files...`);
+
+  let copied = 0;
+  let skipped = 0;
+  let updated = 0;
+
+  for (const file of ruleFiles) {
+    const srcPath = path.join(rulesSourceDir, file);
+    const dstPath = path.join(rulesDir, file);
+
+    if (fs.existsSync(dstPath) && !force) {
+      const srcContent = fs.readFileSync(srcPath, 'utf8');
+      const dstContent = fs.readFileSync(dstPath, 'utf8');
+
+      if (srcContent === dstContent) {
+        console.log(`  Skip:   ${file} (unchanged)`);
+      } else {
+        console.log(`  Exists: ${file} (use --force to update)`);
+      }
+      skipped++;
+    } else {
+      const existed = fs.existsSync(dstPath);
+      fs.copyFileSync(srcPath, dstPath);
+      if (existed) {
+        console.log(`  Update: ${file}`);
+        updated++;
+      } else {
+        console.log(`  Create: ${file}`);
+        copied++;
+      }
+    }
+  }
+
   console.log('\n---');
-  console.log(`✨ Done! ${copiedCount} files created, ${skippedCount} skipped.`);
-  console.log('\nNext steps:');
-  console.log('  1. Customize .claude/context/*.yml files for your project');
-  console.log('  2. Update companion .md files with detailed examples');
-  console.log('  3. Restart Claude Code to activate the hook');
-  console.log('\nSee FORMAT.md for context file specification.');
+  console.log(`Done! ${copied} created, ${updated} updated, ${skipped} skipped.`);
+  console.log('\nHow it works:');
+  console.log('  - .claude/rules/*.md files are auto-loaded by Claude Code');
+  console.log('  - Each rule file has compact YAML in frontmatter');
+  console.log('  - Detailed examples in companion files (loaded on-demand)');
+  console.log('\nTo update rules after plugin update:');
+  console.log('  npx mantra init --force');
 }
 
 /**
@@ -109,34 +131,30 @@ function initCommand(args) {
  */
 function helpCommand() {
   console.log(`
-mantra - Periodic context refresh for Claude Code
+mantra - Behavioral rules for Claude Code
 
 Usage:
   npx mantra <command> [options]
 
 Commands:
-  init [--force]    Initialize mantra in current directory
+  init [--force]    Initialize mantra rules in current directory
   help              Show this help message
 
 Options:
-  --force           Overwrite existing files
+  --force           Overwrite existing rule files
 
 Examples:
   npx mantra init          # Initialize in current directory
   npx mantra init --force  # Overwrite existing files
 
+How it works:
+  - Copies rule files to .claude/rules/
+  - Claude Code auto-loads these rules at session start
+  - Each rule file has compact YAML in frontmatter
+
 Documentation:
   https://github.com/flexion/claude-domestique/tree/main/mantra
 `);
-}
-
-/**
- * Create directory if it doesn't exist
- */
-function mkdirSafe(dir) {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
 }
 
 // Main
@@ -158,9 +176,7 @@ function main() {
 module.exports = {
   initCommand,
   helpCommand,
-  EXAMPLES_DIR,
-  HOOKS_DIR,
-  SETTINGS_FILE
+  RULES_DIR
 };
 
 // Run if executed directly

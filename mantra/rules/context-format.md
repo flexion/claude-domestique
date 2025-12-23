@@ -1,3 +1,4 @@
+---
 # AI-managed context file - optimized for token efficiency
 # To modify: describe changes to Claude in natural language
 #
@@ -47,3 +48,4 @@ avoid: redundancy, prose, complete sentences
 trigger: session-start, periodic (configurable interval)
 inject: all *.yml files from base + project
 skip: *.md files (loaded on-demand only)
+---

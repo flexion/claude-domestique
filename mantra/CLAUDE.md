@@ -4,65 +4,72 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**mantra** is a periodic context refresh plugin for Claude Code sessions. It addresses the problem of "context drift" where Claude gradually forgets project guidance as conversations grow longer.
+**mantra** is a behavioral rules plugin for Claude Code sessions. It provides curated rules that are auto-loaded via Claude Code's native `.claude/rules/` mechanism.
 
-Tagline: "I told you. You agreed. You forgot. Repeat."
+Tagline: "Consistent behavior from turn 1 to turn 100"
 
 ## Commands
 
-When package.json exists:
 ```bash
 npm test          # Run tests
-npm run lint      # Lint code
-npm run type-check # TypeScript checking
-npm run format    # Format code
 ```
 
 ## Architecture
 
-Plugin type: **hook** (SessionStart + UserPromptSubmit events)
+Plugin type: **native rules** (`.claude/rules/` auto-loading)
 
 Design goals:
-- Unobtrusive: minimal interference with actual work
-- Narrow scope: context refresh only
-- Fast refresh with obvious acknowledgment
-- Token-aware: don't overwhelm context with reinforcement
+- Native loading: leverages Claude Code's built-in rules mechanism
+- Token efficient: compact YAML frontmatter (~89% reduction vs prose)
+- On-demand details: companion MD files for elaboration
+- No hooks: simpler architecture, no periodic injection
 
-**Context loading order**: base → sibling plugins → project extensions → CLAUDE.md
+### Directory Structure
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed documentation.
+```
+mantra/
+├── rules/                # Frontmatter-only MD files (copied to project)
+│   ├── behavior.md       # AI behavior rules
+│   ├── test.md           # Testing conventions
+│   └── ...
+├── context/              # Companion docs (referenced on-demand)
+│   ├── behavior.md       # Detailed examples for behavior
+│   ├── test.md           # Detailed examples for testing
+│   └── ...
+├── scripts/init.js       # Init script (copies rules to project)
+├── commands/init.md      # /mantra:init skill
+└── bin/cli.js            # npx mantra CLI
+```
+
+### Rule File Format
+
+Each rule file is a **frontmatter-only markdown file**:
+
+```markdown
+---
+companion: behavior.md
+
+assess-first: correctness, architecture, alternatives
+stance: skeptical-default, find-problems-not-agreement
+# ... compact YAML rules
+---
+```
+
+### How Init Works
+
+`/mantra:init` or `npx mantra init`:
+1. Creates `.claude/rules/` in project
+2. Copies `rules/*.md` files from plugin
+3. Claude Code auto-loads these at session start
 
 ## Context System
 
-Context uses a two-tier pattern:
+Rules use a two-tier pattern:
 
-| File Type | Purpose | Target |
-|-----------|---------|--------|
-| `*.yml` | Compact assertions, rules | Machine (Claude) |
-| `*.md` | Detailed examples, templates | Human & Claude deep-dive |
-
-**Base context** (shipped with plugin in `context/`):
-- `behavior.yml` - AI behavior rules (skeptical-first, evidence-based)
-- `context-format.yml` - Context format specification
-- `format-guide.yml` - Compact YAML conventions
-
-**Project context** (your `.claude/context/`):
-- `project.yml` - Project-specific context (domain, architecture)
-- `git.yml` - Git conventions (HEREDOC commits, no attribution)
-- `sessions.yml` - Session management (branch-session mapping)
-
-## Session Management
-
-1 session = 1 issue = 1 branch = 1 metadata file
-
-**Locations:**
-- `.claude/sessions/` - Detailed session files (goal, log, next steps)
-- `.claude/branches/` - Ultra-compact branch metadata (maps branch to session)
-
-**"What's next?" workflow:**
-1. `git branch --show-current`
-2. Read `.claude/branches/<branch-sanitized>`
-3. Read `.claude/sessions/<session-file>.md` for Next Steps
+| File Type | Purpose | Location |
+|-----------|---------|----------|
+| `rules/*.md` | Compact rules (frontmatter) | Copied to project |
+| `context/*.md` | Detailed examples | Plugin directory (on-demand) |
 
 ## Git Conventions
 
@@ -80,10 +87,3 @@ EOF
 ```
 
 **PRs:** Title matches commit format (`#N - lowercase desc` or `chore - lowercase desc`)
-
-## Behavior Expectations
-
-- Assess-first: evaluate correctness, architecture, alternatives, risks before agreement
-- Skeptical default: find problems, don't seek agreement
-- Evidence-based troubleshooting: minimum 3 documented examples, no guessing
-- Update session files: after milestones, before pauses, before commits
