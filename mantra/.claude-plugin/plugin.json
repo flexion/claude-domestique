@@ -1,6 +1,6 @@
 {
   "name": "mantra",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Behavioral rules for Claude Code sessions - native .claude/rules/ auto-loading with compact YAML frontmatter",
   "author": {
     "name": "David Puglielli"
