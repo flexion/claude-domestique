@@ -1,7 +1,7 @@
 {
   "name": "@claude-domestique/mantra",
-  "version": "0.1.12",
-  "description": "Periodic context refresh plugin for Claude Code sessions",
+  "version": "0.2.0",
+  "description": "Behavioral rules for Claude Code sessions - native .claude/rules/ auto-loading",
   "main": "index.js",
   "bin": {
     "mantra": "./bin/cli.js"

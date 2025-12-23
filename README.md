@@ -19,11 +19,11 @@ Helps developers embody Flexion fundamentals across conversation boundaries:
 - **Empower customers to adapt** — Enables team handoffs with full context of what was done and why
 - **Design as you go** — Captures evolving understanding as key details emerge during work
 
-### [mantra](./mantra) — Context Refresh
+### [mantra](./mantra) — Behavioral Rules
 
 > "I told you. You agreed. You forgot. Repeat."
 
-You've written the perfect CLAUDE.md. Claude reads it. Claude agrees. By turn 47, Claude ignores half of it. **mantra** periodically re-injects behavioral guidance before it fades into the abyss of distant tokens.
+You've written the perfect CLAUDE.md. Claude reads it. Claude agrees. By turn 47, Claude ignores half of it. **mantra** provides curated behavioral rules that are automatically loaded via Claude Code's native `.claude/rules/` mechanism—ensuring consistent behavior from turn 1 to turn 100.
 
 Helps developers embody Flexion fundamentals throughout long sessions:
 - **Be skeptical and curious** — Keeps Claude questioning assumptions and seeking evidence, not pattern-matching
@@ -55,7 +55,7 @@ External (GitHub/JIRA/Azure DevOps)
     [memento] ←── "What's next?" lookup
         │
         ▼ read session context
-    [mantra] ──► periodic refresh into working context
+    [mantra] ──► native rules auto-loaded
 ```
 
 Each plugin works standalone but gains enhanced behavior when used together.
@@ -134,7 +134,7 @@ gh auth status         # Verify authentication
 
 ```bash
 /memento:init    # Session directories
-/mantra:init     # Context files
+/mantra:init     # Behavioral rules (copies to .claude/rules/)
 /onus:init       # Work-item config
 ```
 
@@ -146,7 +146,8 @@ gh auth status         # Verify authentication
 |--------|---------|-------------|
 | memento | `/memento:init` | Initialize session directories |
 | memento | `/memento:session` | Show current session status |
-| mantra | `/mantra:init` | Scaffold context files |
+| mantra | `/mantra:init` | Copy behavioral rules to `.claude/rules/` |
+| mantra | `/mantra:make-rule` | Create compact frontmatter rule from verbose markdown |
 | onus | `/onus:init` | Initialize work-item config |
 | onus | `/onus:fetch` | Fetch issue details |
 
@@ -196,127 +197,72 @@ Session: .claude/sessions/issue-feature-42-description.md
 
 ---
 
-## Context System
+## Rules System
 
-The plugins use a two-tier context system: **base context** (shipped with plugins) and **project context** (your customizations).
+mantra uses Claude Code's native `.claude/rules/` auto-loading mechanism. Rules are frontmatter-only markdown files with compact YAML.
 
-### What Plugins Provide
+### What mantra Provides
 
-Each plugin ships base context files that apply universally:
-
-| Plugin | Base Context | Purpose |
-|--------|--------------|---------|
-| **mantra** | `behavior.yml` | AI behavior (skeptical-first, evidence-based) |
-| **mantra** | `format-guide.yml` | Compact YAML conventions |
-| **mantra** | `context-format.yml` | Context system documentation |
-| **memento** | `sessions.yml` | Session workflow and conventions |
-| **onus** | `git.yml` | Git workflow (branches, commits, PRs) |
-| **onus** | `work-items.yml` | Work item integration patterns |
-
-These load automatically when plugins are installed—no action required.
-
-### Loading Order
+After running `/mantra:init`, your project has:
 
 ```
-Plugin base context → Project .claude/context/ → CLAUDE.md
+.claude/rules/
+├── behavior.md       # AI behavior (skeptical-first, evidence-based)
+├── context-format.md # Context module format spec
+├── format-guide.md   # Compact YAML conventions
+└── test.md           # Testing conventions (TDD workflow)
 ```
 
-Project files **extend** (not replace) plugin base. Your customizations add to the defaults.
+These are automatically loaded by Claude Code at session start.
 
-### Project-Specific Context
+### Creating Custom Rules
 
-Add context files to your project's `.claude/context/` directory:
+Use `/mantra:make-rule` to create your own rules:
 
-```
-your-project/
-└── .claude/
-    └── context/
-        ├── project.yml      # Always: tech stack, domain, commands
-        ├── test.yml         # If: project has specific test patterns
-        ├── deploy.yml       # If: project has deployment process
-        └── git.yml          # If: different branch/commit conventions
-```
+1. Write a verbose, human-readable markdown file
+2. Run `/mantra:make-rule your-guide.md`
+3. Claude converts it to token-efficient frontmatter
+4. Identify which rules are CRITICAL (used sparingly)
+5. Save to `.claude/rules/your-rule.md`
 
-#### Always Add: `project.yml`
+### Rule File Format
 
-Every project should have a `project.yml` with:
+Each rule file is a **frontmatter-only markdown file**:
 
-```yaml
-# Project Context
-name: my-project
-domain: e-commerce, payments
+```markdown
+---
+# Project conventions - Compact Reference
+companion: project-guide.md
 
-## Technology Stack
-language: typescript
-framework: nextjs
-database: postgresql
-
-## Commands
-test: npm test
-build: npm run build
-dev: npm run dev
-
-## Domain Terminology
-sku: stock keeping unit (product identifier)
-cart: shopping cart (temporary order storage)
-```
-
-#### Add When Needed
-
-| File | When to Add | Example |
-|------|-------------|---------|
-| `test.yml` | Project has specific test patterns | `./gradlew test` vs `npm test` |
-| `deploy.yml` | Project has deployment process | Expand-contract, slot swaps |
-| `git.yml` | Different conventions than default | `WorkItemID-desc` vs `issue/feature-N/desc` |
-| `azure-devops.yml` | Project uses Azure DevOps | Area paths, iteration, REST API |
-
-### Override Examples
-
-#### Custom Git Conventions
-
-If your project uses Azure DevOps work item IDs instead of GitHub issues:
-
-```yaml
-# .claude/context/git.yml
-# Extends onus base git.yml
-
+## Git Workflow
 branch: WorkItemID-desc | chore/desc
-commit: |
-  "WorkItemID - verb desc" OR "chore - desc"
-  (use HEREDOC format)
+commit: "WorkItemID - verb desc" (HEREDOC format)
 test-before: ./gradlew test
-examples:
-  branch-wi: 111713-add-customer-search
-  commit-wi: "111713 - add customer search\n- Add sales rep field"
-```
 
-#### Custom Test Strategy
-
-```yaml
-# .claude/context/test.yml
-when: after-each-method
+## Testing
 pyramid: unit > integration > e2e
-run:
-  unit: ./gradlew test (before-commit)
-  integration: ./gradlew integrationTest (before-PR)
-placement:
-  unit: src/test/java
-  integration: src/integrationTest/java
+run-before-commit: unit-tests
+run-before-PR: integration-tests
+---
 ```
 
-#### Deployment Patterns
+No markdown body—just frontmatter containing compact YAML.
 
-```yaml
-# .claude/context/deploy.yml
-platform: azure-app-service (deployment-slots)
-order: database-migration → backend-deploy → swap-slots → frontend-deploy
-pattern: expand-contract (3-phase: expand → migrate → contract)
-critical: backward-compatibility (old-backend-works-with-new-db)
-```
+### Emphasis Markers
+
+Use sparingly for critical rules:
+
+| Marker | Use When |
+|--------|----------|
+| `MANDATORY-REREAD:` | Must re-read before specific actions |
+| `## SECTION (BLOCKING REQUIREMENT)` | Entire section is non-negotiable |
+| `required-before:` | Must happen before an action |
+| `never:` | Absolute prohibitions |
+| `enforcement:` | If→then trigger rules |
 
 ### File Format
 
-Context files use compact YAML optimized for Claude:
+Rules use compact YAML optimized for Claude:
 
 | Pattern | Meaning | Example |
 |---------|---------|---------|
@@ -326,20 +272,6 @@ Context files use compact YAML optimized for Claude:
 | `:` | Key-value | `language: typescript` |
 
 Keep files compact: 10-30 lines, no prose, one fact per line.
-
-### AI-Managed Files
-
-The `*.yml` context files are **AI-managed**—optimized for Claude, not human editing. The compact format achieves ~89% token reduction compared to prose.
-
-**To modify context files:**
-1. Describe your changes to Claude in natural language
-2. Claude writes the compact YAML
-3. Review and commit the result
-
-Example:
-> "Add a rule that we always run integration tests before PRs"
-
-Claude translates this to the appropriate compact YAML format.
 
 ---
 

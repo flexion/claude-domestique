@@ -1,7 +1,7 @@
 {
   "name": "mantra",
-  "version": "0.1.12",
-  "description": "Periodic context refresh for Claude Code sessions - prevents context drift by re-injecting key guidance files",
+  "version": "0.2.0",
+  "description": "Behavioral rules for Claude Code sessions - native .claude/rules/ auto-loading with compact YAML frontmatter",
   "author": {
     "name": "David Puglielli"
   },
@@ -15,6 +15,7 @@
     "drift-prevention"
   ],
   "commands": [
-    "./commands/init.md"
+    "./commands/init.md",
+    "./commands/make-rule.md"
   ]
 }

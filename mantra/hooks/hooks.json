@@ -1,13 +1,13 @@
 {
-  "description": "Periodic context refresh - injects .claude/context/*.yml files on session start and periodically",
+  "description": "Mantra status - shows rules loaded (SessionStart) and freshness indicator (UserPromptSubmit)",
   "hooks": {
     "SessionStart": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/context-refresh.js",
-            "timeout": 5
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/status.js",
+            "timeout": 3
           }
         ]
       }
@@ -17,8 +17,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/context-refresh.js",
-            "timeout": 5
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/status.js",
+            "timeout": 3
           }
         ]
       }

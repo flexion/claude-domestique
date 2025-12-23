@@ -1,8 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { execSync } = require('child_process');
 
-const { initCommand, helpCommand, EXAMPLES_DIR, HOOKS_DIR, SETTINGS_FILE } = require('../cli');
+const { initCommand, helpCommand, RULES_DIR, getPluginVersion, computeContentHash } = require('../cli');
 
 describe('mantra CLI', () => {
   let tmpDir;
@@ -21,54 +22,50 @@ describe('mantra CLI', () => {
   });
 
   describe('initCommand', () => {
-    it('creates .claude directory structure', () => {
+    it('creates .claude/rules directory structure', () => {
       initCommand([]);
 
       expect(fs.existsSync(path.join(tmpDir, '.claude'))).toBe(true);
-      expect(fs.existsSync(path.join(tmpDir, '.claude', 'context'))).toBe(true);
-      expect(fs.existsSync(path.join(tmpDir, '.claude', 'hooks'))).toBe(true);
+      expect(fs.existsSync(path.join(tmpDir, '.claude', 'rules'))).toBe(true);
     });
 
-    it('copies context yml files', () => {
+    it('copies rule files from plugin rules directory', () => {
       initCommand([]);
 
-      const contextDir = path.join(tmpDir, '.claude', 'context');
-      expect(fs.existsSync(path.join(contextDir, 'project.yml'))).toBe(true);
-      expect(fs.existsSync(path.join(contextDir, 'behavior.yml'))).toBe(true);
-      expect(fs.existsSync(path.join(contextDir, 'git.yml'))).toBe(true);
-      expect(fs.existsSync(path.join(contextDir, 'testing.yml'))).toBe(true);
+      const rulesDir = path.join(tmpDir, '.claude', 'rules');
+      expect(fs.existsSync(path.join(rulesDir, 'behavior.md'))).toBe(true);
+      expect(fs.existsSync(path.join(rulesDir, 'test.md'))).toBe(true);
+      expect(fs.existsSync(path.join(rulesDir, 'format-guide.md'))).toBe(true);
+      expect(fs.existsSync(path.join(rulesDir, 'context-format.md'))).toBe(true);
     });
 
-    it('copies context md files (companion files)', () => {
+    it('rule files have frontmatter format', () => {
       initCommand([]);
 
-      const contextDir = path.join(tmpDir, '.claude', 'context');
-      expect(fs.existsSync(path.join(contextDir, 'project.md'))).toBe(true);
-      expect(fs.existsSync(path.join(contextDir, 'behavior.md'))).toBe(true);
-      expect(fs.existsSync(path.join(contextDir, 'git.md'))).toBe(true);
-      expect(fs.existsSync(path.join(contextDir, 'testing.md'))).toBe(true);
+      const rulesDir = path.join(tmpDir, '.claude', 'rules');
+      const behaviorContent = fs.readFileSync(path.join(rulesDir, 'behavior.md'), 'utf8');
+
+      // Should start with frontmatter delimiter
+      expect(behaviorContent.startsWith('---')).toBe(true);
+      // Should end with frontmatter delimiter (frontmatter-only)
+      expect(behaviorContent.trim().endsWith('---')).toBe(true);
+      // Should have companion reference
+      expect(behaviorContent).toContain('companion:');
     });
 
-    it('copies hook file with executable permissions', () => {
+    it('creates version file with content hash', () => {
       initCommand([]);
 
-      const hookPath = path.join(tmpDir, '.claude', 'hooks', 'context-refresh.js');
-      expect(fs.existsSync(hookPath)).toBe(true);
+      const versionFile = path.join(tmpDir, '.claude', 'rules', '.mantra-version.json');
+      expect(fs.existsSync(versionFile)).toBe(true);
 
-      const stats = fs.statSync(hookPath);
-      expect(stats.mode & 0o111).toBeTruthy(); // Check executable bits
-    });
-
-    it('copies settings.json', () => {
-      initCommand([]);
-
-      const settingsPath = path.join(tmpDir, '.claude', 'settings.json');
-      expect(fs.existsSync(settingsPath)).toBe(true);
-
-      const content = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-      expect(content.hooks).toBeDefined();
-      expect(content.hooks.SessionStart).toBeDefined();
-      expect(content.hooks.UserPromptSubmit).toBeDefined();
+      const versionData = JSON.parse(fs.readFileSync(versionFile, 'utf8'));
+      expect(versionData.version).toBeDefined();
+      expect(versionData.contentHash).toBeDefined();
+      expect(versionData.contentHash).toMatch(/^[a-f0-9]{32}$/); // MD5 format
+      expect(versionData.copiedAt).toBeDefined();
+      expect(versionData.files).toBeInstanceOf(Array);
+      expect(versionData.files.length).toBeGreaterThan(0);
     });
 
     it('does not overwrite existing files without --force', () => {
@@ -76,14 +73,14 @@ describe('mantra CLI', () => {
       initCommand([]);
 
       // Modify a file
-      const projectYml = path.join(tmpDir, '.claude', 'context', 'project.yml');
-      fs.writeFileSync(projectYml, 'custom: content');
+      const behaviorMd = path.join(tmpDir, '.claude', 'rules', 'behavior.md');
+      fs.writeFileSync(behaviorMd, 'custom: content');
 
       // Second init without --force
       initCommand([]);
 
       // File should not be overwritten
-      const content = fs.readFileSync(projectYml, 'utf8');
+      const content = fs.readFileSync(behaviorMd, 'utf8');
       expect(content).toBe('custom: content');
     });
 
@@ -92,34 +89,55 @@ describe('mantra CLI', () => {
       initCommand([]);
 
       // Modify a file
-      const projectYml = path.join(tmpDir, '.claude', 'context', 'project.yml');
-      fs.writeFileSync(projectYml, 'custom: content');
+      const behaviorMd = path.join(tmpDir, '.claude', 'rules', 'behavior.md');
+      fs.writeFileSync(behaviorMd, 'custom: content');
 
       // Second init with --force
       initCommand(['--force']);
 
       // File should be overwritten
-      const content = fs.readFileSync(projectYml, 'utf8');
+      const content = fs.readFileSync(behaviorMd, 'utf8');
       expect(content).not.toBe('custom: content');
-      expect(content).toContain('Project Context');
+      expect(content).toContain('companion:');
     });
 
-    it('yml files reference their companion md files', () => {
+    it('detects legacy .claude/context directory and warns', () => {
+      // Create legacy structure
+      const contextDir = path.join(tmpDir, '.claude', 'context');
+      fs.mkdirSync(contextDir, { recursive: true });
+      fs.writeFileSync(path.join(contextDir, 'old.yml'), 'old: stuff');
+
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+
       initCommand([]);
 
-      const contextDir = path.join(tmpDir, '.claude', 'context');
+      const output = consoleSpy.mock.calls.map(c => c[0]).join('\n');
+      expect(output).toContain('legacy');
 
-      const behaviorYml = fs.readFileSync(path.join(contextDir, 'behavior.yml'), 'utf8');
-      expect(behaviorYml).toContain('behavior.md');
+      consoleSpy.mockRestore();
+    });
 
-      const gitYml = fs.readFileSync(path.join(contextDir, 'git.yml'), 'utf8');
-      expect(gitYml).toContain('git.md');
+    it('detects old hooks in settings.json and warns', () => {
+      // Create old settings with hook
+      const settingsDir = path.join(tmpDir, '.claude');
+      fs.mkdirSync(settingsDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(settingsDir, 'settings.json'),
+        JSON.stringify({
+          hooks: {
+            SessionStart: [{ command: 'context-refresh.js' }]
+          }
+        })
+      );
 
-      const testingYml = fs.readFileSync(path.join(contextDir, 'testing.yml'), 'utf8');
-      expect(testingYml).toContain('testing.md');
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
 
-      const projectYml = fs.readFileSync(path.join(contextDir, 'project.yml'), 'utf8');
-      expect(projectYml).toContain('project.md');
+      initCommand([]);
+
+      const output = consoleSpy.mock.calls.map(c => c[0]).join('\n');
+      expect(output).toContain('hook');
+
+      consoleSpy.mockRestore();
     });
   });
 
@@ -144,18 +162,116 @@ describe('mantra CLI', () => {
   });
 
   describe('source files exist', () => {
-    it('has example context files', () => {
-      expect(fs.existsSync(EXAMPLES_DIR)).toBe(true);
-      expect(fs.existsSync(path.join(EXAMPLES_DIR, 'project.yml'))).toBe(true);
-      expect(fs.existsSync(path.join(EXAMPLES_DIR, 'project.md'))).toBe(true);
+    it('has rules directory with md files', () => {
+      expect(fs.existsSync(RULES_DIR)).toBe(true);
+
+      const ruleFiles = fs.readdirSync(RULES_DIR).filter(f => f.endsWith('.md'));
+      expect(ruleFiles.length).toBeGreaterThan(0);
     });
 
-    it('has hook file', () => {
-      expect(fs.existsSync(path.join(HOOKS_DIR, 'context-refresh.js'))).toBe(true);
+    it('rule files contain valid frontmatter', () => {
+      const ruleFiles = fs.readdirSync(RULES_DIR).filter(f => f.endsWith('.md'));
+
+      for (const file of ruleFiles) {
+        const content = fs.readFileSync(path.join(RULES_DIR, file), 'utf8');
+        expect(content.startsWith('---')).toBe(true);
+        expect(content.trim().endsWith('---')).toBe(true);
+      }
+    });
+  });
+
+  describe('error paths', () => {
+    it('exits when rules source directory does not exist', () => {
+      const mockExit = jest.spyOn(process, 'exit').mockImplementation(() => {
+        throw new Error('process.exit called');
+      });
+      const errorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      expect(() => {
+        initCommand([], { rulesSourceDir: '/nonexistent/path' });
+      }).toThrow('process.exit called');
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        'ERROR: Rules directory not found at:',
+        '/nonexistent/path'
+      );
+
+      mockExit.mockRestore();
+      errorSpy.mockRestore();
     });
 
-    it('has settings file', () => {
-      expect(fs.existsSync(SETTINGS_FILE)).toBe(true);
+    it('warns when rules directory has no md files', () => {
+      // Create an empty source directory
+      const emptySourceDir = path.join(tmpDir, 'empty-source');
+      fs.mkdirSync(emptySourceDir, { recursive: true });
+
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+
+      initCommand([], { rulesSourceDir: emptySourceDir });
+
+      const output = consoleSpy.mock.calls.map(c => c[0]).join('\n');
+      expect(output).toContain('WARNING: No rule files found');
+
+      consoleSpy.mockRestore();
+    });
+  });
+
+  describe('helpCommand', () => {
+    it('displays documentation URL', () => {
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+
+      helpCommand();
+
+      const output = consoleSpy.mock.calls[0][0];
+      expect(output).toContain('https://github.com/flexion/claude-domestique');
+
+      consoleSpy.mockRestore();
+    });
+  });
+
+  describe('CLI main function', () => {
+    const cliPath = path.join(__dirname, '..', 'cli.js');
+
+    it('runs init command via CLI', () => {
+      const result = execSync(`node "${cliPath}" init`, {
+        encoding: 'utf8',
+        cwd: tmpDir
+      });
+
+      expect(result).toContain('Initializing mantra');
+      expect(fs.existsSync(path.join(tmpDir, '.claude', 'rules'))).toBe(true);
+    });
+
+    it('runs help command via CLI', () => {
+      const result = execSync(`node "${cliPath}" help`, {
+        encoding: 'utf8',
+        cwd: tmpDir
+      });
+
+      expect(result).toContain('mantra - Behavioral rules');
+      expect(result).toContain('npx mantra');
+    });
+
+    it('defaults to help when no command given', () => {
+      const result = execSync(`node "${cliPath}"`, {
+        encoding: 'utf8',
+        cwd: tmpDir
+      });
+
+      expect(result).toContain('mantra - Behavioral rules');
+    });
+
+    it('shows error for unknown command', () => {
+      try {
+        execSync(`node "${cliPath}" unknown`, {
+          encoding: 'utf8',
+          cwd: tmpDir,
+          stdio: ['pipe', 'pipe', 'pipe']
+        });
+        fail('Expected command to exit with error');
+      } catch (e) {
+        expect(e.stderr.toString()).toContain('Unknown command: unknown');
+      }
     });
   });
 });
