@@ -2,11 +2,11 @@
 /**
  * mantra init script
  *
- * Sets up the .claude/context/ directory structure for a project.
- * - Creates .claude/context/ if missing
- * - Copies template files (README.md, project.yml.example)
- * - If CLAUDE.md exists, backs it up and attempts basic decomposition
- * - Never overwrites existing files
+ * Sets up native Claude rules by copying mantra's rules/*.md files
+ * to the project's .claude/rules/ directory.
+ *
+ * These are frontmatter-only markdown files that leverage Claude Code's
+ * native .claude/rules/ auto-loading mechanism.
  */
 
 const fs = require('fs');
@@ -14,234 +14,140 @@ const path = require('path');
 
 // Find plugin root (where this script lives is scripts/, go up one)
 const PLUGIN_ROOT = path.join(__dirname, '..');
-const TEMPLATES_DIR = path.join(PLUGIN_ROOT, 'templates', 'context');
+const RULES_DIR = path.join(PLUGIN_ROOT, 'rules');
 
 /**
- * Initialize .claude/context in target directory
+ * Initialize .claude/rules in target directory
  * @param {string} targetDir - Directory to initialize (defaults to cwd)
+ * @param {Object} options - Configuration options
+ * @param {boolean} options.force - Overwrite existing rules files
  */
-function init(targetDir = process.cwd()) {
-  const contextDir = path.join(targetDir, '.claude', 'context');
-  const claudeMdPath = path.join(targetDir, 'CLAUDE.md');
+function init(targetDir = process.cwd(), options = {}) {
+  const { force = false } = options;
+  const projectRulesDir = path.join(targetDir, '.claude', 'rules');
 
   console.log('mantra init');
   console.log('==================');
   console.log(`Target: ${targetDir}`);
+  console.log(`Plugin: ${PLUGIN_ROOT}`);
   console.log();
 
-  // Create .claude/context/ directory
-  if (!fs.existsSync(contextDir)) {
-    fs.mkdirSync(contextDir, { recursive: true });
-    console.log('Created: .claude/context/');
-  } else {
-    console.log('Exists:  .claude/context/');
-  }
-
-  // Copy README.md
-  const readmeSrc = path.join(TEMPLATES_DIR, 'README.md');
-  const readmeDst = path.join(contextDir, 'README.md');
-  if (!fs.existsSync(readmeDst)) {
-    if (fs.existsSync(readmeSrc)) {
-      fs.copyFileSync(readmeSrc, readmeDst);
-      console.log('Created: .claude/context/README.md');
-    } else {
-      console.log('Warning: Template README.md not found');
-    }
-  } else {
-    console.log('Exists:  .claude/context/README.md (not overwritten)');
-  }
-
-  // Handle CLAUDE.md decomposition
-  const projectYmlPath = path.join(contextDir, 'project.yml');
-  if (fs.existsSync(claudeMdPath)) {
+  // Check for old setup and provide migration guidance
+  const oldContextDir = path.join(targetDir, '.claude', 'context');
+  if (fs.existsSync(oldContextDir)) {
+    console.log('NOTE: Detected .claude/context/ (legacy mantra setup)');
+    console.log('      The new version uses .claude/rules/ for native loading.');
+    console.log('      Your custom context files in .claude/context/ will still work');
+    console.log('      but consider migrating them to .claude/rules/ format.');
     console.log();
-    console.log('Found CLAUDE.md - attempting decomposition...');
+  }
 
-    // Back up CLAUDE.md
-    const backupPath = path.join(targetDir, 'CLAUDE.md.backup');
-    if (!fs.existsSync(backupPath)) {
-      fs.copyFileSync(claudeMdPath, backupPath);
-      console.log('Backed up: CLAUDE.md -> CLAUDE.md.backup');
-    } else {
-      console.log('Exists:    CLAUDE.md.backup (not overwritten)');
+  // Check for old hooks in settings.json
+  const settingsPath = path.join(targetDir, '.claude', 'settings.json');
+  if (fs.existsSync(settingsPath)) {
+    try {
+      const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+      if (settings.hooks && settings.hooks.length > 0) {
+        const hasMantraHook = settings.hooks.some(h =>
+          h.command && h.command.includes('context-refresh')
+        );
+        if (hasMantraHook) {
+          console.log('WARNING: Found old mantra hook in .claude/settings.json');
+          console.log('         Remove the context-refresh hook - it\'s no longer needed.');
+          console.log();
+        }
+      }
+    } catch (e) {
+      // Ignore parse errors
     }
+  }
 
-    // Attempt to extract project info from CLAUDE.md
-    if (!fs.existsSync(projectYmlPath)) {
-      const extracted = extractProjectInfo(claudeMdPath);
-      if (extracted) {
-        fs.writeFileSync(projectYmlPath, extracted);
-        console.log('Created: .claude/context/project.yml (extracted from CLAUDE.md)');
+  // Create .claude/rules/ directory
+  if (!fs.existsSync(projectRulesDir)) {
+    fs.mkdirSync(projectRulesDir, { recursive: true });
+    console.log('Created: .claude/rules/');
+  } else {
+    console.log('Exists:  .claude/rules/');
+  }
+
+  // Check if rules source directory exists
+  if (!fs.existsSync(RULES_DIR)) {
+    console.log('ERROR: Rules directory not found at:', RULES_DIR);
+    console.log('       Plugin may be corrupted. Try reinstalling.');
+    return { success: false, error: 'Rules directory not found' };
+  }
+
+  // Get list of rule files to copy
+  const ruleFiles = fs.readdirSync(RULES_DIR)
+    .filter(f => f.endsWith('.md'));
+
+  if (ruleFiles.length === 0) {
+    console.log('WARNING: No rule files found in plugin');
+    return { success: true, copied: 0 };
+  }
+
+  console.log();
+  console.log(`Copying ${ruleFiles.length} rule files...`);
+
+  let copied = 0;
+  let skipped = 0;
+  let updated = 0;
+
+  for (const file of ruleFiles) {
+    const srcPath = path.join(RULES_DIR, file);
+    const dstPath = path.join(projectRulesDir, file);
+
+    if (fs.existsSync(dstPath) && !force) {
+      // Check if content is different
+      const srcContent = fs.readFileSync(srcPath, 'utf8');
+      const dstContent = fs.readFileSync(dstPath, 'utf8');
+
+      if (srcContent === dstContent) {
+        console.log(`  Skip:   ${file} (unchanged)`);
+        skipped++;
       } else {
-        // Fall back to example template
-        copyExampleTemplate(projectYmlPath);
+        console.log(`  Exists: ${file} (use --force to update)`);
+        skipped++;
       }
     } else {
-      console.log('Exists:  .claude/context/project.yml (not overwritten)');
-    }
-
-    // Create legacy.yml with original CLAUDE.md content for reference
-    const legacyYmlPath = path.join(contextDir, 'legacy-claude-md.yml');
-    if (!fs.existsSync(legacyYmlPath)) {
-      const claudeMdContent = fs.readFileSync(claudeMdPath, 'utf8');
-      const legacyContent = `# Legacy CLAUDE.md Content
-# This file preserves your original CLAUDE.md instructions.
-# Review and migrate relevant sections to modular context files,
-# then delete this file.
-
-# Original CLAUDE.md location: ${claudeMdPath}
-# Backup location: ${backupPath}
-
-# --- Original Content Below ---
-# (Stored as comment to avoid double-loading)
-
-${claudeMdContent.split('\n').map(line => '# ' + line).join('\n')}
-`;
-      fs.writeFileSync(legacyYmlPath, legacyContent);
-      console.log('Created: .claude/context/legacy-claude-md.yml (for reference)');
-    }
-
-    console.log();
-    console.log('CLAUDE.md Decomposition Notes:');
-    console.log('- Original backed up to CLAUDE.md.backup');
-    console.log('- Basic project info extracted to project.yml');
-    console.log('- Full content preserved in legacy-claude-md.yml');
-    console.log('- Review and migrate sections to modular .yml files');
-    console.log('- Consider removing CLAUDE.md to avoid context confusion');
-
-  } else {
-    // No CLAUDE.md - just copy example template
-    if (!fs.existsSync(projectYmlPath)) {
-      copyExampleTemplate(projectYmlPath);
-    } else {
-      console.log('Exists:  .claude/context/project.yml (not overwritten)');
+      fs.copyFileSync(srcPath, dstPath);
+      if (force && fs.existsSync(dstPath)) {
+        console.log(`  Update: ${file}`);
+        updated++;
+      } else {
+        console.log(`  Create: ${file}`);
+        copied++;
+      }
     }
   }
+
+  console.log();
+  console.log('Summary:');
+  console.log(`  Created: ${copied}`);
+  if (updated > 0) console.log(`  Updated: ${updated}`);
+  if (skipped > 0) console.log(`  Skipped: ${skipped}`);
 
   console.log();
   console.log('Init complete!');
   console.log();
-  console.log('Next steps:');
-  console.log('1. Edit .claude/context/project.yml with your project details');
-  console.log('2. Add additional context files as needed (*.yml)');
-  console.log('3. See .claude/context/README.md for extension guide');
-}
+  console.log('How it works:');
+  console.log('- .claude/rules/*.md files are auto-loaded by Claude Code');
+  console.log('- Each rule file has compact YAML in frontmatter');
+  console.log('- Detailed examples in companion files (loaded on-demand)');
+  console.log();
+  console.log('To update rules after plugin update:');
+  console.log('  Run /mantra:init --force');
 
-/**
- * Copy example template as project.yml
- */
-function copyExampleTemplate(projectYmlPath) {
-  const exampleSrc = path.join(TEMPLATES_DIR, 'project.yml.example');
-  if (fs.existsSync(exampleSrc)) {
-    fs.copyFileSync(exampleSrc, projectYmlPath);
-    console.log('Created: .claude/context/project.yml (from template)');
-  } else {
-    // Create minimal stub if template missing
-    const stub = `# Project Context
-# Customize this file for your project
-
-name: ${path.basename(process.cwd())}
-description: TODO - describe your project
-
-## Add your project-specific context below
-`;
-    fs.writeFileSync(projectYmlPath, stub);
-    console.log('Created: .claude/context/project.yml (minimal stub)');
-  }
-}
-
-/**
- * Attempt to extract project info from CLAUDE.md
- * Returns YAML string or null if extraction fails
- */
-function extractProjectInfo(claudeMdPath) {
-  try {
-    const content = fs.readFileSync(claudeMdPath, 'utf8');
-    const lines = content.split('\n');
-
-    const extracted = {
-      name: null,
-      description: null,
-      commands: {},
-      sections: []
-    };
-
-    // Look for project name (first h1 or h2)
-    for (const line of lines) {
-      if (line.startsWith('# ')) {
-        extracted.name = line.replace('# ', '').trim();
-        break;
-      }
-    }
-
-    // Look for common command patterns
-    const commandPatterns = [
-      { pattern: /npm\s+test/i, key: 'test', value: 'npm test' },
-      { pattern: /npm\s+run\s+build/i, key: 'build', value: 'npm run build' },
-      { pattern: /npm\s+run\s+lint/i, key: 'lint', value: 'npm run lint' },
-      { pattern: /npm\s+run\s+dev/i, key: 'dev', value: 'npm run dev' },
-      { pattern: /npm\s+start/i, key: 'start', value: 'npm start' },
-      { pattern: /pytest/i, key: 'test', value: 'pytest' },
-      { pattern: /go\s+test/i, key: 'test', value: 'go test ./...' },
-    ];
-
-    for (const { pattern, key, value } of commandPatterns) {
-      if (pattern.test(content) && !extracted.commands[key]) {
-        extracted.commands[key] = value;
-      }
-    }
-
-    // Extract section headers for reference
-    for (const line of lines) {
-      if (line.startsWith('## ')) {
-        extracted.sections.push(line.replace('## ', '').trim());
-      }
-    }
-
-    // Build YAML output
-    let yaml = `# Project Context (extracted from CLAUDE.md)
-# Review and customize this file
-
-`;
-
-    if (extracted.name) {
-      yaml += `name: ${extracted.name}\n`;
-    } else {
-      yaml += `name: ${path.basename(process.cwd())}\n`;
-    }
-
-    yaml += `description: TODO - add description\n\n`;
-
-    if (Object.keys(extracted.commands).length > 0) {
-      yaml += `## Commands\n`;
-      for (const [key, value] of Object.entries(extracted.commands)) {
-        yaml += `${key}: ${value}\n`;
-      }
-      yaml += '\n';
-    }
-
-    if (extracted.sections.length > 0) {
-      yaml += `## Sections found in CLAUDE.md (migrate as needed)\n`;
-      yaml += `# ${extracted.sections.join(', ')}\n`;
-      yaml += '\n';
-    }
-
-    yaml += `## Add your project-specific context below
-# See README.md for format guidelines
-`;
-
-    return yaml;
-
-  } catch (e) {
-    console.log(`Warning: Could not parse CLAUDE.md: ${e.message}`);
-    return null;
-  }
+  return { success: true, copied, updated, skipped };
 }
 
 // CLI entry point
 if (require.main === module) {
-  const targetDir = process.argv[2] || process.cwd();
-  init(path.resolve(targetDir));
+  const args = process.argv.slice(2);
+  const force = args.includes('--force') || args.includes('-f');
+  const targetDir = args.find(a => !a.startsWith('-')) || process.cwd();
+
+  init(path.resolve(targetDir), { force });
 }
 
-module.exports = { init, extractProjectInfo };
+module.exports = { init };

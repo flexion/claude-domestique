@@ -2,11 +2,11 @@
 
 > I told you. You agreed. You forgot. Repeat.
 
-Periodic context refresh plugin for Claude Code sessions.
+Behavioral rules plugin for Claude Code sessions.
 
 Claude is brilliant. Claude is helpful. Claude also has the memory of a goldfish in a context window. You've written the perfect CLAUDE.md. You've carefully documented your project conventions. Claude reads it. Claude agrees. Claude then proceeds to ignore half of it by turn 47.
 
-**mantra** solves this by periodically re-injecting key instruction files into Claude's working context—reinforcing the behavioral guidance before it fades into the abyss of distant tokens.
+**mantra** solves this by providing curated behavioral rules that are automatically loaded via Claude Code's native `.claude/rules/` mechanism—ensuring consistent behavior from turn 1 to turn 100.
 
 ### Flexion Fundamentals
 
@@ -18,14 +18,12 @@ mantra helps developers embody Flexion fundamentals throughout long sessions:
 
 ## Features
 
-- **Session start refresh** - Injects context immediately when sessions start, resume, or reset
-- **Freshness indicator** - Shows context staleness on every prompt (`📍 Context: 12/20`)
-- **Periodic refresh** - Re-injects context files every N interactions
-- **Base context** - Ships with behavior rules (skeptical-first, evidence-based troubleshooting)
-- **Project extensions** - Add project-specific context via `.claude/context/*.yml`
-- **Sibling plugin discovery** - Automatically loads context from memento and onus
-- **CLAUDE.md fallback** - Works with existing CLAUDE.md if no context directory
-- **Lightweight** - Native Claude Code hook, no external dependencies
+- **Native rules loading** - Uses Claude Code's built-in `.claude/rules/` auto-loading
+- **Token efficient** - Compact YAML frontmatter (~89% token reduction vs prose)
+- **Status indicator** - Shows rules loaded and context freshness on every prompt
+- **Curated rules** - Ships with behavior, testing, and format conventions
+- **Easy customization** - Create your own rules with `/mantra:make-rule`
+- **On-demand details** - Companion files provide elaboration when needed
 
 ## Installation
 
@@ -36,85 +34,84 @@ mantra helps developers embody Flexion fundamentals throughout long sessions:
 # Install the plugin
 /plugin install mantra@claude-domestique
 
-# Scaffold context files for your project
+# Copy rule files to your project
 /mantra:init
 ```
 
 The `/mantra:init` command creates:
-- `.claude/context/README.md` - How to extend context
-- `.claude/context/project.yml` - Project-specific context template
-
-If `CLAUDE.md` exists, init backs it up and attempts to extract project info.
+```
+.claude/rules/
+├── behavior.md       # AI behavior (skeptical-first, assess-before-agree)
+├── context-format.md # Context module format spec
+├── format-guide.md   # Compact YAML conventions
+└── test.md           # Testing conventions (TDD workflow)
+```
 
 ## Usage
 
-Once installed, the hook runs automatically:
+Once installed, rules are automatically loaded by Claude Code at session start.
 
-1. **On session start** - Context is injected immediately (startup, resume, clear, compact)
-2. **Every prompt** shows freshness: `📍 Context: 12/20`
-3. **Every 20 prompts** triggers periodic refresh (configurable)
-4. **On refresh** you'll see: `📍 Context: 0/20 (refreshed)` followed by your context
+### Status Line
 
-### Context Files
+The status hook shows you:
+- **SessionStart**: `📍 Mantra: 4 rules (~850 tokens) | behavior, context-format, ...`
+- **UserPromptSubmit**: `📍 Mantra: 5 (~10% ctx) ✓` (prompt count and context fullness)
 
-Context uses a **two-tier pattern** with separate locations for base and project context:
+When context is compacted or resumed: `📍 Mantra: 4 rules (~850 tokens) (reloaded after compaction)`
 
-**Base context** (shipped with plugin in `context/`):
-```
-context/
-├── behavior.yml      # AI behavior rules (skeptical-first, evidence-based)
-├── behavior.md       # Detailed behavior guide
-├── context-format.yml # Context format specification
-├── context-format.md  # Detailed format guide
-└── format-guide.yml   # Compact YAML conventions
-```
+### Commands
 
-**Project extensions** (your project's `.claude/context/`):
-```
-.claude/context/
-├── project.yml       # Project-specific context
-├── testing.yml       # Testing patterns
-└── custom.yml        # Your custom context
-```
+| Command | Description |
+|---------|-------------|
+| `/mantra:init` | Copy rule files to project's `.claude/rules/` |
+| `/mantra:init --force` | Update existing rules with latest versions |
+| `/mantra:make-rule` | Create compact frontmatter rule from verbose markdown |
 
-**Loading order**: base context → sibling plugins → project extensions → CLAUDE.md
+### Creating Custom Rules
 
-- **`.yml` files** - Token-efficient assertions, injected on refresh
-- **`.md` files** - Detailed guidance, read on-demand by Claude
+Use `/mantra:make-rule` to create your own rules:
 
-See [FORMAT.md](FORMAT.md) for the full specification.
+1. Write a verbose, human-readable markdown file
+2. Run `/mantra:make-rule your-guide.md`
+3. Claude converts it to token-efficient frontmatter
+4. Identify which rules are CRITICAL (used sparingly)
+5. Save to `.claude/rules/your-rule.md`
 
-If no `.claude/context/*.yml` files exist, falls back to `CLAUDE.md` with a tip about multi-file support.
+## Rule File Format
 
-## Configuration
+Each rule file is a **frontmatter-only markdown file**:
 
-Create `.claude/config.json` to customize:
+```markdown
+---
+# AI-managed context file - optimized for token efficiency
+companion: behavior.md
 
-```json
-{
-  "context": {
-    "periodicRefresh": {
-      "enabled": true,
-      "interval": 20
-    }
-  }
-}
+MANDATORY-REREAD: before-implementation-proposal-response (use-thinking-block)
+
+## CRITICAL ASSESSMENT (BLOCKING REQUIREMENT)
+assess-first: correctness, architecture, alternatives, risks
+stance: skeptical-default, find-problems-not-agreement
+never: eager-agreement, sycophantic-tone, yes-without-analysis
+
+## IMPLEMENTATION BEHAVIOR
+mode: discuss-approach-first (non-trivial), build-first (trivial)
+implement: minimal-working, fix-actual-errors (not speculative-fixes)
+---
 ```
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `interval` | 20 | Prompts between context refreshes |
+No markdown body—just frontmatter containing compact YAML rules.
 
-## Development
+### Emphasis Markers
 
-```bash
-npm install
-npm test    # Run Jest tests (58 specs)
-```
+Use sparingly for critical rules:
 
-## Why "mantra"?
-
-A mantra is a phrase repeated to focus the mind. Claude's mind wanders. This brings it back.
+| Marker | Use When |
+|--------|----------|
+| `MANDATORY-REREAD:` | Must re-read before specific actions |
+| `## SECTION (BLOCKING REQUIREMENT)` | Entire section is non-negotiable |
+| `required-before:` | Must happen before an action |
+| `never:` | Absolute prohibitions |
+| `enforcement:` | If→then trigger rules |
 
 ## Default Behavior Overrides
 
@@ -147,16 +144,18 @@ Mantra isn't just about remembering project conventions. It's about **overriding
 | Snippets without context | Complete blocks with imports |
 | Over-engineer | Minimal working implementation |
 
-### Communication Style
+**The core insight**: Claude's default mode is helpful-subordinate. Mantra retrains it to be skeptical-peer.
 
-| Default Claude | Mantra Override |
-|----------------|-----------------|
-| Verbose preambles | Skip preambles, direct, concise |
-| Hesitant suggestions | Propose alternatives without hesitation |
-| Passive acceptance | Challenge violations proactively |
-| Polite hedging | Say "no" when something is wrong |
+## Development
 
-**The core insight**: Claude's default mode is helpful-subordinate. Mantra retrains it to be skeptical-peer. This is the shitty-but-important behavior work—making Claude actually useful instead of just agreeable.
+```bash
+npm install
+npm test    # Run Jest tests (28 specs)
+```
+
+## Why "mantra"?
+
+A mantra is a phrase repeated to focus the mind. Claude's mind wanders. This brings it back.
 
 ## Plugin Family
 
@@ -165,7 +164,7 @@ mantra is part of a plugin family that works together:
 | Plugin | Purpose | Layer |
 |--------|---------|-------|
 | **[memento](../memento)** | Session persistence | Persistence |
-| **[mantra](../mantra)** | Context refresh | Injection |
+| **[mantra](../mantra)** | Behavioral rules | Rules |
 | **[onus](../onus)** | Work-item automation | Integration |
 
 ### How They Work Together
@@ -180,33 +179,11 @@ External (GitHub/JIRA/Azure DevOps)
     [memento] ←── "What's next?" lookup
         │
         ▼ read session context
-    [mantra] ──► periodic refresh into working context
+    [mantra] ──► native rules auto-loaded
 ```
-
-### Shared Naming Convention
-
-All three plugins agree on this mapping:
-
-```
-Issue #42 (tracker)
-    ↓
-Branch: issue/feature-42/description
-    ↓
-Metadata: .claude/branches/issue-feature-42-description
-    ↓
-Session: .claude/sessions/issue-feature-42-description.md
-```
-
-### Interoperability
-
-- **onus → memento**: Onus fetches issue details and populates the session file that memento manages
-- **memento → mantra**: Mantra automatically discovers memento and loads its context on refresh
-- **mantra → memento**: Mantra keeps behavioral rules fresh; memento persists the actual work state
-
-When sibling plugins are installed in the same project, mantra automatically discovers them via `~/.claude/plugins/installed_plugins.json` and loads their context during refresh.
 
 Each plugin works standalone but gains enhanced behavior when used together.
 
 ## License
 
-ISC
+MIT

@@ -1,5 +1,6 @@
-# AI-managed context file - optimized for token efficiency
-# To modify: describe changes to Claude in natural language
+---
+# MANTRA-MANAGED: This file is overwritten by /mantra:init --force
+# To customize: create your own rule file in .claude/rules/
 #
 # Testing Conventions - Compact Reference
 
@@ -56,3 +57,4 @@ reports: write-to-gitignored-folder, reuse-existing-reports
 require: new-logic, conditionals, edge-cases, error-paths
 skip: trivial-getters, simple-wrappers, type-only-code
 focus: behavior (not implementation-details)
+---

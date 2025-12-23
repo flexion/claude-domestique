@@ -3,63 +3,77 @@ description: Scaffold context files for periodic refresh
 argument-hint: [--force]
 ---
 
-# Initialize Context Refresh
+# Initialize Native Rules
 
-Set up the `.claude/context/` directory structure for project-specific context extensions.
+Set up mantra's behavioral rules in your project using Claude Code's native `.claude/rules/` auto-loading.
 
 ## Task
 
-Run `node ${CLAUDE_PLUGIN_ROOT}/scripts/init.js` to scaffold the context directory in the current project.
+Run `node ${CLAUDE_PLUGIN_ROOT}/scripts/init.js` to copy rule files to your project.
 
 The init script performs these actions:
 
-1. **Create directory**: Creates `.claude/context/` if it doesn't exist
-2. **Copy README**: Copies `templates/context/README.md` explaining how to extend context
-3. **Handle CLAUDE.md** (if exists):
-   - Backs up to `CLAUDE.md.backup`
-   - Extracts project info to `project.yml`
-   - Preserves full content in `legacy-claude-md.yml` (commented for reference)
-4. **Create project.yml** (if no CLAUDE.md): Copies `templates/context/project.yml.example`
+1. **Create directory**: Creates `.claude/rules/` if it doesn't exist
+2. **Copy rules**: Copies frontmatter-only markdown files from plugin
+3. **Detect legacy setup**: Warns about old `.claude/context/` if present
+4. **Handle updates**: Use `--force` to update existing rules
 
 ## What Gets Created
 
-### Without CLAUDE.md
-
 ```
-.claude/context/
-├── README.md         # How to extend context
-└── project.yml       # Project-specific context (from template)
-```
-
-### With CLAUDE.md
-
-```
-.claude/context/
-├── README.md              # How to extend context
-├── project.yml            # Extracted from CLAUDE.md
-└── legacy-claude-md.yml   # Original content (commented)
+.claude/rules/
+├── behavior.md       # AI behavior (skeptical-first, assess-before-agree)
+├── context-format.md # Context module format spec
+├── format-guide.md   # Compact YAML conventions
+└── test.md           # Testing conventions (TDD workflow)
 ```
 
-Plus `CLAUDE.md.backup` in project root.
+## Rule File Format
 
-## Important Notes
+Each rule file is a **frontmatter-only markdown file**:
 
-- **Base context is automatic**: The plugin ships with behavior.yml, context-format.yml, and format-guide.yml. You don't need to create these.
-- **Project extensions are additive**: Your `.claude/context/*.yml` files add to (not replace) the base context.
-- **Never overwrites**: Existing files are not overwritten (skipped with message).
-- **Sibling plugins**: If memento or onus are installed, their context is also loaded automatically.
+```markdown
+---
+# Compact rules in YAML frontmatter
+companion: behavior.md
+
+assess-first: correctness, architecture, alternatives
+stance: skeptical-default, find-problems-not-agreement
+# ... more rules
+---
+```
+
+No markdown body - just frontmatter containing compact YAML rules.
+
+## How It Works
+
+1. **Native loading**: Claude Code auto-loads `.claude/rules/*.md`
+2. **Token efficient**: Frontmatter uses compact YAML (~89% token savings vs prose)
+3. **On-demand details**: `companion:` key points to detailed examples
+4. **No hooks**: Leverages native mechanism, no periodic injection needed
 
 ## After Setup
 
-1. Edit `.claude/context/project.yml` with your project details
-2. Add additional context files as needed (`testing.yml`, `domain.yml`, etc.)
-3. See `.claude/context/README.md` for format guidelines
-4. Consider removing `CLAUDE.md` if you've migrated content (to avoid confusion)
+Rules are automatically loaded by Claude Code at session start. No additional configuration needed.
 
-## Context Loading Order
+## Updating Rules
 
-On refresh, context is loaded in this order:
-1. **Base context** - Plugin's `context/*.yml` (behavior, format)
-2. **Sibling plugins** - Context from memento/onus if installed
-3. **Project extensions** - Your `.claude/context/*.yml`
-4. **CLAUDE.md fallback** - If present (with warning about potential confusion)
+When the mantra plugin is updated with new rules:
+
+```bash
+/mantra:init --force
+```
+
+This overwrites existing rules with the latest versions.
+
+## Migration from v0.1.x
+
+If you have an older mantra setup with `.claude/context/`:
+
+1. Your custom context files still work (additive)
+2. Remove old hooks from `.claude/settings.json` if present
+3. The new `.claude/rules/` is the primary mechanism
+
+## Companion Files
+
+Each rule file references a companion with detailed examples. When you need elaboration on a rule, read the companion file from the plugin's context directory.

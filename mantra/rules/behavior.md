@@ -1,5 +1,6 @@
-# AI-managed context file - optimized for token efficiency
-# To modify: describe changes to Claude in natural language
+---
+# MANTRA-MANAGED: This file is overwritten by /mantra:init --force
+# To customize: create your own rule file in .claude/rules/
 #
 # Assistant Behavior - Compact Reference
 
@@ -57,3 +58,4 @@ never: jump-to-common-solutions, pattern-match-from-training, shotgun-debugging
 verify: cross-reference-sources (minimum-3-examples)
 prefer: authoritative-sources (issue-trackers, changelogs, release-notes)
 when-stuck: more-research (not-guessing)
+---

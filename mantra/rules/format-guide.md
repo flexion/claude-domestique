@@ -1,7 +1,8 @@
-# AI-managed context file - optimized for token efficiency
-# To modify: describe changes to Claude in natural language
+---
+# MANTRA-MANAGED: This file is overwritten by /mantra:init --force
+# To customize: create your own rule file in .claude/rules/
 #
-# .claude/context Format Guide - Compact Reference
+# Format Guide - Compact Reference
 
 companion: format-guide.md
 
@@ -34,3 +35,4 @@ size-targets:
 for: claude (machine-optimized, fast parsing, minimal tokens)
 not-for: humans (use *.md files for docs)
 benefit: 89% token reduction (~7,750 → ~850 tokens)
+---
