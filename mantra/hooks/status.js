@@ -11,8 +11,11 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const crypto = require('crypto');
 
 const STATE_FILE = path.join(os.homedir(), '.claude', 'mantra-state.json');
+const PLUGIN_ROOT = path.join(__dirname, '..');
+const PLUGIN_RULES_DIR = path.join(PLUGIN_ROOT, 'rules');
 
 /**
  * Load state from file
@@ -40,6 +43,64 @@ function saveState(state) {
     fs.writeFileSync(STATE_FILE, JSON.stringify(state));
   } catch (e) {
     // Ignore write errors
+  }
+}
+
+/**
+ * Compute content hash for a set of files
+ * MD5 of concatenated MD5s (sorted by filename)
+ */
+function computeContentHash(dir, files) {
+  const hashes = [];
+  for (const file of files.sort()) {
+    try {
+      const content = fs.readFileSync(path.join(dir, file), 'utf8');
+      const hash = crypto.createHash('md5').update(content).digest('hex');
+      hashes.push(`${file}:${hash}`);
+    } catch (e) {
+      // Skip unreadable files
+    }
+  }
+  return crypto.createHash('md5').update(hashes.join('\n')).digest('hex');
+}
+
+/**
+ * Check if project rules are outdated compared to plugin
+ */
+function checkRulesOutdated(cwd) {
+  const versionFile = path.join(cwd, '.claude', 'rules', '.mantra-version.json');
+
+  // No version file = not initialized or old version
+  if (!fs.existsSync(versionFile)) {
+    return { outdated: false, reason: null };
+  }
+
+  try {
+    const versionData = JSON.parse(fs.readFileSync(versionFile, 'utf8'));
+    const storedHash = versionData.contentHash;
+
+    if (!storedHash) {
+      return { outdated: false, reason: null };
+    }
+
+    // Get current plugin files
+    const pluginFiles = fs.readdirSync(PLUGIN_RULES_DIR)
+      .filter(f => f.endsWith('.md'));
+
+    if (pluginFiles.length === 0) {
+      return { outdated: false, reason: null };
+    }
+
+    // Compute current hash
+    const currentHash = computeContentHash(PLUGIN_RULES_DIR, pluginFiles);
+
+    if (currentHash !== storedHash) {
+      return { outdated: true, reason: 'plugin updated' };
+    }
+
+    return { outdated: false, reason: null };
+  } catch (e) {
+    return { outdated: false, reason: null };
   }
 }
 
@@ -91,6 +152,7 @@ function getRulesStatus(cwd) {
  */
 function handleSessionStart(cwd, source) {
   const status = getRulesStatus(cwd);
+  const outdatedCheck = checkRulesOutdated(cwd);
   const state = { count: 0 };
   saveState(state);
 
@@ -102,10 +164,16 @@ function handleSessionStart(cwd, source) {
     reloadIndicator = ' (resumed)';
   }
 
+  // Check for outdated rules
+  let outdatedWarning = '';
+  if (outdatedCheck.outdated) {
+    outdatedWarning = '\n⚠️  Rules outdated - run /mantra:init --force to update';
+  }
+
   let statusLine;
   if (status.loaded) {
     const fileList = status.files.map(f => f.replace('.md', '')).join(', ');
-    statusLine = `📍 Mantra: ${status.files.length} rules (~${status.tokens} tokens)${reloadIndicator} | ${fileList}`;
+    statusLine = `📍 Mantra: ${status.files.length} rules (~${status.tokens} tokens)${reloadIndicator} | ${fileList}${outdatedWarning}`;
   } else {
     statusLine = `📍 Mantra: no rules loaded${reloadIndicator} (run /mantra:init)`;
   }
@@ -118,7 +186,8 @@ function handleSessionStart(cwd, source) {
       rulesLoaded: status.loaded,
       ruleCount: status.files.length,
       estimatedTokens: status.tokens,
-      source: source || 'startup'
+      source: source || 'startup',
+      rulesOutdated: outdatedCheck.outdated
     }
   };
 }

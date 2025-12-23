@@ -3,7 +3,7 @@ const path = require('path');
 const os = require('os');
 const { execSync } = require('child_process');
 
-const { initCommand, helpCommand, RULES_DIR } = require('../cli');
+const { initCommand, helpCommand, RULES_DIR, getPluginVersion, computeContentHash } = require('../cli');
 
 describe('mantra CLI', () => {
   let tmpDir;
@@ -51,6 +51,21 @@ describe('mantra CLI', () => {
       expect(behaviorContent.trim().endsWith('---')).toBe(true);
       // Should have companion reference
       expect(behaviorContent).toContain('companion:');
+    });
+
+    it('creates version file with content hash', () => {
+      initCommand([]);
+
+      const versionFile = path.join(tmpDir, '.claude', 'rules', '.mantra-version.json');
+      expect(fs.existsSync(versionFile)).toBe(true);
+
+      const versionData = JSON.parse(fs.readFileSync(versionFile, 'utf8'));
+      expect(versionData.version).toBeDefined();
+      expect(versionData.contentHash).toBeDefined();
+      expect(versionData.contentHash).toMatch(/^[a-f0-9]{32}$/); // MD5 format
+      expect(versionData.copiedAt).toBeDefined();
+      expect(versionData.files).toBeInstanceOf(Array);
+      expect(versionData.files.length).toBeGreaterThan(0);
     });
 
     it('does not overwrite existing files without --force', () => {

@@ -1,9 +1,9 @@
 ---
-description: Convert verbose markdown to compact frontmatter rule
+description: Create a compact frontmatter rule from verbose markdown
 argument-hint: <source-file.md>
 ---
 
-# Compact: Convert Markdown to Frontmatter Rule
+# Make Rule: Convert Markdown to Frontmatter Rule
 
 Convert a verbose, human-readable markdown file into a token-efficient frontmatter-only rule file.
 

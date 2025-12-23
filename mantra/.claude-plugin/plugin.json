@@ -16,6 +16,6 @@
   ],
   "commands": [
     "./commands/init.md",
-    "./commands/compact.md"
+    "./commands/make-rule.md"
   ]
 }

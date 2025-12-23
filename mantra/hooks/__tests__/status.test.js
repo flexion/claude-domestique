@@ -189,4 +189,55 @@ describe('mantra status hook', () => {
     expect(result.systemMessage).not.toContain('resumed');
     expect(result.hookSpecificOutput.source).toBe('startup');
   });
+
+  it('detects outdated rules when content hash differs', () => {
+    const rulesDir = path.join(tmpDir, '.claude', 'rules');
+    fs.mkdirSync(rulesDir, { recursive: true });
+    fs.writeFileSync(path.join(rulesDir, 'behavior.md'), '---\ntest: rule\n---');
+
+    // Write a version file with a different hash
+    fs.writeFileSync(
+      path.join(rulesDir, '.mantra-version.json'),
+      JSON.stringify({
+        version: '0.1.0',
+        contentHash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa0', // Different hash
+        copiedAt: new Date().toISOString(),
+        files: ['behavior.md']
+      })
+    );
+
+    const result = runHook({
+      hook_event_name: 'SessionStart',
+      cwd: tmpDir
+    });
+
+    expect(result.systemMessage).toContain('outdated');
+    expect(result.systemMessage).toContain('/mantra:init --force');
+    expect(result.hookSpecificOutput.rulesOutdated).toBe(true);
+  });
+
+  it('does not warn when content hash matches', () => {
+    const rulesDir = path.join(tmpDir, '.claude', 'rules');
+    fs.mkdirSync(rulesDir, { recursive: true });
+    fs.writeFileSync(path.join(rulesDir, 'behavior.md'), '---\ntest: rule\n---');
+
+    // Write a version file - rulesOutdated should be false since no plugin rules to compare
+    fs.writeFileSync(
+      path.join(rulesDir, '.mantra-version.json'),
+      JSON.stringify({
+        version: '0.2.0',
+        copiedAt: new Date().toISOString(),
+        files: ['behavior.md']
+        // No contentHash = no outdated check
+      })
+    );
+
+    const result = runHook({
+      hook_event_name: 'SessionStart',
+      cwd: tmpDir
+    });
+
+    expect(result.systemMessage).not.toContain('outdated');
+    expect(result.hookSpecificOutput.rulesOutdated).toBe(false);
+  });
 });

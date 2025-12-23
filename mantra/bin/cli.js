@@ -8,6 +8,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const COMMANDS = {
   init: initCommand,
@@ -17,6 +18,37 @@ const COMMANDS = {
 // Paths
 const PACKAGE_ROOT = path.join(__dirname, '..');
 const RULES_DIR = path.join(PACKAGE_ROOT, 'rules');
+const PACKAGE_JSON = path.join(PACKAGE_ROOT, 'package.json');
+
+/**
+ * Get current plugin version from package.json
+ */
+function getPluginVersion() {
+  try {
+    const pkg = JSON.parse(fs.readFileSync(PACKAGE_JSON, 'utf8'));
+    return pkg.version || '0.0.0';
+  } catch (e) {
+    return '0.0.0';
+  }
+}
+
+/**
+ * Compute content hash for a set of files
+ * MD5 of concatenated MD5s (sorted by filename)
+ */
+function computeContentHash(dir, files) {
+  const hashes = [];
+  for (const file of files.sort()) {
+    try {
+      const content = fs.readFileSync(path.join(dir, file), 'utf8');
+      const hash = crypto.createHash('md5').update(content).digest('hex');
+      hashes.push(`${file}:${hash}`);
+    } catch (e) {
+      // Skip unreadable files
+    }
+  }
+  return crypto.createHash('md5').update(hashes.join('\n')).digest('hex');
+}
 
 /**
  * Initialize mantra in current directory
@@ -116,6 +148,17 @@ function initCommand(args, options = {}) {
     }
   }
 
+  // Write version metadata for update detection
+  const versionFile = path.join(rulesDir, '.mantra-version.json');
+  const contentHash = computeContentHash(rulesSourceDir, ruleFiles);
+  const versionData = {
+    version: getPluginVersion(),
+    contentHash: contentHash,
+    copiedAt: new Date().toISOString(),
+    files: ruleFiles
+  };
+  fs.writeFileSync(versionFile, JSON.stringify(versionData, null, 2));
+
   console.log('\n---');
   console.log(`Done! ${copied} created, ${updated} updated, ${skipped} skipped.`);
   console.log('\nHow it works:');
@@ -176,7 +219,9 @@ function main() {
 module.exports = {
   initCommand,
   helpCommand,
-  RULES_DIR
+  RULES_DIR,
+  getPluginVersion,
+  computeContentHash
 };
 
 // Run if executed directly
