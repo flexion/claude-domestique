@@ -53,11 +53,16 @@ Once installed, rules are automatically loaded by Claude Code at session start.
 
 ### Status Line
 
-The status hook shows you:
-- **SessionStart**: `📍 Mantra: 4 rules (~850 tokens) | behavior, context-format, ...`
-- **UserPromptSubmit**: `📍 Mantra: 5 (~10% ctx) ✓` (prompt count and context fullness)
+The status hook shows real-time context usage from Claude Code's token data:
 
-When context is compacted or resumed: `📍 Mantra: 4 rules (~850 tokens) (reloaded after compaction)`
+- **SessionStart**: `📍 Mantra: 4 rules (~850 tokens) @ 8% | behavior, context-format, ...`
+- **UserPromptSubmit**: `📍 Mantra: 25% ctx ✓`
+
+**Warnings:**
+- **Startup bloat** (>35%): `⚠️ High initial context (40%) - consider trimming CLAUDE.md or rules`
+- **Drift warning** (>=70%): `📍 Mantra: 75% ctx ⚠️ drift ✓`
+
+When context is compacted or resumed: `📍 Mantra: 4 rules (~850 tokens) @ 12% (reloaded after compaction)`
 
 ### Commands
 
@@ -71,11 +76,13 @@ When context is compacted or resumed: `📍 Mantra: 4 rules (~850 tokens) (reloa
 
 Use `/mantra:make-rule` to create your own rules:
 
-1. Write a verbose, human-readable markdown file
-2. Run `/mantra:make-rule your-guide.md`
+1. Write a verbose, human-readable markdown file (e.g., `docs/code-review.md`)
+2. Run `/mantra:make-rule docs/code-review.md`
 3. Claude converts it to token-efficient frontmatter
 4. Identify which rules are CRITICAL (used sparingly)
-5. Save to `.claude/rules/your-rule.md`
+5. Save compact version to `.claude/rules/code-review.md`
+
+**What happens to the source?** The original verbose file is preserved as a "companion" - the compact rule references it via `companion: docs/code-review.md`. Claude loads the compact rules automatically but can read the companion file on-demand for detailed examples or clarification.
 
 ## Rule File Format
 

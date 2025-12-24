@@ -145,16 +145,23 @@ function getRulesStatus(cwd) {
   return { loaded: true, files, tokens: totalTokens };
 }
 
+// Thresholds for warnings
+const STARTUP_BLOAT_THRESHOLD = 35; // Warn if >35% context used at startup
+
 /**
  * Handle SessionStart - show full status, reset counter
  * @param {string} cwd - Current working directory
  * @param {string} source - Why SessionStart fired: "startup", "compact", "resume"
+ * @param {object} contextWindow - Token usage data from Claude Code
  */
-function handleSessionStart(cwd, source) {
+function handleSessionStart(cwd, source, contextWindow) {
   const status = getRulesStatus(cwd);
   const outdatedCheck = checkRulesOutdated(cwd);
   const state = { count: 0 };
   saveState(state);
+
+  // Calculate initial context usage
+  const contextPercent = calculateContextPercentage(contextWindow);
 
   // Determine reload reason indicator
   let reloadIndicator = '';
@@ -165,17 +172,27 @@ function handleSessionStart(cwd, source) {
   }
 
   // Check for outdated rules
-  let outdatedWarning = '';
+  let warnings = [];
   if (outdatedCheck.outdated) {
-    outdatedWarning = '\n⚠️  Rules outdated - run /mantra:init --force to update';
+    warnings.push('⚠️  Rules outdated - run /mantra:init --force to update');
   }
+
+  // Check for startup bloat (too much context at start)
+  let startupBloat = false;
+  if (contextPercent !== null && contextPercent > STARTUP_BLOAT_THRESHOLD && source === 'startup') {
+    warnings.push(`⚠️  High initial context (${contextPercent}%) - consider trimming CLAUDE.md or rules`);
+    startupBloat = true;
+  }
+
+  const warningText = warnings.length > 0 ? '\n' + warnings.join('\n') : '';
 
   let statusLine;
   if (status.loaded) {
     const fileList = status.files.map(f => f.replace('.md', '')).join(', ');
-    statusLine = `📍 Mantra: ${status.files.length} rules (~${status.tokens} tokens)${reloadIndicator} | ${fileList}${outdatedWarning}`;
+    const contextInfo = contextPercent !== null ? ` @ ${contextPercent}%` : '';
+    statusLine = `📍 Mantra: ${status.files.length} rules (~${status.tokens} tokens)${contextInfo}${reloadIndicator} | ${fileList}${warningText}`;
   } else {
-    statusLine = `📍 Mantra: no rules loaded${reloadIndicator} (run /mantra:init)`;
+    statusLine = `📍 Mantra: no rules loaded${reloadIndicator} (run /mantra:init)${warningText}`;
   }
 
   return {
@@ -187,27 +204,54 @@ function handleSessionStart(cwd, source) {
       ruleCount: status.files.length,
       estimatedTokens: status.tokens,
       source: source || 'startup',
-      rulesOutdated: outdatedCheck.outdated
+      rulesOutdated: outdatedCheck.outdated,
+      contextPercentage: contextPercent,
+      startupBloat
     }
   };
 }
 
-// Rough estimation constants
-const TOKENS_PER_TURN = 2000;  // Average tokens per prompt+response
-const USABLE_CONTEXT = 100000; // Approx usable context before compaction
-
 /**
- * Estimate context fullness percentage based on prompt count
+ * Get current context token count from context_window data
  */
-function estimateContextFullness(promptCount) {
-  const estimated = (promptCount * TOKENS_PER_TURN) / USABLE_CONTEXT * 100;
-  return Math.min(Math.round(estimated), 99); // Cap at 99% (100% = compaction)
+function getCurrentContextTokens(contextWindow) {
+  if (!contextWindow?.current_usage) {
+    return null;
+  }
+
+  const usage = contextWindow.current_usage;
+  return (usage.input_tokens || 0) +
+    (usage.cache_creation_input_tokens || 0) +
+    (usage.cache_read_input_tokens || 0);
 }
 
 /**
- * Handle UserPromptSubmit - show freshness indicator with context estimate
+ * Calculate context usage percentage from actual token data
+ * Uses context_window data provided by Claude Code statusline
  */
-function handleUserPromptSubmit(cwd) {
+function calculateContextPercentage(contextWindow) {
+  if (!contextWindow?.context_window_size) {
+    return null;
+  }
+
+  const currentTokens = getCurrentContextTokens(contextWindow);
+  if (currentTokens === null) {
+    return null;
+  }
+
+  const percent = Math.round((currentTokens / contextWindow.context_window_size) * 100);
+  return Math.min(percent, 99); // Cap at 99%
+}
+
+// Threshold for drift warning
+const DRIFT_WARNING_THRESHOLD = 70; // Warn about potential drift above 70% context
+
+/**
+ * Handle UserPromptSubmit - show freshness indicator with context usage
+ * @param {string} cwd - Current working directory
+ * @param {object} contextWindow - Token usage data from Claude Code
+ */
+function handleUserPromptSubmit(cwd, contextWindow) {
   const status = getRulesStatus(cwd);
   const state = loadState();
 
@@ -215,15 +259,23 @@ function handleUserPromptSubmit(cwd) {
   state.count = (state.count || 0) + 1;
   saveState(state);
 
-  // Estimate context fullness
-  const fullness = estimateContextFullness(state.count);
+  // Calculate actual context usage percentage
+  const contextPercent = calculateContextPercentage(contextWindow);
 
   // Build status line
   let statusLine;
+  const contextPart = contextPercent !== null ? `${contextPercent}% ctx` : `#${state.count}`;
+
+  // Add drift warning at high context usage
+  let driftWarning = '';
+  if (contextPercent !== null && contextPercent >= DRIFT_WARNING_THRESHOLD) {
+    driftWarning = ' ⚠️ drift';
+  }
+
   if (status.loaded) {
-    statusLine = `📍 Mantra: ${state.count} (~${fullness}% ctx) ✓`;
+    statusLine = `📍 Mantra: ${contextPart}${driftWarning} ✓`;
   } else {
-    statusLine = `📍 Mantra: ${state.count} (~${fullness}% ctx) (no rules)`;
+    statusLine = `📍 Mantra: ${contextPart}${driftWarning} (no rules)`;
   }
 
   return {
@@ -233,7 +285,8 @@ function handleUserPromptSubmit(cwd) {
       additionalContext: statusLine,
       promptCount: state.count,
       rulesLoaded: status.loaded,
-      estimatedContextFullness: fullness
+      contextPercentage: contextPercent,
+      driftWarning: contextPercent !== null && contextPercent >= DRIFT_WARNING_THRESHOLD
     }
   };
 }
@@ -255,9 +308,9 @@ function main() {
       if (data.hook_event_name === 'SessionStart') {
         // source can be "startup", "compact", or "resume"
         const source = data.source || 'startup';
-        result = handleSessionStart(cwd, source);
+        result = handleSessionStart(cwd, source, data.context_window);
       } else if (data.hook_event_name === 'UserPromptSubmit') {
-        result = handleUserPromptSubmit(cwd);
+        result = handleUserPromptSubmit(cwd, data.context_window);
       } else {
         result = { continue: true };
       }
