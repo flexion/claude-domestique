@@ -11,12 +11,44 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 // Find plugin root (where this script lives is scripts/, go up one)
 const PLUGIN_ROOT = path.join(__dirname, '..');
 const RULES_DIR = path.join(PLUGIN_ROOT, 'rules');
 const CONTEXT_DIR = path.join(PLUGIN_ROOT, 'context');
 const STATUSLINE_SRC = path.join(__dirname, 'statusline.js');
+
+/**
+ * Compute MD5 hash of file content
+ * @param {string} filePath - Path to file
+ * @returns {string} MD5 hash hex string
+ */
+function computeFileHash(filePath) {
+  const content = fs.readFileSync(filePath, 'utf8');
+  return crypto.createHash('md5').update(content).digest('hex');
+}
+
+/**
+ * Compute combined hash for multiple files
+ * MD5 of concatenated MD5s (sorted by filename)
+ * @param {string} dir - Directory containing files
+ * @param {string[]} files - List of filenames
+ * @returns {string} Combined MD5 hash
+ */
+function computeContentHash(dir, files) {
+  const hashes = [];
+  for (const file of files.sort()) {
+    try {
+      const content = fs.readFileSync(path.join(dir, file), 'utf8');
+      const hash = crypto.createHash('md5').update(content).digest('hex');
+      hashes.push(`${file}:${hash}`);
+    } catch (e) {
+      // Skip unreadable files
+    }
+  }
+  return crypto.createHash('md5').update(hashes.join('\n')).digest('hex');
+}
 
 /**
  * Initialize .claude/rules in target directory
@@ -240,6 +272,19 @@ function init(targetDir = process.cwd(), options = {}) {
       console.log('Exists:  .claude/settings.json statusLine');
     }
   }
+
+  // Write version file with hashes for update detection
+  const versionFile = path.join(projectRulesDir, '.mantra-version.json');
+  const versionData = {
+    version: require(path.join(PLUGIN_ROOT, 'package.json')).version,
+    copiedAt: new Date().toISOString(),
+    files: ruleFiles,
+    contentHash: computeContentHash(RULES_DIR, ruleFiles),
+    statuslineHash: fs.existsSync(STATUSLINE_SRC) ? computeFileHash(STATUSLINE_SRC) : null
+  };
+  fs.writeFileSync(versionFile, JSON.stringify(versionData, null, 2) + '\n');
+  console.log();
+  console.log('Written: .claude/rules/.mantra-version.json');
 
   console.log();
   console.log('Init complete!');
