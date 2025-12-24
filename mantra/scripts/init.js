@@ -16,6 +16,7 @@ const path = require('path');
 const PLUGIN_ROOT = path.join(__dirname, '..');
 const RULES_DIR = path.join(PLUGIN_ROOT, 'rules');
 const CONTEXT_DIR = path.join(PLUGIN_ROOT, 'context');
+const STATUSLINE_SRC = path.join(__dirname, 'statusline.js');
 
 /**
  * Initialize .claude/rules in target directory
@@ -188,6 +189,58 @@ function init(targetDir = process.cwd(), options = {}) {
     }
   }
 
+  // Copy statusline script and configure settings.json
+  const statuslineDst = path.join(targetDir, '.claude', 'statusline.js');
+  let statuslineUpdated = false;
+
+  if (fs.existsSync(STATUSLINE_SRC)) {
+    const srcContent = fs.readFileSync(STATUSLINE_SRC, 'utf8');
+    const dstExists = fs.existsSync(statuslineDst);
+    const dstContent = dstExists ? fs.readFileSync(statuslineDst, 'utf8') : '';
+
+    if (!dstExists) {
+      fs.writeFileSync(statuslineDst, srcContent);
+      console.log();
+      console.log('Created: .claude/statusline.js');
+      statuslineUpdated = true;
+    } else if (srcContent !== dstContent && force) {
+      fs.writeFileSync(statuslineDst, srcContent);
+      console.log();
+      console.log('Updated: .claude/statusline.js');
+      statuslineUpdated = true;
+    } else if (srcContent !== dstContent) {
+      console.log();
+      console.log('Exists:  .claude/statusline.js (use --force to update)');
+    } else {
+      console.log();
+      console.log('Exists:  .claude/statusline.js (unchanged)');
+    }
+
+    // Configure settings.json
+    const settingsPath = path.join(targetDir, '.claude', 'settings.json');
+    let settings = {};
+
+    if (fs.existsSync(settingsPath)) {
+      try {
+        settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+      } catch (e) {
+        console.log('WARNING: Could not parse .claude/settings.json');
+      }
+    }
+
+    // Add statusLine config if not present or if we're forcing
+    if (!settings.statusLine || force) {
+      settings.statusLine = {
+        type: 'command',
+        command: '.claude/statusline.js'
+      };
+      fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
+      console.log('Configured: .claude/settings.json statusLine');
+    } else {
+      console.log('Exists:  .claude/settings.json statusLine');
+    }
+  }
+
   console.log();
   console.log('Init complete!');
   console.log();
@@ -195,11 +248,12 @@ function init(targetDir = process.cwd(), options = {}) {
   console.log('- .claude/rules/*.md files are auto-loaded by Claude Code');
   console.log('- Each rule file has compact YAML in frontmatter');
   console.log('- Companion files in .claude/context/ provide detailed examples');
+  console.log('- Status line shows rules count and context usage');
   console.log();
   console.log('To update rules after plugin update:');
   console.log('  Run /mantra:init --force');
 
-  return { success: true, copied, updated, skipped };
+  return { success: true, copied, updated, skipped, statuslineUpdated };
 }
 
 // CLI entry point

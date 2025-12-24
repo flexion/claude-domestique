@@ -304,18 +304,17 @@ function main() {
       const data = JSON.parse(input);
       const cwd = data.cwd || process.cwd();
 
-      let result;
       if (data.hook_event_name === 'SessionStart') {
         // source can be "startup", "compact", or "resume"
         const source = data.source || 'startup';
-        result = handleSessionStart(cwd, source, data.context_window);
+        const result = handleSessionStart(cwd, source, data.context_window);
+        console.log(JSON.stringify(result));
       } else if (data.hook_event_name === 'UserPromptSubmit') {
-        result = handleUserPromptSubmit(cwd, data.context_window);
+        const result = handleUserPromptSubmit(cwd, data.context_window);
+        console.log(JSON.stringify(result));
       } else {
-        result = { continue: true };
+        console.log(JSON.stringify({ continue: true }));
       }
-
-      console.log(JSON.stringify(result));
     } catch (e) {
       console.error('mantra status hook error:', e.message);
       console.log(JSON.stringify({ continue: true }));
