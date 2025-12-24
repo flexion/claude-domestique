@@ -388,4 +388,5 @@ describe('mantra status hook', () => {
     expect(result.systemMessage).not.toContain('drift');
     expect(result.hookSpecificOutput.driftWarning).toBe(false);
   });
+
 });
