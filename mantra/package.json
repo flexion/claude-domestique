@@ -1,6 +1,6 @@
 {
   "name": "@claude-domestique/mantra",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Behavioral rules for Claude Code sessions - native .claude/rules/ auto-loading",
   "main": "index.js",
   "bin": {
