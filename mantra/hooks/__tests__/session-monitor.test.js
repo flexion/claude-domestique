@@ -3,12 +3,12 @@ const path = require('path');
 const os = require('os');
 const { execSync } = require('child_process');
 
-describe('mantra status hook', () => {
+describe('mantra session-monitor hook', () => {
   let tmpDir;
-  const hookPath = path.join(__dirname, '..', 'status.js');
+  const hookPath = path.join(__dirname, '..', 'session-monitor.js');
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mantra-status-test-'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mantra-session-monitor-test-'));
   });
 
   afterEach(() => {

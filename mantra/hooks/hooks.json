@@ -1,12 +1,12 @@
 {
-  "description": "Mantra status - shows rules loaded (SessionStart) and freshness indicator (UserPromptSubmit)",
+  "description": "Mantra session monitor - shows rules loaded (SessionStart) and context freshness (UserPromptSubmit)",
   "hooks": {
     "SessionStart": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/status.js",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/session-monitor.js",
             "timeout": 3
           }
         ]
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/status.js",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/session-monitor.js",
             "timeout": 3
           }
         ]
