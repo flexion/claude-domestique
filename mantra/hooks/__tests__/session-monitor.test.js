@@ -3,12 +3,12 @@ const path = require('path');
 const os = require('os');
 const { execSync } = require('child_process');
 
-describe('mantra status hook', () => {
+describe('mantra session-monitor hook', () => {
   let tmpDir;
-  const hookPath = path.join(__dirname, '..', 'status.js');
+  const hookPath = path.join(__dirname, '..', 'session-monitor.js');
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mantra-status-test-'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mantra-session-monitor-test-'));
   });
 
   afterEach(() => {
@@ -271,6 +271,61 @@ describe('mantra status hook', () => {
 
     expect(result.systemMessage).not.toContain('outdated');
     expect(result.hookSpecificOutput.rulesOutdated).toBe(false);
+  });
+
+  it('detects outdated statusline when statusline hash differs', () => {
+    const rulesDir = path.join(tmpDir, '.claude', 'rules');
+    fs.mkdirSync(rulesDir, { recursive: true });
+    fs.writeFileSync(path.join(rulesDir, 'behavior.md'), '---\ntest: rule\n---');
+
+    // Write a version file with a different statusline hash
+    fs.writeFileSync(
+      path.join(rulesDir, '.mantra-version.json'),
+      JSON.stringify({
+        version: '0.2.0',
+        copiedAt: new Date().toISOString(),
+        files: ['behavior.md'],
+        statuslineHash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' // Different hash
+      })
+    );
+
+    const result = runHook({
+      hook_event_name: 'SessionStart',
+      cwd: tmpDir
+    });
+
+    expect(result.systemMessage).toContain('Statusline outdated');
+    expect(result.systemMessage).toContain('/mantra:init --force');
+    expect(result.hookSpecificOutput.statuslineOutdated).toBe(true);
+    expect(result.hookSpecificOutput.rulesOutdated).toBe(false);
+  });
+
+  it('warns about both rules and statusline when both are outdated', () => {
+    const rulesDir = path.join(tmpDir, '.claude', 'rules');
+    fs.mkdirSync(rulesDir, { recursive: true });
+    fs.writeFileSync(path.join(rulesDir, 'behavior.md'), '---\ntest: rule\n---');
+
+    // Write a version file with different hashes for both
+    fs.writeFileSync(
+      path.join(rulesDir, '.mantra-version.json'),
+      JSON.stringify({
+        version: '0.2.0',
+        copiedAt: new Date().toISOString(),
+        files: ['behavior.md'],
+        contentHash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa0', // Different rules hash
+        statuslineHash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' // Different statusline hash
+      })
+    );
+
+    const result = runHook({
+      hook_event_name: 'SessionStart',
+      cwd: tmpDir
+    });
+
+    expect(result.systemMessage).toContain('Rules and statusline outdated');
+    expect(result.systemMessage).toContain('/mantra:init --force');
+    expect(result.hookSpecificOutput.rulesOutdated).toBe(true);
+    expect(result.hookSpecificOutput.statuslineOutdated).toBe(true);
   });
 
   it('warns about startup bloat when initial context >35%', () => {

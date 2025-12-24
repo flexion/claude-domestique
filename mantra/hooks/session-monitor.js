@@ -16,6 +16,7 @@ const crypto = require('crypto');
 const STATE_FILE = path.join(os.homedir(), '.claude', 'mantra-state.json');
 const PLUGIN_ROOT = path.join(__dirname, '..');
 const PLUGIN_RULES_DIR = path.join(PLUGIN_ROOT, 'rules');
+const PLUGIN_STATUSLINE = path.join(PLUGIN_ROOT, 'scripts', 'statusline.js');
 
 /**
  * Load state from file
@@ -47,6 +48,20 @@ function saveState(state) {
 }
 
 /**
+ * Compute MD5 hash of file content
+ * @param {string} filePath - Path to file
+ * @returns {string|null} MD5 hash hex string or null if file doesn't exist
+ */
+function computeFileHash(filePath) {
+  try {
+    const content = fs.readFileSync(filePath, 'utf8');
+    return crypto.createHash('md5').update(content).digest('hex');
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
  * Compute content hash for a set of files
  * MD5 of concatenated MD5s (sorted by filename)
  */
@@ -65,43 +80,59 @@ function computeContentHash(dir, files) {
 }
 
 /**
- * Check if project rules are outdated compared to plugin
+ * Check if project rules or statusline are outdated compared to plugin
+ * @returns {object} { rulesOutdated, statuslineOutdated, reason }
  */
-function checkRulesOutdated(cwd) {
+function checkOutdated(cwd) {
   const versionFile = path.join(cwd, '.claude', 'rules', '.mantra-version.json');
 
   // No version file = not initialized or old version
   if (!fs.existsSync(versionFile)) {
-    return { outdated: false, reason: null };
+    return { rulesOutdated: false, statuslineOutdated: false, reason: null };
   }
 
   try {
     const versionData = JSON.parse(fs.readFileSync(versionFile, 'utf8'));
-    const storedHash = versionData.contentHash;
+    let rulesOutdated = false;
+    let statuslineOutdated = false;
 
-    if (!storedHash) {
-      return { outdated: false, reason: null };
+    // Check rules hash
+    const storedRulesHash = versionData.contentHash;
+    if (storedRulesHash) {
+      const pluginFiles = fs.readdirSync(PLUGIN_RULES_DIR)
+        .filter(f => f.endsWith('.md'));
+
+      if (pluginFiles.length > 0) {
+        const currentRulesHash = computeContentHash(PLUGIN_RULES_DIR, pluginFiles);
+        if (currentRulesHash !== storedRulesHash) {
+          rulesOutdated = true;
+        }
+      }
     }
 
-    // Get current plugin files
-    const pluginFiles = fs.readdirSync(PLUGIN_RULES_DIR)
-      .filter(f => f.endsWith('.md'));
-
-    if (pluginFiles.length === 0) {
-      return { outdated: false, reason: null };
+    // Check statusline hash
+    const storedStatuslineHash = versionData.statuslineHash;
+    if (storedStatuslineHash && fs.existsSync(PLUGIN_STATUSLINE)) {
+      const currentStatuslineHash = computeFileHash(PLUGIN_STATUSLINE);
+      if (currentStatuslineHash && currentStatuslineHash !== storedStatuslineHash) {
+        statuslineOutdated = true;
+      }
     }
 
-    // Compute current hash
-    const currentHash = computeContentHash(PLUGIN_RULES_DIR, pluginFiles);
-
-    if (currentHash !== storedHash) {
-      return { outdated: true, reason: 'plugin updated' };
-    }
-
-    return { outdated: false, reason: null };
+    const reason = rulesOutdated || statuslineOutdated ? 'plugin updated' : null;
+    return { rulesOutdated, statuslineOutdated, reason };
   } catch (e) {
-    return { outdated: false, reason: null };
+    return { rulesOutdated: false, statuslineOutdated: false, reason: null };
   }
+}
+
+/**
+ * Check if project rules are outdated compared to plugin
+ * @deprecated Use checkOutdated instead
+ */
+function checkRulesOutdated(cwd) {
+  const result = checkOutdated(cwd);
+  return { outdated: result.rulesOutdated, reason: result.reason };
 }
 
 /**
@@ -156,7 +187,7 @@ const STARTUP_BLOAT_THRESHOLD = 35; // Warn if >35% context used at startup
  */
 function handleSessionStart(cwd, source, contextWindow) {
   const status = getRulesStatus(cwd);
-  const outdatedCheck = checkRulesOutdated(cwd);
+  const outdatedCheck = checkOutdated(cwd);
   const state = { count: 0 };
   saveState(state);
 
@@ -171,10 +202,14 @@ function handleSessionStart(cwd, source, contextWindow) {
     reloadIndicator = ' (resumed)';
   }
 
-  // Check for outdated rules
+  // Check for outdated rules or statusline
   let warnings = [];
-  if (outdatedCheck.outdated) {
+  if (outdatedCheck.rulesOutdated && outdatedCheck.statuslineOutdated) {
+    warnings.push('⚠️  Rules and statusline outdated - run /mantra:init --force to update');
+  } else if (outdatedCheck.rulesOutdated) {
     warnings.push('⚠️  Rules outdated - run /mantra:init --force to update');
+  } else if (outdatedCheck.statuslineOutdated) {
+    warnings.push('⚠️  Statusline outdated - run /mantra:init --force to update');
   }
 
   // Check for startup bloat (too much context at start)
@@ -204,7 +239,8 @@ function handleSessionStart(cwd, source, contextWindow) {
       ruleCount: status.files.length,
       estimatedTokens: status.tokens,
       source: source || 'startup',
-      rulesOutdated: outdatedCheck.outdated,
+      rulesOutdated: outdatedCheck.rulesOutdated,
+      statuslineOutdated: outdatedCheck.statuslineOutdated,
       contextPercentage: contextPercent,
       startupBloat
     }

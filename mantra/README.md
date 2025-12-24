@@ -53,16 +53,47 @@ Once installed, rules are automatically loaded by Claude Code at session start.
 
 ### Status Line
 
-The status hook shows real-time context usage from Claude Code's token data:
+mantra installs a custom status line that shows real-time information at the bottom of Claude Code:
 
-- **SessionStart**: `📍 Mantra: 4 rules (~850 tokens) @ 8% | behavior, context-format, ...`
-- **UserPromptSubmit**: `📍 Mantra: 25% ctx ✓`
+```
+📍 Mantra: 4 rules @ 25% | Opus | $0.15
+```
+
+**Components:**
+- **Rules count** - Number of `.claude/rules/*.md` files loaded
+- **Context percentage** - Real context window usage (from Claude Code token data)
+- **Model** - Current model (Opus, Sonnet, etc.)
+- **Cost** - Session cost in USD
+
+**Hook Status (SessionStart):**
+```
+📍 Mantra: 4 rules (~850 tokens) @ 8% | behavior, context-format, ...
+```
 
 **Warnings:**
 - **Startup bloat** (>35%): `⚠️ High initial context (40%) - consider trimming CLAUDE.md or rules`
-- **Drift warning** (>=70%): `📍 Mantra: 75% ctx ⚠️ drift ✓`
+- **Drift warning** (>=70%): `📍 Mantra: 4 rules @ 75% ⚠️ | Opus | $0.42`
+- **Outdated files**: `⚠️ Rules and statusline outdated - run /mantra:init --force to update`
 
-When context is compacted or resumed: `📍 Mantra: 4 rules (~850 tokens) @ 12% (reloaded after compaction)`
+**Installation:**
+
+The `/mantra:init` command automatically:
+1. Copies `statusline.js` to `.claude/statusline.js`
+2. Configures `.claude/settings.json` with the statusLine setting
+3. Tracks content hashes to detect when updates are available
+
+When the plugin is updated, the SessionStart hook will warn you to run `/mantra:init --force` to get the latest statusline features.
+
+**IDE Compatibility:**
+
+| Environment | Status Line |
+|-------------|-------------|
+| Terminal/CLI | Full support |
+| VS Code Integrated Terminal | Full support |
+| VS Code Extension (GUI panel) | Not supported |
+| JetBrains IDEs | Full support (uses CLI) |
+
+The status line is a CLI feature. In VS Code, use Claude Code from the integrated terminal (`` Ctrl+` ``) to see the status line.
 
 ### Commands
 
