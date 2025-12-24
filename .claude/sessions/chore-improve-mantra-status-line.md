@@ -7,6 +7,7 @@
 - **Status**: in-progress
 
 ## Goal
+
 Add real context window usage percentage to mantra status line
 
 ## Session Log
@@ -22,3 +23,4 @@ Add real context window usage percentage to mantra status line
 ## Next Steps
 1. Run `/mantra:init --force` in a project to test the statusline
 2. Commit changes
+
