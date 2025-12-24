@@ -70,7 +70,8 @@ describe('mantra statusline script', () => {
   });
 
   describe('context percentage', () => {
-    it('calculates context percentage correctly', () => {
+    // Note: percentages include 22.5% autocompact buffer to match /context command
+    it('calculates context percentage correctly (includes autocompact buffer)', () => {
       const rulesDir = path.join(tmpDir, '.claude', 'rules');
       fs.mkdirSync(rulesDir, { recursive: true });
       fs.writeFileSync(path.join(rulesDir, 'behavior.md'), '---\ntest: rule\n---');
@@ -80,14 +81,14 @@ describe('mantra statusline script', () => {
         context_window: {
           context_window_size: 200000,
           current_usage: {
-            input_tokens: 50000, // 25%
+            input_tokens: 50000, // 25% + 22.5% buffer = 48%
             cache_creation_input_tokens: 0,
             cache_read_input_tokens: 0
           }
         }
       });
 
-      expect(result).toContain('25%');
+      expect(result).toContain('48%');
     });
 
     it('includes cache tokens in percentage calculation', () => {
@@ -107,8 +108,8 @@ describe('mantra statusline script', () => {
         }
       });
 
-      // 10000 + 20000 + 10000 = 40000 / 200000 = 20%
-      expect(result).toContain('20%');
+      // 10000 + 20000 + 10000 = 40000 / 200000 = 20% + 22.5% buffer = 43%
+      expect(result).toContain('43%');
     });
 
     it('shows ? when no context_window data', () => {
@@ -125,7 +126,8 @@ describe('mantra statusline script', () => {
   });
 
   describe('drift warning', () => {
-    it('shows drift warning at 70% context usage', () => {
+    // Note: percentages include 22.5% autocompact buffer
+    it('shows drift warning at 70% displayed context usage', () => {
       const rulesDir = path.join(tmpDir, '.claude', 'rules');
       fs.mkdirSync(rulesDir, { recursive: true });
       fs.writeFileSync(path.join(rulesDir, 'behavior.md'), '---\ntest: rule\n---');
@@ -135,7 +137,7 @@ describe('mantra statusline script', () => {
         context_window: {
           context_window_size: 200000,
           current_usage: {
-            input_tokens: 140000, // 70%
+            input_tokens: 95000, // 47.5% + 22.5% buffer = 70%
             cache_creation_input_tokens: 0,
             cache_read_input_tokens: 0
           }
@@ -156,14 +158,14 @@ describe('mantra statusline script', () => {
         context_window: {
           context_window_size: 200000,
           current_usage: {
-            input_tokens: 100000, // 50%
+            input_tokens: 90000, // 45% + 22.5% buffer = 68%
             cache_creation_input_tokens: 0,
             cache_read_input_tokens: 0
           }
         }
       });
 
-      expect(result).toContain('50%');
+      expect(result).toContain('68%');
       expect(result).not.toContain('\u26a0\ufe0f');
     });
   });
@@ -326,14 +328,14 @@ describe('mantra statusline script', () => {
         context_window: {
           context_window_size: 200000,
           current_usage: {
-            input_tokens: 10000,
+            input_tokens: 10000, // 5% + 22.5% buffer = 28%
             cache_creation_input_tokens: 0,
             cache_read_input_tokens: 0
           }
         }
       });
 
-      expect(result).toContain('1 rules @ 5%');
+      expect(result).toContain('1 rules @ 28%');
       expect(result).toContain('Opus');
       expect(result).toContain('$0.15');
       expect(result).toContain('|');
@@ -376,7 +378,7 @@ describe('mantra statusline script', () => {
         context_window: {
           context_window_size: 200000,
           current_usage: {
-            input_tokens: 20000,
+            input_tokens: 20000, // 10% + 22.5% buffer = 33%
             cache_creation_input_tokens: 0,
             cache_read_input_tokens: 0
           }
@@ -384,7 +386,7 @@ describe('mantra statusline script', () => {
       });
 
       expect(result).toContain('Mantra:');
-      expect(result).toContain('10%');
+      expect(result).toContain('33%');
     });
   });
 });

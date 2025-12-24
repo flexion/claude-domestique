@@ -67,7 +67,8 @@ function getCurrentContextTokens(contextWindow) {
 }
 
 /**
- * Calculate context usage percentage
+ * Calculate context usage percentage (matching /context command)
+ * Includes autocompact buffer reservation (~22.5% of context window)
  */
 function calculateContextPercentage(contextWindow) {
   if (!contextWindow?.context_window_size) {
@@ -79,7 +80,11 @@ function calculateContextPercentage(contextWindow) {
     return null;
   }
 
-  const percent = Math.round((currentTokens / contextWindow.context_window_size) * 100);
+  // Add autocompact buffer (22.5% of context window) to match /context display
+  const autocompactBuffer = Math.round(contextWindow.context_window_size * 0.225);
+  const totalUsed = currentTokens + autocompactBuffer;
+
+  const percent = Math.round((totalUsed / contextWindow.context_window_size) * 100);
   return Math.min(percent, 99);
 }
 
