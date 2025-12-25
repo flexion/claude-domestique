@@ -4,7 +4,8 @@
   "description": "Shared utilities for claude-domestique plugins",
   "main": "index.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "test:coverage": "jest --coverage"
   },
   "repository": {
     "type": "git",

@@ -74,4 +74,4 @@ Refactor all three plugins (mantra, memento, onus) to support transparent contex
 - [x] Simplify plugin tests to cover only plugin-specific logic
 - [x] Add shared module tests
 - [x] Run all tests (94 passing)
-- [ ] Commit changes
+- [x] Commit changes (abec184)
