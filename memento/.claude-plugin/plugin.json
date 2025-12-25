@@ -1,7 +1,7 @@
 {
   "name": "memento",
-  "version": "0.1.24",
-  "description": "Session management for Claude Code - persist context across conversation resets with branch-based session tracking",
+  "version": "0.2.0",
+  "description": "Session management for Claude Code - auto-injected via hooks, zero config",
   "author": {
     "name": "David Puglielli"
   },
@@ -15,7 +15,6 @@
     "branch-tracking"
   ],
   "commands": [
-    "./commands/init.md",
     "./commands/session.md"
   ],
   "skills": "./skills/"

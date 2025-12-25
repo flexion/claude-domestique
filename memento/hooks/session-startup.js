@@ -1,25 +1,28 @@
 #!/usr/bin/env node
-
 /**
- * memento: Minimal session hook
+ * memento: Session persistence hook
  *
- * - Creates session file at git root if missing
- * - Detects branch switches
- * - Status line shows session state (NEW, SWITCHED, or normal)
- * - Warns when rules are outdated
+ * Delegates to shared hook handler with custom session file management.
+ * Context injection via hooks - zero configuration required.
  */
 
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
+
+// Use bundled shared module (for installed plugins) or workspace module (for development)
+let shared;
+try {
+  shared = require('../lib/shared');
+} catch {
+  shared = require('../../shared');
+}
 
 const PLUGIN_ROOT = path.join(__dirname, '..');
-const PLUGIN_RULES_DIR = path.join(PLUGIN_ROOT, 'rules');
-const PLUGIN_CONTEXT_DIR = path.join(PLUGIN_ROOT, 'context');
-const PLUGIN_TEMPLATES_DIR = path.join(PLUGIN_ROOT, 'templates');
 
-const STATE_FILE = path.join(process.env.HOME || '/tmp', '.claude', 'memento-state.json');
+// ============================================================================
+// Git Helpers
+// ============================================================================
 
 function getBranch(cwd) {
   try {
@@ -37,121 +40,20 @@ function getGitRoot(cwd) {
   } catch { return null; }
 }
 
+// ============================================================================
+// Session Management
+// ============================================================================
+
 function getSessionPath(gitRoot, branch) {
   return path.join(gitRoot, '.claude', 'sessions', `${branch.replace(/\//g, '-')}.md`);
 }
 
 function loadState() {
-  try { return JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')); }
-  catch { return {}; }
+  return shared.loadState(shared.getStateFile('Memento'), {});
 }
 
 function saveState(state) {
-  try {
-    const dir = path.dirname(STATE_FILE);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(STATE_FILE, JSON.stringify(state));
-  } catch {}
-}
-
-/**
- * Compute MD5 hash of file content
- */
-function computeFileHash(filePath) {
-  try {
-    const content = fs.readFileSync(filePath, 'utf8');
-    return crypto.createHash('md5').update(content).digest('hex');
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Compute combined hash for multiple files
- */
-function computeContentHash(dir, files) {
-  const hashes = [];
-  for (const file of files.sort()) {
-    try {
-      const content = fs.readFileSync(path.join(dir, file), 'utf8');
-      const hash = crypto.createHash('md5').update(content).digest('hex');
-      hashes.push(`${file}:${hash}`);
-    } catch {
-      // Skip unreadable files
-    }
-  }
-  return crypto.createHash('md5').update(hashes.join('\n')).digest('hex');
-}
-
-/**
- * Check if project rules/context/templates are outdated compared to plugin
- */
-function checkVersionStatus(gitRoot) {
-  const versionFile = path.join(gitRoot, '.claude', 'rules', '.memento-version.json');
-
-  // No version file = not initialized
-  if (!fs.existsSync(versionFile)) {
-    // Check if .claude/sessions exists (legacy setup without init)
-    const sessionsDir = path.join(gitRoot, '.claude', 'sessions');
-    if (fs.existsSync(sessionsDir)) {
-      return { status: 'not-initialized', hasLegacy: true };
-    }
-    return { status: 'not-initialized', hasLegacy: false };
-  }
-
-  try {
-    const versionData = JSON.parse(fs.readFileSync(versionFile, 'utf8'));
-
-    // Check rules hash (supports both old contentHash and new rulesHash)
-    const storedRulesHash = versionData.rulesHash || versionData.contentHash;
-    if (storedRulesHash && fs.existsSync(PLUGIN_RULES_DIR)) {
-      const pluginFiles = fs.readdirSync(PLUGIN_RULES_DIR).filter(f => f.endsWith('.md'));
-      if (pluginFiles.length > 0) {
-        const currentHash = computeContentHash(PLUGIN_RULES_DIR, pluginFiles);
-        if (currentHash !== storedRulesHash) {
-          return {
-            status: 'outdated',
-            projectVersion: versionData.version,
-            pluginVersion: require(path.join(PLUGIN_ROOT, 'package.json')).version
-          };
-        }
-      }
-    }
-
-    // Check context hash
-    if (versionData.contextHash && fs.existsSync(PLUGIN_CONTEXT_DIR)) {
-      const pluginFiles = fs.readdirSync(PLUGIN_CONTEXT_DIR).filter(f => f.endsWith('.md'));
-      if (pluginFiles.length > 0) {
-        const currentHash = computeContentHash(PLUGIN_CONTEXT_DIR, pluginFiles);
-        if (currentHash !== versionData.contextHash) {
-          return {
-            status: 'outdated',
-            projectVersion: versionData.version,
-            pluginVersion: require(path.join(PLUGIN_ROOT, 'package.json')).version
-          };
-        }
-      }
-    }
-
-    // Check templates hash
-    if (versionData.templatesHash && fs.existsSync(PLUGIN_TEMPLATES_DIR)) {
-      const pluginFiles = fs.readdirSync(PLUGIN_TEMPLATES_DIR).filter(f => f.endsWith('.md'));
-      if (pluginFiles.length > 0) {
-        const currentHash = computeContentHash(PLUGIN_TEMPLATES_DIR, pluginFiles);
-        if (currentHash !== versionData.templatesHash) {
-          return {
-            status: 'outdated',
-            projectVersion: versionData.version,
-            pluginVersion: require(path.join(PLUGIN_ROOT, 'package.json')).version
-          };
-        }
-      }
-    }
-
-    return { status: 'current' };
-  } catch {
-    return { status: 'error' };
-  }
+  shared.saveState(shared.getStateFile('Memento'), state);
 }
 
 function createSession(sessionPath, branch) {
@@ -181,47 +83,50 @@ function createSession(sessionPath, branch) {
 `);
 }
 
-function processHook(input) {
+// ============================================================================
+// Hook Callbacks
+// ============================================================================
+
+function onSessionStart(input, base) {
   const cwd = input.cwd || process.cwd();
   const gitRoot = getGitRoot(cwd);
   const branch = getBranch(cwd);
-  const event = input.hook_event_name || 'SessionStart';
 
   if (!gitRoot || !branch) {
-    return { systemMessage: '📍 Memento: No session (not a git repo)', hookSpecificOutput: { hookEventName: event, additionalContext: '' } };
+    return {
+      statusLine: '📍 Memento: No session (not a git repo)',
+      additionalContext: base.additionalContext
+    };
   }
 
   if (branch === 'main' || branch === 'master') {
-    return { systemMessage: `📍 Memento: No session (${branch})`, hookSpecificOutput: { hookEventName: event, additionalContext: '' } };
+    return {
+      statusLine: `📍 Memento: No session (${branch})`,
+      additionalContext: base.additionalContext
+    };
   }
 
   const sessionPath = getSessionPath(gitRoot, branch);
   const sessionName = path.basename(sessionPath);
   const isNew = !fs.existsSync(sessionPath);
 
-  // Load state and detect branch switch
-  const state = loadState();
-  const previousBranch = state.branch;
-  const switched = previousBranch && previousBranch !== branch;
+  // Create session if missing
+  if (isNew) createSession(sessionPath, branch);
 
   // Save current branch
   saveState({ branch });
 
-  // Create session if missing
-  if (isNew) createSession(sessionPath, branch);
-
-  // Status line format
-  let msg;
+  // Build status line
+  let statusLine;
   if (isNew) {
-    msg = `📍 Memento: NEW → ${sessionName}`;
-  } else if (switched) {
-    msg = `📍 Memento: SWITCHED → ${sessionName}`;
+    statusLine = `📍 Memento: NEW → ${sessionName}`;
   } else {
-    msg = `📍 Memento: ${sessionName}`;
+    statusLine = `📍 Memento: ${sessionName}`;
   }
 
-  // Additional context
-  let context = `📂 Session: ${sessionPath}`;
+  // Build context
+  let context = base.additionalContext || '';
+  context += `\n📂 Session: ${sessionPath}`;
   if (isNew) {
     context += '\nNew session created. Update Goal and Next Steps.';
   } else {
@@ -229,31 +134,66 @@ function processHook(input) {
   }
   context += '\nAfter responding: assess if work warrants session update (milestones, decisions, blockers).';
 
-  // Check version status on SessionStart
-  if (event === 'SessionStart') {
-    const versionStatus = checkVersionStatus(gitRoot);
-    if (versionStatus.status === 'not-initialized') {
-      if (versionStatus.hasLegacy) {
-        context += '\n⚠️ Memento rules not installed. Run /memento:init to set up native rules.';
-      }
-      // Don't warn if no legacy setup - user may not want memento
-    } else if (versionStatus.status === 'outdated') {
-      context += '\n⚠️ Memento rules outdated. Run /memento:init --force to update.';
-    }
-  }
-
   return {
-    systemMessage: msg,
-    hookSpecificOutput: { hookEventName: event, additionalContext: context }
+    statusLine,
+    additionalContext: context,
+    extra: { sessionPath, isNew }
   };
 }
 
-async function main() {
-  let data = '';
-  for await (const chunk of process.stdin) data += chunk;
-  const input = data ? JSON.parse(data) : { cwd: process.cwd() };
-  console.log(JSON.stringify(processHook(input)));
+function onUserPromptSubmit(input, base) {
+  const cwd = input.cwd || process.cwd();
+  const gitRoot = getGitRoot(cwd);
+  const branch = getBranch(cwd);
+
+  if (!gitRoot || !branch || branch === 'main' || branch === 'master') {
+    return null; // Use base behavior
+  }
+
+  const sessionPath = getSessionPath(gitRoot, branch);
+
+  // Build context with session reminder
+  let context = base.additionalContext || '';
+  context += `\n📂 Session: ${sessionPath}`;
+  context += '\nFor resumption: Read session file FIRST.';
+  context += '\nAfter responding: assess if work warrants session update (milestones, decisions, blockers).';
+
+  return {
+    additionalContext: context,
+    extra: { sessionPath }
+  };
 }
+
+// ============================================================================
+// Direct Processing (for testing)
+// ============================================================================
+
+function processHook(input) {
+  const config = {
+    pluginName: 'Memento',
+    pluginRoot: PLUGIN_ROOT,
+    onSessionStart,
+    onUserPromptSubmit
+  };
+  return shared.processHook(config, input);
+}
+
+// ============================================================================
+// Main Entry Point
+// ============================================================================
+
+if (require.main === module) {
+  shared.runHook({
+    pluginName: 'Memento',
+    pluginRoot: PLUGIN_ROOT,
+    onSessionStart,
+    onUserPromptSubmit
+  });
+}
+
+// ============================================================================
+// Exports (for testing)
+// ============================================================================
 
 module.exports = {
   processHook,
@@ -262,10 +202,5 @@ module.exports = {
   getSessionPath,
   createSession,
   loadState,
-  saveState,
-  checkVersionStatus,
-  computeFileHash,
-  computeContentHash
+  saveState
 };
-
-if (require.main === module) main().catch(() => process.exit(1));

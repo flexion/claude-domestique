@@ -1,11 +1,8 @@
 {
   "name": "@claude-domestique/onus",
-  "version": "0.1.8",
-  "description": "Work item automation plugin for Claude Code - fetches issues, generates commits/PRs, syncs progress",
+  "version": "0.2.0",
+  "description": "Work item automation plugin for Claude Code - auto-injected via hooks, zero config",
   "main": "index.js",
-  "bin": {
-    "onus": "./bin/cli.js"
-  },
   "scripts": {
     "test": "jest",
     "test:watch": "jest --watch",
