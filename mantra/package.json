@@ -1,11 +1,8 @@
 {
   "name": "@claude-domestique/mantra",
-  "version": "0.2.5",
-  "description": "Behavioral rules for Claude Code sessions - native .claude/rules/ auto-loading",
+  "version": "0.3.0",
+  "description": "Behavioral rules for Claude Code sessions - auto-injected via hooks",
   "main": "index.js",
-  "bin": {
-    "mantra": "./bin/cli.js"
-  },
   "scripts": {
     "test": "jest",
     "test:coverage": "jest --coverage"

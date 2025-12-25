@@ -2,32 +2,23 @@
 /**
  * onus: Work item automation hook
  *
- * Runs on:
- * - SessionStart: Detect branch, extract issue number, inject work item context
- * - UserPromptSubmit: Track work progress, offer commit/PR suggestions
- *
- * Features:
- * 1. Extract issue numbers from branch names
- * 2. Cache work item details locally
- * 3. Inject work item context on session start
- * 4. Suggest commit message format based on issue
- * 5. Track which acceptance criteria may be addressed
- *
- * Integration:
- * - Works with memento for session persistence
- * - Works with mantra for context refresh
+ * Delegates to shared hook handler with custom work item tracking.
+ * Context injection via hooks - zero configuration required.
  */
 
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
 const { execSync } = require('child_process');
 
-// Find plugin root by navigating up from this script's location
+// Use bundled shared module (for installed plugins) or workspace module (for development)
+let shared;
+try {
+  shared = require('../lib/shared');
+} catch {
+  shared = require('../../shared');
+}
+
 const PLUGIN_ROOT = path.resolve(__dirname, '..');
-const PLUGIN_RULES_DIR = path.join(PLUGIN_ROOT, 'rules');
-const PLUGIN_CONTEXT_DIR = path.join(PLUGIN_ROOT, 'context');
-const BASE_CONTEXT_DIR = PLUGIN_CONTEXT_DIR; // Alias for backward compatibility
 
 // State and cache locations
 const STATE_DIR = path.join(process.env.HOME || '/tmp', '.claude', 'onus');
@@ -40,15 +31,10 @@ const DEFAULT_CONFIG = {
   cacheFile: WORK_ITEM_CACHE_FILE,
   configFile: '.claude/config.json',
   branchPatterns: [
-    // issue/feature-42/description -> 42
     /^issue\/(?:feature|bug|fix|chore)-(\d+)/,
-    // feature/42-description -> 42
     /^(?:feature|bug|fix|hotfix)\/(\d+)/,
-    // 42-description -> 42
     /^(\d+)-/,
-    // PROJECT-123-description -> PROJECT-123
     /^([A-Z]+-\d+)/,
-    // refs #42 in branch name
     /#(\d+)/
   ],
   commitFormat: '#{number} - {verb} {description}',
@@ -57,127 +43,124 @@ const DEFAULT_CONFIG = {
 
 // Platform configurations
 const PLATFORM_CONFIG = {
-  github: {
-    name: 'GitHub Issues',
-    issueUrlPattern: 'https://github.com/{owner}/{repo}/issues/{number}'
-  },
-  jira: {
-    name: 'JIRA',
-    issueUrlPattern: 'https://{host}/browse/{key}'
-  },
-  azure: {
-    name: 'Azure DevOps',
-    issueUrlPattern: 'https://dev.azure.com/{org}/{project}/_workitems/edit/{id}'
-  }
+  github: { name: 'GitHub Issues' },
+  jira: { name: 'JIRA' },
+  azure: { name: 'Azure DevOps' }
 };
 
-/**
- * Ensure state directory exists
- */
+// ============================================================================
+// Git Helpers
+// ============================================================================
+
+function getCurrentBranch(cwd) {
+  try {
+    return execSync('git rev-parse --abbrev-ref HEAD', {
+      cwd, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe']
+    }).trim();
+  } catch { return null; }
+}
+
+function getGitRoot(cwd) {
+  try {
+    return execSync('git rev-parse --show-toplevel', {
+      cwd, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe']
+    }).trim();
+  } catch { return null; }
+}
+
+function hasStagedChanges(cwd) {
+  try {
+    const result = execSync('git diff --cached --name-only', {
+      cwd, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe']
+    }).trim();
+    return result.length > 0;
+  } catch { return false; }
+}
+
+// ============================================================================
+// Issue Detection
+// ============================================================================
+
+function extractIssueFromBranch(branch, patterns) {
+  if (!branch) return null;
+  for (const pattern of patterns) {
+    const match = branch.match(pattern);
+    if (match && match[1]) return match[1];
+  }
+  return null;
+}
+
+function detectPlatform(issueKey) {
+  if (!issueKey) return 'github';
+  if (/^[A-Z]+-\d+$/.test(issueKey)) return 'jira';
+  return 'github';
+}
+
+// ============================================================================
+// Work Item Cache
+// ============================================================================
+
 function ensureStateDir() {
+  shared.ensureDir(STATE_DIR);
+}
+
+function loadWorkItemCache(cacheFile) {
   try {
-    if (!fs.existsSync(STATE_DIR)) {
-      fs.mkdirSync(STATE_DIR, { recursive: true });
+    if (fs.existsSync(cacheFile)) {
+      return JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
     }
-  } catch (e) {
-    // Ignore errors
-  }
+  } catch { /* ignore */ }
+  return { items: {}, lastUpdated: null };
 }
 
-/**
- * Compute MD5 hash of file content
- */
-function computeFileHash(filePath) {
+function saveWorkItemCache(cacheFile, cache) {
   try {
-    const content = fs.readFileSync(filePath, 'utf8');
-    return crypto.createHash('md5').update(content).digest('hex');
-  } catch {
-    return null;
-  }
+    ensureStateDir();
+    fs.writeFileSync(cacheFile, JSON.stringify(cache, null, 2));
+  } catch { /* ignore */ }
 }
 
-/**
- * Compute combined hash for multiple files
- */
-function computeContentHash(dir, files) {
-  const hashes = [];
-  for (const file of files.sort()) {
-    try {
-      const content = fs.readFileSync(path.join(dir, file), 'utf8');
-      const hash = crypto.createHash('md5').update(content).digest('hex');
-      hashes.push(`${file}:${hash}`);
-    } catch {
-      // Skip unreadable files
-    }
-  }
-  return crypto.createHash('md5').update(hashes.join('\n')).digest('hex');
-}
-
-/**
- * Check if project rules/context are outdated compared to plugin
- */
-function checkVersionStatus(gitRoot) {
-  const versionFile = path.join(gitRoot, '.claude', 'rules', '.onus-version.json');
-
-  // No version file = not initialized
-  if (!fs.existsSync(versionFile)) {
-    // Check if .claude/config.json has onus config (legacy setup without init)
-    const configPath = path.join(gitRoot, '.claude', 'config.json');
-    if (fs.existsSync(configPath)) {
-      try {
-        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-        if (config.onus) {
-          return { status: 'not-initialized', hasLegacy: true };
-        }
-      } catch {
-        // Ignore parse errors
-      }
-    }
-    return { status: 'not-initialized', hasLegacy: false };
-  }
-
+function loadState(stateFile) {
   try {
-    const versionData = JSON.parse(fs.readFileSync(versionFile, 'utf8'));
-
-    // Check rules hash
-    if (versionData.rulesHash && fs.existsSync(PLUGIN_RULES_DIR)) {
-      const pluginFiles = fs.readdirSync(PLUGIN_RULES_DIR).filter(f => f.endsWith('.md'));
-      if (pluginFiles.length > 0) {
-        const currentHash = computeContentHash(PLUGIN_RULES_DIR, pluginFiles);
-        if (currentHash !== versionData.rulesHash) {
-          return {
-            status: 'outdated',
-            projectVersion: versionData.version,
-            pluginVersion: require(path.join(PLUGIN_ROOT, 'package.json')).version
-          };
-        }
-      }
+    if (fs.existsSync(stateFile)) {
+      return JSON.parse(fs.readFileSync(stateFile, 'utf8'));
     }
-
-    // Check context hash
-    if (versionData.contextHash && fs.existsSync(PLUGIN_CONTEXT_DIR)) {
-      const pluginFiles = fs.readdirSync(PLUGIN_CONTEXT_DIR).filter(f => f.endsWith('.md'));
-      if (pluginFiles.length > 0) {
-        const currentHash = computeContentHash(PLUGIN_CONTEXT_DIR, pluginFiles);
-        if (currentHash !== versionData.contextHash) {
-          return {
-            status: 'outdated',
-            projectVersion: versionData.version,
-            pluginVersion: require(path.join(PLUGIN_ROOT, 'package.json')).version
-          };
-        }
-      }
-    }
-
-    return { status: 'current' };
-  } catch {
-    return { status: 'error' };
-  }
+  } catch { /* ignore */ }
+  return { currentIssue: null, currentBranch: null };
 }
 
-/**
- * Load project config from .claude/config.json
- */
+function saveState(stateFile, state) {
+  try {
+    ensureStateDir();
+    fs.writeFileSync(stateFile, JSON.stringify(state, null, 2));
+  } catch { /* ignore */ }
+}
+
+function getCachedWorkItem(cache, issueKey, platform) {
+  const cacheKey = `${platform}:${issueKey}`;
+  const item = cache.items[cacheKey];
+  if (!item) return null;
+
+  const cacheAge = Date.now() - (item.cachedAt || 0);
+  const maxAge = 60 * 60 * 1000; // 1 hour
+  if (cacheAge > maxAge) return { ...item, stale: true };
+  return item;
+}
+
+function createPlaceholderWorkItem(issueKey, platform) {
+  return {
+    key: issueKey,
+    platform,
+    title: `Issue ${issueKey}`,
+    placeholder: true,
+    cachedAt: Date.now()
+  };
+}
+
+// ============================================================================
+// Project Config
+// ============================================================================
+
 function loadProjectConfig(cwd, configFile) {
   const configPath = path.join(cwd, configFile);
   try {
@@ -185,239 +168,18 @@ function loadProjectConfig(cwd, configFile) {
       const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
       return config.onus || config.workItem || {};
     }
-  } catch (e) {
-    // Ignore errors, use defaults
-  }
+  } catch { /* ignore */ }
   return {};
 }
 
-/**
- * Load cached work items
- */
-function loadWorkItemCache(cacheFile) {
-  try {
-    if (fs.existsSync(cacheFile)) {
-      return JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
-    }
-  } catch (e) {
-    // Ignore errors
-  }
-  return { items: {}, lastUpdated: null };
-}
+// ============================================================================
+// Context Formatting
+// ============================================================================
 
-/**
- * Save work item cache
- */
-function saveWorkItemCache(cacheFile, cache) {
-  try {
-    ensureStateDir();
-    fs.writeFileSync(cacheFile, JSON.stringify(cache, null, 2));
-  } catch (e) {
-    // Ignore errors
-  }
-}
-
-/**
- * Load plugin state
- */
-function loadState(stateFile) {
-  try {
-    if (fs.existsSync(stateFile)) {
-      return JSON.parse(fs.readFileSync(stateFile, 'utf8'));
-    }
-  } catch (e) {
-    // Ignore errors
-  }
-  return {
-    currentIssue: null,
-    currentBranch: null,
-    sessionStart: null,
-    lastPrompt: null
-  };
-}
-
-/**
- * Save plugin state
- */
-function saveState(stateFile, state) {
-  try {
-    ensureStateDir();
-    fs.writeFileSync(stateFile, JSON.stringify(state, null, 2));
-  } catch (e) {
-    // Ignore errors
-  }
-}
-
-/**
- * Get current git branch name
- */
-function getCurrentBranch(cwd) {
-  try {
-    const branch = execSync('git rev-parse --abbrev-ref HEAD', {
-      cwd,
-      encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe']
-    }).trim();
-    return branch;
-  } catch (e) {
-    return null;
-  }
-}
-
-/**
- * Get git repository root directory
- */
-function getGitRoot(cwd) {
-  try {
-    return execSync('git rev-parse --show-toplevel', {
-      cwd,
-      encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe']
-    }).trim();
-  } catch (e) {
-    return null;
-  }
-}
-
-/**
- * Check if there are staged changes
- */
-function hasStagedChanges(cwd) {
-  try {
-    const result = execSync('git diff --cached --name-only', {
-      cwd,
-      encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe']
-    }).trim();
-    return result.length > 0;
-  } catch (e) {
-    return false;
-  }
-}
-
-/**
- * Extract issue number/key from branch name
- */
-function extractIssueFromBranch(branch, patterns) {
-  if (!branch) return null;
-
-  for (const pattern of patterns) {
-    const match = branch.match(pattern);
-    if (match && match[1]) {
-      return match[1];
-    }
-  }
-  return null;
-}
-
-/**
- * Detect platform from issue key format
- */
-function detectPlatform(issueKey) {
-  if (!issueKey) return 'github';
-
-  // JIRA-style keys: PROJ-123
-  if (/^[A-Z]+-\d+$/.test(issueKey)) {
-    return 'jira';
-  }
-
-  // Numeric only: GitHub
-  if (/^\d+$/.test(issueKey)) {
-    return 'github';
-  }
-
-  return 'github';
-}
-
-/**
- * Find all .yml files in a directory
- */
-function findYmlFiles(dirPath) {
-  try {
-    if (!fs.existsSync(dirPath)) {
-      return [];
-    }
-    return fs.readdirSync(dirPath)
-      .filter(f => f.endsWith('.yml'))
-      .sort()
-      .map(f => path.join(dirPath, f));
-  } catch (e) {
-    return [];
-  }
-}
-
-/**
- * Find base context files from plugin root
- */
-function findBaseContextFiles() {
-  return findYmlFiles(BASE_CONTEXT_DIR);
-}
-
-/**
- * Read and concatenate context files with section headers
- */
-function readContextFiles(files) {
-  const contents = [];
-  for (const file of files) {
-    try {
-      const content = fs.readFileSync(file, 'utf8');
-      const basename = path.basename(file);
-      contents.push(`### ${basename}\n${content}`);
-    } catch (e) {
-      // Skip unreadable files
-    }
-  }
-  return contents.join('\n\n');
-}
-
-/**
- * Get cached work item or null
- */
-function getCachedWorkItem(cache, issueKey, platform) {
-  const cacheKey = `${platform}:${issueKey}`;
-  const item = cache.items[cacheKey];
-
-  if (!item) return null;
-
-  // Check if cache is stale (older than 1 hour)
-  const cacheAge = Date.now() - (item.cachedAt || 0);
-  const maxAge = 60 * 60 * 1000; // 1 hour
-
-  if (cacheAge > maxAge) {
-    return { ...item, stale: true };
-  }
-
-  return item;
-}
-
-/**
- * Create a placeholder work item (for when we can't fetch)
- */
-function createPlaceholderWorkItem(issueKey, platform) {
-  return {
-    key: issueKey,
-    platform,
-    title: `Issue ${issueKey}`,
-    description: null,
-    status: 'unknown',
-    type: 'unknown',
-    acceptanceCriteria: [],
-    labels: [],
-    url: null,
-    placeholder: true,
-    cachedAt: Date.now()
-  };
-}
-
-/**
- * Format work item context for injection
- */
 function formatWorkItemContext(workItem, cfg) {
   if (!workItem) return null;
 
-  const parts = [];
-
-  parts.push(`## Current Work Item: ${workItem.key}`);
+  const parts = [`## Current Work Item: ${workItem.key}`];
 
   if (workItem.placeholder) {
     parts.push(`⚠️ Issue details not yet fetched. Use \`/fetch ${workItem.key}\` to load details.`);
@@ -427,33 +189,21 @@ function formatWorkItemContext(workItem, cfg) {
     return parts.join('\n');
   }
 
-  if (workItem.title) {
-    parts.push(`**Title:** ${workItem.title}`);
-  }
-
-  if (workItem.type && workItem.type !== 'unknown') {
-    parts.push(`**Type:** ${workItem.type}`);
-  }
-
-  if (workItem.status && workItem.status !== 'unknown') {
-    parts.push(`**Status:** ${workItem.status}`);
-  }
-
-  if (workItem.url) {
-    parts.push(`**URL:** ${workItem.url}`);
-  }
+  if (workItem.title) parts.push(`**Title:** ${workItem.title}`);
+  if (workItem.type && workItem.type !== 'unknown') parts.push(`**Type:** ${workItem.type}`);
+  if (workItem.status && workItem.status !== 'unknown') parts.push(`**Status:** ${workItem.status}`);
+  if (workItem.url) parts.push(`**URL:** ${workItem.url}`);
 
   if (workItem.description) {
     parts.push('');
     parts.push('**Description:**');
-    // Truncate long descriptions
     const desc = workItem.description.length > 500
       ? workItem.description.substring(0, 500) + '...'
       : workItem.description;
     parts.push(desc);
   }
 
-  if (workItem.acceptanceCriteria && workItem.acceptanceCriteria.length > 0) {
+  if (workItem.acceptanceCriteria?.length > 0) {
     parts.push('');
     parts.push('**Acceptance Criteria:**');
     for (const criterion of workItem.acceptanceCriteria) {
@@ -461,7 +211,7 @@ function formatWorkItemContext(workItem, cfg) {
     }
   }
 
-  if (workItem.labels && workItem.labels.length > 0) {
+  if (workItem.labels?.length > 0) {
     parts.push('');
     parts.push(`**Labels:** ${workItem.labels.join(', ')}`);
   }
@@ -478,100 +228,23 @@ function formatWorkItemContext(workItem, cfg) {
   return parts.join('\n');
 }
 
-/**
- * Build context content for injection
- */
-function buildContextContent(cwd, cfg, workItem, reason) {
-  const contextParts = [];
+// ============================================================================
+// Hook Callbacks
+// ============================================================================
 
-  // 1. Load base context from plugin root
-  const baseFiles = findBaseContextFiles();
-  if (baseFiles.length > 0) {
-    const baseContent = readContextFiles(baseFiles);
-    contextParts.push(baseContent);
-  }
-
-  // 2. Add work item context if available
-  if (workItem) {
-    const workItemContext = formatWorkItemContext(workItem, cfg);
-    if (workItemContext) {
-      contextParts.push(workItemContext);
-    }
-  }
-
-  if (contextParts.length === 0) {
-    return `\n---\n**Work Item Context** (${reason})\nNo work item detected. Working on branch without issue reference.`;
-  }
-
-  return `\n---\n**Work Item Context** (${reason})\n` + contextParts.join('\n\n');
-}
-
-/**
- * Generate session start message
- */
-function generateSessionStartMessage(state, workItem, isNew = false) {
-  if (!state.currentIssue) {
-    return '📍 Onus: no issue';
-  }
-
-  const issueRef = workItem && !workItem.placeholder
-    ? `#${workItem.key} - ${workItem.title || 'Untitled'}`
-    : `#${state.currentIssue}`;
-
-  if (isNew) {
-    return `📍 Onus: NEW → ${issueRef}`;
-  }
-
-  return `📍 Onus: ${issueRef}`;
-}
-
-/**
- * Generate prompt submit message
- */
-function generatePromptSubmitMessage(state, workItem, hasStagedChanges, branchChanged = false) {
-  if (!state.currentIssue) {
-    return '📍 Onus: no issue';
-  }
-
-  const issueRef = workItem && !workItem.placeholder
-    ? `#${workItem.key} - ${workItem.title || 'Untitled'}`
-    : `#${state.currentIssue}`;
-
-  // Build status line with SWITCHED indicator if branch changed
-  let msg;
-  if (branchChanged) {
-    msg = `📍 Onus: SWITCHED → ${issueRef}`;
-  } else {
-    msg = `📍 Onus: ${issueRef}`;
-  }
-
-  // Append staged indicator if applicable
-  if (hasStagedChanges) {
-    msg += ' | staged';
-  }
-
-  return msg;
-}
-
-/**
- * Process SessionStart hook
- */
-function processSessionStart(input, config = {}) {
+function onSessionStart(input, base) {
   const cwd = input.cwd || process.cwd();
   const projectConfig = loadProjectConfig(cwd, DEFAULT_CONFIG.configFile);
-  const cfg = { ...DEFAULT_CONFIG, ...projectConfig, ...config };
+  const cfg = { ...DEFAULT_CONFIG, ...projectConfig };
   const source = input.source || 'startup';
 
   ensureStateDir();
 
-  // Get current branch
   const branch = getCurrentBranch(cwd);
-
-  // Extract issue from branch
   const issueKey = extractIssueFromBranch(branch, cfg.branchPatterns);
   const platform = detectPlatform(issueKey);
 
-  // Load cache and state
+  // Load cache and get/create work item
   const cache = loadWorkItemCache(cfg.cacheFile);
   let workItem = null;
   let isNewIssue = false;
@@ -581,7 +254,6 @@ function processSessionStart(input, config = {}) {
     if (!workItem) {
       workItem = createPlaceholderWorkItem(issueKey, platform);
       isNewIssue = true;
-      // Save placeholder to cache
       const cacheKey = `${platform}:${issueKey}`;
       cache.items[cacheKey] = workItem;
       saveWorkItemCache(cfg.cacheFile, cache);
@@ -589,152 +261,130 @@ function processSessionStart(input, config = {}) {
   }
 
   // Update state
-  const state = {
+  saveState(cfg.stateFile, {
     currentIssue: issueKey,
     currentBranch: branch,
     platform,
-    sessionStart: new Date().toISOString(),
-    lastPrompt: null
-  };
-  saveState(cfg.stateFile, state);
+    sessionStart: new Date().toISOString()
+  });
 
-  // Build context
-  const reason = `session ${source}`;
-  let contextContent = buildContextContent(cwd, cfg, workItem, reason);
+  // Build status line
+  let statusLine;
+  if (!issueKey) {
+    statusLine = '📍 Onus: no issue';
+  } else {
+    const issueRef = workItem && !workItem.placeholder
+      ? `#${workItem.key} - ${workItem.title || 'Untitled'}`
+      : `#${issueKey}`;
+    statusLine = isNewIssue
+      ? `📍 Onus: NEW → ${issueRef}`
+      : `📍 Onus: ${issueRef}`;
+  }
 
-  // Check version status and add warnings
-  const gitRoot = getGitRoot(cwd);
-  if (gitRoot) {
-    const versionStatus = checkVersionStatus(gitRoot);
-    if (versionStatus.status === 'not-initialized') {
-      if (versionStatus.hasLegacy) {
-        contextContent += '\n⚠️ Onus rules not installed. Run /onus:init to set up native rules.';
-      }
-      // Don't warn if no legacy setup - user may not want onus
-    } else if (versionStatus.status === 'outdated') {
-      contextContent += '\n⚠️ Onus rules outdated. Run /onus:init --force to update.';
+  // Build context - append work item info to base context
+  let context = base.additionalContext || '';
+  if (workItem) {
+    const workItemContext = formatWorkItemContext(workItem, cfg);
+    if (workItemContext) {
+      context += `\n\n${workItemContext}`;
     }
   }
 
   return {
-    systemMessage: generateSessionStartMessage(state, workItem, isNewIssue),
-    hookSpecificOutput: {
-      hookEventName: 'SessionStart',
-      additionalContext: contextContent
-    }
+    statusLine,
+    additionalContext: context,
+    extra: { currentIssue: issueKey, platform, source }
   };
 }
 
-/**
- * Process UserPromptSubmit hook
- */
-function processUserPromptSubmit(input, config = {}) {
+function onUserPromptSubmit(input, base) {
   const cwd = input.cwd || process.cwd();
   const projectConfig = loadProjectConfig(cwd, DEFAULT_CONFIG.configFile);
-  const cfg = { ...DEFAULT_CONFIG, ...projectConfig, ...config };
+  const cfg = { ...DEFAULT_CONFIG, ...projectConfig };
 
-  // Load current state
   const state = loadState(cfg.stateFile);
-  state.lastPrompt = new Date().toISOString();
-
-  // Check if branch changed since session start
   const currentBranch = getCurrentBranch(cwd);
+
+  // Detect branch change
   let branchChanged = false;
   if (currentBranch !== state.currentBranch) {
     branchChanged = true;
-    // Re-detect issue from new branch
     const issueKey = extractIssueFromBranch(currentBranch, cfg.branchPatterns);
     const platform = detectPlatform(issueKey);
     state.currentBranch = currentBranch;
     state.currentIssue = issueKey;
     state.platform = platform;
+    saveState(cfg.stateFile, state);
   }
 
-  // Check for staged changes
   const staged = hasStagedChanges(cwd);
 
-  // Get cached work item if we have an issue
+  // Get cached work item
   let workItem = null;
-  const cache = loadWorkItemCache(cfg.cacheFile);
   if (state.currentIssue) {
+    const cache = loadWorkItemCache(cfg.cacheFile);
     workItem = getCachedWorkItem(cache, state.currentIssue, state.platform || 'github');
-    // Create placeholder if branch changed and no cache exists
-    if (!workItem && branchChanged) {
-      workItem = createPlaceholderWorkItem(state.currentIssue, state.platform || 'github');
-      const cacheKey = `${state.platform || 'github'}:${state.currentIssue}`;
-      cache.items[cacheKey] = workItem;
-      saveWorkItemCache(cfg.cacheFile, cache);
-    }
   }
 
-  // Save updated state
-  saveState(cfg.stateFile, state);
-
-  // Build minimal context for ongoing prompts
-  const contextParts = [];
-
-  // Always show current issue status
+  // Build minimal context
+  let context = base.additionalContext || '';
   if (state.currentIssue) {
-    contextParts.push(`📋 Issue: ${state.currentIssue}`);
-    if (workItem && workItem.title) {
-      contextParts.push(`📌 ${workItem.title}`);
-    }
+    context += `\n📋 Issue: ${state.currentIssue}`;
   }
-
-  // Hint about staged changes
   if (staged) {
-    contextParts.push('');
-    contextParts.push('💡 Staged changes detected. When ready to commit:');
-    contextParts.push(`   \`${cfg.commitFormat.replace('{number}', state.currentIssue || 'N')}\``);
+    context += `\n💡 Staged changes detected. Commit format: \`${cfg.commitFormat.replace('{number}', state.currentIssue || 'N')}\``;
   }
 
   return {
-    systemMessage: generatePromptSubmitMessage(state, workItem, staged, branchChanged),
-    hookSpecificOutput: {
-      hookEventName: 'UserPromptSubmit',
-      additionalContext: contextParts.join('\n')
-    }
+    additionalContext: context,
+    extra: { currentIssue: state.currentIssue, branchChanged, staged }
   };
 }
 
-/**
- * Main hook entry point
- */
+// ============================================================================
+// Direct Processing (for testing)
+// ============================================================================
+
 function processHook(input, config = {}) {
-  const eventName = input.hook_event_name || 'UserPromptSubmit';
-
-  if (eventName === 'SessionStart') {
-    return processSessionStart(input, config);
-  }
-
-  return processUserPromptSubmit(input, config);
+  const hookConfig = {
+    pluginName: 'Onus',
+    pluginRoot: PLUGIN_ROOT,
+    onSessionStart,
+    onUserPromptSubmit,
+    ...config
+  };
+  return shared.processHook(hookConfig, input);
 }
 
-// Main CLI wrapper
-async function main() {
-  let inputData = '';
-  for await (const chunk of process.stdin) {
-    inputData += chunk;
-  }
-
-  let input;
-  try {
-    input = JSON.parse(inputData);
-  } catch (e) {
-    process.exit(0);
-  }
-
-  const output = processHook(input);
-  console.log(JSON.stringify(output));
-  process.exit(0);
+function processSessionStart(input, config = {}) {
+  return processHook({ ...input, hook_event_name: 'SessionStart' }, config);
 }
 
-// Export for testing
+function processUserPromptSubmit(input, config = {}) {
+  return processHook({ ...input, hook_event_name: 'UserPromptSubmit' }, config);
+}
+
+// ============================================================================
+// Main Entry Point
+// ============================================================================
+
+if (require.main === module) {
+  shared.runHook({
+    pluginName: 'Onus',
+    pluginRoot: PLUGIN_ROOT,
+    onSessionStart,
+    onUserPromptSubmit
+  });
+}
+
+// ============================================================================
+// Exports (for testing)
+// ============================================================================
+
 module.exports = {
   processHook,
   processSessionStart,
   processUserPromptSubmit,
-  buildContextContent,
   loadState,
   saveState,
   loadProjectConfig,
@@ -745,31 +395,12 @@ module.exports = {
   hasStagedChanges,
   extractIssueFromBranch,
   detectPlatform,
-  findYmlFiles,
-  findBaseContextFiles,
-  readContextFiles,
   getCachedWorkItem,
   createPlaceholderWorkItem,
   formatWorkItemContext,
-  generateSessionStartMessage,
-  generatePromptSubmitMessage,
   ensureStateDir,
-  checkVersionStatus,
-  computeFileHash,
-  computeContentHash,
   DEFAULT_CONFIG,
   PLATFORM_CONFIG,
   PLUGIN_ROOT,
-  PLUGIN_RULES_DIR,
-  PLUGIN_CONTEXT_DIR,
-  BASE_CONTEXT_DIR,
   STATE_DIR
 };
-
-// Run CLI if executed directly
-if (require.main === module) {
-  main().catch(e => {
-    console.error(e.message);
-    process.exit(1);
-  });
-}

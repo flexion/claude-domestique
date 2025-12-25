@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**mantra** is a behavioral rules plugin for Claude Code sessions. It provides curated rules that are auto-loaded via Claude Code's native `.claude/rules/` mechanism.
+**mantra** is a behavioral rules plugin for Claude Code sessions. Rules are automatically injected via hooks - zero configuration required.
 
 Tagline: "Consistent behavior from turn 1 to turn 100"
 
@@ -16,19 +16,19 @@ npm test          # Run tests
 
 ## Architecture
 
-Plugin type: **native rules** (`.claude/rules/` auto-loading)
+Plugin type: **hook-based injection** (auto-injected via SessionStart/UserPromptSubmit hooks)
 
 Design goals:
-- Native loading: leverages Claude Code's built-in rules mechanism
+- Zero config: rules injected automatically, no setup required
 - Token efficient: compact YAML frontmatter (~89% reduction vs prose)
 - On-demand details: companion MD files for elaboration
-- No hooks: simpler architecture, no periodic injection
+- Drift prevention: periodic refresh every 10 prompts
 
 ### Directory Structure
 
 ```
 mantra/
-├── rules/                # Frontmatter-only MD files (copied to project)
+├── rules/                # Frontmatter-only MD files (auto-injected)
 │   ├── behavior.md       # AI behavior rules
 │   ├── test.md           # Testing conventions
 │   └── ...
@@ -36,9 +36,12 @@ mantra/
 │   ├── behavior.md       # Detailed examples for behavior
 │   ├── test.md           # Detailed examples for testing
 │   └── ...
-├── scripts/init.js       # Init script (copies rules to project)
-├── commands/init.md      # /mantra:init skill
-└── bin/cli.js            # npx mantra CLI
+├── hooks/                # Hook implementations
+│   └── session-monitor.js
+├── lib/                  # Bundled shared utilities
+│   └── shared.js
+└── commands/
+    └── make-rule.md      # /mantra:make-rule skill
 ```
 
 ### Rule File Format
@@ -55,12 +58,12 @@ stance: skeptical-default, find-problems-not-agreement
 ---
 ```
 
-### How Init Works
+### How It Works
 
-`/mantra:init` or `npx mantra init`:
-1. Creates `.claude/rules/` in project
-2. Copies `rules/*.md` files from plugin
-3. Claude Code auto-loads these at session start
+1. On SessionStart, hook reads `rules/*.md` frontmatter
+2. Injects as `additionalContext` in hook response
+3. On UserPromptSubmit, refreshes context every 10 prompts
+4. Companion docs path provided for lazy loading
 
 ## Context System
 
@@ -68,7 +71,7 @@ Rules use a two-tier pattern:
 
 | File Type | Purpose | Location |
 |-----------|---------|----------|
-| `rules/*.md` | Compact rules (frontmatter) | Copied to project |
+| `rules/*.md` | Compact rules (frontmatter) | Auto-injected via hooks |
 | `context/*.md` | Detailed examples | Plugin directory (on-demand) |
 
 ## Git Conventions

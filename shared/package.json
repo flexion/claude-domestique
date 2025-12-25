@@ -1,0 +1,19 @@
+{
+  "name": "@claude-domestique/shared",
+  "version": "0.1.0",
+  "description": "Shared utilities for claude-domestique plugins",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/flexion/claude-domestique.git",
+    "directory": "shared"
+  },
+  "license": "MIT",
+  "type": "commonjs",
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}

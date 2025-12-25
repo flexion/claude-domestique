@@ -1,7 +1,7 @@
 {
   "name": "mantra",
-  "version": "0.2.5",
-  "description": "Behavioral rules for Claude Code sessions - native .claude/rules/ auto-loading with compact YAML frontmatter",
+  "version": "0.3.0",
+  "description": "Behavioral rules for Claude Code sessions - auto-injected via hooks, zero config",
   "author": {
     "name": "David Puglielli"
   },
@@ -15,7 +15,6 @@
     "drift-prevention"
   ],
   "commands": [
-    "./commands/init.md",
     "./commands/make-rule.md"
   ]
 }

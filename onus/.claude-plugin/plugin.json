@@ -1,7 +1,7 @@
 {
   "name": "onus",
-  "version": "0.1.8",
-  "description": "Work item automation for Claude Code - fetches issues, generates commits/PRs, syncs progress",
+  "version": "0.2.0",
+  "description": "Work item automation for Claude Code - auto-injected via hooks, zero config",
   "author": {
     "name": "David Puglielli"
   },
@@ -17,7 +17,6 @@
     "jira"
   ],
   "commands": [
-    "./commands/init.md",
     "./commands/fetch.md",
     "./commands/create.md",
     "./commands/update.md",
