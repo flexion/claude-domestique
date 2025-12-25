@@ -33,6 +33,10 @@ memento is Leonard's system for Claude: persistent session files that survive th
 - **Branch metadata files** - Compact lookup to find session from current branch
 - **Session templates** - Standardized structure for feature vs chore sessions
 - **Automatic context restoration** - Branch → session → next steps lookup
+- **Branch switch detection** - Detects when you switch branches mid-conversation and guides session handling
+- **Start work command** - Interactive `/memento:start` to create branch + session together
+- **Session population triggers** - Automatic reminders when todos change, plans approved, or context filling up
+- **Misnamed file handling** - Detects sessions that reference wrong branch and offers rename
 - **Session log** - Chronological record of what was done, when, and why
 - **Key decisions documentation** - Captures WHY, not just WHAT
 - **Learnings capture** - What surprised you, what would you do differently
@@ -111,7 +115,7 @@ memento uses Claude Code's hook system for automatic session management:
 | Hook | When | What Happens |
 |------|------|--------------|
 | **SessionStart** | New conversation | Creates session file for feature branches, injects session context |
-| **UserPromptSubmit** | Every prompt | Shows session status in status line |
+| **UserPromptSubmit** | Every prompt | Detects branch switches, session triggers, shows status |
 
 ### Automatic Session Creation
 
@@ -121,9 +125,38 @@ When you start a conversation on a feature branch like `issue/feature-42/add-aut
 3. Injects session file path into Claude's context
 4. Claude reads the session and picks up where you left off
 
+### Branch Switch Detection
+
+When you switch branches mid-conversation:
+1. memento detects the branch changed on next prompt
+2. Looks for existing session for the new branch
+3. If no exact match, finds possible sessions by scoring issue number and description
+4. Guides Claude to read existing session, rename mismatched file, or create new
+
+### Session Population Triggers
+
+memento detects events that warrant session updates:
+- **Todos changed** - Reminds to update Session Log and Next Steps
+- **Plan approved** - Prompts immediate update of Approach section
+- **Context checkpoint** - Warns when context > 80% full, prompts state save
+
 ## Usage
 
-### Start Working
+### Start Working (Recommended)
+
+Use the start command to create branch and session together:
+
+```bash
+/memento:start
+```
+
+Claude will:
+1. Ask if this is an issue or chore
+2. Help find the issue number (if needed)
+3. Create the branch with correct format
+4. Create session file primed with issue details
+
+### Start Working (Manual)
 
 ```bash
 # Create a branch for your work
@@ -165,6 +198,7 @@ Next Steps:
 
 | Command | Description |
 |---------|-------------|
+| `/memento:start` | Start new work - creates branch and session together |
 | `/memento:session` | Show current session status or create new session |
 
 ## Requirements

@@ -68,6 +68,7 @@ Extend Phase 1 to detect sessions that reference current branch but have wrong f
 - 2025-12-25: Session created, issue #103 opened
 - 2025-12-25: Plan approved - context injection approach, 4 phases identified
 - 2025-12-25: Implementation complete - all 4 phases implemented with 31 tests passing
+- 2025-12-25: Documentation updated - context, rules, and README files
 
 ## Key Decisions
 
@@ -85,6 +86,9 @@ Extend Phase 1 to detect sessions that reference current branch but have wrong f
 - `memento/hooks/session-startup.js` - Added branch switch detection, mismatch detection, session triggers
 - `memento/hooks/__tests__/session-startup.test.js` - Added 20 new tests for new functionality
 - `memento/commands/start.md` - New command for starting work with branch+session creation
+- `memento/context/sessions.md` - Updated with new features documentation
+- `memento/rules/sessions.md` - Added compact rules for new features
+- `memento/README.md` - Updated with new commands and features
 
 ## Next Steps
 
@@ -93,5 +97,6 @@ Extend Phase 1 to detect sessions that reference current branch but have wrong f
 - [x] Phase 2: Create `/memento:start` command
 - [x] Phase 3: Implement session population triggers
 - [x] Add tests for new functionality
-- [ ] Commit and push changes
+- [x] Update documentation (context, rules, README)
+- [ ] Push changes and create PR
 - [ ] Test in real session (branch switch, triggers)

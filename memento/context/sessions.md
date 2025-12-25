@@ -138,14 +138,29 @@ This keeps session maintenance flexible and conversational rather than forcing a
 
 ### Starting New Work
 
+**Option 1: Use the start command (recommended)**
+
+```bash
+/memento:start
+```
+
+Claude will:
+1. Ask if this is an issue or chore
+2. For issues: help find the issue ID, fetch details, create branch with correct format
+3. For chores: gather description, create branch
+4. Create session file primed with issue/chore details
+5. You're ready to work
+
+**Option 2: Manual branch creation**
+
 ```bash
 # 1. Create branch
 git checkout -b issue/feature-123/add-authentication
 
-# 2. Create session (use /session command in Claude)
-/session
+# 2. Start Claude - session is auto-created on first prompt
+claude
 
-# 3. Start working - session file auto-created with template
+# Session file created automatically with template
 ```
 
 ### During Work
@@ -199,6 +214,33 @@ Branch switch → Session switch (automatic)
 ```
 
 Metadata file maps branch to session, enabling automatic context loading.
+
+### Branch Switch Detection
+
+When you switch branches mid-conversation, memento automatically:
+
+1. **Detects the switch** on the next prompt
+2. **Looks for existing session** for the new branch
+3. **Guides Claude to**:
+   - Read existing session if found
+   - Handle misnamed files (offer rename)
+   - Create new session if none exists
+
+**Misnamed File Handling**: If a session file references the current branch but has the wrong filename, memento detects this and offers to rename it for consistency.
+
+**Possible Session Matching**: When no exact session exists, memento scores existing sessions by issue number and description word matches, suggesting likely candidates.
+
+### Session Population Triggers
+
+memento detects events that warrant session updates and injects reminders:
+
+| Trigger | When | Reminder |
+|---------|------|----------|
+| **Todos changed** | TodoWrite tool used | Update Session Log and Next Steps |
+| **Plan approved** | ExitPlanMode used | Immediately update Approach section with plan |
+| **Context checkpoint** | Context usage > 80% | Save state before compaction |
+
+These triggers ensure critical information is captured before it might be lost.
 
 ### Atomic Commits
 
