@@ -67,7 +67,7 @@ External (GitHub/JIRA/Azure DevOps)
     [memento] ←── "What's next?" lookup
         │
         ▼ read session context
-    [mantra] ──► periodic refresh into working context
+    [mantra] ──► rules injected via hooks
 ```
 
 ### Shared Naming Convention
@@ -102,30 +102,44 @@ Each plugin works standalone but gains enhanced behavior when used together.
 /plugin install memento@claude-domestique
 ```
 
-### Initialize in Your Project
+That's it. Session management works automatically—no initialization required.
 
-After installing the plugin, initialize session management in your project:
+## How It Works
 
-```
-/memento:init
-```
+memento uses Claude Code's hook system for automatic session management:
 
-This creates:
-- `.claude/sessions/` - where session files live
-- `.claude/branches/` - branch-to-session mapping
+| Hook | When | What Happens |
+|------|------|--------------|
+| **SessionStart** | New conversation | Creates session file for feature branches, injects session context |
+| **UserPromptSubmit** | Every prompt | Shows session status in status line |
 
-Tools and templates run from the plugin—nothing is copied to your project.
+### Automatic Session Creation
+
+When you start a conversation on a feature branch like `issue/feature-42/add-auth`:
+1. memento detects the branch name
+2. Creates `.claude/sessions/issue-feature-42-add-auth.md` if it doesn't exist
+3. Injects session file path into Claude's context
+4. Claude reads the session and picks up where you left off
 
 ## Usage
 
-### Create a Session
+### Start Working
 
 ```bash
 # Create a branch for your work
 git checkout -b issue/feature-42/add-auth
 
-# Create a session using the slash command
-/session
+# Start Claude Code - session is created automatically
+claude
+```
+
+### Status Line
+
+Every prompt shows session status:
+
+```
+📂 Memento: #3 ✓
+📂 Session: /path/to/.claude/sessions/issue-feature-42-add-auth.md
 ```
 
 ### Check Session Status
@@ -134,12 +148,9 @@ git checkout -b issue/feature-42/add-auth
 /memento:session
 ```
 
-### Session Auto-Detection
-
-On startup, the plugin automatically detects the current branch and loads the associated session. You'll see output like:
-
+Shows current session details:
 ```
-Session: 42-add-auth.md
+Session: issue-feature-42-add-auth.md
 Branch: issue/feature-42/add-auth
 Type: feature
 Issue: #42
@@ -154,8 +165,7 @@ Next Steps:
 
 | Command | Description |
 |---------|-------------|
-| `/memento:init` | Initialize session directories in project |
-| `/memento:session` | Show current session status |
+| `/memento:session` | Show current session status or create new session |
 
 ## Requirements
 
