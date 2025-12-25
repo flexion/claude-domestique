@@ -185,7 +185,15 @@ Claude edits the session file directly. User can ask "update session" or Claude 
 
 **NEVER guess** current branch - always check.
 
-### Completing Work
+### Completing Work (Before PR)
+
+**Before pushing for PR**, finalize the session file:
+
+1. **Update status**: Change `in-progress` → `complete`
+2. **Mark acceptance criteria**: Check off completed items `- [x]`
+3. **Final Session Log entry**: Add completion summary
+4. **Files Changed**: Ensure all modified files are listed
+5. **Commit session WITH code**: Atomic commit
 
 ```bash
 # Update session status to complete (Claude edits directly)
@@ -196,6 +204,8 @@ git commit -m "#123 - add authentication system"
 # Create PR
 gh pr create --base main --fill
 ```
+
+The session file serves as documentation of what was done, why, and how—valuable context for PR reviewers.
 
 ## Key Patterns
 

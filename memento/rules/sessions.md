@@ -33,6 +33,12 @@ update-when: after-milestone, before-commit, when-blocked, on-reminder
 sections: Session Log (what), Files Changed (where), Next Steps (todo)
 skill: /memento:session update
 
+## COMPLETION (before PR)
+before-push: finalize session file (status: complete, mark acceptance criteria done)
+update: Session Log with completion entry, Files Changed with final list
+commit: session file WITH code changes (atomic)
+status: change "in-progress" → "complete"
+
 ## RESUMPTION
 on-start: read session file FIRST (not issue)
 use: Next Steps, Left off context
