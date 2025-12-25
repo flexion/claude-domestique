@@ -1,0 +1,97 @@
+# Session: Reliable Session Recording and Context Switching
+
+**Issue**: #103
+**Branch**: issue/feature-103/session-context-switching
+**Type**: feature
+**Created**: 2025-12-25
+**Status**: in-progress
+
+## Goal
+
+Enhance memento to provide reliable session recording and intelligent context switching, making session management automatic and friction-free.
+
+## Acceptance Criteria
+
+### 1. New Work Item / Chore Creation Workflow
+- [ ] Ask if this is a work item or chore
+- [ ] Work item: require work item identifier
+  - [ ] If user doesn't know the ID, query the repository to provide suggestions
+  - [ ] Support searching by title, label, or recent activity
+- [ ] Create new branch with correct format (`issue/feature-N/desc`)
+- [ ] Start a new session
+- [ ] Prime session file with template and known information from user input or work item
+
+### 2. Branch Switch Detection
+- [ ] Assume a work context switch on branch change
+- [ ] Look for existing session file based on branch name
+- [ ] If session file not found:
+  - [ ] Ask: use existing file or create new?
+  - [ ] If user provides a valid file that could not be found due to misnamed, rename it
+  - [ ] If no session exists, create and populate a new one
+
+### 3. Regular Session Population Triggers
+- [ ] Todos completed
+- [ ] Change in todos (updates, deletions)
+- [ ] Initial design documented
+- [ ] Design changes
+- [ ] Requirements added or changed
+- [ ] Context checkpoints (context approaching compaction threshold)
+
+## Approach
+
+### Phase 1: Branch Switch Detection (foundation)
+Modify `onUserPromptSubmit` in `memento/hooks/session-startup.js` to:
+- Compare current branch against saved state
+- When branch changed: check for existing session, find possible misnamed sessions
+- Inject context guiding Claude to read/create/rename sessions
+
+### Phase 2: Start Work Command
+Create `memento/commands/start.md` with interactive workflow:
+- Ask work item vs chore
+- Work item: get ID (help search via `gh issue list`), fetch details, create branch + session
+- Chore: get description, create branch + session
+
+### Phase 3: Session Population Triggers
+Detect events in `onUserPromptSubmit`:
+- TodoWrite usage → remind to update Session Log
+- ExitPlanMode → **immediately update Approach section with plan**
+- Context > 80% → checkpoint reminder
+
+### Phase 4: Misnamed File Handling
+Extend Phase 1 to detect sessions that reference current branch but have wrong filename; offer to rename.
+
+### Implementation Order
+1. Phase 1 (branch switch) → 2. Phase 4 (mismatch) → 3. Phase 2 (start command) → 4. Phase 3 (triggers)
+
+## Session Log
+
+- 2025-12-25: Session created, issue #103 opened
+- 2025-12-25: Plan approved - context injection approach, 4 phases identified
+- 2025-12-25: Implementation complete - all 4 phases implemented with 31 tests passing
+
+## Key Decisions
+
+- **Context injection over blocking prompts**: Claude receives guidance naturally, no forced interrupts
+- **Loose coupling**: memento tracks branches independently, optionally uses onus cache
+
+## Learnings
+
+- Branch switch detection can reuse existing state management from shared module
+- Mismatch detection by searching session file content for branch references works well
+- Session population triggers need hook input metadata (toolsUsed, contextUsage) which may need Claude Code support
+
+## Files Changed
+
+- `memento/hooks/session-startup.js` - Added branch switch detection, mismatch detection, session triggers
+- `memento/hooks/__tests__/session-startup.test.js` - Added 20 new tests for new functionality
+- `memento/commands/start.md` - New command for starting work with branch+session creation
+
+## Next Steps
+
+- [x] Phase 1: Implement branch switch detection in `onUserPromptSubmit`
+- [x] Phase 4: Add misnamed file handling
+- [x] Phase 2: Create `/memento:start` command
+- [x] Phase 3: Implement session population triggers
+- [x] Add tests for new functionality
+- [ ] Commit and push changes
+- [ ] Test in real session (branch switch, triggers)
