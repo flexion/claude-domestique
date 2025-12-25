@@ -130,12 +130,29 @@ gh auth status         # Verify authentication
 /plugin install mantra@claude-domestique
 ```
 
-### Initialize in Your Project
+That's it. No initialization required—all plugins use hook-based injection that works automatically.
 
-```bash
-/memento:init    # Session directories
-/mantra:init     # Behavioral rules (copies to .claude/rules/)
-/onus:init       # Work-item config
+---
+
+## How Context Injection Works
+
+All three plugins use Claude Code's hook system for zero-config context injection:
+
+| Hook | When | What Gets Injected |
+|------|------|-------------------|
+| **SessionStart** | New conversation | Full context: rules, session file, work item details |
+| **UserPromptSubmit** | Every prompt | Status line + periodic refresh (every 10 prompts) |
+
+This means:
+- **mantra** injects behavioral rules automatically—no copying files to `.claude/rules/`
+- **memento** creates session files on first prompt for feature branches
+- **onus** detects issue numbers from branch names and injects work item context
+
+### Status Line
+
+Each prompt shows plugin status:
+```
+📍 Mantra: #3 ✓ | 📂 Memento: session.md | 📋 Onus: #42
 ```
 
 ---
@@ -144,12 +161,12 @@ gh auth status         # Verify authentication
 
 | Plugin | Command | Description |
 |--------|---------|-------------|
-| memento | `/memento:init` | Initialize session directories |
-| memento | `/memento:session` | Show current session status |
-| mantra | `/mantra:init` | Copy behavioral rules to `.claude/rules/` |
+| memento | `/memento:session` | Show current session status or create new session |
 | mantra | `/mantra:make-rule` | Create compact frontmatter rule from verbose markdown |
-| onus | `/onus:init` | Initialize work-item config |
-| onus | `/onus:fetch` | Fetch issue details |
+| onus | `/onus:fetch` | Fetch issue details from tracker |
+| onus | `/onus:create` | Create new work item |
+| onus | `/onus:update` | Update work item (comment, status, fields) |
+| onus | `/onus:close` | Close a work item |
 
 ---
 
@@ -199,21 +216,23 @@ Session: .claude/sessions/issue-feature-42-description.md
 
 ## Rules System
 
-mantra uses Claude Code's native `.claude/rules/` auto-loading mechanism. Rules are frontmatter-only markdown files with compact YAML.
+mantra injects behavioral rules via hooks—no file copying required. Rules are frontmatter-only markdown files with compact YAML, injected directly into Claude's context.
 
 ### What mantra Provides
 
-After running `/mantra:init`, your project has:
+On every session start, mantra injects:
 
-```
-.claude/rules/
-├── behavior.md       # AI behavior (skeptical-first, evidence-based)
-├── context-format.md # Context module format spec
-├── format-guide.md   # Compact YAML conventions
-└── test.md           # Testing conventions (TDD workflow)
-```
+| Rule | Purpose |
+|------|---------|
+| `behavior.md` | AI behavior (skeptical-first, evidence-based) |
+| `context-format.md` | Context module format spec |
+| `format-guide.md` | Compact YAML conventions |
+| `test.md` | Testing conventions (TDD workflow) |
+| `git.md` | Git workflow (commits, PRs, branches) |
+| `sessions.md` | Session management conventions |
+| `work-items.md` | Work item integration |
 
-These are automatically loaded by Claude Code at session start.
+Rules from sibling plugins (memento, onus) are automatically included when installed together.
 
 ### Creating Custom Rules
 
