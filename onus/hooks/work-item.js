@@ -20,11 +20,14 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { execSync } = require('child_process');
 
 // Find plugin root by navigating up from this script's location
 const PLUGIN_ROOT = path.resolve(__dirname, '..');
-const BASE_CONTEXT_DIR = path.join(PLUGIN_ROOT, 'context');
+const PLUGIN_RULES_DIR = path.join(PLUGIN_ROOT, 'rules');
+const PLUGIN_CONTEXT_DIR = path.join(PLUGIN_ROOT, 'context');
+const BASE_CONTEXT_DIR = PLUGIN_CONTEXT_DIR; // Alias for backward compatibility
 
 // State and cache locations
 const STATE_DIR = path.join(process.env.HOME || '/tmp', '.claude', 'onus');
@@ -78,6 +81,97 @@ function ensureStateDir() {
     }
   } catch (e) {
     // Ignore errors
+  }
+}
+
+/**
+ * Compute MD5 hash of file content
+ */
+function computeFileHash(filePath) {
+  try {
+    const content = fs.readFileSync(filePath, 'utf8');
+    return crypto.createHash('md5').update(content).digest('hex');
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Compute combined hash for multiple files
+ */
+function computeContentHash(dir, files) {
+  const hashes = [];
+  for (const file of files.sort()) {
+    try {
+      const content = fs.readFileSync(path.join(dir, file), 'utf8');
+      const hash = crypto.createHash('md5').update(content).digest('hex');
+      hashes.push(`${file}:${hash}`);
+    } catch {
+      // Skip unreadable files
+    }
+  }
+  return crypto.createHash('md5').update(hashes.join('\n')).digest('hex');
+}
+
+/**
+ * Check if project rules/context are outdated compared to plugin
+ */
+function checkVersionStatus(gitRoot) {
+  const versionFile = path.join(gitRoot, '.claude', 'rules', '.onus-version.json');
+
+  // No version file = not initialized
+  if (!fs.existsSync(versionFile)) {
+    // Check if .claude/config.json has onus config (legacy setup without init)
+    const configPath = path.join(gitRoot, '.claude', 'config.json');
+    if (fs.existsSync(configPath)) {
+      try {
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        if (config.onus) {
+          return { status: 'not-initialized', hasLegacy: true };
+        }
+      } catch {
+        // Ignore parse errors
+      }
+    }
+    return { status: 'not-initialized', hasLegacy: false };
+  }
+
+  try {
+    const versionData = JSON.parse(fs.readFileSync(versionFile, 'utf8'));
+
+    // Check rules hash
+    if (versionData.rulesHash && fs.existsSync(PLUGIN_RULES_DIR)) {
+      const pluginFiles = fs.readdirSync(PLUGIN_RULES_DIR).filter(f => f.endsWith('.md'));
+      if (pluginFiles.length > 0) {
+        const currentHash = computeContentHash(PLUGIN_RULES_DIR, pluginFiles);
+        if (currentHash !== versionData.rulesHash) {
+          return {
+            status: 'outdated',
+            projectVersion: versionData.version,
+            pluginVersion: require(path.join(PLUGIN_ROOT, 'package.json')).version
+          };
+        }
+      }
+    }
+
+    // Check context hash
+    if (versionData.contextHash && fs.existsSync(PLUGIN_CONTEXT_DIR)) {
+      const pluginFiles = fs.readdirSync(PLUGIN_CONTEXT_DIR).filter(f => f.endsWith('.md'));
+      if (pluginFiles.length > 0) {
+        const currentHash = computeContentHash(PLUGIN_CONTEXT_DIR, pluginFiles);
+        if (currentHash !== versionData.contextHash) {
+          return {
+            status: 'outdated',
+            projectVersion: versionData.version,
+            pluginVersion: require(path.join(PLUGIN_ROOT, 'package.json')).version
+          };
+        }
+      }
+    }
+
+    return { status: 'current' };
+  } catch {
+    return { status: 'error' };
   }
 }
 
@@ -165,6 +259,21 @@ function getCurrentBranch(cwd) {
       stdio: ['pipe', 'pipe', 'pipe']
     }).trim();
     return branch;
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Get git repository root directory
+ */
+function getGitRoot(cwd) {
+  try {
+    return execSync('git rev-parse --show-toplevel', {
+      cwd,
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe']
+    }).trim();
   } catch (e) {
     return null;
   }
@@ -491,7 +600,21 @@ function processSessionStart(input, config = {}) {
 
   // Build context
   const reason = `session ${source}`;
-  const contextContent = buildContextContent(cwd, cfg, workItem, reason);
+  let contextContent = buildContextContent(cwd, cfg, workItem, reason);
+
+  // Check version status and add warnings
+  const gitRoot = getGitRoot(cwd);
+  if (gitRoot) {
+    const versionStatus = checkVersionStatus(gitRoot);
+    if (versionStatus.status === 'not-initialized') {
+      if (versionStatus.hasLegacy) {
+        contextContent += '\n⚠️ Onus rules not installed. Run /onus:init to set up native rules.';
+      }
+      // Don't warn if no legacy setup - user may not want onus
+    } else if (versionStatus.status === 'outdated') {
+      contextContent += '\n⚠️ Onus rules outdated. Run /onus:init --force to update.';
+    }
+  }
 
   return {
     systemMessage: generateSessionStartMessage(state, workItem, isNewIssue),
@@ -618,6 +741,7 @@ module.exports = {
   loadWorkItemCache,
   saveWorkItemCache,
   getCurrentBranch,
+  getGitRoot,
   hasStagedChanges,
   extractIssueFromBranch,
   detectPlatform,
@@ -630,9 +754,14 @@ module.exports = {
   generateSessionStartMessage,
   generatePromptSubmitMessage,
   ensureStateDir,
+  checkVersionStatus,
+  computeFileHash,
+  computeContentHash,
   DEFAULT_CONFIG,
   PLATFORM_CONFIG,
   PLUGIN_ROOT,
+  PLUGIN_RULES_DIR,
+  PLUGIN_CONTEXT_DIR,
   BASE_CONTEXT_DIR,
   STATE_DIR
 };

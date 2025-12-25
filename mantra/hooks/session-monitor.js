@@ -16,6 +16,7 @@ const crypto = require('crypto');
 const STATE_FILE = path.join(os.homedir(), '.claude', 'mantra-state.json');
 const PLUGIN_ROOT = path.join(__dirname, '..');
 const PLUGIN_RULES_DIR = path.join(PLUGIN_ROOT, 'rules');
+const PLUGIN_CONTEXT_DIR = path.join(PLUGIN_ROOT, 'context');
 const PLUGIN_STATUSLINE = path.join(PLUGIN_ROOT, 'scripts', 'statusline.js');
 
 /**
@@ -80,24 +81,25 @@ function computeContentHash(dir, files) {
 }
 
 /**
- * Check if project rules or statusline are outdated compared to plugin
- * @returns {object} { rulesOutdated, statuslineOutdated, reason }
+ * Check if project rules, context, or statusline are outdated compared to plugin
+ * @returns {object} { rulesOutdated, contextOutdated, statuslineOutdated, reason }
  */
 function checkOutdated(cwd) {
   const versionFile = path.join(cwd, '.claude', 'rules', '.mantra-version.json');
 
   // No version file = not initialized or old version
   if (!fs.existsSync(versionFile)) {
-    return { rulesOutdated: false, statuslineOutdated: false, reason: null };
+    return { rulesOutdated: false, contextOutdated: false, statuslineOutdated: false, reason: null };
   }
 
   try {
     const versionData = JSON.parse(fs.readFileSync(versionFile, 'utf8'));
     let rulesOutdated = false;
+    let contextOutdated = false;
     let statuslineOutdated = false;
 
-    // Check rules hash
-    const storedRulesHash = versionData.contentHash;
+    // Check rules hash (supports both old contentHash and new rulesHash)
+    const storedRulesHash = versionData.rulesHash || versionData.contentHash;
     if (storedRulesHash) {
       const pluginFiles = fs.readdirSync(PLUGIN_RULES_DIR)
         .filter(f => f.endsWith('.md'));
@@ -106,6 +108,19 @@ function checkOutdated(cwd) {
         const currentRulesHash = computeContentHash(PLUGIN_RULES_DIR, pluginFiles);
         if (currentRulesHash !== storedRulesHash) {
           rulesOutdated = true;
+        }
+      }
+    }
+
+    // Check context hash
+    if (versionData.contextHash && fs.existsSync(PLUGIN_CONTEXT_DIR)) {
+      const pluginFiles = fs.readdirSync(PLUGIN_CONTEXT_DIR)
+        .filter(f => f.endsWith('.md'));
+
+      if (pluginFiles.length > 0) {
+        const currentContextHash = computeContentHash(PLUGIN_CONTEXT_DIR, pluginFiles);
+        if (currentContextHash !== versionData.contextHash) {
+          contextOutdated = true;
         }
       }
     }
@@ -119,10 +134,10 @@ function checkOutdated(cwd) {
       }
     }
 
-    const reason = rulesOutdated || statuslineOutdated ? 'plugin updated' : null;
-    return { rulesOutdated, statuslineOutdated, reason };
+    const reason = rulesOutdated || contextOutdated || statuslineOutdated ? 'plugin updated' : null;
+    return { rulesOutdated, contextOutdated, statuslineOutdated, reason };
   } catch (e) {
-    return { rulesOutdated: false, statuslineOutdated: false, reason: null };
+    return { rulesOutdated: false, contextOutdated: false, statuslineOutdated: false, reason: null };
   }
 }
 
@@ -202,14 +217,18 @@ function handleSessionStart(cwd, source, contextWindow) {
     reloadIndicator = ' (resumed)';
   }
 
-  // Check for outdated rules or statusline
+  // Check for outdated rules, context, or statusline
   let warnings = [];
-  if (outdatedCheck.rulesOutdated && outdatedCheck.statuslineOutdated) {
-    warnings.push('⚠️  Rules and statusline outdated - run /mantra:init --force to update');
-  } else if (outdatedCheck.rulesOutdated) {
-    warnings.push('⚠️  Rules outdated - run /mantra:init --force to update');
-  } else if (outdatedCheck.statuslineOutdated) {
-    warnings.push('⚠️  Statusline outdated - run /mantra:init --force to update');
+  const outdatedParts = [];
+  if (outdatedCheck.rulesOutdated) outdatedParts.push('rules');
+  if (outdatedCheck.contextOutdated) outdatedParts.push('context');
+  if (outdatedCheck.statuslineOutdated) outdatedParts.push('statusline');
+
+  if (outdatedParts.length > 0) {
+    const parts = outdatedParts.length === 1
+      ? outdatedParts[0].charAt(0).toUpperCase() + outdatedParts[0].slice(1)
+      : outdatedParts.slice(0, -1).map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(', ') + ' and ' + outdatedParts[outdatedParts.length - 1];
+    warnings.push(`⚠️  ${parts} outdated - run /mantra:init --force to update`);
   }
 
   // Check for startup bloat (too much context at start)
@@ -240,6 +259,7 @@ function handleSessionStart(cwd, source, contextWindow) {
       estimatedTokens: status.tokens,
       source: source || 'startup',
       rulesOutdated: outdatedCheck.rulesOutdated,
+      contextOutdated: outdatedCheck.contextOutdated,
       statuslineOutdated: outdatedCheck.statuslineOutdated,
       contextPercentage: contextPercent,
       startupBloat
