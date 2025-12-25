@@ -1,0 +1,354 @@
+/**
+ * @claude-domestique/shared
+ *
+ * Unified hook handler for all plugins.
+ *
+ * Plugins provide:
+ *   - pluginName: Display name (e.g., 'Mantra')
+ *   - pluginRoot: Plugin root directory
+ *   - onSessionStart: Optional callback to augment SessionStart response
+ *   - onUserPromptSubmit: Optional callback to augment UserPromptSubmit response
+ */
+
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+
+// ============================================================================
+// Configuration
+// ============================================================================
+
+const DEFAULT_REFRESH_INTERVAL = 10;
+
+// ============================================================================
+// File Discovery
+// ============================================================================
+
+function findFiles(dirPath, extension) {
+  try {
+    if (!fs.existsSync(dirPath)) return [];
+    return fs.readdirSync(dirPath)
+      .filter(f => f.endsWith(extension))
+      .sort()
+      .map(f => path.join(dirPath, f));
+  } catch {
+    return [];
+  }
+}
+
+function findMdFiles(dirPath) {
+  return findFiles(dirPath, '.md');
+}
+
+function findYmlFiles(dirPath) {
+  return findFiles(dirPath, '.yml');
+}
+
+// ============================================================================
+// Context Loading
+// ============================================================================
+
+function extractFrontmatter(content) {
+  const match = content.match(/^---\n([\s\S]*?)\n---/);
+  return match ? match[1] : null;
+}
+
+function readContextFiles(files, options = {}) {
+  const contents = [];
+  for (const file of files) {
+    try {
+      let content = fs.readFileSync(file, 'utf8');
+      const basename = path.basename(file);
+
+      if (options.frontmatterOnly && file.endsWith('.md')) {
+        const frontmatter = extractFrontmatter(content);
+        if (frontmatter) content = frontmatter;
+      }
+
+      contents.push(`### ${basename}\n${content}`);
+    } catch {
+      // Skip unreadable files
+    }
+  }
+  return contents.join('\n\n');
+}
+
+/**
+ * Load all context from a plugin's directories
+ * @param {string} pluginRoot - Plugin root directory
+ * @returns {object} { content, files, tokens, companionDir }
+ */
+function loadPluginContext(pluginRoot) {
+  const rulesDir = path.join(pluginRoot, 'rules');
+  const contextDir = path.join(pluginRoot, 'context');
+
+  const ruleFiles = findMdFiles(rulesDir);
+  const contextFiles = findYmlFiles(contextDir);
+
+  // Build context content
+  const contextParts = [];
+  if (ruleFiles.length > 0) {
+    contextParts.push(readContextFiles(ruleFiles, { frontmatterOnly: true }));
+  }
+  if (contextFiles.length > 0) {
+    contextParts.push(readContextFiles(contextFiles));
+  }
+
+  let content = contextParts.join('\n\n');
+
+  // Companion docs location
+  let companionDir = null;
+  if (fs.existsSync(contextDir) && findMdFiles(contextDir).length > 0) {
+    companionDir = contextDir;
+    content += `\n\n# Companion Docs\nDetailed examples: ${contextDir}`;
+  }
+
+  // Build file list
+  const files = [...ruleFiles, ...contextFiles].map(f => path.basename(f).replace(/\.(md|yml)$/, ''));
+  const tokens = estimateTokens(content);
+
+  return { content, files, tokens, companionDir };
+}
+
+// ============================================================================
+// State Management
+// ============================================================================
+
+function ensureDir(dirPath) {
+  try {
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
+    }
+  } catch {
+    // Ignore
+  }
+}
+
+function getStateFile(pluginName) {
+  return path.join(os.homedir(), '.claude', `${pluginName.toLowerCase()}-state.json`);
+}
+
+function loadState(filePath, defaultValue = {}) {
+  try {
+    if (fs.existsSync(filePath)) {
+      return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    }
+  } catch {
+    // Ignore
+  }
+  return defaultValue;
+}
+
+function saveState(filePath, state) {
+  try {
+    ensureDir(path.dirname(filePath));
+    fs.writeFileSync(filePath, JSON.stringify(state, null, 2));
+  } catch {
+    // Ignore
+  }
+}
+
+// ============================================================================
+// Token Estimation
+// ============================================================================
+
+function estimateTokens(content) {
+  if (!content) return 0;
+  const words = content.split(/\s+/).filter(w => w.length > 0);
+  return Math.ceil(words.length * 1.3);
+}
+
+// ============================================================================
+// Unified Hook Handlers
+// ============================================================================
+
+/**
+ * Process SessionStart event
+ * @param {object} config - Plugin config
+ * @param {object} input - Hook input from stdin
+ * @returns {object} Hook response
+ */
+function processSessionStart(config, input) {
+  const { pluginName, pluginRoot } = config;
+  const stateFile = getStateFile(pluginName);
+
+  // Reset state
+  saveState(stateFile, { count: 0 });
+
+  // Load context from plugin
+  const context = loadPluginContext(pluginRoot);
+
+  // Build status line
+  const source = input.source || 'startup';
+  let statusLine = `📍 ${pluginName}: ${context.files.join(', ') || 'no files'} (~${context.tokens} tokens)`;
+
+  if (source === 'compact') {
+    statusLine += ' (reloaded)';
+  } else if (source === 'resume') {
+    statusLine += ' (resumed)';
+  }
+
+  // Base response
+  let additionalContext = context.content;
+  let extra = {};
+
+  // Allow plugin to augment
+  if (config.onSessionStart) {
+    const augment = config.onSessionStart(input, {
+      statusLine,
+      additionalContext,
+      files: context.files,
+      tokens: context.tokens,
+      companionDir: context.companionDir
+    });
+    if (augment) {
+      if (augment.additionalContext) additionalContext = augment.additionalContext;
+      if (augment.statusLine) statusLine = augment.statusLine;
+      if (augment.extra) extra = augment.extra;
+    }
+  }
+
+  return {
+    systemMessage: statusLine,
+    hookSpecificOutput: {
+      hookEventName: 'SessionStart',
+      additionalContext,
+      files: context.files,
+      tokens: context.tokens,
+      source,
+      ...extra
+    }
+  };
+}
+
+/**
+ * Process UserPromptSubmit event
+ * @param {object} config - Plugin config
+ * @param {object} input - Hook input from stdin
+ * @returns {object} Hook response
+ */
+function processUserPromptSubmit(config, input) {
+  const { pluginName, pluginRoot } = config;
+  const stateFile = getStateFile(pluginName);
+  const refreshInterval = config.refreshInterval || DEFAULT_REFRESH_INTERVAL;
+
+  // Load and increment state
+  const state = loadState(stateFile, { count: 0 });
+  state.count = (state.count || 0) + 1;
+  saveState(stateFile, state);
+
+  // Standard status line
+  const statusLine = `📍 ${pluginName}: #${state.count} ✓`;
+
+  // Check for periodic refresh
+  let additionalContext = statusLine;
+  let refreshed = false;
+  if (state.count > 0 && state.count % refreshInterval === 0) {
+    const rulesDir = path.join(pluginRoot, 'rules');
+    const ruleFiles = findMdFiles(rulesDir);
+    if (ruleFiles.length > 0) {
+      additionalContext = readContextFiles(ruleFiles, { frontmatterOnly: true });
+      refreshed = true;
+    }
+  }
+
+  // Base extra fields
+  let extra = {};
+
+  // Allow plugin to augment
+  if (config.onUserPromptSubmit) {
+    const augment = config.onUserPromptSubmit(input, {
+      statusLine,
+      additionalContext,
+      promptCount: state.count,
+      refreshed
+    });
+    if (augment) {
+      if (augment.additionalContext) additionalContext = augment.additionalContext;
+      if (augment.extra) extra = augment.extra;
+    }
+  }
+
+  return {
+    systemMessage: statusLine,
+    hookSpecificOutput: {
+      hookEventName: 'UserPromptSubmit',
+      additionalContext,
+      promptCount: state.count,
+      refreshed,
+      ...extra
+    }
+  };
+}
+
+/**
+ * Process any hook event
+ * @param {object} config - Plugin config
+ * @param {object} input - Hook input from stdin
+ * @returns {object} Hook response
+ */
+function processHook(config, input) {
+  const eventName = input.hook_event_name || 'UserPromptSubmit';
+
+  if (eventName === 'SessionStart') {
+    return processSessionStart(config, input);
+  }
+
+  return processUserPromptSubmit(config, input);
+}
+
+/**
+ * Main entry point - reads stdin, processes hook, outputs response
+ * @param {object} config - Plugin config
+ */
+async function runHook(config) {
+  let inputData = '';
+  for await (const chunk of process.stdin) {
+    inputData += chunk;
+  }
+
+  let input;
+  try {
+    input = inputData ? JSON.parse(inputData) : { cwd: process.cwd() };
+  } catch {
+    input = { cwd: process.cwd() };
+  }
+
+  // Merge cwd into config
+  config.cwd = input.cwd || process.cwd();
+
+  const result = processHook(config, input);
+  console.log(JSON.stringify(result));
+}
+
+// ============================================================================
+// Exports
+// ============================================================================
+
+module.exports = {
+  // Main entry points
+  runHook,
+  processHook,
+  processSessionStart,
+  processUserPromptSubmit,
+
+  // Context loading
+  loadPluginContext,
+  findFiles,
+  findMdFiles,
+  findYmlFiles,
+  extractFrontmatter,
+  readContextFiles,
+
+  // State management
+  getStateFile,
+  ensureDir,
+  loadState,
+  saveState,
+
+  // Utilities
+  estimateTokens,
+
+  // Constants
+  DEFAULT_REFRESH_INTERVAL
+};

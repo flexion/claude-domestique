@@ -1,5 +1,5 @@
 /**
- * Tests for onus work-item hook
+ * Tests for onus work-item hook - plugin-specific logic only
  */
 
 const fs = require('fs');
@@ -7,10 +7,6 @@ const path = require('path');
 const os = require('os');
 
 const {
-  processHook,
-  processSessionStart,
-  processUserPromptSubmit,
-  buildContextContent,
   loadState,
   saveState,
   loadProjectConfig,
@@ -18,20 +14,14 @@ const {
   saveWorkItemCache,
   extractIssueFromBranch,
   detectPlatform,
-  findYmlFiles,
-  findBaseContextFiles,
-  readContextFiles,
   getCachedWorkItem,
   createPlaceholderWorkItem,
   formatWorkItemContext,
-  generateSessionStartMessage,
-  generatePromptSubmitMessage,
-  ensureStateDir,
   DEFAULT_CONFIG,
   PLATFORM_CONFIG
 } = require('../work-item.js');
 
-describe('work-item hook', () => {
+describe('onus work-item hook', () => {
   let tmpDir;
   let stateFile;
   let cacheFile;
@@ -113,20 +103,14 @@ describe('work-item hook', () => {
   describe('loadState and saveState', () => {
     it('returns default state when file does not exist', () => {
       const state = loadState(stateFile);
-      expect(state).toEqual({
-        currentIssue: null,
-        currentBranch: null,
-        sessionStart: null,
-        lastPrompt: null
-      });
+      expect(state).toEqual({ currentIssue: null, currentBranch: null });
     });
 
     it('saves and loads state correctly', () => {
       const testState = {
         currentIssue: '42',
         currentBranch: 'feature/42-test',
-        sessionStart: '2024-01-01T00:00:00Z',
-        lastPrompt: '2024-01-01T01:00:00Z'
+        sessionStart: '2024-01-01T00:00:00Z'
       };
 
       saveState(stateFile, testState);
@@ -137,12 +121,7 @@ describe('work-item hook', () => {
     it('handles corrupted state file gracefully', () => {
       fs.writeFileSync(stateFile, 'not json');
       const state = loadState(stateFile);
-      expect(state).toEqual({
-        currentIssue: null,
-        currentBranch: null,
-        sessionStart: null,
-        lastPrompt: null
-      });
+      expect(state).toEqual({ currentIssue: null, currentBranch: null });
     });
   });
 
@@ -271,130 +250,6 @@ describe('work-item hook', () => {
     });
   });
 
-  describe('generateSessionStartMessage', () => {
-    it('shows no issue message when no issue detected', () => {
-      const state = { currentIssue: null };
-      const msg = generateSessionStartMessage(state, null);
-      expect(msg).toContain('no issue');
-    });
-
-    it('shows issue with title when available', () => {
-      const state = { currentIssue: '42' };
-      const workItem = { key: '42', title: 'User login' };
-      const msg = generateSessionStartMessage(state, workItem);
-      expect(msg).toContain('42');
-      expect(msg).toContain('User login');
-    });
-
-    it('shows issue without title for placeholder', () => {
-      const state = { currentIssue: '42' };
-      const workItem = createPlaceholderWorkItem('42', 'github');
-      const msg = generateSessionStartMessage(state, workItem);
-      expect(msg).toContain('#42');
-    });
-
-    it('shows NEW indicator for new issues', () => {
-      const state = { currentIssue: '42' };
-      const workItem = createPlaceholderWorkItem('42', 'github');
-      const msg = generateSessionStartMessage(state, workItem, true);
-      expect(msg).toContain('NEW →');
-      expect(msg).toContain('#42');
-    });
-  });
-
-  describe('generatePromptSubmitMessage', () => {
-    it('shows no issue when none detected', () => {
-      const state = { currentIssue: null };
-      const msg = generatePromptSubmitMessage(state, null, false);
-      expect(msg).toContain('no issue');
-    });
-
-    it('shows issue number when present', () => {
-      const state = { currentIssue: '42' };
-      const msg = generatePromptSubmitMessage(state, null, false);
-      expect(msg).toContain('Onus: #42');
-    });
-
-    it('shows staged changes indicator', () => {
-      const state = { currentIssue: '42' };
-      const msg = generatePromptSubmitMessage(state, null, true);
-      expect(msg).toContain('staged');
-    });
-
-    it('shows SWITCHED indicator when branch changed', () => {
-      const state = { currentIssue: '99' };
-      const msg = generatePromptSubmitMessage(state, null, false, true);
-      expect(msg).toContain('SWITCHED →');
-      expect(msg).toContain('#99');
-    });
-
-    it('shows both SWITCHED and staged indicators', () => {
-      const state = { currentIssue: '42' };
-      const msg = generatePromptSubmitMessage(state, null, true, true);
-      expect(msg).toContain('SWITCHED →');
-      expect(msg).toContain('staged');
-    });
-  });
-
-  describe('findYmlFiles', () => {
-    it('returns empty array for non-existent directory', () => {
-      const files = findYmlFiles('/nonexistent/path');
-      expect(files).toEqual([]);
-    });
-
-    it('finds yml files in directory', () => {
-      const contextDir = path.join(tmpDir, 'context');
-      fs.mkdirSync(contextDir);
-      fs.writeFileSync(path.join(contextDir, 'a.yml'), 'a: 1');
-      fs.writeFileSync(path.join(contextDir, 'b.yml'), 'b: 2');
-      fs.writeFileSync(path.join(contextDir, 'c.txt'), 'not yml');
-
-      const files = findYmlFiles(contextDir);
-      expect(files).toHaveLength(2);
-      expect(files[0]).toContain('a.yml');
-      expect(files[1]).toContain('b.yml');
-    });
-
-    it('returns sorted files', () => {
-      const contextDir = path.join(tmpDir, 'context');
-      fs.mkdirSync(contextDir);
-      fs.writeFileSync(path.join(contextDir, 'z.yml'), 'z');
-      fs.writeFileSync(path.join(contextDir, 'a.yml'), 'a');
-      fs.writeFileSync(path.join(contextDir, 'm.yml'), 'm');
-
-      const files = findYmlFiles(contextDir);
-      expect(path.basename(files[0])).toBe('a.yml');
-      expect(path.basename(files[1])).toBe('m.yml');
-      expect(path.basename(files[2])).toBe('z.yml');
-    });
-  });
-
-  describe('readContextFiles', () => {
-    it('reads and concatenates files with headers', () => {
-      const contextDir = path.join(tmpDir, 'context');
-      fs.mkdirSync(contextDir);
-      fs.writeFileSync(path.join(contextDir, 'a.yml'), 'content: a');
-      fs.writeFileSync(path.join(contextDir, 'b.yml'), 'content: b');
-
-      const files = [
-        path.join(contextDir, 'a.yml'),
-        path.join(contextDir, 'b.yml')
-      ];
-      const content = readContextFiles(files);
-
-      expect(content).toContain('### a.yml');
-      expect(content).toContain('content: a');
-      expect(content).toContain('### b.yml');
-      expect(content).toContain('content: b');
-    });
-
-    it('skips unreadable files', () => {
-      const files = ['/nonexistent/file.yml'];
-      const content = readContextFiles(files);
-      expect(content).toBe('');
-    });
-  });
-
   describe('loadProjectConfig', () => {
     it('returns empty object when config does not exist', () => {
       const config = loadProjectConfig(tmpDir, '.claude/config.json');
@@ -429,109 +284,6 @@ describe('work-item hook', () => {
     });
   });
 
-  describe('processHook', () => {
-    it('routes to SessionStart handler', () => {
-      const input = {
-        hook_event_name: 'SessionStart',
-        cwd: tmpDir,
-        source: 'startup'
-      };
-      const config = { stateFile, cacheFile };
-
-      const result = processHook(input, config);
-
-      expect(result.hookSpecificOutput.hookEventName).toBe('SessionStart');
-      expect(result.systemMessage).toBeDefined();
-    });
-
-    it('routes to UserPromptSubmit handler', () => {
-      const input = {
-        hook_event_name: 'UserPromptSubmit',
-        cwd: tmpDir
-      };
-      const config = { stateFile, cacheFile };
-
-      const result = processHook(input, config);
-
-      expect(result.hookSpecificOutput.hookEventName).toBe('UserPromptSubmit');
-    });
-
-    it('defaults to UserPromptSubmit for unknown event', () => {
-      const input = { cwd: tmpDir };
-      const config = { stateFile, cacheFile };
-
-      const result = processHook(input, config);
-
-      expect(result.hookSpecificOutput.hookEventName).toBe('UserPromptSubmit');
-    });
-  });
-
-  describe('processSessionStart', () => {
-    it('resets state on session start', () => {
-      // Pre-populate state
-      saveState(stateFile, {
-        currentIssue: 'old-42',
-        lastPrompt: '2024-01-01'
-      });
-
-      const input = {
-        hook_event_name: 'SessionStart',
-        cwd: tmpDir,
-        source: 'startup'
-      };
-      const config = { stateFile, cacheFile };
-
-      processSessionStart(input, config);
-
-      const state = loadState(stateFile);
-      expect(state.sessionStart).toBeDefined();
-      // Branch detection will fail in tmpDir, so issue should be null
-      expect(state.currentBranch).toBeNull();
-    });
-
-    it('returns context content', () => {
-      const input = {
-        hook_event_name: 'SessionStart',
-        cwd: tmpDir,
-        source: 'startup'
-      };
-      const config = { stateFile, cacheFile };
-
-      const result = processSessionStart(input, config);
-
-      expect(result.hookSpecificOutput.additionalContext).toBeDefined();
-      expect(result.systemMessage).toBeDefined();
-    });
-  });
-
-  describe('processUserPromptSubmit', () => {
-    it('updates lastPrompt timestamp', () => {
-      const input = {
-        hook_event_name: 'UserPromptSubmit',
-        cwd: tmpDir
-      };
-      const config = { stateFile, cacheFile };
-
-      processUserPromptSubmit(input, config);
-
-      const state = loadState(stateFile);
-      expect(state.lastPrompt).toBeDefined();
-    });
-
-    it('returns minimal context for prompts', () => {
-      const input = {
-        hook_event_name: 'UserPromptSubmit',
-        cwd: tmpDir
-      };
-      const config = { stateFile, cacheFile };
-
-      const result = processUserPromptSubmit(input, config);
-
-      expect(result.hookSpecificOutput.additionalContext).toBeDefined();
-      expect(result.systemMessage).toBeDefined();
-    });
-  });
-
   describe('DEFAULT_CONFIG', () => {
     it('has required fields', () => {
       expect(DEFAULT_CONFIG.stateFile).toBeDefined();
@@ -548,12 +300,6 @@ describe('work-item hook', () => {
       expect(PLATFORM_CONFIG.github).toBeDefined();
       expect(PLATFORM_CONFIG.jira).toBeDefined();
       expect(PLATFORM_CONFIG.azure).toBeDefined();
-    });
-
-    it('has URL patterns for all platforms', () => {
-      expect(PLATFORM_CONFIG.github.issueUrlPattern).toBeDefined();
-      expect(PLATFORM_CONFIG.jira.issueUrlPattern).toBeDefined();
-      expect(PLATFORM_CONFIG.azure.issueUrlPattern).toBeDefined();
     });
   });
 });
