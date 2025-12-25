@@ -1,17 +1,23 @@
 ---
 description: Set up work item integration configuration
-argument-hint: [target-dir]
+argument-hint: [--force]
 ---
 
 # Initialize Work Item Integration
 
-Set up the `.claude/config.json` with work item integration settings for this project.
+Set up onus's git workflow rules and work item integration settings.
 
 ## Task
 
-**IMPORTANT: Ask the user before configuring.**
+First, run `node ${CLAUDE_PLUGIN_ROOT}/scripts/init.js` to copy rule files to the project.
 
-Before creating the configuration, ask the user the following questions:
+This sets up:
+- `.claude/rules/git.md` - Git workflow conventions (commit format, PR format, branch naming)
+- `.claude/rules/work-items.md` - Work item integration rules
+- `.claude/context/*.md` - Detailed companion docs
+- `.claude/rules/.onus-version.json` - Version tracking for updates
+
+Then, **ask the user before configuring the platform:**
 
 ### 1. Which platform do you use for work items/issues?
 
@@ -101,3 +107,13 @@ Remind the user to set up authentication:
 - GitHub: `export GITHUB_TOKEN=ghp_...` ([Create PAT](https://github.com/settings/tokens) with `repo` scope)
 - JIRA: `export JIRA_TOKEN=$(echo -n "email:api_token" | base64)` ([Get API token](https://id.atlassian.com/manage-profile/security/api-tokens))
 - Azure: `export AZURE_DEVOPS_TOKEN=$(echo -n ":pat" | base64)` ([Create PAT](https://dev.azure.com/_usersSettings/tokens) with Work Items Read)
+
+## Updating Rules
+
+When the onus plugin is updated:
+
+```bash
+/onus:init --force
+```
+
+This overwrites existing rules with the latest versions.

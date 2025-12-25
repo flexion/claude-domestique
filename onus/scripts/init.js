@@ -2,20 +2,95 @@
 /**
  * onus init script
  *
- * Sets up work item integration configuration for a project.
- * - Creates .claude/ directory if missing
- * - Creates or updates .claude/config.json with onus settings
- * - Detects platform from git remote or existing config
- * - Never overwrites existing settings
+ * Sets up work item integration for a project.
+ * - Copies rules to .claude/rules/ (auto-loaded by Claude Code)
+ * - Copies context docs to .claude/context/
+ * - Creates .claude/config.json with platform settings
+ * - Detects platform from git remote
  */
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { execSync } = require('child_process');
 
 // Find plugin root
 const PLUGIN_ROOT = path.join(__dirname, '..');
+const RULES_DIR = path.join(PLUGIN_ROOT, 'rules');
+const CONTEXT_DIR = path.join(PLUGIN_ROOT, 'context');
 const TEMPLATES_DIR = path.join(PLUGIN_ROOT, 'templates', 'config');
+
+/**
+ * Compute MD5 hash of file content
+ */
+function computeFileHash(filePath) {
+  try {
+    const content = fs.readFileSync(filePath, 'utf8');
+    return crypto.createHash('md5').update(content).digest('hex');
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Compute combined hash for multiple files
+ */
+function computeContentHash(dir, files) {
+  const hashes = [];
+  for (const file of files.sort()) {
+    try {
+      const content = fs.readFileSync(path.join(dir, file), 'utf8');
+      const hash = crypto.createHash('md5').update(content).digest('hex');
+      hashes.push(`${file}:${hash}`);
+    } catch (e) {
+      // Skip unreadable files
+    }
+  }
+  return crypto.createHash('md5').update(hashes.join('\n')).digest('hex');
+}
+
+/**
+ * Copy files from source to destination directory
+ */
+function copyFiles(srcDir, dstDir, filter, force) {
+  const stats = { copied: 0, skipped: 0, updated: 0 };
+
+  if (!fs.existsSync(srcDir)) {
+    return stats;
+  }
+
+  const files = fs.readdirSync(srcDir).filter(f => f.endsWith(filter));
+
+  for (const file of files) {
+    const srcPath = path.join(srcDir, file);
+    const dstPath = path.join(dstDir, file);
+
+    if (fs.existsSync(dstPath) && !force) {
+      const srcContent = fs.readFileSync(srcPath, 'utf8');
+      const dstContent = fs.readFileSync(dstPath, 'utf8');
+
+      if (srcContent === dstContent) {
+        console.log(`  Skip:   ${file} (unchanged)`);
+        stats.skipped++;
+      } else {
+        console.log(`  Exists: ${file} (use --force to update)`);
+        stats.skipped++;
+      }
+    } else {
+      const existed = fs.existsSync(dstPath);
+      fs.copyFileSync(srcPath, dstPath);
+      if (force && existed) {
+        console.log(`  Update: ${file}`);
+        stats.updated++;
+      } else {
+        console.log(`  Create: ${file}`);
+        stats.copied++;
+      }
+    }
+  }
+
+  return stats;
+}
 
 /**
  * Detect git remote to infer platform and repo details
@@ -131,26 +206,96 @@ function buildDefaultConfig(detected) {
 }
 
 /**
- * Initialize onus configuration in target directory
+ * Initialize onus in target directory
  */
-function init(targetDir = process.cwd()) {
+function init(targetDir = process.cwd(), options = {}) {
+  const { force = false } = options;
   const claudeDir = path.join(targetDir, '.claude');
+  const projectRulesDir = path.join(claudeDir, 'rules');
+  const projectContextDir = path.join(claudeDir, 'context');
   const configPath = path.join(claudeDir, 'config.json');
 
   console.log('onus init');
   console.log('================');
   console.log(`Target: ${targetDir}`);
+  console.log(`Plugin: ${PLUGIN_ROOT}`);
   console.log();
 
-  // Create .claude/ directory
-  if (!fs.existsSync(claudeDir)) {
-    fs.mkdirSync(claudeDir, { recursive: true });
-    console.log('Created: .claude/');
-  } else {
-    console.log('Exists:  .claude/');
+  // Create directories
+  const dirs = [
+    { path: claudeDir, name: '.claude/' },
+    { path: projectRulesDir, name: '.claude/rules/' },
+    { path: projectContextDir, name: '.claude/context/' }
+  ];
+
+  for (const dir of dirs) {
+    if (!fs.existsSync(dir.path)) {
+      fs.mkdirSync(dir.path, { recursive: true });
+      console.log(`Created: ${dir.name}`);
+    } else {
+      console.log(`Exists:  ${dir.name}`);
+    }
+  }
+
+  // Copy rules
+  if (fs.existsSync(RULES_DIR)) {
+    const ruleFiles = fs.readdirSync(RULES_DIR).filter(f => f.endsWith('.md'));
+    if (ruleFiles.length > 0) {
+      console.log();
+      console.log(`Copying ${ruleFiles.length} rule files...`);
+      const rulesStats = copyFiles(RULES_DIR, projectRulesDir, '.md', force);
+      console.log();
+      console.log('Rules:');
+      console.log(`  Created: ${rulesStats.copied}`);
+      if (rulesStats.updated > 0) console.log(`  Updated: ${rulesStats.updated}`);
+      if (rulesStats.skipped > 0) console.log(`  Skipped: ${rulesStats.skipped}`);
+    }
+  }
+
+  // Copy context files
+  if (fs.existsSync(CONTEXT_DIR)) {
+    const contextFiles = fs.readdirSync(CONTEXT_DIR).filter(f => f.endsWith('.md'));
+    if (contextFiles.length > 0) {
+      console.log();
+      console.log(`Copying ${contextFiles.length} companion files...`);
+      const contextStats = copyFiles(CONTEXT_DIR, projectContextDir, '.md', force);
+      console.log();
+      console.log('Companion files:');
+      console.log(`  Created: ${contextStats.copied}`);
+      if (contextStats.updated > 0) console.log(`  Updated: ${contextStats.updated}`);
+      if (contextStats.skipped > 0) console.log(`  Skipped: ${contextStats.skipped}`);
+    }
+  }
+
+  // Write version file
+  const ruleFiles = fs.existsSync(RULES_DIR)
+    ? fs.readdirSync(RULES_DIR).filter(f => f.endsWith('.md'))
+    : [];
+  const contextFiles = fs.existsSync(CONTEXT_DIR)
+    ? fs.readdirSync(CONTEXT_DIR).filter(f => f.endsWith('.md'))
+    : [];
+
+  if (ruleFiles.length > 0) {
+    const versionFile = path.join(projectRulesDir, '.onus-version.json');
+    const versionData = {
+      version: require(path.join(PLUGIN_ROOT, 'package.json')).version,
+      copiedAt: new Date().toISOString(),
+      files: {
+        rules: ruleFiles,
+        context: contextFiles
+      },
+      rulesHash: computeContentHash(RULES_DIR, ruleFiles),
+      contextHash: contextFiles.length > 0
+        ? computeContentHash(CONTEXT_DIR, contextFiles)
+        : null
+    };
+    fs.writeFileSync(versionFile, JSON.stringify(versionData, null, 2) + '\n');
+    console.log();
+    console.log('Written: .claude/rules/.onus-version.json');
   }
 
   // Detect git remote
+  console.log();
   const detected = detectGitRemote(targetDir);
   if (detected) {
     console.log(`Detected: ${detected.platform} repository`);
@@ -168,12 +313,9 @@ function init(targetDir = process.cwd()) {
   const existingConfig = loadExistingConfig(configPath);
   const hasOnus = existingConfig.onus !== undefined;
 
-  if (hasOnus) {
+  if (hasOnus && !force) {
     console.log('Exists:  .claude/config.json (onus config present)');
     console.log('         Not overwriting existing configuration');
-    console.log();
-    console.log('Current onus config:');
-    console.log(JSON.stringify(existingConfig.onus, null, 2));
   } else {
     // Build and merge onus config
     const onusConfig = buildDefaultConfig(detected);
@@ -184,31 +326,34 @@ function init(targetDir = process.cwd()) {
     };
 
     fs.writeFileSync(configPath, JSON.stringify(newConfig, null, 2));
-    console.log('Created: .claude/config.json with onus configuration');
-    console.log();
-    console.log('New onus config:');
-    console.log(JSON.stringify(onusConfig, null, 2));
+    if (hasOnus) {
+      console.log('Updated: .claude/config.json');
+    } else {
+      console.log('Created: .claude/config.json');
+    }
   }
 
   console.log();
   console.log('Init complete!');
   console.log();
-  console.log('Next steps:');
-  console.log('1. Edit .claude/config.json with your platform details');
-  console.log('2. For GitHub: Set GITHUB_TOKEN environment variable');
-  console.log('3. For JIRA: Set JIRA_TOKEN environment variable');
-  console.log('4. For Azure: Set AZURE_DEVOPS_TOKEN environment variable');
+  console.log('How it works:');
+  console.log('- .claude/rules/*.md files are auto-loaded by Claude Code');
+  console.log('- Git workflow and work item rules loaded automatically');
+  console.log('- Issue detected from branch name (issue/feature-N/desc)');
   console.log();
-  console.log('Usage:');
-  console.log('- Branch naming: issue/feature-42/description');
-  console.log('- Issue detected automatically from branch name');
-  console.log('- Use /fetch 42 to load issue details');
+  console.log('To update after plugin update:');
+  console.log('  Run /onus:init --force');
+
+  return { success: true };
 }
 
 // CLI entry point
 if (require.main === module) {
-  const targetDir = process.argv[2] || process.cwd();
-  init(path.resolve(targetDir));
+  const args = process.argv.slice(2);
+  const force = args.includes('--force') || args.includes('-f');
+  const targetDir = args.find(a => !a.startsWith('-')) || process.cwd();
+
+  init(path.resolve(targetDir), { force });
 }
 
-module.exports = { init, detectGitRemote, buildDefaultConfig, loadExistingConfig };
+module.exports = { init, detectGitRemote, buildDefaultConfig, loadExistingConfig, computeContentHash, computeFileHash };

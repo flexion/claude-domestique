@@ -274,12 +274,22 @@ function init(targetDir = process.cwd(), options = {}) {
   }
 
   // Write version file with hashes for update detection
+  const contextFiles = fs.existsSync(CONTEXT_DIR)
+    ? fs.readdirSync(CONTEXT_DIR).filter(f => f.endsWith('.md'))
+    : [];
+
   const versionFile = path.join(projectRulesDir, '.mantra-version.json');
   const versionData = {
     version: require(path.join(PLUGIN_ROOT, 'package.json')).version,
     copiedAt: new Date().toISOString(),
-    files: ruleFiles,
-    contentHash: computeContentHash(RULES_DIR, ruleFiles),
+    files: {
+      rules: ruleFiles,
+      context: contextFiles
+    },
+    rulesHash: computeContentHash(RULES_DIR, ruleFiles),
+    contextHash: contextFiles.length > 0
+      ? computeContentHash(CONTEXT_DIR, contextFiles)
+      : null,
     statuslineHash: fs.existsSync(STATUSLINE_SRC) ? computeFileHash(STATUSLINE_SRC) : null
   };
   fs.writeFileSync(versionFile, JSON.stringify(versionData, null, 2) + '\n');
