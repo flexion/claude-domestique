@@ -18,10 +18,12 @@ mantra helps developers embody Flexion fundamentals throughout long sessions:
 
 ## Features
 
-- **Native rules loading** - Uses Claude Code's built-in `.claude/rules/` auto-loading
+- **Zero config** - Rules injected automatically via hooks, no setup required
 - **Token efficient** - Compact YAML frontmatter (~89% token reduction vs prose)
 - **Status indicator** - Shows rules loaded and context freshness on every prompt
-- **Curated rules** - Ships with behavior, testing, and format conventions
+- **Curated rules** - Ships with behavior, testing, git, and format conventions
+- **Periodic refresh** - Re-injects rules every 10 prompts to prevent drift
+- **Plugin family aware** - Automatically loads rules from sibling plugins (memento, onus)
 - **Easy customization** - Create your own rules with `/mantra:make-rule`
 - **On-demand details** - Companion files provide elaboration when needed
 
@@ -33,56 +35,46 @@ mantra helps developers embody Flexion fundamentals throughout long sessions:
 
 # Install the plugin
 /plugin install mantra@claude-domestique
-
-# Copy rule files to your project
-/mantra:init
 ```
 
-The `/mantra:init` command creates:
-```
-.claude/rules/
-├── behavior.md       # AI behavior (skeptical-first, assess-before-agree)
-├── context-format.md # Context module format spec
-├── format-guide.md   # Compact YAML conventions
-└── test.md           # Testing conventions (TDD workflow)
-```
+That's it. Rules are injected automatically on every session start—no initialization required.
 
-## Usage
+## How It Works
 
-Once installed, rules are automatically loaded by Claude Code at session start.
+mantra uses Claude Code's hook system for automatic context injection:
+
+| Hook | When | What Happens |
+|------|------|--------------|
+| **SessionStart** | New conversation | Injects all rules + companion docs path |
+| **UserPromptSubmit** | Every prompt | Shows status line, refreshes context every 10 prompts |
+
+### What Gets Injected
+
+On session start, mantra injects:
+
+| Rule | Purpose |
+|------|---------|
+| `behavior.md` | AI behavior (skeptical-first, evidence-based) |
+| `context-format.md` | Context module format spec |
+| `format-guide.md` | Compact YAML conventions |
+| `test.md` | Testing conventions (TDD workflow) |
+
+When sibling plugins are installed (memento, onus), their rules are also loaded:
+- `git.md` - Git workflow (from onus)
+- `sessions.md` - Session management (from memento)
+- `work-items.md` - Work item integration (from onus)
 
 ### Status Line
 
-mantra installs a custom status line that shows real-time information at the bottom of Claude Code:
+Every prompt shows mantra status:
 
 ```
-📍 Mantra: 4 rules @ 25% | Opus | $0.15
+📍 Mantra: #3 ✓
 ```
 
 **Components:**
-- **Rules count** - Number of `.claude/rules/*.md` files loaded
-- **Context percentage** - Real context window usage (from Claude Code token data)
-- **Model** - Current model (Opus, Sonnet, etc.)
-- **Cost** - Session cost in USD
-
-**Hook Status (SessionStart):**
-```
-📍 Mantra: 4 rules (~850 tokens) @ 8% | behavior, context-format, ...
-```
-
-**Warnings:**
-- **Startup bloat** (>35%): `⚠️ High initial context (40%) - consider trimming CLAUDE.md or rules`
-- **Drift warning** (>=70%): `📍 Mantra: 4 rules @ 75% ⚠️ | Opus | $0.42`
-- **Outdated files**: `⚠️ Rules and statusline outdated - run /mantra:init --force to update`
-
-**Installation:**
-
-The `/mantra:init` command automatically:
-1. Copies `statusline.js` to `.claude/statusline.js`
-2. Configures `.claude/settings.json` with the statusLine setting
-3. Tracks content hashes to detect when updates are available
-
-When the plugin is updated, the SessionStart hook will warn you to run `/mantra:init --force` to get the latest statusline features.
+- **#N** - Prompt counter since session start
+- **✓** - Context injection successful
 
 **IDE Compatibility:**
 
@@ -99,8 +91,6 @@ The status line is a CLI feature. In VS Code, use Claude Code from the integrate
 
 | Command | Description |
 |---------|-------------|
-| `/mantra:init` | Copy rule files to project's `.claude/rules/` |
-| `/mantra:init --force` | Update existing rules with latest versions |
 | `/mantra:make-rule` | Create compact frontmatter rule from verbose markdown |
 
 ### Creating Custom Rules
@@ -217,7 +207,7 @@ External (GitHub/JIRA/Azure DevOps)
     [memento] ←── "What's next?" lookup
         │
         ▼ read session context
-    [mantra] ──► native rules auto-loaded
+    [mantra] ──► rules injected via hooks
 ```
 
 Each plugin works standalone but gains enhanced behavior when used together.

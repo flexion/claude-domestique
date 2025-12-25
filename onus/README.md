@@ -66,7 +66,7 @@ External (GitHub/JIRA/Azure DevOps)
     [memento] ←── "What's next?" lookup
         │
         ▼ read session context
-    [mantra] ──► periodic refresh into working context
+    [mantra] ──► rules injected via hooks
 ```
 
 ### Shared Naming Convention
@@ -124,17 +124,43 @@ When onus generates a PR, consider running a review first:
 
 # Install the plugin
 /plugin install onus@claude-domestique
+```
 
-# Initialize work-item config
-/onus:init
+That's it. Work item detection works automatically—no initialization required.
+
+## How It Works
+
+onus uses Claude Code's hook system for automatic work item detection:
+
+| Hook | When | What Happens |
+|------|------|--------------|
+| **SessionStart** | New conversation | Detects issue number from branch, injects work item context |
+| **UserPromptSubmit** | Every prompt | Shows issue number in status line |
+
+### Automatic Issue Detection
+
+When you're on a branch like `issue/feature-42/add-auth`:
+1. onus extracts issue number `42` from the branch name
+2. Shows `📋 Issue: 42` in status line
+3. Use `/onus:fetch 42` to load full issue details
+
+### Status Line
+
+Every prompt shows issue status:
+
+```
+📋 Onus: #3 ✓
+📋 Issue: 42
 ```
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `/onus:init` | Initialize work-item configuration |
 | `/onus:fetch` | Fetch issue details from tracker |
+| `/onus:create` | Create new work item |
+| `/onus:update` | Update work item (comment, status, fields) |
+| `/onus:close` | Close a work item |
 
 ## Why "onus"?
 
