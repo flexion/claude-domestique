@@ -10,6 +10,7 @@
     "onus"
   ],
   "scripts": {
+    "install:all": "npm install",
     "test": "npm run test:shared && npm run test:mantra && npm run test:memento && npm run test:onus",
     "test:shared": "cd shared && npm test",
     "test:mantra": "cd mantra && npm test",
