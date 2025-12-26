@@ -128,6 +128,52 @@ When onus generates a PR, consider running a review first:
 
 That's it. Work item detection works automatically—no initialization required.
 
+## Configuration
+
+onus works zero-config by default (GitHub Issues). For JIRA or Azure DevOps, create `.claude/config.json`:
+
+```json
+{
+  "onus": {
+    "platform": "github",
+    "github": {
+      "owner": "your-org",
+      "repo": "your-repo"
+    },
+    "commitFormat": "#{number} - {verb} {description}",
+    "branchFormat": "issue/{type}-{number}/{slug}"
+  }
+}
+```
+
+### Supported Platforms
+
+| Platform | Config Key | Required Fields |
+|----------|------------|-----------------|
+| GitHub Issues | `github` | `owner`, `repo` (auto-detected from git remote) |
+| JIRA | `jira` | `host`, `project` |
+| Azure DevOps | `azure` | `org`, `project` |
+
+### Programmatic Configuration
+
+For scripts or automation, use the init module:
+
+```javascript
+const { init, detectGitRemote, buildDefaultConfig } = require('@claude-domestique/onus');
+
+// Auto-detect from git remote (defaults to GitHub Issues)
+init(projectPath);
+
+// Explicit platform
+init(projectPath, {
+  platform: 'jira',
+  overrides: { jiraHost: 'company.atlassian.net', jiraProject: 'PROJ' }
+});
+
+// Force overwrite existing config
+init(projectPath, { platform: 'azure', force: true });
+```
+
 ## How It Works
 
 onus uses Claude Code's hook system for automatic work item detection:
