@@ -233,3 +233,34 @@ module.exports = {
   CONFIG_FILE,
   PLATFORMS
 };
+
+// CLI entry point
+if (require.main === module) {
+  const args = process.argv.slice(2);
+  const options = {};
+
+  // Parse arguments
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--force') {
+      options.force = true;
+    } else if (args[i] === '--platform' && args[i + 1]) {
+      options.platform = args[++i];
+    }
+  }
+
+  const result = init(process.cwd(), options);
+
+  if (result.error) {
+    console.error('Error:', result.error);
+    process.exit(1);
+  } else if (result.skipped) {
+    console.log(result.message);
+  } else if (result.created) {
+    console.log(`Created ${result.path}`);
+    if (result.detected) {
+      console.log(`  Platform: ${result.platform}`);
+      console.log(`  Owner: ${result.detected.owner}`);
+      console.log(`  Repo: ${result.detected.repo}`);
+    }
+  }
+}
