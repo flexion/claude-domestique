@@ -165,6 +165,7 @@ Each prompt shows plugin status:
 |--------|---------|-------------|
 | memento | `/memento:session` | Show current session status or create new session |
 | mantra | `/mantra:make-rule` | Create compact frontmatter rule from verbose markdown |
+| onus | `/onus:init` | Initialize project config (detects commit patterns) |
 | onus | `/onus:fetch` | Fetch issue details from tracker |
 | onus | `/onus:create` | Create new work item |
 | onus | `/onus:update` | Update work item (comment, status, fields) |

@@ -130,7 +130,20 @@ That's it. Work item detection works automatically—no initialization required.
 
 ## Configuration
 
-onus works zero-config by default (GitHub Issues). For JIRA or Azure DevOps, create `.claude/config.json`:
+onus works zero-config by default (GitHub Issues). Use `/onus:init` to create configuration:
+
+```bash
+/onus:init                    # Auto-detect from git remote
+/onus:init --platform jira    # Use JIRA
+/onus:init --force            # Overwrite existing config
+```
+
+The init command:
+1. Analyzes recent commits to detect existing patterns
+2. Creates `.claude/config.json` with detected or default formats
+3. Auto-detects GitHub owner/repo from git remote
+
+### Generated Config
 
 ```json
 {
@@ -140,8 +153,14 @@ onus works zero-config by default (GitHub Issues). For JIRA or Azure DevOps, cre
       "owner": "your-org",
       "repo": "your-repo"
     },
-    "commitFormat": "{number} - {verb} {description}",
-    "branchFormat": "issue/{type}-{number}/{slug}"
+    "commitFormat": {
+      "issue": "{number} - {verb} {description}",
+      "chore": "chore - {description}"
+    },
+    "branchFormat": {
+      "issue": "issue/{type}-{number}/{slug}",
+      "chore": "chore/{slug}"
+    }
   }
 }
 ```
@@ -203,6 +222,7 @@ Every prompt shows issue status:
 
 | Command | Description |
 |---------|-------------|
+| `/onus:init` | Initialize project config (detects commit patterns) |
 | `/onus:fetch` | Fetch issue details from tracker |
 | `/onus:create` | Create new work item |
 | `/onus:update` | Update work item (comment, status, fields) |
