@@ -1,5 +1,5 @@
 {
-  "description": "Session management - auto-create on startup, hand off to skill",
+  "description": "Session management - auto-create on startup, checkpoint on key events",
   "hooks": {
     "SessionStart": [
       {
@@ -18,6 +18,30 @@
           {
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/session-startup.js",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "ExitPlanMode|EnterPlanMode|Task|TodoWrite",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/checkpoint.js",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash(git commit*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/checkpoint.js",
             "timeout": 5
           }
         ]
