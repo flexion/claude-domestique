@@ -74,7 +74,7 @@ Set `AZURE_DEVOPS_TOKEN` environment variable (base64 encoded `:pat_token`).
 
 #### Commit Message Format
 
-Default: `#{number} - {verb} {description}`
+Default: `{number} - {verb} {description}`
 
 Placeholders:
 - `{number}` - Issue number
@@ -82,7 +82,7 @@ Placeholders:
 - `{description}` - Brief description
 
 Examples:
-- `#{number} - {verb} {description}` → `#42 - add user login form`
+- `{number} - {verb} {description}` → `#42 - add user login form`
 - `[{number}] {verb}: {description}` → `[42] add: user login form`
 - `{verb}({number}): {description}` → `add(42): user login form`
 

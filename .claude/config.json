@@ -1,0 +1,17 @@
+{
+  "onus": {
+    "commitFormat": {
+      "issue": "{number} - {verb} {description}",
+      "chore": "chore - {description}"
+    },
+    "branchFormat": {
+      "issue": "issue/{type}-{number}/{slug}",
+      "chore": "chore/{slug}"
+    },
+    "platform": "github",
+    "github": {
+      "owner": "flexion",
+      "repo": "claude-domestique"
+    }
+  }
+}

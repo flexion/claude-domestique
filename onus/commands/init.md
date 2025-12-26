@@ -9,10 +9,32 @@ Set up `.claude/config.json` with onus configuration for work item tracking.
 
 ## Task
 
-Run the init script to create or update the configuration:
+### Step 1: Detect Existing Commit Patterns
+
+Before creating config, analyze recent commits to detect existing conventions:
 
 ```bash
-node /Users/dpuglielli/.claude/plugins/cache/claude-domestique/onus/<version>/scripts/init.js
+git log --oneline -30
+```
+
+Look for these common patterns:
+
+| Pattern | Example | Format String |
+|---------|---------|---------------|
+| Issue number prefix | `#42 - add feature` | `{number} - {description}` |
+| Conventional commits | `feat(auth): add login` | `{type}({scope}): {description}` |
+| JIRA style | `[PROJ-123] fix bug` | `[{project}-{number}] {description}` |
+| Semantic | `fix: resolve issue` | `{type}: {description}` |
+| Chore prefix | `chore - update deps` | `chore - {description}` |
+
+If a clear pattern emerges (>50% of commits), note it for Step 3.
+
+### Step 2: Run Init Script
+
+Run the init script to create base configuration:
+
+```bash
+node ~/.claude/plugins/cache/claude-domestique/onus/*/scripts/init.js
 ```
 
 The script auto-detects GitHub owner/repo from the git remote.
@@ -53,6 +75,28 @@ Specify the work item platform (defaults to `github`):
   }
 }
 ```
+
+### Step 3: Update Config with Detected Patterns
+
+If Step 1 detected a different commit pattern, update `.claude/config.json`:
+
+**Conventional Commits detected:**
+```json
+"commitFormat": {
+  "issue": "{type}({scope}): {description} (#{number})",
+  "chore": "chore: {description}"
+}
+```
+
+**JIRA style detected:**
+```json
+"commitFormat": {
+  "issue": "[{project}-{number}] {description}",
+  "chore": "chore: {description}"
+}
+```
+
+**No clear pattern:** Keep the defaults - they follow common GitHub conventions.
 
 ## Options
 

@@ -97,7 +97,7 @@ Open request for deeper integration:
 | Fetch Azure DevOps | Azure DevOps MCP | **MCP** (setup required) |
 | Create PRs | `gh pr create` | **NATIVE** |
 | Update issues | `gh issue comment` | **NATIVE** |
-| Commit with reference | Manual with `#{number}` | **MANUAL** |
+| Commit with reference | Manual with `{number}` | **MANUAL** |
 
 ### What Native/MCP DOES NOT Cover
 
