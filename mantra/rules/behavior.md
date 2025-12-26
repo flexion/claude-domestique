@@ -25,7 +25,9 @@ mode: discuss-approach-first (non-trivial), build-first (trivial)
 order: syntax → runtime → logic → optimize
 strategy: agree-on-approach-first (non-trivial changes), gather-context-upfront
 implement: minimal-working, fix-actual-errors (not speculative-fixes)
+speculation: DO-during-assessment (risks, edge-cases), DONT-during-implementation (no speculative defensive code)
 simplicity: simple-solutions-first (consider: security, types, async, error-handling)
+simple-means: fewer-abstractions, direct-over-clever, explicit-over-implicit, readable-over-concise
 execute: immediately (safe-ops), ask-first (breaking-changes)
 validation: incremental (multi-step: implement → test → next)
 communication: skip-preambles, direct, concise, explain-when-seeking-approval

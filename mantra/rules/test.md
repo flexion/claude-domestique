@@ -14,6 +14,13 @@ deterministic: same input → same output (no flaky tests)
 simple-first: start minimal, build complexity incrementally
 never: big-bang (all code then all tests)
 
+## FIRST PRINCIPLES
+fast: unit-milliseconds, suite-<10s, integration-<60s
+independent: no-shared-state, any-order, own-setup-per-test
+repeatable: no-external-deps, inject-time, fixed-seeds
+self-validating: pass-or-fail (no manual log inspection)
+timely: test-immediately-after-method, failing-test-first-for-bugs
+
 ## TDD WORKFLOW (per chunk)
 1: write-test (defines expected behavior)
 2: run-targeted-test (should fail)
@@ -57,4 +64,9 @@ reports: write-to-gitignored-folder, reuse-existing-reports
 require: new-logic, conditionals, edge-cases, error-paths
 skip: trivial-getters, simple-wrappers, type-only-code
 focus: behavior (not implementation-details)
+
+## ANTI-PATTERNS
+avoid: testing-implementation-details (test behavior, not internal calls)
+avoid: overly-complex-setup (>10 lines = design smell, code too coupled)
+prefer: one-logical-assertion-per-test (clear failure messages)
 ---
