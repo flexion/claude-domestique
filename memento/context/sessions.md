@@ -136,6 +136,51 @@ This keeps session maintenance flexible and conversational rather than forcing a
 
 ## Workflow
 
+### Workflow Checkpoints
+
+Two mandatory checkpoints ensure proper session tracking:
+
+#### Pre-Analysis Checkpoint
+
+**When**: User mentions starting new work ("start a chore", "implement feature", "fix bug")
+
+**Check**: Are we on main/master branch?
+
+**If yes**: STOP before any exploration or analysis. Ask:
+> "Should I create a branch and session file before we start?"
+
+**Why**: Prevents analysis work from being lost if conversation resets. Session tracks decisions made during exploration.
+
+**Example**:
+```
+User: "Let's start a chore to fix the config"
+Claude: [Checks branch - on main]
+Claude: "I notice we're on main. Should I create a branch and session file before we start exploring?"
+User: "Yes"
+Claude: [Creates branch, creates session, THEN starts analysis]
+```
+
+#### Pre-Implementation Checkpoint
+
+**When**: ExitPlanMode is used and plan is approved
+
+**Before any code edits**: STOP and verify:
+1. Not on main branch (if so, create branch)
+2. Session file exists (if not, create it)
+3. Update session Approach section with the approved plan
+4. THEN proceed with implementation
+
+**Why**: Ensures the approved plan is captured in the session before implementation begins.
+
+**Example**:
+```
+[Plan approved via ExitPlanMode]
+Claude: [Checks branch - on feature branch ✓]
+Claude: [Checks session - exists ✓]
+Claude: [Updates session Approach section with plan]
+Claude: [THEN creates todo list and starts coding]
+```
+
 ### Starting New Work
 
 **Option 1: Use the start command (recommended)**
