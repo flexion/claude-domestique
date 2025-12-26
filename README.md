@@ -36,6 +36,8 @@ Helps developers embody Flexion fundamentals throughout long sessions:
 
 JIRA tickets, Azure DevOps work items, commit messages, PR descriptions. The awful-but-important work that kills your flow. **onus** handles the project management bureaucracy so you can code.
 
+Supports **GitHub Issues** (default, zero-config), **JIRA**, and **Azure DevOps** work items.
+
 Helps developers embody Flexion fundamentals while staying in flow:
 - **Never compromise on quality** — Ensures proper commit messages, ticket updates, and PR descriptions
 - **Lead by example** — Handles PM accountability work so it actually gets done
