@@ -15,8 +15,14 @@ const CONFIG_FILE = '.claude/config.json';
 
 // Default configuration values
 const DEFAULT_CONFIG = {
-  commitFormat: '#{number} - {verb} {description}',
-  branchFormat: 'issue/{type}-{number}/{slug}'
+  commitFormat: {
+    issue: '{number} - {verb} {description}',
+    chore: 'chore - {description}'
+  },
+  branchFormat: {
+    issue: 'issue/{type}-{number}/{slug}',
+    chore: 'chore/{slug}'
+  }
 };
 
 // Supported work item platforms
