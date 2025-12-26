@@ -34,7 +34,7 @@ If a clear pattern emerges (>50% of commits), note it for Step 3.
 Run the init script to create base configuration:
 
 ```bash
-node ~/.claude/plugins/cache/claude-domestique/onus/*/scripts/init.js
+node "$(node -p "require(process.env.HOME + '/.claude/plugins/installed_plugins.json').plugins['onus@claude-domestique'][0].installPath")/scripts/init.js"
 ```
 
 The script auto-detects GitHub owner/repo from the git remote.
