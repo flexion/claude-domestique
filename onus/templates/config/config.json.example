@@ -13,8 +13,14 @@
       "org": "your-org",
       "project": "your-project"
     },
-    "commitFormat": "#{number} - {verb} {description}",
-    "branchFormat": "issue/{type}-{number}/{slug}"
+    "commitFormat": {
+      "issue": "{number} - {verb} {description}",
+      "chore": "chore - {description}"
+    },
+    "branchFormat": {
+      "issue": "issue/{type}-{number}/{slug}",
+      "chore": "chore/{slug}"
+    }
   },
   "context": {
     "periodicRefresh": {
