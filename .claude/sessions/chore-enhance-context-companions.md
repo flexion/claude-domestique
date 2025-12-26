@@ -3,7 +3,8 @@
 ## Details
 - **Branch**: chore/enhance-context-companions
 - **Type**: Chore
-- **Status**: in-progress
+- **Status**: complete
+- **PR**: https://github.com/flexion/claude-domestique/pull/109
 - **Created**: 2025-12-26
 
 ## Goal
