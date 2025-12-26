@@ -37,7 +37,7 @@ const DEFAULT_CONFIG = {
     /^([A-Z]+-\d+)/,
     /#(\d+)/
   ],
-  commitFormat: '#{number} - {verb} {description}',
+  commitFormat: '{number} - {verb} {description}',
   branchFormat: 'issue/feature-{number}/{slug}'
 };
 

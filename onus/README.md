@@ -140,7 +140,7 @@ onus works zero-config by default (GitHub Issues). For JIRA or Azure DevOps, cre
       "owner": "your-org",
       "repo": "your-repo"
     },
-    "commitFormat": "#{number} - {verb} {description}",
+    "commitFormat": "{number} - {verb} {description}",
     "branchFormat": "issue/{type}-{number}/{slug}"
   }
 }
