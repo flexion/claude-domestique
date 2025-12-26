@@ -30,6 +30,40 @@ Same input must produce same output. Avoid:
 - Network calls - use stubs
 - File system state - use mocks for unit tests
 
+## FIRST Principles
+
+All tests should follow FIRST principles:
+
+### Fast
+- Unit tests complete in milliseconds
+- Full unit test suite < 10 seconds
+- Integration tests < 60 seconds
+- Slow tests don't get run, defeating the purpose
+
+### Independent
+- Tests don't depend on each other
+- Can run in any order
+- Each test sets up its own data
+- No shared mutable state between tests
+
+### Repeatable
+- Same result every time
+- No reliance on external services (use mocks)
+- No date/time dependencies (inject clock)
+- No random data (use fixed seeds)
+
+### Self-Validating
+- Test passes (green) or fails (red)
+- No manual inspection of logs
+- Clear assertion failures with helpful messages
+- Example: `expect(user.role).toBe('admin')` not just `console.log(user)`
+
+### Timely
+- Write tests immediately after implementing method
+- Don't wait until feature is "done"
+- Write failing test first for bug fixes
+- Test-first prevents untestable designs
+
 ### Simple First
 
 Start with the simplest test case, then build complexity:
@@ -589,3 +623,89 @@ Add to `.gitignore`:
 coverage/
 .nyc_output/
 ```
+
+## Anti-Patterns to Avoid
+
+### Big Bang Testing
+
+```
+// BAD: Implement everything, then test
+Day 1: Write 10 new methods
+Day 2: Write 10 more methods
+Day 3: Write all tests
+Day 4: Debug why nothing works
+```
+
+**Why it fails:**
+- Harder to debug when many tests fail at once
+- Tests may not match actual implementation
+- Miss edge cases discovered during implementation
+- Lose the design benefits of test-first thinking
+
+### Testing Implementation Details
+
+```javascript
+// BAD: Test internal calls
+verify(user).verifyAccess(customerId, customerInfo);
+
+// GOOD: Test the observable behavior
+expect(() => service.findData(customerId)).toThrow('Not authorized');
+```
+
+**Why it fails:**
+- Brittle tests that break on refactoring
+- Tests don't validate actual behavior
+- False confidence from passing tests
+
+### Overly Complex Test Setup
+
+```javascript
+// BAD: 50 lines of setup
+beforeEach(() => {
+  // Initialize 10 mocks
+  // Set up 20 when() statements
+  // Configure test context
+  // ... complex setup
+});
+
+// GOOD: Simple, focused
+it('validates input', () => {
+  const validator = createValidator();
+  expect(validator.isValid('test')).toBe(true);
+});
+```
+
+**Why it fails:**
+- Hard to understand what's being tested
+- Setup becomes a maintenance burden
+- May hide real design issues (code is too coupled)
+
+### One Logical Assertion Per Test
+
+```javascript
+// BAD: Testing too many things
+it('processes user', () => {
+  user.setRole('admin');
+  expect(user.isAdmin()).toBe(true);
+  expect(user.isExternal()).toBe(false);
+  expect(user.canEdit()).toBe(true);
+  expect(user.canDelete()).toBe(true);
+  // ... 10 more assertions
+});
+
+// GOOD: Focused tests
+it('isAdmin returns true when role is admin', () => {
+  user.setRole('admin');
+  expect(user.isAdmin()).toBe(true);
+});
+
+it('isExternal returns false for admin role', () => {
+  user.setRole('admin');
+  expect(user.isExternal()).toBe(false);
+});
+```
+
+**Why single assertions:**
+- Clear what failed when a test breaks
+- Test name describes exactly what's tested
+- Easier to maintain and understand

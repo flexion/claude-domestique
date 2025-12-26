@@ -1,5 +1,22 @@
 # AI Assistant Preferences
 
+## When to Discuss vs Build First
+
+**Trivial changes** - Build immediately without discussion:
+- Bug fixes with obvious solution
+- Simple refactoring (rename, extract method)
+- Adding straightforward getters/setters
+- Updating configuration values
+- Adding tests for existing code
+
+**Non-trivial changes** - Discuss approach first:
+- New features or significant functionality
+- Architecture or design decisions
+- Changes affecting multiple components
+- Performance optimizations
+- Database schema changes
+- API contract changes
+
 ## Pre-Implementation (MANDATORY)
 
 1. **Agree on strategy first** for non-trivial changes
@@ -20,6 +37,11 @@
    - Simplest code that could work
    - Execute immediately (no permission requests for safe ops)
    - Fix based on actual errors, not speculation
+
+   **Clarification on speculation:**
+   - During ASSESSMENT: DO speculate about risks, edge cases, potential issues
+   - During IMPLEMENTATION: Start minimal, don't add speculative defensive code
+   - During ITERATION: Fix actual errors from compiler/runtime, not imagined problems
 
 2. **Validation hierarchy**
    - Syntax → Runtime → Logic → Optimization
@@ -44,11 +66,48 @@
 ## During Implementation (MANDATORY)
 
 1. **Reference manifest** - never re-search identified files
+
 2. **Simple solutions first** (consider: security, types, concurrency, performance, transactions)
+
+   **What is "simple":**
+   - Fewer abstractions over more
+   - Direct solution over clever/generic
+   - Explicit over implicit
+   - Readable over concise
+
+   **When complexity is justified:**
+   - **Security**: Authentication/authorization requires proper abstractions
+   - **Types**: Type safety prevents bugs (use strong types over primitives)
+   - **Concurrency**: Thread safety requires proper synchronization
+   - **Performance**: Assess data source latency before optimizing
+   - **Transactions**: Data integrity requires transactional boundaries
+
+   **Default**: Start simple, add complexity only when these concerns demand it
+
 3. **Early returns** over nested conditionals
+
 4. **Explicit assumptions** when ambiguous
+
 5. **Code-only responses** - skip preambles, include imports
-6. **Bug fixes**: Inline with // CHANGED comments
+
+6. **Bug fixes**: Inline with `// CHANGED` comments
+
+   ```javascript
+   // Before
+   if (user.isActive()) {
+     return user.permissions;
+   }
+
+   // After
+   if (user != null && user.isActive()) {  // CHANGED: Added null check
+     return user.permissions;
+   }
+   ```
+
+   - Use `// CHANGED` for small inline fixes
+   - Avoid extracting new methods for trivial fixes
+   - For complex fixes, refactoring to new methods is fine
+
 7. **Proactive**: Propose better alternatives
 
 ## Testing Philosophy (MANDATORY)
