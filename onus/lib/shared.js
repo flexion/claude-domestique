@@ -275,6 +275,10 @@ function processUserPromptSubmit(config, input) {
     }
   }
 
+  // Precedence reminder: project rules > CLAUDE.md > plugin > base training
+  const precedenceReminder = 'IMPORTANT: Context precedence is project rules (.claude/rules/) > CLAUDE.md > plugin context > base training.';
+  additionalContext = `${precedenceReminder}\n${additionalContext}`;
+
   return {
     systemMessage: statusLine,
     hookSpecificOutput: {
