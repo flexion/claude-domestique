@@ -264,7 +264,8 @@ describe('shared module', () => {
 
       const result = shared.processUserPromptSubmit(config, input);
 
-      expect(result.hookSpecificOutput.additionalContext).toBe('Custom prompt context');
+      expect(result.hookSpecificOutput.additionalContext).toContain('Custom prompt context');
+      expect(result.hookSpecificOutput.additionalContext).toContain('IMPORTANT: You MUST prioritize');
       expect(result.hookSpecificOutput.custom).toBe(true);
     });
   });
