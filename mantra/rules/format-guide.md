@@ -5,6 +5,7 @@
 # Format Guide - Compact Reference
 
 companion: .claude/context/format-guide.md
+type: reference
 
 ## Reading Compact YAML
 patterns:

@@ -36,6 +36,12 @@ Create a design guide document that explains how to write effective context rule
 - Every prompt now reminds: project rules > CLAUDE.md > plugin > base training
 - Rebuilt shared into all plugins, all tests pass
 
+### 2025-12-27 - Rules Conformance Update
+- Updated all actionable rules with: trigger, priority, action, verify, consequence
+- Marked informational rules with `type: reference`
+- Added Rule Types section to rule-design.md
+- Files updated: behavior.md, test.md, sessions.md, git.md, context-format.md, format-guide.md, work-items.md
+
 ## Notes
 - Core principle: "You MUST" + "STOP" + verification > compact format
 - Two-tier pattern: rules/ (compact, always loaded) + context/ (detailed, on-demand)

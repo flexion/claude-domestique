@@ -5,8 +5,16 @@
 # Testing Conventions - Compact Reference
 
 companion: .claude/context/test.md
+type: actionable
 
 MANDATORY-REREAD: before-implementation (use-thinking-block-verification)
+
+## TDD WORKFLOW (BLOCKING REQUIREMENT)
+trigger: user requests implementation, new feature, or bug fix
+priority: BLOCKING
+action: You MUST write test first, run to fail, then implement. STOP and follow TDD.
+verify: "TDD: write test first, run to fail, then implement"
+consequence: Skipping TDD leads to untested code and regression bugs
 
 ## CORE PRINCIPLES
 independent: tests run in any order, parallelizable
@@ -21,7 +29,7 @@ repeatable: no-external-deps, inject-time, fixed-seeds
 self-validating: pass-or-fail (no manual log inspection)
 timely: test-immediately-after-method, failing-test-first-for-bugs
 
-## TDD WORKFLOW (per chunk)
+## TDD STEPS (per chunk)
 1: write-test (defines expected behavior)
 2: run-targeted-test (should fail)
 3: implement-minimal-code

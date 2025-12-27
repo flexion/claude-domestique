@@ -1,8 +1,13 @@
 ---
 # Rule Design - Compact Reference
 companion: context/rule-design.md
+type: reference
 
 MANDATORY-REREAD: before-writing-rules, before-creating-context-files (use-thinking-block)
+
+## RULE TYPES
+actionable: has trigger, priority, action, verify, consequence (BLOCKING rules)
+reference: informational, no triggers (context/guidance only)
 
 ## CORE INSIGHT
 goal: rules-trigger-action (not-inform)

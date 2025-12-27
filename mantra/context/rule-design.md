@@ -2,6 +2,17 @@
 
 companion-for: rule authors and contributors
 
+## Rule Types
+
+Rules fall into two categories:
+
+| Type | Purpose | Required Fields |
+|------|---------|-----------------|
+| `actionable` | Blocking rules that trigger behavior | TRIGGER, PRIORITY, ACTION, VERIFY, CONSEQUENCE |
+| `reference` | Informational context, no triggers | None (purely descriptive) |
+
+Mark each rule file with `type: actionable` or `type: reference` in the frontmatter.
+
 ## Core Insight
 
 Rules fail when they're treated as "background information" instead of "active instructions." The goal is to create rules that trigger action, not just inform.
