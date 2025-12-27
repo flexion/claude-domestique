@@ -5,6 +5,7 @@
 # Work Item Integration - Compact Reference
 
 companion: .claude/context/work-items.md
+type: reference
 
 ## WORK ITEM AWARENESS
 detect: branch-name-first (issue/feature-N, PROJ-123, #N)

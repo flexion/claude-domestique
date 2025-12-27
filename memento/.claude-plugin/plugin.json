@@ -1,6 +1,6 @@
 {
   "name": "memento",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Session management for Claude Code - auto-injected via hooks, zero config",
   "author": {
     "name": "David Puglielli"

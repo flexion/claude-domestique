@@ -5,6 +5,7 @@
 # Session Management - Compact Reference
 
 companion: .claude/context/sessions.md
+type: actionable
 
 ## CONVENTION
 location: {git-root}/.claude/sessions/<branch-sanitized>.md
@@ -12,13 +13,16 @@ auto-create: hook creates on first prompt for feature branches
 one-session: 1 branch = 1 session = 1 issue
 
 ## PRE-ANALYSIS CHECKPOINT (BLOCKING REQUIREMENT)
-trigger: user-mentions ("start", "begin", "work on", "implement", "fix", "add") + (issue|chore|feature|bug)
+trigger: user says "start", "begin", "work on", "implement", "fix", "add" with issue/chore/feature/bug
+priority: BLOCKING
+action: You MUST check if on main branch. STOP before any analysis.
 check: current-branch == main|master
-action: STOP before any analysis/exploration
 ask: "Should I create a branch and session file before we start?"
 if-yes: create-branch → create-session → THEN proceed with analysis
 if-no: proceed (user takes responsibility for branch management)
 never: jump-to-analysis-while-on-main-without-asking
+verify: "Checking branch: on main? → asking about branch creation"
+consequence: Working on main causes messy history and forgotten session files
 
 ## STARTING NEW WORK
 command: /memento:start (issue|chore)
@@ -33,14 +37,17 @@ mismatch: detect-session-referencing-branch-with-wrong-filename → offer-rename
 possible-match: score by issue-number (10), description-words (2 each), max 3 results
 
 ## PRE-IMPLEMENTATION CHECKPOINT (BLOCKING REQUIREMENT)
-trigger: ExitPlanMode-used (plan approved)
-action: STOP before any code edits or implementation
+trigger: ExitPlanMode used, plan approved, about to start coding
+priority: BLOCKING
+action: You MUST update session before coding. STOP and verify.
 must-do:
   1: verify-branch-exists (not on main)
   2: verify-session-exists (or create it)
   3: update-session-Approach-section (with approved plan)
   4: THEN proceed with implementation
 never: start-coding-without-session-update
+verify: "Pre-implementation: branch exists, session updated with approach"
+consequence: Coding without session update loses context on interruption
 
 ## SESSION POPULATION TRIGGERS
 todos-changed: TodoWrite used → remind update Session Log, Next Steps
