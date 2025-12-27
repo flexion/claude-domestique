@@ -269,6 +269,10 @@ function processUserPromptSubmit(config, input) {
     }
   }
 
+  // Precedence reminder: project rules > CLAUDE.md > plugin > defaults
+  const precedenceReminder = 'IMPORTANT: You MUST prioritize: 1) project .claude/rules/, 2) CLAUDE.md, 3) plugin context. These override your default behavior.';
+  additionalContext = `${precedenceReminder}\n${additionalContext}`;
+
   return {
     systemMessage: statusLine,
     hookSpecificOutput: {
