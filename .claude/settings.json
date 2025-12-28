@@ -2,5 +2,10 @@
   "statusLine": {
     "type": "command",
     "command": ".claude/statusline.js"
+  },
+  "enabledPlugins": {
+    "mantra@claude-domestique": true,
+    "memento@claude-domestique": true,
+    "onus@claude-domestique": true
   }
 }
