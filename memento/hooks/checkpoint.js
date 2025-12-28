@@ -45,6 +45,32 @@ function sessionExists(sessionPath) {
   return sessionPath && fs.existsSync(sessionPath);
 }
 
+function validateSessionFile(sessionPath) {
+  if (!sessionPath || !fs.existsSync(sessionPath)) {
+    return { valid: false, issue: 'missing' };
+  }
+
+  const content = fs.readFileSync(sessionPath, 'utf8');
+
+  // Common placeholder patterns from session templates
+  const placeholders = [
+    '[Describe the objective',
+    '[First task',
+    '[Record key architectural',
+    '[What did you learn',
+    'Goal\n\n[',
+    'Next Steps\n\n1. ['
+  ];
+
+  for (const pattern of placeholders) {
+    if (content.includes(pattern)) {
+      return { valid: false, issue: 'placeholders', pattern };
+    }
+  }
+
+  return { valid: true };
+}
+
 // ============================================================================
 // Checkpoint Logic
 // ============================================================================
@@ -104,9 +130,16 @@ function buildCheckpointReminder(input) {
       if (hookEvent === 'PreToolUse') {
         const command = input.tool_input?.command || '';
         if (command.includes('git commit')) {
-          reminder = hasSession
-            ? '📝 **Pre-Commit Checkpoint**: Ensure session is updated before committing. Commit session + code together.'
-            : '⚠️ **No session file found**. Consider creating one before commit.';
+          if (!hasSession) {
+            reminder = '⚠️ **STOP**: No session file found. Create session before commit.';
+          } else {
+            const validation = validateSessionFile(sessionPath);
+            if (!validation.valid && validation.issue === 'placeholders') {
+              reminder = `⚠️ **STOP**: Session file has placeholder text: "${validation.pattern}..."\n\nUpdate session BEFORE committing. Consult sessions.md rule.`;
+            } else {
+              reminder = '📝 **Pre-Commit**: Session exists. Verify it\'s updated, then commit session + code together.';
+            }
+          }
         }
       }
       break;
@@ -142,4 +175,17 @@ function main() {
   });
 }
 
-main();
+// Run if executed directly
+if (require.main === module) {
+  main();
+}
+
+// Export for testing
+module.exports = {
+  validateSessionFile,
+  buildCheckpointReminder,
+  getGitRoot,
+  getCurrentBranch,
+  getSessionPath,
+  sessionExists
+};

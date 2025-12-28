@@ -370,7 +370,14 @@ function onUserPromptSubmit(input, base) {
   if (triggers.length > 0) {
     context += buildTriggerContext(triggers, sessionPath);
   } else {
-    context += '\nAfter responding: assess if work warrants session update (milestones, decisions, blockers).';
+    // Periodic reminder every 5 prompts to assess session state
+    const promptCount = base.promptCount || 0;
+    const SESSION_REMINDER_INTERVAL = 5;
+    if (promptCount > 0 && promptCount % SESSION_REMINDER_INTERVAL === 0) {
+      context += '\n\n📝 **Session Check**: Has anything happened worth recording? Key decisions, requirements, design changes, or blockers should be captured in the session file.';
+    } else {
+      context += '\nAfter responding: assess if work warrants session update (milestones, decisions, blockers).';
+    }
   }
 
   return {
