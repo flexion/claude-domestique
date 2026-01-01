@@ -30,6 +30,15 @@ flow: ask-type → get-details → create-branch → create-session → prime-wi
 issue: fetch-details, populate-acceptance-criteria, create-branch-with-format
 chore: gather-description, create-chore-branch
 
+## BRANCH CREATION (BLOCKING REQUIREMENT)
+trigger: about to run `git checkout -b` or `git switch -c`
+priority: BLOCKING
+action: You MUST create session file immediately after branch creation. STOP.
+flow: create-branch → create-session (same command or immediately after)
+skill: /memento:session create
+verify: "Branch created → creating session file"
+consequence: Branches without sessions lose context and break 1:1 convention
+
 ## BRANCH SWITCH DETECTION
 detect: compare current-branch vs saved-state on each prompt
 on-switch: check-session-exists → find-possible-matches → inject-guidance

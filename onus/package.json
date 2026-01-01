@@ -1,6 +1,6 @@
 {
   "name": "@claude-domestique/onus",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Work item automation plugin for Claude Code - auto-injected via hooks, zero config",
   "main": "index.js",
   "scripts": {

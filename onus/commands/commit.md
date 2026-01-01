@@ -29,6 +29,7 @@ Before creating the commit, verify:
 
 3. **Check for session file**
    - Read `.claude/sessions/<branch>.md`
+   - If missing: create session file using `/memento:session create`
    - Update Session Log, Files Changed sections if needed
    - Session file should be committed atomically with code
 
