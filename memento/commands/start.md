@@ -116,6 +116,13 @@ Claude: Creating branch: chore/update-npm-dependencies
         Session file: .claude/sessions/chore-update-npm-dependencies.md
 ```
 
+## Templates
+
+Use the appropriate template from `memento/templates/`:
+- `feature.md` - For feature issues (enhancements, new functionality)
+- `fix.md` - For bug fixes
+- `chore.md` - For maintenance work without an issue
+
 ## Integration with onus
 
 If onus plugin is installed, issue details may already be cached at:
