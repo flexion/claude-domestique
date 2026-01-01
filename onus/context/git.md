@@ -130,6 +130,8 @@ EOF
 
 ## Pre-Commit Checklist
 
+> **Use `/onus:commit` for guided commit creation with validation.**
+
 Before every commit, verify:
 
 1. **Tests pass** (if applicable)
@@ -151,6 +153,8 @@ Before every commit, verify:
    - No AI attribution ("Generated with...")
 
 ## Pre-PR Checklist
+
+> **Use `/onus:pr` for guided PR creation with validation.**
 
 Before every PR, verify:
 

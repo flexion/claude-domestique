@@ -66,8 +66,9 @@ commit: session file WITH code changes (atomic)
 status: change "in-progress" → "complete"
 
 ## RESUMPTION
-on-start: read session file FIRST (not issue)
-use: Next Steps, Left off context
+trigger: user asks "what's next?", "where was I?", resuming work
+skill: memento:resume (proactively invoked)
+action: load session → show goal/approach/next steps
 always: git branch --show-current (never guess branch)
 
 ## SESSION FILE STRUCTURE
