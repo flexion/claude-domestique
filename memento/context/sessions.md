@@ -221,12 +221,13 @@ Claude edits the session file directly. User can ask "update session" or Claude 
 
 ### Resuming Work
 
-**User asks**: "What's next?"
+> **The `memento:resume` skill is proactively invoked when user asks "what's next?" or "where was I?"**
 
 **Claude must**:
 1. Get current branch: `git branch --show-current`
 2. Read `.claude/branches/<sanitized-branch>` to find session file
-3. Read the session file (find "Next Steps" section)
+3. Read the session file
+4. Display: Goal, Approach, Next Steps, recent Session Log entries
 
 **NEVER guess** current branch - always check.
 
