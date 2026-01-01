@@ -15,17 +15,24 @@ Create a git commit following project conventions with validation.
 
 Before creating the commit, verify:
 
-1. **Run tests** (if applicable)
+1. **Check current branch**
+   ```bash
+   git branch --show-current
+   ```
+   - If on `main` or `master`: STOP and ask user
+   - Options: create a branch first, or confirm direct commit is intentional
+
+2. **Run tests** (if applicable)
    ```bash
    npm test
    ```
 
-2. **Check for session file**
+3. **Check for session file**
    - Read `.claude/sessions/<branch>.md`
    - Update Session Log, Files Changed sections if needed
    - Session file should be committed atomically with code
 
-3. **Session completion check** (if this is the final commit)
+4. **Session completion check** (if this is the final commit)
    - Ask: "Is this the final commit for this work? Mark session complete?"
    - If yes:
      - Change status: `in-progress` → `complete`
@@ -33,7 +40,7 @@ Before creating the commit, verify:
      - Add final Session Log entry
    - This ensures clean working directory after PR creation
 
-4. **Check staged changes**
+5. **Check staged changes**
    ```bash
    git status
    git diff --staged
