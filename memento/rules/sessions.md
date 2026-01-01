@@ -59,11 +59,13 @@ update-when: after-milestone, before-commit, when-blocked, on-reminder
 sections: Session Log (what), Files Changed (where), Next Steps (todo)
 skill: /memento:session update
 
-## COMPLETION (before PR)
-before-push: finalize session file (status: complete, mark acceptance criteria done)
+## COMPLETION (before final commit)
+when: final commit before PR (not after PR creation)
+finalize: status → complete, mark acceptance criteria done
 update: Session Log with completion entry, Files Changed with final list
 commit: session file WITH code changes (atomic)
-status: change "in-progress" → "complete"
+result: clean working directory after PR creation
+no-post-PR-updates: PR number discoverable via `gh pr view` (not stored in session)
 
 ## RESUMPTION
 trigger: user asks "what's next?", "where was I?", resuming work

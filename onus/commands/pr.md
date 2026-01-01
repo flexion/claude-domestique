@@ -34,6 +34,7 @@ Before creating the PR, verify:
 
 4. **Check session file** for summary content
    - Read `.claude/sessions/<branch>.md`
+   - Verify session status is `complete` (should be marked before final commit)
    - Use Goal, Approach, Session Log for PR body
 
 ### Determine PR Title Format
@@ -90,10 +91,12 @@ EOF
 ### After Creation
 
 1. Display the PR URL
-2. Suggest next steps:
+2. Working directory should be **clean** (no uncommitted changes)
+3. Suggest next steps:
    - Review the PR in browser
    - Request reviewers if needed
-   - Update issue status
+
+**Note**: Do NOT update the session file after PR creation. The PR number is discoverable via `gh pr view`—no need to store it in the session.
 
 ## Example Interaction
 

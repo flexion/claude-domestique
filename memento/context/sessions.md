@@ -231,9 +231,9 @@ Claude edits the session file directly. User can ask "update session" or Claude 
 
 **NEVER guess** current branch - always check.
 
-### Completing Work (Before PR)
+### Completing Work (Before Final Commit)
 
-**Before pushing for PR**, finalize the session file:
+**Before your final commit** (not after PR creation), finalize the session file:
 
 1. **Update status**: Change `in-progress` → `complete`
 2. **Mark acceptance criteria**: Check off completed items `- [x]`
@@ -247,9 +247,15 @@ Claude edits the session file directly. User can ask "update session" or Claude 
 git add .claude/sessions/123-add-authentication.md src/
 git commit -m "#123 - add authentication system"
 
-# Create PR
+# Push and create PR
+git push -u origin $(git branch --show-current)
 gh pr create --base main --fill
+
+# Working directory is CLEAN after PR creation
+# No orphaned session changes
 ```
+
+**Important**: Do NOT update the session after PR creation. The PR number is always discoverable via `gh pr view`—there's no need to store it in the session file.
 
 The session file serves as documentation of what was done, why, and how—valuable context for PR reviewers.
 

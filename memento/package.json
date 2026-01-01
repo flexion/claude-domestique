@@ -1,6 +1,6 @@
 {
   "name": "@claude-domestique/memento",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "Session management for Claude Code - persist context across conversation resets with branch-based session tracking",
   "main": "index.js",
   "scripts": {

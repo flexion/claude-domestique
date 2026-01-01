@@ -25,7 +25,15 @@ Before creating the commit, verify:
    - Update Session Log, Files Changed sections if needed
    - Session file should be committed atomically with code
 
-3. **Check staged changes**
+3. **Session completion check** (if this is the final commit)
+   - Ask: "Is this the final commit for this work? Mark session complete?"
+   - If yes:
+     - Change status: `in-progress` → `complete`
+     - Mark acceptance criteria as done: `- [ ]` → `- [x]`
+     - Add final Session Log entry
+   - This ensures clean working directory after PR creation
+
+4. **Check staged changes**
    ```bash
    git status
    git diff --staged
