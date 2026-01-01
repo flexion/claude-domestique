@@ -96,6 +96,20 @@ function detectPlatform(issueKey) {
   return 'github';
 }
 
+/**
+ * Get the commit format string, handling both legacy string format
+ * and new object format with {issue, chore} keys.
+ */
+function getCommitFormat(commitFormat, type = 'issue') {
+  if (typeof commitFormat === 'string') {
+    return commitFormat;
+  }
+  if (typeof commitFormat === 'object' && commitFormat !== null) {
+    return commitFormat[type] || commitFormat.issue || '{number} - {verb} {description}';
+  }
+  return '{number} - {verb} {description}';
+}
+
 // ============================================================================
 // Work Item Cache
 // ============================================================================
@@ -185,7 +199,7 @@ function formatWorkItemContext(workItem, cfg) {
     parts.push(`⚠️ Issue details not yet fetched. Use \`/fetch ${workItem.key}\` to load details.`);
     parts.push('');
     parts.push('**Commit format reminder:**');
-    parts.push(`\`${cfg.commitFormat.replace('{number}', workItem.key)}\``);
+    parts.push(`\`${getCommitFormat(cfg.commitFormat).replace('{number}', workItem.key)}\``);
     return parts.join('\n');
   }
 
@@ -218,7 +232,7 @@ function formatWorkItemContext(workItem, cfg) {
 
   parts.push('');
   parts.push('**Commit format:**');
-  parts.push(`\`${cfg.commitFormat.replace('{number}', workItem.key)}\``);
+  parts.push(`\`${getCommitFormat(cfg.commitFormat).replace('{number}', workItem.key)}\``);
 
   if (workItem.stale) {
     parts.push('');
@@ -332,7 +346,7 @@ function onUserPromptSubmit(input, base) {
     context += `\n📋 Issue: ${state.currentIssue}`;
   }
   if (staged) {
-    context += `\n💡 Staged changes detected. Commit format: \`${cfg.commitFormat.replace('{number}', state.currentIssue || 'N')}\``;
+    context += `\n💡 Staged changes detected. Commit format: \`${getCommitFormat(cfg.commitFormat).replace('{number}', state.currentIssue || 'N')}\``;
   }
 
   return {
@@ -395,6 +409,7 @@ module.exports = {
   hasStagedChanges,
   extractIssueFromBranch,
   detectPlatform,
+  getCommitFormat,
   getCachedWorkItem,
   createPlaceholderWorkItem,
   formatWorkItemContext,

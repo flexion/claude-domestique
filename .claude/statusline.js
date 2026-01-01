@@ -106,13 +106,13 @@ function getGitBranch(cwd) {
 
 /**
  * Extract work item ID from branch name
- * Matches patterns like: 120677-description, issue/feature-120677/desc
+ * Matches patterns like: 117, 120677-description, issue/feature-120677/desc
  */
 function extractWorkItemId(branch) {
   if (!branch) return null;
 
-  // Match 5-6 digit numbers (Azure DevOps work item IDs)
-  const match = branch.match(/(\d{5,6})/);
+  // Match 1-6 digit numbers (GitHub issues and Azure DevOps work item IDs)
+  const match = branch.match(/(\d{1,6})/);
   return match ? match[1] : null;
 }
 

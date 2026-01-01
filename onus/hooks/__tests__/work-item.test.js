@@ -14,6 +14,7 @@ const {
   saveWorkItemCache,
   extractIssueFromBranch,
   detectPlatform,
+  getCommitFormat,
   getCachedWorkItem,
   createPlaceholderWorkItem,
   formatWorkItemContext,
@@ -97,6 +98,39 @@ describe('onus work-item hook', () => {
     it('returns github for null/undefined', () => {
       expect(detectPlatform(null)).toBe('github');
       expect(detectPlatform(undefined)).toBe('github');
+    });
+  });
+
+  describe('getCommitFormat', () => {
+    it('returns string format as-is', () => {
+      expect(getCommitFormat('{number} - {description}')).toBe('{number} - {description}');
+    });
+
+    it('extracts issue format from object', () => {
+      const objFormat = {
+        issue: '{number} - {verb} {description}',
+        chore: 'chore - {description}'
+      };
+      expect(getCommitFormat(objFormat, 'issue')).toBe('{number} - {verb} {description}');
+      expect(getCommitFormat(objFormat, 'chore')).toBe('chore - {description}');
+    });
+
+    it('defaults to issue format when type not specified', () => {
+      const objFormat = {
+        issue: 'issue format',
+        chore: 'chore format'
+      };
+      expect(getCommitFormat(objFormat)).toBe('issue format');
+    });
+
+    it('falls back to issue format when type not found in object', () => {
+      const objFormat = { issue: 'issue format' };
+      expect(getCommitFormat(objFormat, 'unknown')).toBe('issue format');
+    });
+
+    it('returns default format for null/undefined', () => {
+      expect(getCommitFormat(null)).toBe('{number} - {verb} {description}');
+      expect(getCommitFormat(undefined)).toBe('{number} - {verb} {description}');
     });
   });
 
@@ -247,6 +281,19 @@ describe('onus work-item hook', () => {
       const formatted = formatWorkItemContext(item, cfg);
       expect(formatted).toContain('...');
       expect(formatted.length).toBeLessThan(1000);
+    });
+
+    it('handles object-style commitFormat', () => {
+      const objectCfg = {
+        ...cfg,
+        commitFormat: {
+          issue: '{number} - {verb} {description}',
+          chore: 'chore - {description}'
+        }
+      };
+      const item = createPlaceholderWorkItem('42', 'github');
+      const formatted = formatWorkItemContext(item, objectCfg);
+      expect(formatted).toContain('42 - {verb} {description}');
     });
   });
 
