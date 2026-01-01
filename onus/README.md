@@ -227,6 +227,8 @@ Every prompt shows issue status:
 | `/onus:create` | Create new work item |
 | `/onus:update` | Update work item (comment, status, fields) |
 | `/onus:close` | Close a work item |
+| `/onus:commit` | Create a commit with validation and format guidance |
+| `/onus:pr` | Create a pull request with validation and format guidance |
 
 ## Why "onus"?
 

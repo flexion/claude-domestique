@@ -163,6 +163,7 @@ Each prompt shows plugin status:
 
 | Plugin | Command | Description |
 |--------|---------|-------------|
+| memento | `/memento:start` | Start new work - creates branch and session together |
 | memento | `/memento:session` | Show current session status or create new session |
 | mantra | `/mantra:make-rule` | Create compact frontmatter rule from verbose markdown |
 | onus | `/onus:init` | Initialize project config (detects commit patterns) |
@@ -170,6 +171,8 @@ Each prompt shows plugin status:
 | onus | `/onus:create` | Create new work item |
 | onus | `/onus:update` | Update work item (comment, status, fields) |
 | onus | `/onus:close` | Close a work item |
+| onus | `/onus:commit` | Create a commit with validation and format guidance |
+| onus | `/onus:pr` | Create a pull request with validation and format guidance |
 
 ---
 

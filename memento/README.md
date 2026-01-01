@@ -201,6 +201,14 @@ Next Steps:
 | `/memento:start` | Start new work - creates branch and session together |
 | `/memento:session` | Show current session status or create new session |
 
+## Skills
+
+Skills are proactively invoked by Claude when context matches:
+
+| Skill | Triggers |
+|-------|----------|
+| `resume` | "what's next?", "where was I?", resuming work after break |
+
 ## Requirements
 
 - Node.js (required by Claude CLI)
