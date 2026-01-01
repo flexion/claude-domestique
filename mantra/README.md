@@ -92,6 +92,8 @@ The status line is a CLI feature. In VS Code, use Claude Code from the integrate
 | Command | Description |
 |---------|-------------|
 | `/mantra:make-rule` | Create compact frontmatter rule from verbose markdown |
+| `/mantra:assess` | Structured critical assessment (correctness, architecture, alternatives, risks) |
+| `/mantra:troubleshoot` | Evidence-based debugging (requires 3+ documented examples) |
 
 ### Creating Custom Rules
 
