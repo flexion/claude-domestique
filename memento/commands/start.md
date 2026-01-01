@@ -116,6 +116,19 @@ Claude: Creating branch: chore/update-npm-dependencies
         Session file: .claude/sessions/chore-update-npm-dependencies.md
 ```
 
+## Templates
+
+Templates are checked in this order (first found wins):
+1. `.claude/templates/` - Project-level overrides
+2. `memento/templates/` - Plugin defaults
+
+Available templates:
+- `feature.md` - For feature issues (enhancements, new functionality)
+- `fix.md` - For bug fixes
+- `chore.md` - For maintenance work without an issue
+
+To customize templates for your project, copy the defaults to `.claude/templates/` and modify.
+
 ## Integration with onus
 
 If onus plugin is installed, issue details may already be cached at:
