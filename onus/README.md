@@ -229,6 +229,8 @@ Every prompt shows issue status:
 | `/onus:close` | Close a work item |
 | `/onus:commit` | Create a commit with validation and format guidance |
 | `/onus:pr` | Create a pull request with validation and format guidance |
+| `/onus:status` | Show work item dashboard (issue, session, git state) |
+| `/onus:validate-criteria` | Check acceptance criteria completion before commit/PR |
 
 ## Why "onus"?
 
