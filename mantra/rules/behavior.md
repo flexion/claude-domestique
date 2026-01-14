@@ -22,7 +22,7 @@ trigger: user says "commit", "PR", "troubleshoot", or requests implementation
 priority: BLOCKING
 action: You MUST show checklist consultation in thinking block. STOP and verify.
 required-before: git-operations (commit, PR, push, merge), troubleshooting, implementation
-must-show: "Consulting [operation] checklist from git.yml" | "Consulting TDD workflow from test.yml"
+must-show: "Consulting [operation] checklist from git.md" | "Consulting TDD workflow from test.md"
 must-verify: format-requirements (PR title lowercase, commit format, zero attribution)
 verify: "Consulting git.md checklist" | "Consulting test.md TDD workflow"
 consequence: Skipping checklists causes format violations and missed steps

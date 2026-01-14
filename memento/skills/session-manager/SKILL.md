@@ -22,8 +22,8 @@ Proactively invoke when user:
 
 ## Context Files (Auto-Injected)
 
-- **sessions.yml**: Rules for session workflow (BLOCKING requirements)
-- **sessions.md**: Detailed examples and patterns
+- **rules/sessions.md**: Rules for session workflow (BLOCKING requirements)
+- **context/sessions.md**: Detailed examples and patterns
 
 Read these files for complete guidance. This skill provides quick reference only.
 
@@ -47,7 +47,7 @@ Edit session file directly. Update triggers:
 - Before pause
 - Before commit (atomic with code)
 
-## Key Rules (from sessions.yml)
+## Key Rules (from rules/sessions.md)
 
 1. **Never guess current branch** — always `git branch --show-current`
 2. **Session = Branch = Issue** (1:1:1 mapping)
@@ -56,6 +56,6 @@ Edit session file directly. Update triggers:
 
 ## What This Skill Does NOT Do
 
-- Define session file format (see sessions.md)
-- Define workflow patterns (see sessions.yml)
-- Handle git operations (see git.yml/git.md via onus)
+- Define session file format (see context/sessions.md)
+- Define workflow patterns (see rules/sessions.md)
+- Handle git operations (see rules/git.md, context/git.md via onus)

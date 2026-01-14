@@ -21,10 +21,10 @@ Proactively invoke when user:
 
 ## Context Files (Auto-Injected)
 
-- **git.yml**: Commit and PR format rules (SINGLE SOURCE OF TRUTH)
-- **git.md**: Detailed commit/PR examples
-- **work-items.yml**: Work item lifecycle
-- **work-items.md**: Multi-platform patterns and examples
+- **rules/git.md**: Commit and PR format rules (SINGLE SOURCE OF TRUTH)
+- **context/git.md**: Detailed commit/PR examples
+- **rules/work-items.md**: Work item lifecycle
+- **context/work-items.md**: Multi-platform patterns and examples
 
 Read these files for complete guidance. This skill provides quick reference only.
 
@@ -48,13 +48,13 @@ For full fetch with caching:
 
 ## Key Rules
 
-1. **Don't define commit/PR formats here** — that's git.yml's job
+1. **Don't define commit/PR formats here** — that's rules/git.md's job
 2. **Don't guess issue numbers** — verify with user or parse from branch
 3. **Track acceptance criteria** — warn before PR if unaddressed
 
 ## What This Skill Does NOT Do
 
-- Define commit message format (see git.yml/git.md)
-- Define PR format (see git.yml/git.md)
-- Define work item lifecycle (see work-items.yml)
-- Provide detailed fetch examples (see work-items.md, commands/fetch.md)
+- Define commit message format (see rules/git.md, context/git.md)
+- Define PR format (see rules/git.md, context/git.md)
+- Define work item lifecycle (see rules/work-items.md)
+- Provide detailed fetch examples (see context/work-items.md, commands/fetch.md)

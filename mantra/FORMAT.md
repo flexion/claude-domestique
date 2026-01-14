@@ -6,20 +6,24 @@ This document defines the format for context files used by mantra.
 
 **Base context** (shipped with plugin):
 ```
-<plugin-root>/context/
-├── behavior.yml       # AI behavior rules
-├── behavior.md        # Detailed behavior guide
-├── context-format.yml # Format specification
-├── context-format.md  # Detailed format guide
-└── format-guide.yml   # Compact YAML conventions
+<plugin-root>/
+├── rules/                 # Rule files (auto-injected)
+│   ├── behavior.md        # AI behavior rules (frontmatter + optional body)
+│   ├── test.md            # Testing conventions
+│   └── ...
+└── context/               # Companion docs (on-demand)
+    ├── behavior.md        # Detailed behavior guide
+    ├── test.md            # Detailed test examples
+    └── ...
 ```
 
 **Project extensions** (your project):
 ```
-.claude/context/
-├── project.yml        # Project-specific context
-├── testing.yml        # Testing patterns
-└── *.yml              # Additional context
+.claude/
+├── rules/                 # Project rule overrides
+│   └── *.md               # Custom rules with YAML frontmatter
+└── context/               # Project companion docs
+    └── *.md               # Detailed examples
 ```
 
 **Loading order**: base → sibling plugins → project extensions → CLAUDE.md
@@ -28,21 +32,46 @@ This document defines the format for context files used by mantra.
 
 Each topic should have TWO files:
 
-### 1. YAML File (`.yml`)
+### 1. Rule File (`rules/*.md`)
 **Purpose:** Quick context injection for Claude
+**Format:** YAML frontmatter (extracted and injected automatically)
 **Characteristics:**
 - Token-efficient (aim for 89% reduction vs prose)
-- Key-value assertions
+- Key-value assertions in frontmatter
 - Minimal prose
-- Target size: 10-30 lines
+- Target size: 10-30 lines of frontmatter
 
-### 2. Markdown File (`.md`)
+### 2. Companion Doc (`context/*.md`)
 **Purpose:** Detailed reference for humans and Claude deep-dives
 **Characteristics:**
 - Full prose explanations
 - Code examples
 - Edge cases and troubleshooting
 - Not injected automatically (read on-demand)
+
+## Rule File Format
+
+Rule files use YAML frontmatter with an optional markdown body:
+
+```markdown
+---
+companion: behavior.md
+type: actionable
+
+## Assessment
+stance: skeptical-default
+assess-first: correctness, architecture, risks
+never: eager-agreement, sycophantic-tone
+
+## Implementation
+mode: discuss-first (non-trivial) | build-first (trivial)
+order: syntax → runtime → logic → optimize
+---
+
+Optional body content (usually omitted for rule files).
+```
+
+The frontmatter between `---` markers is extracted and injected.
 
 ## YAML Format Conventions
 
@@ -71,14 +100,15 @@ Each topic should have TWO files:
 
 **Don't:**
 - Write complete sentences
-- Include explanations (put in `.md` file)
+- Include explanations (put in companion `.md` file)
 - Use markdown formatting in YAML
 - Repeat information
 
-### Example
+### Example Frontmatter
 
 ```yaml
-# behavior.yml - Compact Reference
+# behavior.md - Compact Reference
+companion: context/behavior.md
 
 ## Assessment
 stance: skeptical-default
@@ -102,18 +132,17 @@ skip: simple-DTOs, getters, boilerplate
 
 | File | Purpose |
 |------|---------|
-| `project.yml` | Project identity, architecture, tech stack |
-| `behavior.yml` | AI behavior rules, assessment stance |
-| `git.yml` | Git conventions, commit format, PR rules |
-| `testing.yml` | Testing patterns, what to test/skip |
-| `sessions.yml` | Session management workflow |
-| `<domain>.yml` | Domain-specific context |
+| `behavior.md` | AI behavior rules, assessment stance |
+| `git.md` | Git conventions, commit format, PR rules |
+| `test.md` | Testing patterns, what to test/skip |
+| `sessions.md` | Session management workflow |
+| `<domain>.md` | Domain-specific rules |
 
 ### Naming Rules
 - Use lowercase
 - Use hyphens for multi-word names
 - Be descriptive but concise
-- Pair with same-name `.md` file for details
+- Pair with same-name companion file in `context/` for details
 
 ## Token Efficiency
 
@@ -132,13 +161,13 @@ Context files are injected into Claude's context window. Efficiency matters.
 
 1. **Abbreviate consistently** - Use same short forms throughout
 2. **Omit obvious context** - Don't repeat what's in project files
-3. **Use references** - Point to `.md` files for details
+3. **Use references** - Point to companion `.md` files for details
 4. **Prioritize** - Put most important rules first
 5. **Prune regularly** - Remove obsolete content
 
 ## Interpretation Guide
 
-When Claude reads compact YAML:
+When Claude reads compact YAML frontmatter:
 
 | Pattern | Interpretation |
 |---------|----------------|
@@ -153,7 +182,7 @@ When Claude reads compact YAML:
 
 mantra validates:
 - File exists and is readable
-- Valid YAML syntax
+- Valid YAML frontmatter syntax
 - File size within limits
 
 mantra does NOT validate:
@@ -166,8 +195,8 @@ mantra does NOT validate:
 If migrating from a single `CLAUDE.md`:
 
 1. **Identify topics** - Group related rules
-2. **Extract assertions** - Pull out key rules for YAML
-3. **Keep details** - Leave examples/explanations in `.md`
+2. **Create rule file** - Add YAML frontmatter to `rules/<topic>.md`
+3. **Keep details** - Leave examples/explanations in `context/<topic>.md`
 4. **Test refresh** - Verify context injects correctly
 
 ### Before (CLAUDE.md excerpt)
@@ -179,10 +208,14 @@ or Co-Authored-By tags. Commit messages should be lowercase after
 the issue number. Format: "#N - verb description"
 ```
 
-### After (git.yml)
-```yaml
+### After (rules/git.md)
+```markdown
+---
 # Git Workflow - Compact Reference
+companion: context/git.md
+
 commit-format: "#N - verb desc" | "chore - desc"
 commit-style: HEREDOC, lowercase-after-dash
 no: attribution, co-authored-by, emojis
+---
 ```
