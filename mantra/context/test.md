@@ -1,6 +1,6 @@
 # Testing Conventions - Detailed Reference
 
-This document provides detailed examples for the testing patterns defined in `test.yml`.
+This document provides detailed examples for the testing patterns defined in `rules/test.md`.
 
 ## Core Principles
 

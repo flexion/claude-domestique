@@ -20,23 +20,28 @@ mantra periodically re-injects key context files, reinforcing guidance throughou
 
 Each topic should have TWO files:
 
-### Tier 1: YAML Files (`.yml`)
+### Tier 1: Rule Files (`rules/*.md`)
 **Purpose:** Quick context refresh (loaded automatically)
+**Format:** YAML frontmatter in markdown files
 **Characteristics:**
-- Compact, token-efficient
+- Compact, token-efficient frontmatter
 - Rules and assertions only
-- No examples or explanations
+- No examples or explanations in frontmatter
 - Target: <1000 tokens per file
 
 **Example:**
-```yaml
-# git.yml
+```markdown
+---
+# git.md - Compact Reference
+companion: context/git.md
+
 branch: issue/feature-N/desc | chore/desc
 commit: HEREDOC format, no attribution
 no: emojis, co-authored-by
+---
 ```
 
-### Tier 2: Markdown Files (`.md`)
+### Tier 2: Companion Docs (`context/*.md`)
 **Purpose:** Deep reference (loaded on-demand)
 **Characteristics:**
 - Detailed examples
@@ -64,22 +69,21 @@ EOF
 ## Loading Behavior
 
 ### Automatic Loading (Every Refresh)
-- All `*.yml` files from plugin base context
-- All `*.yml` files from project `.claude/context/`
+- All `rules/*.md` files (frontmatter extracted)
 - Order: base first, then project (additive)
 
 ### On-Demand Loading
-- `*.md` files loaded when Claude needs detailed examples
+- `context/*.md` files loaded when Claude needs detailed examples
 - Triggered by specific questions or complex scenarios
 
 ### CLAUDE.md Handling
 - Read if present (for backward compatibility)
-- **Warning:** Having both CLAUDE.md and `.claude/context/` can cause confusion
-- Recommended: Migrate CLAUDE.md content to modular context files
+- **Warning:** Having both CLAUDE.md and `.claude/rules/` can cause confusion
+- Recommended: Migrate CLAUDE.md content to modular rule files
 
 ## Writing Effective Context
 
-### YAML Files (Compact Format)
+### Rule Files (Compact Frontmatter)
 
 **Operators:**
 - `→` flow/sequence: `hook → inject → refresh`
@@ -96,10 +100,10 @@ EOF
 **Don't:**
 - Complete sentences
 - Explanations or rationale
-- Examples (save for .md)
+- Examples (save for context/*.md)
 - Redundant information
 
-### Markdown Files (Detailed Format)
+### Companion Docs (Detailed Format)
 
 **Include:**
 - Step-by-step examples
@@ -113,43 +117,46 @@ EOF
 ```
 your-project/
 ├── .claude/
-│   └── context/           # Project extensions
-│       ├── README.md      # How to use (this stays)
-│       ├── project.yml    # Project-specific context
-│       └── custom.yml     # Your custom extensions
+│   ├── rules/             # Project rule overrides
+│   │   └── *.md           # Custom rules with YAML frontmatter
+│   └── context/           # Project companion docs
+│       └── *.md           # Detailed examples
 └── CLAUDE.md              # Legacy (migrate to modular)
 ```
 
 ## Extension Examples
 
-### Adding Project Context
+### Adding Project Rules
 
-Create `.claude/context/project.yml`:
-```yaml
-# Project-specific context
+Create `.claude/rules/project.md`:
+```markdown
+---
+# Project-specific rules
 domain: e-commerce-platform
 stack: typescript, react, postgres
 patterns: repository-pattern, CQRS
-conventions:
-  naming: camelCase (code), kebab-case (files)
-  testing: jest, react-testing-library
+naming: camelCase (code), kebab-case (files)
+testing: jest, react-testing-library
+---
 ```
 
 ### Adding Custom Behavior
 
-Create `.claude/context/team.yml`:
-```yaml
+Create `.claude/rules/team.md`:
+```markdown
+---
 # Team-specific preferences
 code-review: required before merge
 documentation: update README for new features
 testing: minimum 80% coverage
+---
 ```
 
 ## Best Practices
 
-1. **Keep YAML files small** - Target <50 lines, <1000 tokens
+1. **Keep frontmatter small** - Target <50 lines, <1000 tokens
 2. **One topic per file** - Don't combine unrelated context
-3. **Use the pairing pattern** - `topic.yml` + `topic.md`
+3. **Use the pairing pattern** - `rules/topic.md` + `context/topic.md`
 4. **Update when conventions change** - Stale context causes drift
 5. **Delete obsolete context** - Old rules confuse Claude
 6. **Test your context** - Start fresh sessions to verify behavior

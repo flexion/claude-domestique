@@ -1,10 +1,10 @@
 # Context File Format Guide
 
-This guide explains how to work with `.claude/context/*.yml` files.
+This guide explains how to work with rule files (`rules/*.md`) and their YAML frontmatter.
 
 ## Why This Format Exists
 
-Context files use a compact YAML format optimized for Claude's consumption:
+Rule files use a compact YAML frontmatter format optimized for Claude's consumption:
 
 - **Token efficiency**: ~89% reduction compared to prose (~7,750 tokens → ~850 tokens)
 - **Fast parsing**: Claude can quickly extract rules without processing verbose text
@@ -14,12 +14,12 @@ The format prioritizes machine readability over human readability.
 
 ## AI-Managed Files
 
-The `*.yml` context files are **AI-managed**. Claude writes and maintains them; humans review and approve.
+The rule files are **AI-managed**. Claude writes and maintains them; humans review and approve.
 
 ### How It Works
 
 1. **You describe** what you want in natural language
-2. **Claude translates** to the compact YAML format
+2. **Claude translates** to the compact YAML frontmatter format
 3. **You review** the changes and commit
 
 ### Why This Approach?
@@ -34,7 +34,7 @@ The `*.yml` context files are **AI-managed**. Claude writes and maintains them; 
 
 > "Add a rule that we always run integration tests before creating PRs"
 
-Claude translates to:
+Claude translates to frontmatter:
 ```yaml
 test-before-pr: integration-tests (npm run test:integration)
 ```
@@ -43,17 +43,17 @@ test-before-pr: integration-tests (npm run test:integration)
 
 > "Change the commit format to require ticket numbers at the start"
 
-Claude updates the relevant `*.yml` file with the new pattern.
+Claude updates the relevant rule file's frontmatter with the new pattern.
 
 ### Removing Rules
 
 > "Remove the requirement for mandatory code review on documentation changes"
 
-Claude removes the corresponding entries from the YAML.
+Claude removes the corresponding entries from the frontmatter.
 
 ## Reading the Format
 
-If you need to read context files directly, here's the notation:
+If you need to read rule files directly, here's the notation:
 
 | Pattern | Meaning | Example |
 |---------|---------|---------|
@@ -67,10 +67,12 @@ If you need to read context files directly, here's the notation:
 
 | Location | Purpose |
 |----------|---------|
-| `<plugin>/context/*.yml` | Base context shipped with plugins |
-| `.claude/context/*.yml` | Your project-specific customizations |
+| `<plugin>/rules/*.md` | Base rules shipped with plugins |
+| `.claude/rules/*.md` | Your project-specific customizations |
+| `<plugin>/context/*.md` | Companion docs with detailed examples |
+| `.claude/context/*.md` | Project companion docs |
 
-Project files extend (not replace) plugin base context.
+Project files extend (not replace) plugin base rules.
 
 ## Examples
 
@@ -78,7 +80,7 @@ Project files extend (not replace) plugin base context.
 
 > "I want Claude to always check for existing tests before writing new code, and to prefer modifying existing tests over creating new test files."
 
-### After: Compact YAML
+### After: Compact Frontmatter
 
 ```yaml
 test-workflow:
@@ -91,7 +93,7 @@ test-workflow:
 
 > "For commits, we use conventional commits with a JIRA ticket prefix, like 'PROJ-123: feat: add user auth'. No emojis."
 
-### After: Compact YAML
+### After: Compact Frontmatter
 
 ```yaml
 commit:
@@ -105,5 +107,5 @@ commit:
 
 1. **Be specific**: "Add a rule for X" works better than "Update the config"
 2. **Provide examples**: "Like this: `PROJ-123: feat: description`"
-3. **Review changes**: Always check Claude's YAML before committing
+3. **Review changes**: Always check Claude's frontmatter before committing
 4. **One change at a time**: Easier to review and revert if needed
