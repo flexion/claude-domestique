@@ -108,7 +108,7 @@ Critical: Include a `verify:` field that specifies what must appear in thinking 
 ```markdown
 # [Topic] - Detailed Reference
 
-companion-for: [rule-file.md or rule-file.yml]
+companion-for: [rule-file.md]
 
 ## Why This Rule Exists
 [Problem it solves, what goes wrong without it]

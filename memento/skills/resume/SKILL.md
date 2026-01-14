@@ -22,8 +22,8 @@ Proactively invoke when user:
 
 ## Context Files (Auto-Injected)
 
-- **sessions.yml**: Rules for session workflow
-- **sessions.md**: Session file structure and patterns
+- **rules/sessions.md**: Rules for session workflow
+- **context/sessions.md**: Session file structure and patterns
 
 Read these files for complete session management guidance.
 
@@ -76,7 +76,7 @@ Recent activity:
 - Update session content (edit directly or use hooks)
 - Handle branch switching (handled by session-manager)
 
-## Key Rules (from sessions.yml)
+## Key Rules (from rules/sessions.md)
 
 1. **Never guess branch** - always `git branch --show-current`
 2. **Session = Branch = Issue** - 1:1:1 mapping

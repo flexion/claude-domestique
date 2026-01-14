@@ -8,7 +8,7 @@ This repository is the source code for memento, mantra, and onus plugins—and t
 
 | Concept | Source Code (what we develop) | Running Instance (what's active) |
 |---------|------------------------------|----------------------------------|
-| mantra context | `mantra/context/*.yml` | Injected via hooks on each prompt |
+| mantra rules | `mantra/rules/*.md` | Injected via hooks on each prompt |
 | memento sessions | `memento/templates/*.md` | `.claude/sessions/*.md` in each plugin dir |
 | onus work items | `onus/hooks/work-item.js` | Tracking issues for this repo |
 
@@ -39,8 +39,8 @@ Each plugin follows the same structure:
 <plugin>/
 ├── .claude-plugin/plugin.json   # Plugin manifest
 ├── hooks/                       # Hook implementations (SessionStart, UserPromptSubmit)
-├── rules/                       # Rule files (*.md with YAML frontmatter)
-├── context/                     # Context files (*.yml) and companion docs
+├── rules/                       # Rule files (*.md with YAML frontmatter, auto-injected)
+├── context/                     # Companion docs (*.md, loaded on-demand)
 ├── commands/                    # Skill commands (*.md)
 ├── lib/                         # Bundled shared utilities
 └── package.json                 # Plugin dependencies
@@ -104,8 +104,8 @@ Run `npm run build` to re-bundle shared code after changes.
 ### Context System
 
 Two-tier context pattern:
-- `*.yml` - Compact rules, machine-optimized (~850 tokens vs ~7,750 for prose)
-- `*.md` - Detailed examples, loaded on-demand
+- `rules/*.md` - Compact rules in YAML frontmatter (auto-injected via hooks)
+- `context/*.md` - Detailed examples and companion docs (loaded on-demand)
 
 Context loading order: base (plugin) → sibling plugins → project extensions → CLAUDE.md
 
@@ -115,9 +115,9 @@ Each plugin owns specific context domains. When adding or modifying context, res
 
 | Plugin | Domain | Files |
 |--------|--------|-------|
-| **mantra** | AI behavior, format conventions | `behavior.yml`, `format-guide.yml`, `context-format.yml` |
-| **memento** | Session management | `sessions.yml` |
-| **onus** | Git operations, work items | `git.yml`, `work-items.yml` |
+| **mantra** | AI behavior, format conventions | `rules/behavior.md`, `rules/context-format.md`, `rules/format-guide.md`, `rules/test.md`, `rules/rule-design.md` |
+| **memento** | Session management | `rules/sessions.md` |
+| **onus** | Git operations, work items | `rules/git.md`, `rules/work-items.md` |
 
 **Ownership rules:**
 - Single source of truth: each concept defined in exactly one place
