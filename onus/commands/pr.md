@@ -45,7 +45,36 @@ Before creating the PR, verify:
 - `chore - lowercase description` (for chores)
 - No emojis, no attribution
 
+### Locate PR Template
+
+Before generating PR body, check for project templates:
+
+1. **Check for PR templates**
+   ```bash
+   ls .github/pull_request_template.md .github/PULL_REQUEST_TEMPLATE.md .github/PULL_REQUEST_TEMPLATE/*.md 2>/dev/null
+   ```
+
+2. **Handle results**
+   - **Single template found**: Use it as the PR body structure
+   - **Multiple templates found**:
+     - Parse branch name using `branchFormat` from `.claude/config.json` to determine type
+     - Match type to template name (e.g., `feature` → `feature.md`)
+     - Ask user if still ambiguous
+   - **No templates found**: Use generic format (see fallback below)
+
+3. **State the source used**
+   - "Using project template: .github/PULL_REQUEST_TEMPLATE/feature.md"
+   - "No project PR template found, using generic format"
+
 ### Generate PR Body
+
+**If project template was found:**
+- Read the template file
+- Fill in template sections using session file content
+- Preserve all template sections (don't skip any)
+- Map session data: Goal → Summary, Approach → Details, Session Log → Changes
+
+**If no project template (fallback):**
 
 Use session file content to build the body:
 
@@ -111,6 +140,10 @@ Branch: issue/feature-42/auth
 Commits: 3 commits ahead of main
 Session: Goal is "Add user authentication"
 
+Checking for PR templates...
+Found: .github/PULL_REQUEST_TEMPLATE/feature.md
+Using project template for PR body.
+
 Creating PR with title matching your commits...
 
 gh pr create --title "#42 - add user authentication" --body "..."
@@ -120,6 +153,12 @@ Created: https://github.com/org/repo/pull/87
 Next steps:
 - Review at the link above
 - Request reviewers if needed
+```
+
+**Example without project template:**
+```
+Checking for PR templates...
+No project PR template found, using generic format.
 ```
 
 ## Troubleshooting
