@@ -28,6 +28,25 @@ Proactively invoke when user:
 
 Read these files for complete guidance. This skill provides quick reference only.
 
+### Load Project Rules
+
+Before proceeding, check for project-level rules that may override onus defaults:
+
+1. **Scan for project rules**
+   ```bash
+   find .claude/rules -name '*.md' 2>/dev/null
+   ```
+
+2. **If files found**, read any that relate to work items, issues, or the specific platform (match by filename, e.g. `work-items.md`, `jira.md`, by frontmatter `domain:` / `type:` fields, or by `extends: onus/work-items.md`)
+
+3. **Check for companion context** — if a rule file's frontmatter contains a `companion:` field, also read that file from `.claude/context/`
+
+4. **State the source**
+   - "Using project rules from .claude/rules/{filename}" OR
+   - "No project rules found, using onus defaults"
+
+5. **Apply precedence**: project rules override plugin defaults
+
 ## Quick Reference
 
 ### Fetch Issue (GitHub)
