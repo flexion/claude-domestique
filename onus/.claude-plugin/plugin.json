@@ -1,6 +1,6 @@
 {
   "name": "onus",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "Work item automation for Claude Code - auto-injected via hooks, zero config",
   "author": {
     "name": "David Puglielli"
