@@ -18,7 +18,7 @@ Before proceeding, check for project-level rules that may override onus defaults
    find .claude/rules -name '*.md' 2>/dev/null
    ```
 
-2. **If files found**, read any that relate to git, commits, work items, issues, or session management (match by filename, e.g. `git.md`, `work-items.md`, or by frontmatter `domain:` / `type:` fields)
+2. **If files found**, read any that relate to git, commits, work items, issues, or session management (match by filename, e.g. `git.md`, `work-items.md`, by frontmatter `domain:` / `type:` fields, or by `extends: onus/git.md` / `extends: onus/work-items.md`)
 
 3. **Check for companion context** — if a rule file's frontmatter contains a `companion:` field, also read that file from `.claude/context/`
 

@@ -37,7 +37,7 @@ Before proceeding, check for project-level rules that may override onus defaults
    find .claude/rules -name '*.md' 2>/dev/null
    ```
 
-2. **If files found**, read any that relate to work items, issues, or the specific platform (match by filename, e.g. `work-items.md`, `jira.md`, or by frontmatter `domain:` / `type:` fields)
+2. **If files found**, read any that relate to work items, issues, or the specific platform (match by filename, e.g. `work-items.md`, `jira.md`, by frontmatter `domain:` / `type:` fields, or by `extends: onus/work-items.md`)
 
 3. **Check for companion context** — if a rule file's frontmatter contains a `companion:` field, also read that file from `.claude/context/`
 
