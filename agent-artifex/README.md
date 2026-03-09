@@ -92,7 +92,15 @@ Three layers of uncertainty tolerance:
 
 ## Relationship to claude-api:mcp-builder
 
-`claude-api:mcp-builder` scaffolds MCP servers — it gets you a working structure fast. `agent-artifex` makes it *good* — applying design principles and test coverage that turn a scaffold into a production-quality service. They are complementary, not overlapping: mcp-builder for structure, agent-artifex for substance.
+`claude-api:mcp-builder` scaffolds MCP servers — it generates boilerplate, defines tools/resources/prompts, and produces working TypeScript/Python servers. `agent-artifex` makes it *good* — applying design principles and test coverage that turn a scaffold into a production-quality service. They are complementary, not overlapping: mcp-builder for structure, agent-artifex for substance.
+
+To install mcp-builder:
+
+```
+/install claude-api@anthropic-agent-skills
+```
+
+Typical workflow: scaffold with `claude-api:mcp-builder` → design with `agent-artifex:design` → assess with `agent-artifex:assess` → improve and test with `agent-artifex:implement`.
 
 ## Reference Architecture
 
