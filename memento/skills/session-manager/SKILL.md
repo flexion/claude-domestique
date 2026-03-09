@@ -1,5 +1,5 @@
 ---
-name: session-manager
+name: memento:session-manager
 description: |
   Manage Claude Code sessions for the current branch. Use this skill when:
   - User asks "what's next?" or "where was I?"

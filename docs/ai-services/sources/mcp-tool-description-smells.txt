@@ -1,0 +1,921 @@
+1.  1 Introduction
+2.  2 A Motivational Example
+3.  3 Background and Related Work
+    1.  3.1 Model Context Protocol (MCP)
+    2.  3.2 Studies on Smells
+    3.  3.3 Refactoring the Smells and Optimization
+    4.  3.4 Evaluating MCP-Enabled AI Agents
+4.  4 Methodology
+    1.  4.1 Rubric Development
+        1.  4.1.1 Official MCP documentation search.
+        2.  4.1.2 LLM-assisted survey for community guidelines
+        3.  4.1.3 Open coding to identify components of tool description
+        4.  4.1.4 Scoring & smell derivation
+    2.  4.2 Tool Description Collection
+        1.  4.2.1 MCP server curation
+        2.  4.2.2 Tool description extraction via MCP client
+    3.  4.3 Scanning Smells in the Tool Descriptions
+        1.  4.3.1 Rubric-based evaluation prompt design
+        2.  4.3.2 Multi-model LLM-as-Jury evaluation
+        3.  4.3.3 Smell identification
+    4.  4.4 Resolving Smells via Tool Component Augmentation
+        1.  4.4.1 Initial augmentation of components
+        2.  4.4.2 Generation of the ”Examples and Limitations” components
+        3.  4.4.3 Final consolidation of all components
+    5.  4.5 Evaluating the Augmented Tool Descriptions
+        1.  4.5.1 Benchmark adoption
+        2.  4.5.2 Tool Description Router
+        3.  4.5.3 Full Rubric Evaluation
+        4.  4.5.4 Ablation Study
+5.  5 Results
+    1.  5.1 RQ-1: To what extent do MCP tools’ descriptions contain smells?
+    2.  5.2 RQ-2: How does resolving tool description smells by augmenting all tool description components impact the performance of FM-based agents?
+    3.  5.3 RQ-3: How do different components of the augmented tool description impact the performance of FM-based agents?
+6.  6 Implications
+    1.  6.1 Implications for MCP Developers
+    2.  6.2 Implications for Ecosystem Maintainers
+    3.  6.3 Implications for MCP Users
+    4.  6.4 Implications for Researchers
+7.  7 Threats to Validity
+    1.  7.1 External validity
+    2.  7.2 Construct validity
+    3.  7.3 Internal validity
+8.  8 Conclusion
+9.  A Appendix
+    1.  A.1 Prompts used by the LLM-Jury
+    2.  Scoring Rubric (1–5 scale for each component)
+    3.  Input
+    4.  Output Format (JSON)
+
+Model Context Protocol (MCP) Tool Descriptions Are Smelly! Towards Improving AI Agent Efficiency with Augmented MCP Tool Descriptions
+
+Mohammed Mehedi Hasan 0000-0001-9837-0998 mohammedmehedi.hasan@queensu.ca Queen’s UniversityKingstonONCanada , Hao Li 0000-0003-4468-5972 Queen’s UniversityKingstonONCanada hao.li@queensu.ca , Gopi Krishnan Rajbahadur 0000-0003-1812-5365 Queen’s UniversitySchool of ComputingKingstonOntarioCanada grajbahadur@acm.org , Bram Adams 0000-0001-7213-4006 Queen’s UniversityKingstonONCanada bram.adams@queensu.ca and Ahmed E. Hassan 0000-0001-7749-5513 Queen’s UniversityKingstonONCanada ahmed@cs.queensu.ca
+
+Abstract.
+
+The Model Context Protocol (MCP) standardizes how Foundation Model (FM)-based agents interact with external systems by invoking tools. However, to understand a tool’s purpose and features, FMs rely on natural-language tool descriptions, making these descriptions a critical component in guiding FMs to select the optimal tool for a given (sub)task and to pass the right arguments to the tool. While defects or smells in these descriptions can misguide FM-based agents, their prevalence and consequences in the MCP ecosystem remain unclear.
+
+To address this, we conduct the first large-scale empirical study of 856 tools spread across 103 MCP servers, assessing their description quality and their impact on agent performance. We identify six components of tool descriptions from the literature, develop a scoring rubric utilizing these components, then formalize tool description smells based on this rubric. By operationalizing this rubric through an FM-based scanner, we find that 97.1% of the analyzed tool descriptions contain at least one smell, with 56% failing to state their purpose clearly. While augmenting these descriptions for all components improves task success rates by a median of 5.85 percentage points and improves partial goal completion by 15.12%, it also increases the number of execution steps by 67.46% and regresses performance in 16.67% of cases. These findings highlight a trade-off between agent performance and cost, as well as the context sensitivity of the performance gain. Furthermore, component ablations show that compact variants of different component combinations often preserve behavioral reliability while reducing unnecessary token overhead, enabling more efficient use of the FM context window and lower execution costs.
+
+Model context protocol, MCP, tool description, AI agents, smells, prompt engineering
+
+^(†)^(†)copyright: acmcopyright^(†)^(†)journal: TOSEM^(†)^(†)publicationmonth: 0^(†)^(†)journalyear: TBD^(†)^(†)ccs: Software and its engineering Empirical software validation
+
+1. Introduction
+
+Model Context Protocol (MCP) adoption for Foundation Models (FMs), such as GPT, continues to grow across domains, including health (Ehtesham et al., 2025), bioinformatics (Widjaja et al., 2025), transportation (Chhetri et al., 2025), vision systems (Tiwari et al., 2025), and especially software engineering (Sarkar and Sarkar, 2025). MCP provides a unified interface to bridge FM-based agents with external capabilities (tools) by exposing them to the following three tools-related natural-language artifacts: a tool name, a tool description, and an input schema (with argument names and their data types) to FMs. This purely native natural-language-based alignment of MCP with the agentic ecosystem is driving its massive adoption, leading several major companies, including GitHub, Google Cloud Platform (GCP), and PayPal, to develop and maintain their own MCP servers, commonly referred to as official MCP servers (Hasan et al., 2025b). In parallel, independent developers and open-source contributors have created numerous community MCP servers that integrate a wide range of third-party services (Hasan et al., 2025b).
+
+[Refer to caption]
+
+In MCP-enabled workflows with these official and community MCP servers, tool descriptions serve as the primary semantic interface that guides FM behavior. These descriptions convey a tool’s intended functionality, constraints, and usage cues, and shape tool selection, parameterization, and multi-step orchestration (Hou et al., 2025). For example, as illustrated in Figure 1, upon receiving a user query (e.g., “What was the third-quarter income of Apple for 2025?”), the agent retrieves the names, descriptions, and schemas of all available tools from the connected MCP servers and injects this metadata into the FM’s context, along with the user query. Only then can the FM leverage these artifacts to discover the capabilities of the available tools, plan a solution strategy, select an appropriate tool (get_financial_statement), infer the required parameters (ticker="AAPL", financial_type="quarterly_income_statement"), and issue a tool call via the agent’s MCP client. The agent then returns the tool response to the FM, which synthesizes the final answer for the user.
+
+From this flow, it is quite clear that if the tool descriptions are defective, underspecified, or misleading, the FM may select the wrong tool, supply invalid or suboptimal arguments, or take unnecessary interaction steps, ultimately reducing the reliability of MCP-enabled systems. In other words, the tool description is not merely documentation, but embodies a dual nature, as it serves as (i) a requirement-like specification that defines the tool’s expected behavior and parameter constraints (Stoica et al., 2024), and (ii) a prompt-like instruction that shapes the model’s contextual reasoning and decision-making (Mei et al., 2025). This hybrid role blurs the boundary between software requirements and natural-language prompts, creating a novel design surface where textual or structural imperfections can propagate in the form of specification errors and prompt misguidance. We conceptualize these imperfections as tool description smells, similar to the concept of recurring suboptimal patterns that degrade clarity, correctness, or maintainability (Moha et al., 2009; Vogelsang et al., 2025) in software engineering.
+
+While smells in MCP code have been reported (Hasan et al., 2025b), the prevalence and distribution of smells in MCP tool descriptions remain largely unexplored. Prior work on prompts has shown that instructional artifacts are composed of multiple components, including personality information, task information covering task intent, user demand, and domain information, as well as demonstration through examples, which together contribute to the accuracy and efficiency of FM (Liu et al., 2026). We suggest that MCP tool descriptions exhibit an analogous component structure and that smells can arise at the component level.
+
+On the other hand, the efficiency of MCP-enabled agents has recently come under strict scrutiny, as the tool metadata, repeatedly injected into the FM’s context during a typical interaction with an FM-based agent, is inflating token usage and increasing execution cost. While emerging techniques like Agent Skills (PBC, 2025a) attempt to complement the MCP’s use by progressive discovery of capabilities to an FM, and Tool Search (PBC, 2025e) is enabling the FM to search for a tool on demand rather than always loading them into context, they do not eliminate the reliance on MCP tools and their tool descriptions. Instead, these developments highlight a fundamental tension in MCP-enabled agents: resolving tool description smells by augmenting all components may improve semantic guidance and agent performance, but it also consumes scarce context windows and increases costs. Any attempt to augment tool descriptions must therefore justify its cost and, ideally, identify compact representations that preserve effectiveness.
+
+Despite extensive work on FM tool calling challenges, including complex function calls (Zhong et al., 2025), large tool sets (Qin et al., 2023), and security attacks on tool selection (Shi et al., 2025; Wang et al., 2025b), there has been no systematic investigation of the quality of tool descriptions in MCP servers or their downstream impact on agent performance. Although industry documentation and practitioner guidelines propose best practices for writing tool descriptions (PBC, 2025b; Xu et al., 2025; Saadioui, 2025), it remains unclear how widely such practices are adopted in the MCP ecosystem and whether they really improve agent behavior under realistic workloads.
+
+To bridge this gap, we conduct the first large-scale empirical study of MCP tool description quality and its effect on FM-based agent performance. On a dataset of 103 major MCP servers comprising 856 tools, we scan tool descriptions using a structured quality rubric designed to identify potential suboptimal design patterns or smells (Moha et al., 2009). We then use FMs to automatically fix the identified smells and augment the description. Finally, we assess the impact of these augmented descriptions on FM-based agent performance using the MCP Universe benchmark (Luo et al., 2025). Our analysis aims to answer the following Research Questions (RQs).
+
+RQ-1: To what extent do MCP tools’ descriptions contain smells?
+
+Motivation. Despite the critical role of tool descriptions as both requirement-like specifications and prompt-like instructions, their quality in real-world MCP deployments remains largely unexamined. In particular, there is no empirical baseline characterizing which components tool descriptions typically include in practice, how frequently they exhibit smells, or how these smells differ between official and community-maintained MCP servers. Prior research shows that smells in software artifacts (e.g., code, tests, datasets, and prompts) increase change-proneness and erode reliability (Khomh et al., 2009a; Hassan and Rahman, 2022; Zhao et al., 2025; Ronanki et al., 2024), suggesting similar risks for MCP-enabled agents. We therefore quantify the prevalence and distribution of tool description smells across both official and community-maintained MCP servers.
+
+Findings. We find that 56% of the 856 MCP tool descriptions exhibit an Unclear Purpose smell, indicating that a majority fail to articulate their intended functionality clearly to the FM. More broadly, 97.1% of tool descriptions contain at least one smell, and the majority exhibit multiple smell types, particularly Unstated Limitations, Missing Usage Guidelines, and Opaque Parameters affecting them. Tool descriptions from both official and community-maintained servers exhibit these issues, indicating that producing high-quality tool descriptions is challenging for all types of practitioners.
+
+RQ-2: How does resolving tool description smells by augmenting all tool description components impact the performance of FM-based agents?
+
+Motivation. Given that RQ-1 reveals that tool description smells are widespread, a natural scientific question is whether resolving them by augmenting underspecified or missing components improves agent behavior in realistic MCP workflows. Prior software engineering research reports mixed effects from smell removal. While it improves specific quality attributes, such as energy efficiency and runtime performance in some contexts (Cedrim et al., 2017), it can also unintentionally alter system behavior in others (Verdecchia et al., 2018). In contrast, prompt enhancement techniques for FMs, such as DSPy (Khattab et al., 2023), MIPROv2 (Opsahl-Ong et al., 2024), and GEPA (Agrawal et al., 2025), have consistently demonstrated performance gains. Motivated by these conflicting signals, we investigate whether augmenting MCP tool descriptions with all components improves agent performance in practice and whether such improvements entail trade-offs, if any.
+
+Findings. Augmented tool descriptions yield a statistically significant increase of 5.85 percentage points in task success rate across domain-model combinations, while causing regressions in 16.67% of cases in the MCP Universe benchmark. They also improve evaluator-level performance, increasing the Average Evaluator score by 15.12%, reflecting higher-quality intermediate execution step completion. These improvements come with a trade-off: the average number of execution steps increases by 67.46% (median), indicating that agents expend significantly more interaction steps with richer descriptions. Analysis of this accuracy-cost trade-off reveals that different domain-model combinations support distinct operating points, allowing practitioners to prioritize either peak accuracy or lower execution costs, depending on their deployment requirements.
+
+RQ-3: How do different components of the augmented tool description impact the performance of FM-based agents?
+
+Motivation. The results of RQ-2 demonstrate that fully augmented tool descriptions improve agent performance but incur substantial execution overhead, intensifying the tension between the semantic completeness and token efficiency. Practitioners warn that excessive detail can saturate the FM’s context window,¹¹1https://jentic.com/blog/the-mcp-tool-trap making fully augmented descriptions impractical for use cases where the context window is scarce. Furthermore, prior research indicates that not all components of instructional prompts contribute equally to FM behavior (Yin et al., 2023). We therefore investigate the impact of individual tool description components through an ablation study to identify a minimal effective set that preserves performance while reducing context overhead.
+
+Findings. Our results indicate that no single combination of MCP tool description components consistently yields improved performance across all domains and models. However, shorter, targeted descriptions can retain the core semantic content of fully augmented descriptions while achieving statistically equivalent performance. Across all domain-model combinations, removing the Examples component does not statistically degrade performance. These findings indicate that practitioners can identify the most impactful components for their specific domain and model as a lower-cost alternative without sacrificing effectiveness.
+
+The primary contributions of this study are as follows:
+
+1.  (1)
+    Scoring Rubric: We consolidate best practices for writing MCP tool descriptions from multiple sources and propose the first structured scoring rubric to evaluate the quality of individual description components.
+2.  (2)
+    FM-based Smell Scanner: Using this rubric, we develop the first automated smell detector for MCP tool descriptions, released as part of our replication package ²²2https://github.com/SAILResearch/mcp-tool-description-augmentation, enabling developers to identify quality issues in their tools.
+3.  (3)
+    Tool Description Augmentor: We introduce an FM-based augmentor that systematically resolves smells by enriching tool descriptions with all the components that practitioners can leverage to fix smells.
+4.  (4)
+    Tool Description Router: We present the first tool description router that allows MCP users to experiment with multiple versions of a tool description at runtime and select the variant that performs best in their workflow without changing the code of the MCP servers.
+5.  (5)
+    Empirical Findings: Through large-scale analysis and benchmark evaluation, we quantify smell prevalence, demonstrate performance effects of augmentation, and identify the impact of different description components on the performance.
+
+2. A Motivational Example
+
+FM-based agents rely on MCP servers to reach external capabilities. As seen in Figure 2(a), how an agent plans and invokes those tools is shaped by the tool descriptions the FM reads. We illustrate a common failure seen in real deployments and how a small change in description shifts agent behavior.
+
+[Refer to caption]
+
+[Refer to caption]
+
+Consider a scenario where Alex is an AI engineer at a financial institution tasked with building a finance assistant that answers portfolio questions and simple what-if queries. The team selects a popular Yahoo Finance MCP server and wires it to a frontier FM.
+
+Phase 1: It works. During the development phase, the agent handles simple requests, for example, “show the last month of prices” and “plot recent history.” The agent: (1) forwards the user request and tool list to the FM, (2) the FM picks the historical-price tool, (3) the tool returns data, (4) the agent responds cleanly. The team ships the agent.
+
+Phase 2: The unseen inefficiency. Days later, users start asking time-bounded questions, for example, “What happened around last March?” Responses slow down, costs start to rise, and logs show large payloads. Traces reveal that the FM is calling get_historical_stock_prices with a broad period that expands to multi-year windows, despite the users’ question regarding narrow time periods. This inflates the response size of the tool and downstream token usage of the FM.
+
+Phase 3: Root cause in the description. The original tool description (Fig. 2(a)) lists a period parameter and says “Either use period parameter or use start and end,” but never names start or end as explicit parameters, nor gives the data type or format (e.g., whether yyyy-mm-dd or dd-mm-yyyy). Lacking concrete parameter names and guidance, the FM cannot reliably infer how to construct a bounded time range and therefore defaults to the period parameter, often selecting ranges broader than required for the user query. This is not a model bug; it is a specification problem in the tool description.
+
+Phase 4: A small fix that changes behavior. The team tries a forked MCP server whose tool description replaces the vague mentions of start_date and end_date with explicit arguments, specifying the expected data format yyyy-mm-dd (Figure 2(b)). With clear names and constraints, the FM starts issuing date-bounded calls that fetch only the needed window, reducing upstream data volume, latency, and token cost, while improving answer relevance for time-scoped queries.
+
+Phase 5: The challenge. This experience shows that seemingly minor description details can materially affect agent performance, prompting Alex and their team to reflect on the existence of a broader set of unanswered questions that should be considered when integrating third-party MCP servers into production agents. In particular, teams deploying FM-based agents must understand:
+
+1.  (1)
+    How prevalent quality issues or smells are in MCP tool descriptions in practice, and how these issues are distributed across official and community-maintained MCP servers (RQ1).
+2.  (2)
+    Whether systematically augmenting underspecified or missing tool description components improves FM-based agent performance in realistic MCP workflows, and what trade-offs such improvements entail (RQ2).
+3.  (3)
+    What components of a tool description most strongly impact the performance of FM-based agents, and whether there exists any generalizable “golden rule” for deriving effective tool descriptions across different MCP servers and use cases (RQ3).
+
+3. Background and Related Work
+
+3.1. Model Context Protocol (MCP)
+
+To let AI applications operate on real systems, FM-based agents rely on tools that perform external actions, e.g., web search, database queries, API calls, code execution, or device control. Anthropic proposed the Model Context Protocol (MCP) to standardize how agents discover and invoke such tools via a common client-server protocol, reducing custom glue code across models and frameworks (Anthropic, 2025). MCP is positioned as an open standard for connecting AI applications to external systems, analogous to a universal port for agents. Since its introduction, the protocol has been adopted by major FM providers such as OpenAI, Microsoft, Google, and Cloudflare (Hasan et al., 2025b), and currently observes over 20 million weekly downloads for the Python and JavaScript SDKs of MCP servers, signaling strong community acceptance and usage.
+
+To enable this interoperability at scale, MCP adopts a client-server architecture that cleanly separates AI agents from tool implementations. In this design, an AI agent spins up one MCP client to connect to MCP servers. Each server can run locally or remotely and may expose multiple tools, resources, and prompts (Hou et al., 2025). Discovery and capability negotiation follow a JSON-RPC data layer with an initialization handshake and list/get methods that let clients enumerate available tools before execution through a well-known protocol called reflection (Hasan et al., 2025b). MCP supports multiple transport options including stdio for local, process-to-process connections, and streamable HTTP with optional server-sent events for remote servers and authenticated access.
+
+Within this architecture, the primary handshaking interface between MCP servers and foundation models is the tool description itself. Each MCP server exposes its tools through a structured description consisting of a name, a natural-language description, and an input schema. Through reflection, this information is passed to the Foundation Model (FM) by MCP clients, which rely on it to select and invoke the correct tool. As shown in Figure 2, each tool in an MCP server should clearly describe its purpose (i.e., the core functionality it provides) and guide the FM on how to use it. For example, the description of the get_financial_statement tool specifies what it does, retrieving financial statements for a company from Yahoo Finance, and how to use it by mentioning the types of statements that can be obtained. A well-written tool description therefore conveys the tool’s purpose, usage guidance, and any relevant caveats or examples (PBC, 2025b; Qu et al., 2025).
+
+These descriptions play a central role at runtime, shaping how agents reason about and execute tool calls. As shown in Figure 1, MCP standardizes how FM-based agents interact with tools through a client-server loop. The MCP client mediates between the FM and one or more MCP servers, each exposing tool metadata, e.g., name, description, and input schema, to the model.
+
+1.  (1)
+    Discovery The client queries connected servers via reflection to list available tools and their metadata. In the finance example, it retrieves entries such as get_financial_statement or get_historical_stock_prices from the yahoo-finance-mcp-server.
+2.  (2)
+    Planning The client embeds these descriptions in the FM’s context along with the user query. Using its language reasoning, the FM selects the correct tool and infers the tool’s arguments, e.g., ticker="AAPL" and financial_type="quarterly_income_statement".
+3.  (3)
+    Execution The FM issues a tool-call instruction. For this, the MCP client validates parameters, seeks user consent for sensitive actions, and executes the call through the appropriate server. The FM then synthesizes the final answer from the returned data.
+4.  (4)
+    Reuse Because all interaction occurs through the MCP interface, the same server (e.g., yahoo-finance-mcp-server) can be reused across different agents and frameworks without re-implementation.
+
+Given this neatly coupled reasoning loop between the FM and tool descriptions, evaluating MCP-enabled agents requires benchmarks that can faithfully capture both planning correctness and execution behavior. In this study, we adopt the MCP-Universe benchmark (Luo et al., 2025), which is one of the most comprehensive and widely used benchmarks for evaluating MCP-based agents. MCP-Universe spans multiple domains such as finance, data analysis, repository management, and information retrieval, and defines realistic goal-oriented tasks that test an agent’s ability to reason, plan, and execute MCP tools effectively. It provides a total of 18 MCP servers with 202 tools combined. Each task is evaluated by at least one evaluator, with an average of 3.3 evaluators per task.
+
+3.2. Studies on Smells
+
+Software “smells” have long been studied as indicators of latent design or process issues rather than explicit faults. Fowler and Beck characterize smells as weaknesses that may slow development or increase future error risk without being technically incorrect (Fowler, 2018). Because this notion links smells to long-term maintenance costs, the topic has received sustained attention.
+
+Early research studied code smells through taxonomies and catalogs (Mantyla et al., 2003; Marticorena et al., 2006; Jerzyk and Madeyski, 2023), followed by empirical work that examined their evolution and impact (Olbrich et al., 2009; Yamashita and Moonen, 2012; Sjøberg et al., 2012). These studies recommend practices such as limiting module size and avoiding large multi-purpose changes to improve maintainability. Detection techniques span textual heuristics (Vislavski et al., 2018), repository mining (Palomba et al., 2014), and token-based analysis (Kamiya et al., 2002; Wang et al., 2018) across multiple languages.
+
+Smells are not limited to source code. Architectural smells, such as connector envy and ambiguous interface, have been identified (Garcia et al., 2009b, a), with tools like Arcan supporting automated detection (Fontana et al., 2017). Test smells, e.g., assertion roulette, mystery guest, and eager test, are also prevalent and can hinder comprehension and maintenance (Bavota et al., 2012, 2015; Tufano et al., 2016). Beyond implementation artifacts, requirements and design artifacts exhibit smell-like deficiencies (Femmer et al., 2017; Khomh et al., 2009b; Moha et al., 2009), and defects traced to later phases are known to be substantially more costly to remedy.
+
+With the advent of foundation models (FMs), newer categories of smells have emerged. These include smells in FM-generated code (Siddiq et al., 2024; Paul et al., 2025) and unit test code (Ouédraogo et al., 2024), as well as data-related smells, such as data leakage, lack of context, or misleading instances, observed in FM-driven systems (Vitale et al., 2025). In addition, prompt smells (Ronanki et al., 2024) have been identified as factors that degrade FM output quality by introducing ambiguity, bias, or inconsistency in instruction formulations.
+
+Within the MCP ecosystem, recent work reports code smells in MCP servers (Hasan et al., 2025b). To the best of our knowledge, no empirical study has examined design-level or specification-level smells for MCP servers. Our study addresses this gap by focusing on tool descriptions as a first-class artifact and by analyzing the smells hidden in these tool descriptions.
+
+3.3. Refactoring the Smells and Optimization
+
+In classical software engineering research, automated code smell identification and refactoring have primarily relied on static analysis techniques grounded in heuristics, coupling-cohesion metrics, and distance-based similarity measures to detect smell manifestations and suggest behavior-preserving refactorings (Tsantalis and Chatzigeorgiou, 2009, 2011). Building on these foundations, more recent refactoring surveys have systematically categorized these efforts into broader families of approaches, including metrics- and precondition-oriented methods, clustering- and graph-based analyses, code slicing and dynamic analysis techniques, as well as search-based optimization strategies (Lacerda et al., 2020).
+
+Beyond static analysis, a growing body of work has explored machine learning (ML) and deep learning (DL) techniques to identify refactoring opportunities and predict refactoring actions. These include multi-layer perceptrons (MLPs) and recurrent neural network (RNN) variants such as bidirectional long short-term memory (BiLSTM) and gated recurrent unit networks (GRU) for refactoring type prediction (Mohan et al., 2016; Szalontai et al., 2021), convolutional neural network (CNN)- and RNN-based models with embedding pipelines for naming-related refactorings such as Rename Method (Liang et al., 2021), and RNN encoder-decoder architectures that model refactoring as a learned code transformation task (Tufano et al., 2019), as summarized in the survey by Naik et al. (Naik et al., 2024).
+
+Recent advances in FMs have expanded this space by introducing FM-based strategies for automated smell detection and correction. For instance, iSmell (Wu et al., 2024b) integrates multiple smell detection toolsets through a Mixture of Experts (MoE) architecture to identify and refactor code segments with smelly code. Similarly, techniques such as Co-pilot loops (Zhang et al., 2024) employ agentic feedback cycles to iteratively refine code, while UTRefactor (Gao et al., 2025) targets smell remediation within unit tests. Beyond code and test refactoring, multi-agent frameworks have also been proposed to address architectural and design-level smells (Pandini et al., 2025).
+
+Parallel research has explored optimization in the context of prompt engineering. In addition to heuristic-based search methods (Cui et al., 2025), recent studies propose FM-based prompt optimization frameworks such as MAP (Chen et al., 2023), DSPy (Khattab et al., 2023), EASE (Wu et al., 2024a), MIPROv2 (Opsahl-Ong et al., 2024), and GEPA (Agrawal et al., 2025). These approaches leverage differentiable optimization or feedback-guided refinement and, in several cases (e.g., GEPA), outperform reinforcement learning-based techniques in achieving higher-quality model responses.
+
+Despite the functional similarities between prompts and tool descriptions in the MCP ecosystem, no prior study has investigated the optimization or refactoring of tool descriptions. Our work addresses this gap by examining how FM-based optimization can be adapted to improve the quality of MCP tool descriptions.
+
+3.4. Evaluating MCP-Enabled AI Agents
+
+Evaluation of agents has progressed rapidly, yet most popular benchmarks emphasize general agentic or language capabilities rather than the specific competence of utilizing MCP tools effectively. To broaden coverage, recent studies have begun to assess orchestration and tool-use behaviors in realistic settings. For example, MCP-Universe spans six domains with 231 tasks, using fine-grained evaluators to measure goal-directed tool sequencing (Luo et al., 2025). LiveMCPBench provides multi-domain, multi-server assessment of multi-step trajectories (Mo et al., 2025). Additional efforts include LIVEMCP-101, which stress-tests long-horizon queries (Yin et al., 2025), MCPWorld for computer-use agents (Yan et al., 2025), MCPEval for standard metrics and automated pipelines (Liu et al., 2025), and MCPToolBench++ for multi-domain and multilingual evaluation (Fan et al., 2025).
+
+Despite this progress, existing benchmarks maintain static MCP server specifications, i.e., tool names, descriptions, and parameters remain unchanged. Consequently, there is no empirical evidence on whether augmenting or changing the tool descriptions improves or degrades agent outcomes. Our study addresses this gap by evaluating agents under augmented tool descriptions and by conducting ablation studies to isolate the impact of individual description components on downstream performance.
+
+4. Methodology
+
+In this section, we present our study design as outlined in Figure 3.
+
+[Refer to caption]
+
+4.1. Rubric Development
+
+To systematically evaluate tool descriptions, we move beyond simple qualitative guidelines and construct a structured analytic rubric. Our rubric is a multi-dimensional analytic evaluation framework composed of six components of tool description. Each component is scored independently on a 5-point Likert scale, defined by specific performance descriptors, where Score 3 represents the minimum viable threshold. This rubric development process involves four steps, which we describe below.
+
+4.1.1. Official MCP documentation search.
+
+As MCP was originally proposed by Anthropic and their technical documents define the baseline tool standard, we first consult Anthropic’s official MCP documentation (PBC, 2025b) when studying the tool descriptions. This documentation provides guidance on the required components of a tool description and outlines how these components support model comprehension.
+
+4.1.2. LLM-assisted survey for community guidelines
+
+To capture a broader community consensus beyond the official specification, we conduct an LLM-assisted survey of community guidelines. For this survey, we utilize an LLM-based agentic deep research technique, which is known to systematically survey and synthesize distributed practitioner knowledge more efficiently than traditional keyword-based searches (Zhang et al., 2025; Xi et al., 2025). We adopt OpenAI Deep Research³³3https://openai.com/index/introducing-deep-research/ with the GPT-5.1 model to supplement the official recommendations. This deep research process identifies 15 sources that address best practices for tool description design, including four tutorials, four blog posts, three Reddit discussions, three research articles (Xu et al., 2025; Qin et al., 2023; Hsieh et al., 2023), and one GitHub discussion. We provide the prompts and interaction with the Deep Research in our replication package ⁴⁴4https://github.com/SAILResearch/mcp-tool-description-augmentation.
+
+4.1.3. Open coding to identify components of tool description
+
+We manually analyze all collected sources and synthesize the recurring recommendations to construct a comprehensive list of tool description components. The first two authors independently analyzed the 15 sources and uncovered the components through a small, open coding exercise. Because each source can discuss multiple components, this coding exercise constitutes a multi-label annotation task. We evaluate inter-rater agreement by computing Jaccard similarity for each source and averaging across sources, following prior multi-label annotation studies (Parker et al., 2024; Hasan et al., 2025a). The mean Jaccard similarity is 0.92, indicating excellent agreement. The resulting six components are grounded in official guidance from Anthropic (PBC, 2025b), practitioner insights (Saadioui, 2025; Feig, 2025), and academic analyses (Xu et al., 2025).
+
+We observed how these tool description components each play one of two complementary roles, consistent with the dual nature discussed in Section 1. One group of components are requirement-like specification components that describe what the tool does and how it should be invoked, including its purpose, limitations, parameter explanation, and examples. These components define the strict functional contract and constraints required for valid execution. The second group of tool description components represent prompt-like instructional components, such as Guidelines and Length and Completeness, that do not introduce new functional constraints but instead serve as behavioral directives that shape how the FM interprets the description, prioritizes information, and reasons about tool selection and invocation. Below, we define each of the six components and provide an illustrative example drawn from the Sequential Thinking tool description shown in Figure 4:
+
+Tool description. A tool for dynamic and reflective problem solving through thoughts. It supports flexible, evolving reasoning where each thought can build on, question, or revise previous insights. When to use: • Complex problems that need stepwise reasoning • Planning or analysis that may require revision • Multi-step solutions or unclear initial scope • Tasks needing context retention • Situations requiring filtering of irrelevant info Key features: • Adjustable total_thoughts • Ability to revise or question past thoughts • Add thoughts even after reaching an apparent end • Support for uncertainty, branching, and backtracking • Hypothesis generation and verification Parameters: • thought (string): The current thinking step • next_thought_needed (boolean): Whether another thought step is needed • thought_number (integer): Current thought number • total_thoughts (integer): Estimated total thoughts needed • is_revision (boolean, optional): Whether this revises previous thinking • revises_thought (integer, optional): Which thought is being reconsidered • branch_from_thought (integer, optional): Branching point thought number • branch_id (string, optional): Branch identifier • needs_more_thoughts (boolean, optional): If more thoughts are needed You should: (1) Start with an adjustable estimate of needed thoughts (2) Revise previous reasoning when appropriate (3) Add thoughts freely, even at the end (4) Express uncertainty when relevant (5) Mark revisions or branches (6) Ignore irrelevant information (7) Generate and verify hypotheses (8) Iterate until satisfied (9) Provide a single correct final answer (10) Set next_thought_needed to false only when truly done
+
+1.  (1)
+    Purpose: This component defines the tool’s functional core and identity. It must clearly state what the tool does, independent of specific task context. For example, in Figure 4, the purpose is established in the opening statement: “A tool for dynamic and reflective problem solving through thoughts.” This primes the model’s attention mechanism to the tool’s fundamental capabilities. This component is mentioned in nine out of 15 sources along with the official documentation (AI, 2025b; Feig, 2025; eonist, 2025; Easy, 2025; Stamoulakatos, 2025; sjoti, 2025; Xu et al., 2025; Qin et al., 2023; PBC, 2025g).
+2.  (2)
+    Guidelines: This component addresses when and how the tool should be utilized. It provides decision-making criteria for activation and operational conduct for the FM. As shown in Figure 4, this is distributed into two distinct logical blocks:
+
+    - •
+      Activation Criteria (When): The “When to use” section explicitly lists appropriate task types (e.g., “Tasks needing context retention”).
+    - •
+      Operational Instructions (How): The “You should” section provides behavioral protocols (e.g., “Start with an adjustable estimate”).
+
+    Consequently, if the guidelines are unclear, overly generic, or if explicit guidance is entirely missing, we classify this deficiency as a Missing Usage Guidelines smell. This component is also mentioned in four sources (AI, 2025b; PBC, 2025f; sjoti, 2025; PBC, 2025g) beyond the official documentation.
+3.  (3)
+    Limitations: A tool description should describe known constraints, caveats, or corner cases where the tool may fail or be less effective. For example, a limitation of a calculator tool can be that it only supports up to two decimal point precision. We find this component is mentioned in only two sources apart from the official documents (PBC, 2025f, g).
+4.  (4)
+    Parameter Explanation: A tool description may include detailed explanations of all input parameters and their intended roles. Figure 4 demonstrates this in the Parameters section, where nine parameters are defined not just by data type (e.g., boolean, integer), but by intent (e.g., is_revision: “Whether this revises previous thinking”). This is the second-highest component in terms of mention, as we detect it in eight sources, in addition to official documents (AI, 2025b; Feig, 2025; eonist, 2025; PBC, 2025f; LeRay, 2025; Xu et al., 2025; Qin et al., 2023; PBC, 2025g).
+5.  (5)
+    Length and Completeness: A tool description should contain at least three to four sentences to ensure adequate detail. Complex tools warrant expanded descriptions; the Sequential Thinking tool (Figure 4) necessitates a multi-section structure to fully capture its branching logic, validating the need for variable length based on complexity. Apart from the official documents, we find it in three sources (eonist, 2025; PBC, 2025f; tleyden, 2025).
+6.  (6)
+    Examples: A tool description may include one or more illustrative examples demonstrating correct and effective usage. We observe example-related discussions in three sources beyond the official documents (Feig, 2025; Xu et al., 2025; Qin et al., 2023).
+
+[]
+
+4.1.4. Scoring & smell derivation
+
+While in Section 4.1.3 we identified the six core recommended components of tool descriptions, here we use these components to derive a scoring mechanism to measure the quality of tool descriptions. Prior studies indicate that FM-based evaluations become significantly more consistent and interpretable when guided by well-defined analytic rubrics rather than open-ended prompts (Wang et al., 2025a; Pathak et al., 2025). Following these insights, and adopting methodologies from prior work in automated FM-driven evaluation (Wang et al., 2025a), we implement a 5-point Likert scale (Joshi et al., 2015) rubric for each component. This scale offers higher resolution than binary classification, allowing us to grade the quality of a component in a tool description from “missing” to “ideal”.
+
+Since tool descriptions consist of unstructured natural language, evaluating the quality of these components is not a binary proposition. A component might be technically present in a tool description but semantically ambiguous or sub-optimal, making a simple “Yes/No” checklist insufficient. As a representative example, Figure 5 details the specific performance descriptors for the Purpose component. We designate score 3 as the minimum threshold: it represents a “Minimum Viable” description where the basic purpose is available. Scores 4 and 5 reward increasing precision, behavioral detail, and clarity. Conversely, scores 1 and 2 capture failure modes, reflecting descriptions that are vague, incomplete, or functionally sub-optimal. We apply this same rigorous scalar definition to all six identified components; the complete set of rubrics and associated evaluation prompts is provided in the Appendix A.1.
+
+[Refer to caption]
+
+We interpret scores below the minimum threshold (Score ¡ 3) as indicators of qualitative deficiencies. Following prior work on design smells in specifications and prompts (Moha et al., 2009; Vogelsang et al., 2025), we refer to recurrent, component-specific deficiencies in the tool descriptions as smells. Figure 6 illustrates this mapping. For each component, scores in the smelly zone (Score ¡ 3) directly indicate a corresponding smell: Unclear Purpose, Missing Usage Guidance, Unstated Limitation, Opaque Parameters, Underspecified or Incomplete, and Exemplar Issues. As each of these smells is deterministically derivable from the component and its score, we do not need any additional heuristic or classifier to identify the smells in the tool descriptions.
+
+4.2. Tool Description Collection
+
+4.2.1. MCP server curation
+
+To ensure that our collection of MCP servers is both representative and useful, we conduct a lightweight literature search to identify prior studies that evaluate the execution of real-world complete workflows with MCPs. Following prior studies (Hirsch and Hofer, 2022), we perform a keyword-based search on Google Scholar using the queries “Evaluating MCP Servers” and “MCP AND Benchmark”. For each query, we sort the results by the relevance ranking provided by Google Scholar and manually inspect the first 100 results to identify studies that evaluate MCP servers. For the first query, we identify 10 relevant articles, while for the second query, we identify 8 relevant articles. Since all 8 articles identified in the second query also appear within the 10 articles from the first query, our initial pool consists of 10 unique articles.
+
+We then apply the following inclusion criteria to determine which studies provide MCP servers that are appropriate for our analysis:
+
+- •
+  The study uses real-world, MCP servers.
+- •
+  The study evaluates MCP servers empirically or through benchmark analysis for general-purpose scenarios.
+- •
+  The study publicly releases both the codebase and the MCP servers used.
+
+After applying these criteria, four studies meet all requirements (Mo et al., 2025; Luo et al., 2025; Fan et al., 2025; Liu et al., 2025). From these studies, we curate 856 tools across 103 MCP servers reported in recent literature as of August 20, 2025. To support a comparative analysis of tool description smells between official and community-maintained MCP servers, we examined server documentation to identify their maintainers. Among the 103 MCP servers, we identify that 23 are maintained by official organizations, including Anthropic and major industry contributors such as GitHub, Airbnb, PayPal, and Microsoft, while the remaining 80 are maintained by the broader open-source community.
+
+4.2.2. Tool description extraction via MCP client
+
+To extract the tool descriptions from MCP servers, we develop a lightweight MCP client. The MCP client communicates with MCP servers dynamically through the reflection protocol (Hasan et al., 2025b) by sending a tools/list request. In response, each server returns a structured array containing all available tools along with their names, descriptions, and input schema. We implement this dynamic approach, avoiding static analysis, to ensure generalizability across the heterogeneous MCP ecosystem. Unlike static analysis, which relies on source code availability of MCP servers and language-specific parsers, this approach utilizes the native reflection of MCP to extract descriptions from any MCP server, regardless of its underlying implementation language (e.g., Python, Rust) or proprietary ownership status (e.g., open source or proprietary). The scanner then extracts the tool descriptions and input schema from the MCP client and prepares them for use in the subsequent evaluation step.
+
+4.3. Scanning Smells in the Tool Descriptions
+
+After collecting tool descriptions from the MCP client, we evaluate their quality using an FM-based automated scanning framework grounded in the rubric developed in Section 4.1. Because the consumers of tool descriptions are FMs themselves, assessing the quality of these descriptions requires an evaluator that reflects how FMs interpret and use them, making FM-based automated scanners a natural choice. However, FM evaluators introduce risks, including potential reproducibility issues and model-specific bias (Bavaresco et al., 2025; Wang et al., 2024). To address these challenges, we structure our scanning around three design principles: (i) a rubric-based scoring prompt, (ii) a controlled evaluation environment, and (iii) a multi-model LLM-as-jury configuration to improve robustness and generalization.
+
+4.3.1. Rubric-based evaluation prompt design
+
+Prior studies have shown that FM-based techniques are effective at identifying structural issues and quality problems in software artifacts, including code smells (Sadik and Govind, 2025; Wu et al., 2024b) and test smells (Lucas et al., 2024). Following these insights, we design a structured system prompt that operationalizes the scoring mechanism described in Section 4.1.4. We use this prompt to evaluate each tool description collected from the MCP servers with an FM, which assigns an ordinal score between 1 and 5 for each component defined in Section 4.1.3. As a result, each tool description is associated with six component-wise scores. We provide the full prompts and per-tool evaluations in the Appendix A.1.
+
+4.3.2. Multi-model LLM-as-Jury evaluation
+
+To mitigate FM bias and ensure generalizability across FM families, we adopt a multi-model LLM-as-jury configuration. Instead of relying on a single FM, we task three distinct FMs to independently execute the rubric-based scoring for every tool description in our dataset. Following prior study, we select models from three disparate families, e.g., gpt-4.1-mini, claude-haiku-3.5, and qwen3-30b-a3b, to ensure that our evaluation measures the quality of the description without any preferences specific to a single model architecture (Verga et al., 2024).
+
+To quantify the level of agreement among the models on the scores assigned, we compute the intraclass correlation coefficient (ICC), specifically ICC(2,1), which is widely used to measure absolute agreement among raters evaluating the same target (Shrout and Fleiss, 1979). ICC values between 0.5 and 0.75 indicate moderate reliability, values between 0.75 and 0.9 indicate good reliability (Koo and Li, 2016). Table 1 summarizes the ICC values for each component. The results demonstrate substantial agreement across the majority of the components. We observed good reliability in 5 out of 6 components and moderate reliability in Examples component. This variability is expected because the presence and quality of examples can depend on stylistic preferences or model-specific tendencies.
+
+  --------------------------- -------------
+  Rubric component            ICC (2,1)
+  Purpose                     0.82
+  Guidelines                  0.85
+  Limitations                 0.84
+  Parameter Explanation       0.90
+  Length and Completeness     0.76
+  Examples                    0.62
+  --------------------------- -------------
+
+4.3.3. Smell identification
+
+To transition from the raw multi-model scores to definitive smell assignments, we apply an aggregation and thresholding procedure. For each tool description and each component, we compute the arithmetic mean of the three scores assigned independently by the FM evaluators. Formally, for a component with scores Score1, Score2, Score3:
+
+  -- ------------------------------------------------------------------- --
+     $$\text{Smell Detected}\iff\frac{1}{N}\sum_{i=1}^{N}Score_{i}<3$$   
+  -- ------------------------------------------------------------------- --
+
+Since the scoring mechanism is developed by keeping score 3 as the threshold for a well-formed component (as defined in Section 4.1.4), any averaged score falling below this threshold indicates that the component is sub-optimal. When this condition is met, we assign the corresponding smell from the taxonomy in Section 4.1.4. For example, for the Purpose component of the tool airbnb_search, the three evaluators assigned scores of 3, 2, and 3, yielding an average of approximately 2.7, which falls below the viability threshold and therefore triggers the Unclear Purpose smell. In contrast, for the tool find_nearby_places, all three evaluators assigned a score of 5 for the Purpose component, yielding an average of 5.0 and indicating a clean, non-smelly description.
+
+4.4. Resolving Smells via Tool Component Augmentation
+
+The objective of tool description augmentation is to fix the smells identified in Section 4.3 while preserving the semantic fidelity of the original content. To achieve this, we design a semi-automated augmentor that combines rubric-based augmentation with an FM to generate refined, comprehensive, and factually consistent tool descriptions, being motivated by prior FM-based prompt and text optimization techniques (Opsahl-Ong et al., 2024; Khattab et al., 2023).
+
+4.4.1. Initial augmentation of components
+
+In the first stage, the augmentor collects the original tool descriptions of all the MCP servers used in the MCP-Universe benchmark (Luo et al., 2025) and the input schema from MCP servers through an MCP client following the same procedure described in Section 4.2.2. It then applies the rubrics defined in Section 4.1 to guide the augmentation process. Using the GPT-4.1-mini model as FM, the augmentor automatically enhances each description by improving coverage across five rubric components: Purpose, Guidelines, Limitations, Parameter Explanation, and Length. The outputs from this stage are referred to as init_augmented_description, as these outputs serve as input for the next refinement step. We intentionally exclude the Examples component at this stage because the model cannot reliably generate factually grounded examples without execution traces, and doing so would risk introducing hallucinated or incorrect examples. This issue is addressed in the next stage, where examples are constructed from actual tool executions.
+
+4.4.2. Generation of the ”Examples and Limitations” components
+
+Although the FM improves most rubric components effectively, it cannot reliably infer realistic Examples and the full set of Limitations without access to execution context. Generating these elements purely from prompts risks hallucination or factual inconsistency. To address this issue, we manually execute relevant tools to collect authentic usage traces.
+
+For each tool, we manually create a set of example tasks designed to encourage the FM to invoke the tool in realistic scenarios. We follow the general strategy used in prior work (Qin et al., 2023), with manually crafted task descriptions to align with the semantics of the original tool description. Each task is phrased in natural language and is passed to the FM through Claude Desktop (PBC, 2025c), which supports MCP integration. The FM then decides which tool to call and provides the corresponding arguments.
+
+To ensure coverage of both successful and failing behaviors, we generate at least two tasks per tool: (i) at least one task that should result in a successful tool execution and produce a valid response, (ii) at least one task that should result in an empty response or an error. Additionally, we generate more tasks to cover the edge cases (ranging from 1 to 3 depending on the complexity of the tools). As an illustrative example, for the get_historical_stock_prices tool in the yfinance MCP server, we construct the following tasks:
+
+1.  (1)
+    Retrieve Salesforce (CRM) prices from 1 Nov 2020 to 2 Dec 2020.
+2.  (2)
+    Retrieve Salesforce (CRM) prices for the same day, 2 Dec 2020.
+3.  (3)
+    Retrieve price changes from 10 Jan 2023 to 25 Jan 2025 and make multiple tool calls if needed.
+
+The first task produces a successful response and serves as a positive example. The second task produces an empty response because the tool requires a non-zero date range and therefore serves as a negative example. The third task encourages the FM to issue multiple calls due to the large date range, which helps capture multi-step behavior useful for identifying limitations related to response size and rate. We use Claude Desktop as it provides a user-friendly chat interface, supports seamless integration with MCP servers, and exposes both request and response logs in the interface. From these logs, we extract input-output pairs for both successful and failing cases and store them in a structured JSON file for further processing.
+
+4.4.3. Final consolidation of all components
+
+In the final stage, we feed the init_augmented_description, along with the collected JSON logs, into the augmentor FM. We instruct the FM to output a structured JSON object comprising five explicit fields: Purpose, Guidelines, Limitations, Parameter Explanation, and Examples, mapping to distinct components of the tool descriptions as identified in Section 4.1.3.
+
+We do not include a separate field for Length and Completeness. This component functions as a meta-quality dimension of the overall tool description and is automatically fulfilled when the other five components are properly populated. Therefore, while it remains an essential dimension during scoring and smell detection, it does not require an independent field in the augmented representation. Consequently, the resulting five-component augmented tool descriptions are used directly in subsequent evaluations and ablation studies.
+
+4.5. Evaluating the Augmented Tool Descriptions
+
+4.5.1. Benchmark adoption
+
+We use the MCP-Universe benchmark (Luo et al., 2025) for evaluating the performance of agents with augmented tool descriptions. We chose this benchmark because of its comprehensive design that integrates real-world scenarios and temporal dynamics. It includes 231 complex real-world tasks across six domains, while providing a total of 202 tools. Unlike several other benchmarks that rely solely on LLM-as-Judge evaluations (Mo et al., 2025), MCP-Universe combines this with a robust execution-based evaluation mechanism. In this benchmark, task outcomes are assessed by automated evaluators that directly execute tools and verify results against ground-truth criteria. These evaluators are programmatic validation scripts defined to verify format compliance, static content matching, and dynamic validation for temporally sensitive tasks. This combination enables a more accurate and reliable assessment of agent performance and ensures fair comparison across models. Each task is evaluated by at least one evaluator, with an average of 3.3 evaluators per task.
+
+4.5.2. Tool Description Router
+
+The original MCP client provided in MCP-Universe does not support dynamic modification of tool descriptions at runtime, which is required for our evaluation. To address this limitation, we extend the client with a configurable switching module called the Tool Description Router, which allows for the dynamic selection of tool descriptions. This module can load either the original descriptions or the augmented descriptions stored in the PostgreSQL database described in Section 4.4.3, depending on a configuration provided as an argument.
+
+Additionally, to support the ablation study of individual rubric components, the router also supports retrieving certain components in a specified order from the augmented tool description and assembles a valid description for model consumption. For example, suppose we need to run the benchmark with only the Purpose and Guideline components of the augmented tool description. In that case, those two component names can be passed as comma-separated arguments to the tool description router, which will fetch only these two components for all tools from the database, concatenate them, and present them to the FM.
+
+4.5.3. Full Rubric Evaluation
+
+Using the tool description router, we evaluate the augmented tool descriptions by running the MCP-Universe benchmark with all rubric components retrieved from the database. Each task in MCP-Universe is associated with one or more evaluators that determine task completion correctness, as described in Section 3. To measure the impact of augmented tool descriptions, we compare model performance against the baseline results reported in the original MCP-Universe study. We use three primary evaluation metrics:
+
+- •
+  Success Rate (SR), which measures the percentage of tasks that pass all evaluators;
+- •
+  Average Evaluator score (AE), which represents the average fraction of evaluators that pass across all tasks within a domain or model; and
+- •
+  Average # of Steps (AS), which captures the average number of steps required for an FM to complete each task. These steps reflect how the agent leverages FM and tools in real-time while solving the task, e.g., the number of calls to FMs made by the agent.
+
+To illustrate these metrics, consider two example tasks: the first task takes four steps to complete and is evaluated by three evaluators and passes all of them, while the second task takes six steps and is evaluated by four evaluators and passes only two. Hence, the SR is 50% since one of the two tasks (task-01) passed all its evaluators. The proportion of evaluators passed for task-01 is 1.0 and for task-02 is 0.5, giving an AE of 0.75. This indicates that although only 50% of the tasks fully passed, some evaluators in the failed tasks still passed as successful. Finally, AS is 5, calculated as the mean of four and six steps. Following prior similar studies (Kapoor et al., 2024), we analyze the accuracy-cost tradeoff of the augmented tool descriptions using a Pareto curve that uses AS as a proxy for the cost metrics across all six domains for each model.
+
+As there are 231 tasks in the MCP-Universe benchmark, running all the tasks against each model is costly in terms of token cost and time. Running the entire benchmark for one round with one FM can cost us around 200 to 300 million tokens, which translates to 75 to 600 USD, depending on the model provider. Hence, to balance the cost and generalization of our evaluation, we conduct experiments on one proprietary model (GPT-4.1) and two open-weight models (Qwen3-Coder-480B-A35B and GLM-4.5 355B A32B), following the configurations established in the original MCP-Universe benchmark (Luo et al., 2025).
+
+A limitation is that MCP-Universe does not report success information, the number of passed evaluators, or the number of steps at a per-task level, which prevents paired statistical tests. Re-executing these baselines to obtain per-task data would be prohibitively expensive. To overcome this, we adopt a hybrid strategy: (i) for the three original models (from MCP-Universe study (Luo et al., 2025)), we compare our augmented results directly against the reported aggregated (average/percentage) baselines from MCP-Universe; and (ii) to enable more rigorous statistical comparison, we introduce a smaller-sized open-weight model, Qwen3-Next-80B-A3B-Instruct. We select this model for its cost-efficiency (0.10 USD per 1M tokens vs. 0.456 USD for Kimi-K2 (AI, 2025a)) and strong performance on external benchmarks such as LiveCodeBenchv6 (56.56 versus 53.7) (Cloud, 2025; AI, 2025a). For this model, we execute both the baseline (original descriptions) and treatment (augmented descriptions) runs, generating the paired per-task data necessary for significance testing.
+
+Finally, we had to apply specific adaptations to accommodate model and domain constraints. As the smaller open-source model, i.e., Qwen3-Next-80B-A3B-Instruct, has a shorter context window, we use Purpose, Guidelines, and Limitation components from the augmented tool description for this model to avoid overloading the context window of this model. We exclude the Parameter Explanation component as a context-length tradeoff. This exclusion remains feasible because the MCP protocol automatically provides the input schema at runtime, including parameter names and types, which preserves the minimum structural information required for tool invocation. Similarly, out of the six domains of the MCP universe, we avoid generating examples for the Browser Automation domain as the examples for the tools of this domain are too large to fit in the context window. Finally, the original MCP-Universe study utilizes the SERP API-based Google search MCP server, which provides 250 free queries per month per API key. As the Web Searching domain has 55 tasks, each of which requires multiple searches, it is not suitable for an overall study. Hence, we adopt the Google search MCP server ⁵⁵5https://github.com/mixelpixx/Google-Search-MCP-Server, which uses the Google search API key to run the experiments uninterrupted.
+
+4.5.4. Ablation Study
+
+Since the augmented tool description stored in the database contains the components Purpose, Guidelines, Limitations, Parameter Explanation, and Examples (as explained in Section 4.4.3), we conduct an ablation study to determine which components contribute most significantly to performance. For example, Anthropic (PBC, 2025b) considers the Examples component less critical, whereas other studies suggest that it may be beneficial (Xu et al., 2025). Similarly, the Parameter Explanation component may contain redundant information that overlaps with the input schema. Moreover, including all components may increase the input context length of the FM and affect efficiency.
+
+To investigate these effects, we use the --components command of the tool description router to selectively enable different combinations of rubric elements. We design two experimental configurations: (i) excluding the Examples component while retaining Purpose, Guidelines, Limitation, and Parameter Explanation to measure the effect of examples; and (ii) evaluating pairwise combinations of two components, where one component is always Purpose (for instance, Purpose + Limitation, Purpose + Parameter Explanation, and Purpose + Examples). We include Purpose in all combinations because it defines what the tool does, and without it, the FM cannot correctly infer the tool’s intent or functionality.
+
+5. Results
+
+5.1. RQ-1: To what extent do MCP tools’ descriptions contain smells?
+
+Motivation. Writing MCP tool descriptions requires combining principles from software requirements specification and prompt engineering, suggesting that these descriptions may inherit suboptimal design patterns or smells from both domains. Historically, smells in software engineering have been known to be related to change-proneness and bugs (Khomh et al., 2009a; Hassan and Rahman, 2022), motivating an investigation of tool description smells in MCP. Although 66% of MCP servers already exhibit code-level smells (Hasan et al., 2025b), it remains unclear whether similar issues manifest in the natural-language descriptions that guide agent behavior.
+
+Approach. We develop a rubric for evaluating MCP tool descriptions which consists of the components of tool description derived from Anthropic’s design guidelines, practitioners’ recommendations, and prior research, as well as a structured scoring scale as mentioned in Section 4.1. As FMs are the primary consumers of the tool description, to evaluate whether FMs can understand and interpret these tool descriptions, we score the 856 tools collected from MCP servers through an FM-based scanner. This scanner consists of an LLM-as-Jury with 3 FMs using the rubric, as detailed in Section 4.3. Then we identify the cases with low scores and map those to recurring smells. Given prior work showing differences between official and community-maintained MCP servers (Hasan et al., 2025b), we further compare these scores statistically using pairwise Mann-Whitney U tests with Bonferroni correction (Ruxton and Beauchamp, 2008).
+
+Findings. All six smell types affect the majority of MCP tool descriptions, with the most severe issues appearing in nearly 90% of tools. As shown in Figure 7, the most widespread smell categories are Unstated Limitations (89.8%), Missing Usage Guidelines (89.3%), and Opaque Parameters (84.3%). These patterns suggest that tool descriptions frequently lack critical boundary conditions, fail to indicate when or how tools should be invoked, and provide little insight into the meaning or behavioral implications of input parameters. The next tier includes Underspecified or Incomplete descriptions (79.1%) and Exemplar Issues (77.9%), which arise when descriptions are overly brief relative to tool complexity or rely on sparse or uninformative examples instead of clear explanatory text. Even for the best-performing component (i.e., Purpose), we observe the Unclear Purpose smell in 56% of tools, indicating that more than half of tool descriptions do not clearly articulate their intended functionality. Taken together, these suboptimal patterns can hinder the ability of FMs to properly solve real-world problems. Prior work shows that under-specified prompts can lead to up to 2× performance regressions across model versions (Yang et al., 2025), suggesting that such pervasive tool description smells may similarly increase brittleness and reduce reliability in MCP-enabled agent behaviors.
+
+[Refer to caption]
+
+Figure 4 (presented in Section 4.1.3) provides an example of a high-quality tool description from the Sequential Thinking MCP server. The description clearly conveys the tool’s purpose, guidelines, limitations, and parameters. In contrast, Figure 9 shows three examples of low-quality tool descriptions that scored below the median quality score. These minimal descriptions provide little contextual information, leaving foundation models with insufficient cues to infer when or how to use the tools effectively.
+
+Only 2.9% of MCP tool descriptions are fully smell-free. As shown in Table 2, the number of smell-free instances drops sharply when analyzing tool descriptions with larger combinations of components considered together. While certain individual components have relatively high smell-free rates, e.g., 44.0% for Purpose alone and 10.4% with Guidelines, the proportion declines to 7.5% when analyzing tools that combine Purpose, Guidelines, and Limitations components in their description, and drops to a mere 2.9% when all five components in the description are required to be smell-free. This pattern indicates that many tool descriptions are highly incomplete in terms of components.
+
+  --------------------- -------------- --------------
+  Rubric combination    # Smell-free   % Smell-free
+  P                     376            44.0
+  P + G                 89             10.4
+  P + G + L             64             7.5
+  P + G + L + PEx       26             3.0
+  P + G + L + PEx + E   25             2.9
+  --------------------- -------------- --------------
+
+[Refer to caption]
+
+  ------------------------- ----------- --------- --------------
+  Score                     Statistic   p-value   Adj. p-value
+  Purpose                   873.50      0.18      1.00
+  Guidelines                759.50      0.17      1.00
+  Limitations               824.00      0.42      1.00
+  Parameter Explanation     973.00      0.61      1.00
+  Length & Completeness     829.00      0.46      1.00
+  Examples                  783.00      0.24      1.00
+  ------------------------- ----------- --------- --------------
+
+Official and community MCP servers show low-quality tool descriptions across all components of our rubric. We visualize the distributions of median scores for each rubric item across official and community-maintained MCP servers in Figure 8. To compare the two groups, we apply the Mann-Whitney U test with Bonferroni correction for the six components. As summarized in Table 3, none of the components show statistically significant differences between official and community servers; all raw p-values exceed 0.17 and all corrected p-values equal 1.0.
+
+Tool name: create_invoice (official)
+Description: Creates PayPal Invoice Link. Tool name: read_mail(community)
+Description: Retrieves the content of a specific email. Tool name: maps_place_details(community)
+Description: Get detailed information about a specific place.
+
+[]
+
+5.2. RQ-2: How does resolving tool description smells by augmenting all tool description components impact the performance of FM-based agents?
+
+Motivation. The pervasive presence of smells in tool descriptions (as found in RQ-1) naturally motivates attempts to resolve them; however, theoretical signals regarding their impact are conflicting. While software engineering research warns that smell removal can unintentionally alter system behavior (Verdecchia et al., 2018), prompt engineering studies suggest that richer descriptions can improve outcomes (Khattab et al., 2023). We therefore investigate whether systematically resolving tool description smells by augmenting all components yields a net positive impact on agent performance on standard benchmarks.
+
+Approach. Following the steps mentioned in Section 4.4, we augment all components of the tool description, resulting in a fully augmented description that includes purpose, guidelines, limitations, parameter explanation, and examples. As discussed in Section 4.4.3, length and completeness are implicitly addressed through these components rather than augmented independently. After augmenting the tool descriptions, we again measure the quality score of the fully augmented tool descriptions using the same multi-model LLM-as-Jury as in Section 4.3 to validate whether the fully augmented tool descriptions achieve a higher quality score. We further apply the Wilcoxon signed-rank test (Woolson, 2007) to determine whether the observed improvements in quality scores are statistically significant, as this test detects systematic shifts in the central tendency of paired observations in before and after augmentation.
+
+In addition, we test whether the observed changes in SR, AE, and AS are statistically significant. As the original study did not provide these metrics for every (task, model) combination, we measure these metrics using the model introduced in our work, i.e., Qwen3-Next-80B-A3B-Instruct. Since SR is a binary outcome (0/1), we assess the significance of SR changes using McNemar’s test in its chi-squared formulation (Pembury Smith and Ruxton, 2020). In contrast, as AE and AS are continuous-valued metrics, we evaluate their statistical significance using the Wilcoxon signed-rank test.
+
+  ------------------------- ----------- ---------- ----------------- ----------------- ------------
+  Component                 Statistic   p-value    Med. Score (BA)   Med. Score (AA)   Med. diff.
+  Purpose                   0.0          < 0.001   2.0               5.0               2.7
+  Guidelines                0.0          < 0.001   1.0               5.0               4.0
+  Limitations               0.0          < 0.001   1.0               5.0               3.7
+  Parameter explanation     0.0          < 0.001   1.0               4.7               3.3
+  Examples                  0.0          < 0.001   1.0               5.0               3.7
+  Length and completeness   0.0          < 0.001   1.3               5.0               3.7
+  ------------------------- ----------- ---------- ----------------- ----------------- ------------
+
+Findings. FM-based augmentation resolves the tool description smells in the MCP-Universe benchmark by improving the median scores by 2.7–4.0 points in our scoring rubric. We perform the Wilcoxon signed-rank test on each tool description to compare scores before (BA) and after augmentation (AA) and report the findings in Table 4. These results confirm statistically significant improvements across all six components (p < .001). We observe that for every component, the test statistic equals zero, establishing that all paired comparisons favor the augmented descriptions, with median scores rising by 2.7 to 4.0 points on the five-point Likert scale. We find that median BA scores cluster between 1.0 and 2.0, reflecting widespread pre-augmentation under-specification, whereas median AA scores converge near the ceiling value of 5.0 for all components.
+
++-------------------------------+-----------------------+---------------+-------------------------+------------+
+| Model name                    | Domain                | Original SR   | SR after augmentation   | ΔSR (pp)   |
++-------------------------------+-----------------------+---------------+-------------------------+------------+
+| GPT-4.1                       | Finance               | 40.00%        | 57.50%                  | 17.50%     |
++-------------------------------+-----------------------+---------------+-------------------------+------------+
+|                               | Repo Management       | 6.06%         | 21.20%                  | 15.14%     |
++-------------------------------+-----------------------+---------------+-------------------------+------------+
+|                               | 3D Design             | 26.32%        | 31.60%                  | 5.28%      |
++-------------------------------+-----------------------+---------------+-------------------------+------------+
+|                               | Location Navigation   | 8.89%         | 31.00%                  | 22.11%     |
++-------------------------------+-----------------------+---------------+-------------------------+------------+
+|                               | Browser Automation    | 23.08%        | 25.65%                  | 2.57%      |
++-------------------------------+-----------------------+---------------+-------------------------+------------+
+|                               | Web Searching         | 10.91%        | 10.91%                  | 0.00%      |
++-------------------------------+-----------------------+---------------+-------------------------+------------+
+| Qwen3-Coder-480B-A35B         | Finance               | 40.00%        | 72.50%                  | 32.50%     |
++-------------------------------+-----------------------+---------------+-------------------------+------------+
+|                               | Repo Management       | 3.03%         | 18.20%                  | 15.17%     |
++-------------------------------+-----------------------+---------------+-------------------------+------------+
+|                               | 3D Design             | 26.32%        | 21.10%                  | -5.22%     |
++-------------------------------+-----------------------+---------------+-------------------------+------------+
+|                               | Location Navigation   | 8.89%         | 15.60%                  | 6.71%      |
++-------------------------------+-----------------------+---------------+-------------------------+------------+
+|                               | Browser Automation    | 25.64%        | 23.07%                  | -2.57%     |
++-------------------------------+-----------------------+---------------+-------------------------+------------+
+|                               | Web Searching         | 10.91%        | 9.10%                   | -1.81%     |
++-------------------------------+-----------------------+---------------+-------------------------+------------+
+| GLM-4.5                       | Finance               | 50.00%        | 67.50%                  | 17.50%     |
++-------------------------------+-----------------------+---------------+-------------------------+------------+
+|                               | Repo Management       | 9.09%         | Could not run           | N/A        |
++-------------------------------+-----------------------+---------------+-------------------------+------------+
+|                               | 3D Design             | 26.32%        | 26.32%                  | 0.00%      |
++-------------------------------+-----------------------+---------------+-------------------------+------------+
+|                               | Location Navigation   | 17.78%        | 17.78%                  | 0.00%      |
++-------------------------------+-----------------------+---------------+-------------------------+------------+
+|                               | Browser Automation    | 15.38%        | 15.38%                  | 0.00%      |
++-------------------------------+-----------------------+---------------+-------------------------+------------+
+|                               | Web Searching         | 27.27%        | 18.18%                  | -9.09%     |
++-------------------------------+-----------------------+---------------+-------------------------+------------+
+| Qwen3-Next-80B-A3B-Instruct   | Finance               | 50.00%        | 65.00%                  | 15.00%     |
++-------------------------------+-----------------------+---------------+-------------------------+------------+
+|                               | Repo Management       | 18.18%        | 18.18%                  | 0.00%      |
++-------------------------------+-----------------------+---------------+-------------------------+------------+
+|                               | 3D Design             | 0.00%         | 10.53%                  | 10.53%     |
++-------------------------------+-----------------------+---------------+-------------------------+------------+
+|                               | Location Navigation   | 11.11%        | 13.33%                  | 2.22%      |
++-------------------------------+-----------------------+---------------+-------------------------+------------+
+|                               | Browser Automation    | 12.82%        | 12.82%                  | 0.00%      |
++-------------------------------+-----------------------+---------------+-------------------------+------------+
+|                               | Web Searching         | 0.00%         | 7.27%                   | 7.27%      |
++-------------------------------+-----------------------+---------------+-------------------------+------------+
+| Cross-Model Median ΔSR                                                                          | 5.85%      |
++-------------------------------------------------------------------------------------------------+------------+
+| Improved cases (ΔSR > 0)                                                                        | 54.17%     |
++-------------------------------------------------------------------------------------------------+------------+
+| Regressed cases (ΔSR < 0)                                                                       | 16.67%     |
++-------------------------------------------------------------------------------------------------+------------+
+| Unchanged or failed runs                                                                        | 29.16%     |
++-------------------------------------------------------------------------------------------------+------------+
+
+With augmented tool descriptions, agents achieve an absolute increase of 5.85 percentage points (median) in task success rate across all models and domains. As summarized in Table 5, we report the absolute success rate change (ΔSR = SR_(after augmentation) – SR_(original)) for each model and domain to avoid inflation effects caused by low baseline success rates. Across four foundation models and twenty-four benchmark runs, agents using augmented descriptions outperform their baseline counterparts in 54.17% of cases (highlighted in green). While we have observed that the tool description scores have improved for all components (in Table 4), the performance of the agent regresses in 16.67% of cases (highlighted in red), indicating that augmenting all components does not necessarily improve the success rate in all domains and models. We observe the greatest improvement in the Finance domain for the Qwen3-Coder-480B-A35B model, whereas a moderate decline occurs for GLM-4.5 in the Web Searching domain. Despite these regressions, McNemar’s test confirms that the 5.85 percentage point improvement in SR is statistically significant (with p = 0.02) across the full benchmark. These results suggest that augmenting tool descriptions across all components can substantially improve task success rates in many domains, while also emphasizing the need for adaptive augmentation strategies tailored to specific domain contexts.
+
++-------------------------------+---------+---------+---------+---------+-------------------+---------+---------+
+| Model name                    | Overall SR        | Overall AE                            | Overall AS        |
++-------------------------------+---------+---------+---------+---------+-------------------+---------+---------+
+|                               | Base.   | Aug.    | Base.   | Aug.    | # Tasks AE≥0.80   | Base.   | Aug.    |
++-------------------------------+---------+---------+---------+---------+-------------------+---------+---------+
+| GPT-4.1                       | 18.18   | 29.44   | 0.41    | 0.47    | 19                | 5.24    | 8.08    |
++-------------------------------+---------+---------+---------+---------+-------------------+---------+---------+
+| Qwen3-Coder-480B-A35B         | 19.91   | 25.97   | 0.38    | 0.43    | 16                | 7.78    | 14.06   |
++-------------------------------+---------+---------+---------+---------+-------------------+---------+---------+
+| GLM-4.5                       | 24.68   | 25.25   | 0.41    | 0.45    | 18                | 7.33    | 14.79   |
++-------------------------------+---------+---------+---------+---------+-------------------+---------+---------+
+| Qwen3-Next-80B-A3B-Instruct   | 15.58   | 21.21   | 0.33    | 0.39    | 16                | 9.46    | 6.97    |
++-------------------------------+---------+---------+---------+---------+-------------------+---------+---------+
+| Median change                 |         | 5.85    |         | 15.12   | 17                |         | 67.46   |
++-------------------------------+---------+---------+---------+---------+-------------------+---------+---------+
+
+Beyond task-level success rate, augmented tool descriptions also improve evaluator-level performance, increasing the Average Evaluator Score (AE) by 15.12% across all foundation models. As shown in Table 6, the overall AE, which represents the mean proportion of evaluators passing per task (where AE = 1 denotes complete success) increased consistently across all four models. This indicates that even for tasks not fully completed (i.e., not satisfying all evaluators), augmented descriptions help agents satisfy a greater share of evaluation criteria. The Wilcoxon signed-rank test confirms that this improvement in AE is statistically significant (with p < 0.01). Furthermore, we observe that 17 tasks, or 7.36% of all tasks (median across models), can achieve an AE  ≥ 0.80 (i.e., passing more than 80% of evaluators) yet still fall short of final success, often because the benchmark imposes a maximum iteration limit. These trends suggest that augmentation enhances intermediate reasoning and partial goal completion, aligning with prior findings (Sahoo et al., 2024; Zheng et al., 2023) that improved prompt clarity strengthens reasoning pathways to drive steadier, more progressive task execution.
+
+The average number of execution steps (AS) increases by 67.46% (median) across models and domains when using the fully augmented tool descriptions, compared to the original MCP-Universe baseline. As shown in Table 6, despite the absolute AS remaining relatively low (less than 15 for two models and 9 for two others), three of the four evaluated models show a statistically significant increase in AS (with p < 0.001 at the Wilcoxon signed-rank test). In contrast, the smaller-sized Qwen3-Next-80B-A3B-Instruct model shows resilience, reducing AS from the baseline while still improving both Success Rate (SR) and Average Evaluator Score (AE).
+
+However, focusing on the broader trend independent of domain (Figure 10), 68–78% of tasks require more steps than the baseline. Among these tasks with increased AS, roughly half (41–55%) show improved AE; however, only 19–20% of all tasks achieve the final success. This funnel indicates that richer descriptions motivate deeper intermediate exploration that captures more requirements, even if it does not always yield a perfect final output. For instance, in a Location Navigation task (google_maps_task_0001), the fully augmented tool description doubled the agent’s steps (from 9 to 19) compared to the baseline with Qwen3-Next-80B-A3B-Instruct. However, it increased the number of passing evaluators from 8 to 10 out of 11. Consequently, the aggregated increase in AS represents a cost-performance trade-off: where agents expend more computational effort to achieve greater partial progress and a higher likelihood of final completion.
+
+[Refer to caption]
+
+[Refer to caption]
+
+[Refer to caption]
+
+[Refer to caption]
+
+[Refer to caption]
+
+[Refer to caption]
+
+[Refer to caption]
+
+[Refer to caption]
+
+[Refer to caption]
+
+While the proprietary GPT-4.1 leads in peak performance among the evaluated models, a relatively smaller-sized open-weight model, Qwen3-Next-80B-A3B-Instruct, demonstrates a superior balance between cost and accuracy compared to substantially larger open-weight alternatives under augmented tool descriptions. As shown in Figure 11, the Pareto frontiers visualize the trade-off between Average Evaluator Score (AE) and Average Steps (AS) across six domains when agents operate with augmented tool descriptions. Models falling on the blue line represent efficient choices. Models falling below the line (e.g., Qwen3-Coder-480B in 3D Design) are suboptimal, as they consume more steps to achieve equal or lower accuracy. Across domains such as Browser Automation, Financial Analysis, Location Navigation, and Repository Management, Qwen3-Next-80B-A3B-Instruct consistently appears on or near the Pareto frontier, achieving competitive AE while maintaining relatively low AS. At the same time, GPT-4.1 frequently lies on the Pareto frontier and is often closest to the idealized upper-left region, reflecting strong accuracy with moderate execution cost. In contrast, larger open-weight models like GLM-4.5 and Qwen3-Coder-480B-A35B generally occupy dominated regions with higher AS for comparable AE. These observations indicate that under augmented tool descriptions, a simple parameter scale does not guarantee higher efficiency; rather, different architectures occupy distinct niches in the cost-accuracy trade-off space.
+
+[]
+
+5.3. RQ-3: How do different components of the augmented tool description impact the performance of FM-based agents?
+
+Motivation. Although fully augmented tool descriptions can improve agent performance, it remains unclear which description components drive these gains and which ones are redundant or even detrimental. Practitioner guidance is also inconsistent; for instance, Anthropic considers the Examples component less critical (PBC, 2025b), whereas other studies suggest it is beneficial (Xu et al., 2025). Furthermore, given that fully augmented tool descriptions can overload the FM’s context window and conflict with the increasing adoption of progressive capability disclosure via agent skills, identifying a minimal effective set of description components is essential to preserve performance while reducing overhead. To this end, we conduct a systematic component ablation study (Hameed et al., 2022), analyzing interactions among models, domains, and component configurations across both high- and low-performing settings.
+
+Approach. We evaluate the impact of individual components of the augmented tool description by conducting an ablation study across five (model, domain) combinations. In the RQ-2 results, we observe that with a fully augmented tool description, i.e., one that includes all components, the SR of the agent can be improved for certain domain-model combinations, while potentially experiencing some regression in other domain-model combinations. For example, in the Finance domain, we have observed that with a fully augmented tool description, all models have shown higher SR. Conversely, for 3D Design, with an augmented tool description, GPT-4.1 has achieved higher SR, whereas Qwen3-Coder-480B-A35B has shown lower SR than the baseline. To investigate the mechanics behind these divergent outcomes, we select domain-model combinations from Table 5 that cover both performance profiles. We specifically examine three combinations where full augmentation yields gains: Finance with GPT-4.1, Location Navigation with GPT-4.1, and Repository Management with Qwen3-Coder-480B-A35B. Conversely, to understand regression modes, we also include two combinations where performance degrades relative to the baseline: Web Searching with GLM-4.5 and 3D Design with Qwen3-Coder-480B-A35B.
+
+For each combination, we run two ablation variants: (i) removing the Examples component from all tool descriptions, and (ii) combining two components where one is always Purpose. We keep Purpose fixed in all combinations because it defines the core functionality of the tool, which is essential for agents to understand what the tool does and when to use it. We execute the agents under these settings while controlling the composition of the descriptions through the --components flag introduced in Section 4.5.2. The results from these controlled runs allow us to isolate the relative influence of specific components on agent performance across diverse model and domain contexts. To validate whether various ablation combinations exhibit statistically significant behavioral consistency, we employ Pearson’s Chi-Squared test of independence (Zibran, 2007) complemented by the ϕ-signed coefficient, which quantifies the strength of association between the two configurations.
+
+Findings. There is no single “golden” combination of components that yields the best results across all domain-model pairs. As summarized in Table 7, the best-performing component combination varies across domain-model pairs. For instance, in the Finance domain with GPT-4.1, using only the Purpose and Guidelines components yields the highest success rate, surpassing the fully augmented tool description, making it the best-performing component combination (BC). In contrast, tasks in Location Navigation with the same model show the best performance with the fully augmented tool description (FR). Meanwhile, in Repository Management with Qwen3-Coder-480B-A35B, performance improves modestly when only the Examples component is removed. These findings indicate that the contribution of individual rubric components is context-dependent, influenced by both model architecture and domain characteristics.
+
+To analyze why the combination of Purpose and Guideline is improving the SR for the Finance domain, we examine the tool descriptions further. We observe that in the tool get_historical_stock_prices in the yfinance MCP server, the Guidelines component provides critical operational cues such as “requested dates should include trading days” and “set end_date one day later than expected since the tool returns the previous day’s closing price.” These explicit behavioral instructions help the model reason correctly about valid input ranges and temporal offsets, leading to higher task success when this component is used alone. In contrast, the Limitations component of the same tool includes vague or self-referential statements such as “this contradiction requires disambiguation before relying on intraday availability”, which can introduce uncertainty into the model’s reasoning. When combined with other components, such ambiguity dilutes otherwise useful guidance and lowers performance relative to the single-component configuration. This pattern suggests that components that convey precise behavioral constraints of a tool improve agent performance, whereas components containing ambiguous or contradictory statements can degrade it.
+
+  ------------------- --------------------- ---------------------- ---------------------- --------------------------- ---------------------------
+  Rubric setup        Finance (GPT-4.1)     Location (GPT-4.1)     Repo (Qwen3-Coder)     3D-design (Qwen3-Coder)     Web Searching (GLM-4.5)
+  FR                  57.50%                31.00%                 18.20%                 21.10%                      18.18%
+  P + G + L + PEx     55.00%                26.70%                 21.21%                 21.10%                      12.73%
+  P + G               67.50%                20.00%                 18.20%                 15.80%                      12.73%
+  P + L               47.50%                24.50%                 18.20%                 21.05%                      16.36%
+  P + E               62.50%                17.80%                 18.20%                 26.32%                      10.91%
+  P + PEx             40.00%                20.00%                 6.06%                  15.80%                      18.18%
+  ------------------- --------------------- ---------------------- ---------------------- --------------------------- ---------------------------
+
+Statistical analysis shows a strong association between task-level outcomes produced by the fully augmented tool description (FR) and those produced by the best-performing component combination (BC). As shown in Table 8, Pearson’s chi-square tests reveal significant dependencies between BC and FR across multiple domain-model combinations, including 3D Design, Financial Analysis, and Repository Management (p ¡ 0.01). These results indicate that task success under BC and FR is associated rather than independent, meaning that both configurations tend to succeed or fail on the same tasks. The ϕ-signed coefficient, which measures agreement between paired binary outcomes, ranges approximately from 0.5 to 0.9, indicating a strong correspondence in the sets of tasks solved by BC and FR. This correspondence suggests that, for a given domain-model combination, BC preserves much of the functional guidance encoded in FR, despite omitting certain components. Consequently, domain-specific pruning emerges as a favorable engineering trade-off that can maintain logical reliability comparable to the fully augmented description, while reducing token usage and inference latency, provided that the pruning strategy is tailored to the target domain.
+
++-------------------------+----------------+----------------+----------------+
+| Panel A: Pearson’s chi-square tests                                        |
++-------------------------+----------------+----------------+----------------+
+| Domain                  | Model          | p-value        | ϕ (signed)     |
++-------------------------+----------------+----------------+----------------+
+| 3D Design               | Qwen3-Coder    |  < 0.01        | 0.864          |
++-------------------------+----------------+----------------+----------------+
+| Financial Analysis      | GPT-4.1        |  < 0.01        | 0.591          |
++-------------------------+----------------+----------------+----------------+
+| Location Navigation     | GPT-4.1        |  < 0.01        | 0.572          |
++-------------------------+----------------+----------------+----------------+
+| Repository Management   | Qwen3-Coder    |  < 0.01        | 0.909          |
++-------------------------+----------------+----------------+----------------+
+| Web Searching           | GLM-4.5        |  < 0.01        | 0.511          |
++-------------------------+----------------+----------------+----------------+
+| Panel B: Overall confusion matrix (all domains)                            |
++-------------------------+----------------+----------------+----------------+
+|                         | FR=1           | FR=0           |                |
++-------------------------+----------------+----------------+----------------+
+| BC=1                    | 46             | 15             |                |
++-------------------------+----------------+----------------+----------------+
+| BC=0                    | 11             | 120            |                |
++-------------------------+----------------+----------------+----------------+
+
+Removing the Examples component does not significantly degrade performance compared to either the best-performing component combination (BC) or the fully augmented tool description (FR), contradicting traditional benefits of few-shot examples. As shown in Table 7, configurations excluding Examples, such as P+G+L+PEx, achieve stable success rates across approximately 60% of the evaluated domain-model pairs, although they are not always the highest-performing configuration. To jointly assess performance differences across the three configurations (FR, BC, and P+G+L+PEx), we apply Cochran’s Q test (Cohen et al., 2015), which is appropriate for comparing three or more matched binary outcomes. Across all evaluated domain-model combinations, Cochran’s Q test consistently yields p > 0.20, indicating no statistically significant differences among the three configurations. This result suggests that the inclusion or removal of the Examples component does not materially affect task success rates, which affirms Anthropic’s suggestion to put less emphasis on examples, but contradicts the traditional benefit of few-shot examples in the prompts (Brown et al., 2020) of MCP tool descriptions.
+
+The best-performing component combinations (BC) and their fully augmented counterparts (FR) solve overlapping but distinct sets of tasks, indicating complementary coverage across configurations. As illustrated in Figure 12, neither BC nor FR fully subsumes the task coverage of the other. Instead, each solves a partially unique subset of tasks that have a high overlap. For example, in Location Navigation with GPT-4.1, the two configurations share nine successfully solved tasks but diverge on eight others, suggesting that different component structures guide the model toward distinct reasoning trajectories. Hypothetically, when the results from both configurations are combined in a hybrid approach, the overall success rate has the potential to increase; for instance, running the failed Location Navigation tasks with the reduced components after the fully augmented one can raise the success rate to 37.8%. While such an ensemble approach inherently increases cost (in terms of steps and latency), it opens a viable research direction for maximizing accuracy in mission-critical scenarios where a high success rate is more important than cost.
+
+[Refer to caption]
+
+[]
+
+6. Implications
+
+In this section, we discuss the implications of our findings for major stakeholder groups: (i) MCP developers, (ii) ecosystem maintainers (e.g., protocol and registry maintainers), (iii) MCP users (e.g., agent developers), and (iv) researchers.
+
+6.1. Implications for MCP Developers
+
+MCP developers should integrate rubric-based smell detection into their review or Continuous Integration (CI) pipelines to prevent the deployment of sub-optimal tool descriptions. As RQ-1 reveals, 56% of tools suffer from Unclear Purpose and 89.3% lack Usage Guidance, effectively rendering them as stubs rather than functional specifications. These high smell rates indicate that current ad hoc writing practices are insufficient; teams should therefore treat descriptions as first-class engineering artifacts. They need to consider tool description quality as a blocking criterion for release and use automated scanners to detect smells.
+
+MCP developers developing new MCP servers or refactoring the existing individual descriptions should prioritize a small set of high-leverage tool description components rather than attempting to fix every aspect simultaneously. As RQ-1 and Table 2 show, 44% of tools are smell-free on Purpose alone, yet this drops to only 2.9% when all five major components are considered together. On the other hand, RQ-3 demonstrates that compact combinations, such as Purpose + Guidelines in Finance, can outperform a tool description that contains all components. Given the practical token limitations of current models, e.g., where large descriptions consume valuable context window capacity of FMs and increase execution cost, developers should first identify and optimize the most impactful components for their tools that convey critical semantic intent with minimal text. Only after establishing these core elements should additional components, such as examples or exhaustive parameter semantics, be introduced selectively, and only in domains where they demonstrably justify the additional token overhead and context window consumption. This token-aware prioritization strategy should help balance quality improvements with resource efficiency, preserving context budget for essential reasoning and reducing unnecessary model invocation costs.
+
+MCP developers can consider FM-based augmentation as a refinement process, but should weigh it against scale, costs, and alternative manual or semi-automated processes. Table 4 shows that FM-based augmentation can lift median tool description scores from the 1-2 range to nearly 5.0 across all components. However, blindly relying on FMs can lead to verbose descriptions that unnecessarily consume the context window, especially depending on the scale of the MCP server (hundreds of tools vs. a couple). Moreover, in the RQ-3, we have seen that FMs can sometimes produce confusing instructions in some components, e.g., in the Limitations of the get_historical_stock_prices tool. Hence, for developers maintaining servers with few tools, manual refinement may suffice. On the other hand, for larger servers, developers should utilize the semi-automated framework described in Section 4.4 to augment the tool description while critically reviewing the output to ensure the augmented text contains critical operational cues and remains concise. The goal of FM-based augmentation should be to resolve ambiguity without inflating the token footprint to a point where the agent’s token cost cannot justify the operational efficiency anymore.
+
+6.2. Implications for Ecosystem Maintainers
+
+To enable dynamic context management and reduce token overhead, MCP protocol maintainers should extend MCP specifications beyond the current monolithic description field to structured schema definitions for individual components. The current MCP specification treats the tool description as a monolithic text blob, obscuring distinct semantic elements such as Purpose, Guidelines, Limitations, Parameter Explanation, and Examples. Additionally, RQ-3 demonstrates that different subsets of components, e.g., Purpose + Guidelines or Purpose + Guidelines + Limitations + Parameter Explanation, can preserve core semantic information across different domains, driving equivalent or better success profiles than both baseline and fully augmented tool descriptions. Hence, by introducing dedicated fields for each component (e.g., distinct JSON fields for Purpose, guidelines, and examples), protocol designers can empower agents to dynamically assemble the most effective description profile at runtime. An agent low on context space could request only the Purpose of tools for initial selection and lazily load guidelines or examples only when a specific tool is invoked, significantly optimizing token window usage. This structural decoupling will allow MCP developers and users both to selectively load, experiment with, or optimize specific components of the description based on the immediate token budget and domain requirements, rather than being forced to consume a fixed text blob.
+
+Registry maintainers should integrate rubric-based smell detection and quality scoring as built-in services across MCP registries and marketplaces. As RQ-1 shows, smells are pervasive across both official and community servers, indicating that no maintainer group consistently produces high-quality descriptions. This finding implies that quality cannot be reliably delegated to individual teams. MCP registries, such as Smithery, Glama, or Cloudflare Workers, serve as centralized hubs for discovering and deploying MCP servers; however, their existing review processes primarily focus on infrastructure setup or package-level checks, and rarely assess the quality of tool descriptions. Ecosystem maintainers can respond to the pervasive smells by running FM-based scans over published servers, with smell summaries and augmentation-aware quality badges, and issuing warnings when a tool or server falls below agreed thresholds. Because the FM-based scanner shows stable agreement across models, these diagnostics can function similarly to security advisories in registries such as npm, encouraging developers to submit higher-quality descriptions or maintain multiple augmented profiles to reduce integration friction.
+
+6.3. Implications for MCP Users
+
+MCP users should treat tool descriptions as mutable client-side configurations and use them as a cost-effective leverage point, rather than immediately defaulting to larger and more expensive frontier models. As shown in Section 5.2, the smaller-sized Qwen3-Next-80B-A3B-Instruct model, when equipped with augmented tool descriptions, achieves performance parity with or even surpasses the significantly larger Qwen3-Coder-480B-A35B in domains such as Finance, Repository Management, and Location Navigation. This implies that high-quality tool descriptions can serve as an architectural catalyst, enabling the use of smaller, more cost-effective models without sacrificing reliability in specific domains, which MCP users should identify and utilize.
+
+In current practice, however, MCP users typically consume default tool descriptions as fixed artifacts authored and distributed by MCP server developers or vendors, without modification. Our methodology demonstrates that this constraint is not fundamental. By re-purposing the Tool Description Router described in Section 4.5.2, MCP users can override the default tool description at runtime without modifying server code. This client-side customization will enable MCP users to adapt tool descriptions to their specific domain, model, and context window constraints, providing a practical mechanism for description-level augmentation until the MCP protocol natively supports equivalent capabilities.
+
+MCP users should enforce explicit resource caps, such as maximum step counts, thinking budget, rate limit, or token limits, tailored to the complexity of the domain when deploying augmented tool descriptions. As RQ-2 and Table 6 demonstrate, while augmented descriptions boost the overall Success Rate (SR) by 5.85 percentage points, they simultaneously inflate the Average Steps (AS) by 67.46%. This substantial increase in execution overhead implies that richer descriptions improve reasoning at the expense of computational efficiency. Consequently, teams should implement budgeted policies before enabling full augmentation, allowing higher caps in domains where SR gains justify the overhead (for example Finance or Repository Management) and enforcing lower caps or compact configurations such as Purpose + Guidelines in domains where gains are small or negative (for example Web Searching in Table 5) to preserve runtime performance.
+
+6.4. Implications for Researchers
+
+Researchers should investigate holistic mechanisms that improve agent convergence with minimal cost, recognizing that augmented tool descriptions are one of several levers in a broader efficiency landscape. RQ-2 and RQ-3 of this study show that augmented tool descriptions significantly increase task success and evaluator coverage; however, these gains often come with higher step counts or increased token costs. To optimize the flow, emerging approaches such as MCP Zero’s active tool discovery (Fei et al., 2025) aim to reduce context size by loading only the tools an agent is likely to need. Similarly, Anthropic has proposed reactive tool search (PBC, 2025d) to enable agents to find the correct tools for a task through a semantic search. Moreover, recent code-mode or programmatic tool execution pipelines proposed by Cloudflare (Varda and Pai, 2025) and Anthropic (PBC, 2025d) enable FMs to generate code that orchestrates tool calls directly, thereby avoiding the transport of intermediate tool responses back into the model and reducing both the number of steps and token usage.
+
+However, the role of description quality within these efficiency mechanisms remains empirically unexplored. It is unknown whether the rubric-augmented descriptions can improve the recall of dynamic tool discovery of the agents or increase the syntactic correctness and stability of generated orchestration code. If they do, these approaches may achieve the high success rates observed in our experiments without incurring the resource penalties associated with traditional multi-step loops. Researchers should therefore investigate how behaviorally precise, rubric-aligned description variants influence tool search accuracy, static planning quality, and code-generation reliability within these emerging cost-saving architectures.
+
+Researchers should extend tool description component ablations to progressive-disclosure mechanisms, e.g., agent skills, and empirically test whether current challenges of these emerging techniques are rooted in under-specified metadata. Agent skills expose only minimal metadata (e.g., name and description) and load full instructions on demand, aiming to reduce context usage while enabling autonomous invocation. Yet, practitioner reports suggest that models often ignore available skills unless explicitly prompted, indicating a gap between theoretical progressive discovery and observed behavior⁶⁶6https://scottspence.com/posts/claude-code-skills-dont-auto-activate, https://www.reddit.com/r/ClaudeAI/comments/1qbc30u/comment/nz9lom3/. In this regard, we observed that behaviorally precise components, especially those that encode critical operational cues and explicit usage constraints, can materially shift agent behavior in the RQ-3 results. These observations may suggest that discoverability failures in agent skills may stem from missing or weakly expressed critical cues rather than insufficient metadata volume. Consequently, future research can adopt a similar ablation-style approach on skill metadata to identify the smallest set of high-impact semantic signals that reliably trigger invocation under strict token constraints, preserving the efficiency goals of progressive disclosure while improving its practical effectiveness.
+
+7. Threats to Validity
+
+7.1. External validity
+
+Our dataset comprises 856 tools across 103 MCP servers collected from prior empirical and evaluation studies, and therefore potentially excludes MCP servers that have not yet been evaluated or documented in the literature. As a result, some categories of MCP servers, including proprietary internal deployments or recently introduced servers, may be underrepresented or absent from our dataset. However, the dataset includes a mix of community-maintained open source servers, officially managed open source servers (e.g., GitHub and Playwright), and a small number of officially managed closed MCP servers (e.g., PayPal), covering multiple governance and deployment settings. Moreover, we extract tool descriptions through a dynamic MCP client based reflection mechanism rather than static source code analysis. This design makes the smell detection and augmentation pipeline agnostic to implementation language and source code availability, and in principle applicable to both open source and closed source MCP servers.
+
+While we detect and optimize smells across 856 tools from 103 MCP servers, performance evaluation is conducted only on the subset of tools and servers included in the MCP-Universe benchmark. Specifically, MCP-Universe covers 202 tools drawn from 18 MCP servers, which represent a strict subset of the full corpus analyzed in RQ1 and RQ2. In addition, due to the high computational cost of running the full benchmark, we do not evaluate all models included in MCP-Universe. To mitigate these limitations, we adopt MCP-Universe because it inherently covers a diverse set of tasks spanning multiple domains, MCP servers, and evaluators, enabling robust execution-based assessment without additional sampling. We also intentionally select a heterogeneous model set, covering a frontier proprietary model (GPT-4.1), large open-weight models (Qwen3-Coder-480B-A35B and GLM-4.5), and a smaller-sized model (Qwen3-Next-80B-A3B-Instruct), to capture variation across model families while balancing evaluation cost.
+
+The evaluation of the fully augmented tool description is constrained by context window limits of the models and by the verbosity of some tools. For Qwen3-Next-80B-A3B-Instruct, we exclude the Parameter Explanation and Examples components to avoid context overflow. Similarly, for the Browser Automation domain, the excessive length of execution examples necessitates excluding examples for all models. As a result, the evaluation for Qwen3-Next-80B-A3B-Instruct reflects a partial augmentation setting, and the full benefits of the proposed pipeline may not be realizable on resource-constrained models or highly verbose tool domains. We justify our choices by prioritizing components that are not otherwise available to the FM. Specifically, while Parameter Explanation is omitted, the MCP protocol still provides the input schema to the FM, partially compensating for its absence. In addition, our ablation study in RQ-3 shows that excluding Examples has a limited impact on performance in most settings, supporting this design choice under context constraints.
+
+7.2. Construct validity
+
+We identified smells by applying a threshold to the component-wise scores of tool descriptions, assuming that scores below the minimum viable threshold indicate meaningful deficiencies. This introduces several construct validity concerns. The choice of score three as the threshold is inherently subjective. Additionally, smell detection further relies on FM-based scoring, which is sensitive to the design of prompts and model-specific preferences. To reduce the subjectivity of the evaluation, we adopt a structured Likert-style analytic scoring over open-ended FM judgments following prior similar studies (Wang et al., 2025a). We justify the use of FMs rather than human annotators because FMs ultimately interpret tool descriptions within agentic workflows. We further reduce model-specific bias through a multi-model LLM-as-jury setup spanning three model families and report inter-rater reliability.
+
+7.3. Internal validity
+
+For three models adopted from the MCP-Universe benchmark, the original study does not report per-task SR, AE, or AS, and we do not re-execute these baseline configurations due to the prohibitive computational cost. Consequently, comparisons for these models rely on aggregate baseline metrics reported in prior work, which may differ from our execution environment. In addition, agentic tool-use workflows are inherently non-deterministic, and observed performance differences may partially result from stochastic variation rather than systematic effects of tool description augmenting. To mitigate this threat, we introduce an additional, smaller and very low-cost model, Qwen3-Next-80B-A3B-Instruct, for which we execute both baseline runs using the original tool descriptions and augmented runs under identical conditions. This allows direct before-and-after comparison within the same environment. For this model, we further assess the statistical significance of changes in SR, AE, and AS using appropriate paired statistical tests.
+
+The original MCP-Universe study uses a SERP API-based Google Search MCP server with strict query limits. To ensure the uninterrupted execution of Web Searching tasks, we utilize an alternative Google Search MCP server. Differences in the underlying API platform may impact absolute performance in the Web Searching domain, regardless of the tool’s description quality. They may also explain the lack of performance improvement observed across all three MCP-Universe models. To mitigate this issue, we evaluate the Web Searching domain for the newly introduced model, Qwen3-Next-80B-A3B-Instruct, using the same Google Search MCP server for both the baseline and augmented tool descriptions. As a result, the statistical analyses for this model control for instrumentation differences, ensuring that observed performance changes are attributable to description augmenting rather than search API variability.
+
+The ablation study explicitly selects five domain-model combinations and examines five component configurations for each pair, resulting in a total of 25 runs. All ablation settings retain the Purpose component, which we treat as mandatory for correct tool interpretation. Additionally, we do not evaluate all possible permutations of components, as each combination would require a separate benchmark run, which would incur substantial computational costs and time. These design choices may introduce selection bias, as the estimated importance of individual components is derived from subcases already known to be sensitive to augmenting effects. To mitigate this risk, we include domain-model combinations exhibiting both performance improvements and regressions. We also conduct an ablation that retains all components except Examples, indicating that the observed findings are not limited to narrowly selected configurations.
+
+8. Conclusion
+
+This paper presents the first systematic, large-scale evaluation of the quality of tool descriptions in the Model Context Protocol (MCP) ecosystem and their impact on FM-based agents. By analyzing 856 tools from both official and community-maintained servers and by conducting rubric-guided augmentation, benchmarking, and controlled studies, we establish tool descriptions as a critical but under-engineered artifact of agentic systems.
+
+Our findings reveal that over 97% of MCP tools suffer from ecosystem-wide description smells, yet augmenting these artifacts with all components serves as a powerful architectural lever, enabling smaller-sized open-weight models to achieve performance parity with larger frontier models. Rubric-aligned descriptions with all components enhance agent performance, resulting in a 15.12% increase in the Average Evaluator Score and a 5.85 percentage point improvement in task success rates. However, these gains require more execution steps and higher costs, and are not universal across all domain-model combinations, highlighting the need for cost-aware and context-sensitive augmentation. On that front, our ablation study shows that compact combinations of high-impact components can achieve behavioral alignment comparable to fully augmented descriptions while reducing cost overhead.
+
+Collectively, these findings call for a shift toward treating tool descriptions as configurable engineering artifacts, motivating structured, component-aware protocol designs that support dynamic, cost-aware context management in MCP-enabled agents. Future work should investigate how description quality impacts emerging cost-reduction techniques, such as dynamic tool search and code-mode execution of MCP, and whether rubric-aligned descriptions can enhance tool retrieval and orchestration, enabling future agents to achieve high reliability without incurring the cost penalties of traditional multi-step loops.
+
+Disclaimer
+
+ChatGPT-5.1, Anthropic Opus-4.5, and Gemini-3 Pro-Preview were used only for copy-editing and table formatting, in compliance with IEEE and ACM policies on AI use in publications.
+
+References
+
+- (1)
+- Agrawal et al. (2025) Lakshya A Agrawal, Shangyin Tan, Dilara Soylu, Noah Ziems, Rishi Khare, Krista Opsahl-Ong, Arnav Singhvi, Herumb Shandilya, Michael J Ryan, Meng Jiang, et al. 2025. Gepa: Reflective prompt evolution can outperform reinforcement learning. arXiv preprint arXiv:2507.19457 (2025).
+- AI (2025a) Moonshot AI. 2025a. Kimi-K2-Instruct-Moonshot AI. https://huggingface.co/moonshotai/Kimi-K2-Instruct Accessed: 2025-12-09.
+- AI (2025b) Towards AI. 2025b. Tool Descriptions Are Critical: Making Better LLM Tools + Research Capability. https://towardsai.net/p/artificial-intelligence/tool-descriptions-are-critical-making-better-llm-tools-research-capability Accessed: 2025-12-09.
+- Anthropic (2025) Anthropic. 2025. Introducing the Model Context Protocol. https://www.anthropic.com/news/model-context-protocol, last visited: Nov 10.
+- Bavaresco et al. (2025) Anna Bavaresco, Raffaella Bernardi, Leonardo Bertolazzi, Desmond Elliott, Raquel Fernández, Albert Gatt, Esam Ghaleb, Mario Giulianelli, Michael Hanna, Alexander Koller, et al. 2025. Llms instead of human judges? a large scale empirical study across 20 nlp evaluation tasks. In Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume 2: Short Papers). 238–255.
+- Bavota et al. (2012) Gabriele Bavota, Abdallah Qusef, Rocco Oliveto, Andrea De Lucia, and David Binkley. 2012. An empirical analysis of the distribution of unit test smells and their impact on software maintenance. In 2012 28th IEEE international conference on software maintenance (ICSM). IEEE, 56–65.
+- Bavota et al. (2015) Gabriele Bavota, Abdallah Qusef, Rocco Oliveto, Andrea De Lucia, and Dave Binkley. 2015. Are test smells really harmful? an empirical study. Empirical Software Engineering 20, 4 (2015), 1052–1094.
+- Brown et al. (2020) Tom Brown, Benjamin Mann, Nick Ryder, Melanie Subbiah, Jared D Kaplan, Prafulla Dhariwal, Arvind Neelakantan, Pranav Shyam, Girish Sastry, Amanda Askell, et al. 2020. Language models are few-shot learners. Advances in neural information processing systems 33 (2020), 1877–1901.
+- Cedrim et al. (2017) Diego Cedrim, Alessandro Garcia, Melina Mongiovi, Rohit Gheyi, Leonardo Sousa, Rafael De Mello, Baldoino Fonseca, Márcio Ribeiro, and Alexander Chávez. 2017. Understanding the impact of refactoring on smells: A longitudinal study of 23 software projects. In Proceedings of the 2017 11th Joint Meeting on foundations of Software Engineering. 465–475.
+- Chen et al. (2023) Yuyan Chen, Zhihao Wen, Ge Fan, Zhengyu Chen, Wei Wu, Dayiheng Liu, Zhixu Li, Bang Liu, and Yanghua Xiao. 2023. Mapo: Boosting large language model performance with model-adaptive prompt optimization. In Findings of the Association for Computational Linguistics: EMNLP 2023. 3279–3304.
+- Chhetri et al. (2025) Gaurab Chhetri, Shriyank Somvanshi, Md Monzurul Islam, Shamyo Brotee, Mahmuda Sultana Mimi, Dipti Koirala, Biplov Pandey, and Subasish Das. 2025. Model Context Protocols in Adaptive Transport Systems: A Survey. arXiv preprint arXiv:2508.19239 (2025).
+- Cloud (2025) Alibaba Cloud. 2025. Qwen3-Next-80B-A3B-Instruct - Qwen. https://huggingface.co/Qwen/Qwen3-Next-80B-A3B-Instruct Accessed: 2025-12-09.
+- Cohen et al. (2015) Jérémie F Cohen, Martin Chalumeau, Robert Cohen, Daniël A Korevaar, Babak Khoshnood, and Patrick MM Bossuyt. 2015. Cochran’s Q test was useful to assess heterogeneity in likelihood ratios in studies of diagnostic accuracy. Journal of clinical epidemiology 68, 3 (2015), 299–306.
+- Cui et al. (2025) Wendi Cui, Jiaxin Zhang, Zhuohang Li, Hao Sun, Damien Lopez, Kamalika Das, Bradley A Malin, and Sricharan Kumar. 2025. Automatic prompt optimization via heuristic search: A survey. arXiv preprint arXiv:2502.18746 (2025).
+- Easy (2025) Speak Easy. 2025. MCP Core Concepts. https://www.speakeasy.com/mcp/core-concepts/tools Accessed: 2025-12-09.
+- Ehtesham et al. (2025) Abul Ehtesham, Aditi Singh, and Saket Kumar. 2025. Enhancing Clinical Decision Support and EHR Insights through LLMs and the Model Context Protocol: An Open-Source MCP-FHIR Framework. arXiv preprint arXiv:2506.13800 (2025).
+- eonist (2025) Github User: eonist. 2025. MCP command best practice. https://github.com/eonist/conduit/issues/191 Accessed: 2025-12-09.
+- Fan et al. (2025) Shiqing Fan, Xichen Ding, Liang Zhang, and Linjian Mo. 2025. Mcptoolbench++: A large scale ai agent model context protocol mcp tool use benchmark. arXiv preprint arXiv:2508.07575 (2025).
+- Fei et al. (2025) Xiang Fei, Xiawu Zheng, and Hao Feng. 2025. Mcp-zero: Active tool discovery for autonomous llm agents. arXiv preprint arXiv:2506.01056 (2025).
+- Feig (2025) Gil Feig. 2025. 3 insider tips for using the Model Context Protocol effectively. https://www.merge.dev/blog/mcp-best-practices Accessed: 2025-10-27.
+- Femmer et al. (2017) Henning Femmer, Daniel Méndez Fernández, Stefan Wagner, and Sebastian Eder. 2017. Rapid quality assurance with requirements smells. Journal of Systems and Software 123 (2017), 190–213.
+- Fontana et al. (2017) Francesca Arcelli Fontana, Ilaria Pigazzini, Riccardo Roveda, Damian Tamburri, Marco Zanoni, and Elisabetta Di Nitto. 2017. Arcan: A tool for architectural smells detection. In 2017 IEEE International Conference on Software Architecture Workshops (ICSAW). IEEE, 282–285.
+- Fowler (2018) Martin Fowler. 2018. Refactoring: improving the design of existing code. Addison-Wesley Professional.
+- Gao et al. (2025) Yi Gao, Xing Hu, Xiaohu Yang, and Xin Xia. 2025. Automated Unit Test Refactoring. Proceedings of the ACM on Software Engineering 2, FSE (2025), 713–733.
+- Garcia et al. (2009a) Joshua Garcia, Daniel Popescu, George Edwards, and Nenad Medvidovic. 2009a. Identifying architectural bad smells. In 2009 13th European Conference on Software Maintenance and Reengineering. IEEE, 255–258.
+- Garcia et al. (2009b) Joshua Garcia, Daniel Popescu, George Edwards, and Nenad Medvidovic. 2009b. Toward a catalogue of architectural bad smells. In International conference on the quality of software architectures. Springer, 146–162.
+- Hameed et al. (2022) Isha Hameed, Samuel Sharpe, Daniel Barcklow, Justin Au-Yeung, Sahil Verma, Jocelyn Huang, Brian Barr, and C Bayan Bruss. 2022. BASED-XAI: Breaking ablation studies down for explainable artificial intelligence. arXiv preprint arXiv:2207.05566 (2022).
+- Hasan et al. (2025a) Mohammed Mehedi Hasan, Hao Li, Emad Fallahzadeh, Gopi Krishnan Rajbahadur, Bram Adams, and Ahmed E Hassan. 2025a. An empirical study of testing practices in open source AI agent frameworks and agentic applications. arXiv preprint arXiv:2509.19185 (2025).
+- Hasan et al. (2025b) Mohammed Mehedi Hasan, Hao Li, Emad Fallahzadeh, Gopi Krishnan Rajbahadur, Bram Adams, and Ahmed E Hassan. 2025b. Model context protocol (mcp) at first glance: Studying the security and maintainability of mcp servers. arXiv preprint arXiv:2506.13538 (2025).
+- Hassan and Rahman (2022) Mohammad Mehedi Hassan and Akond Rahman. 2022. As code testing: Characterizing test quality in open source ansible development. In 2022 IEEE Conference on Software Testing, Verification and Validation (ICST).
+- Hirsch and Hofer (2022) Thomas Hirsch and Birgit Hofer. 2022. A systematic literature review on benchmarks for evaluating debugging approaches. Journal of Systems and Software 192 (2022), 111423.
+- Hou et al. (2025) Xinyi Hou, Yanjie Zhao, Shenao Wang, and Haoyu Wang. 2025. Model context protocol (mcp): Landscape, security threats, and future research directions. arXiv preprint arXiv:2503.23278 (2025).
+- Hsieh et al. (2023) Cheng-Yu Hsieh, Si-An Chen, Chun-Liang Li, Yasuhisa Fujii, Alexander Ratner, Chen-Yu Lee, Ranjay Krishna, and Tomas Pfister. 2023. Tool documentation enables zero-shot tool-usage with large language models. arXiv preprint arXiv:2308.00675 (2023).
+- Jerzyk and Madeyski (2023) Marcel Jerzyk and Lech Madeyski. 2023. Code smells: A comprehensive online catalog and taxonomy. In Developments in Information and Knowledge Management Systems for Business Applications: Volume 7. Springer, 543–576.
+- Joshi et al. (2015) Ankur Joshi, Saket Kale, Satish Chandel, and D Kumar Pal. 2015. Likert scale: Explored and explained. British journal of applied science & technology 7, 4 (2015), 396.
+- Kamiya et al. (2002) Toshihiro Kamiya, Shinji Kusumoto, and Katsuro Inoue. 2002. CCFinder: A multilinguistic token-based code clone detection system for large scale source code. IEEE transactions on software engineering 28, 7 (2002), 654–670.
+- Kapoor et al. (2024) Sayash Kapoor, Benedikt Stroebl, Zachary S Siegel, Nitya Nadgir, and Arvind Narayanan. 2024. Ai agents that matter. arXiv preprint arXiv:2407.01502 (2024).
+- Khattab et al. (2023) Omar Khattab, Arnav Singhvi, Paridhi Maheshwari, Zhiyuan Zhang, Keshav Santhanam, Sri Vardhamanan, Saiful Haq, Ashutosh Sharma, Thomas T Joshi, Hanna Moazam, et al. 2023. Dspy: Compiling declarative language model calls into self-improving pipelines. arXiv preprint arXiv:2310.03714 (2023).
+- Khomh et al. (2009a) Foutse Khomh, Massimiliano Di Penta, and Yann-Gael Gueheneuc. 2009a. An exploratory study of the impact of code smells on software change-proneness. In 2009 16th Working Conference on Reverse Engineering. IEEE, 75–84.
+- Khomh et al. (2009b) Foutse Khomh, Stéphane Vaucher, Yann-Gaël Guéhéneuc, and Houari Sahraoui. 2009b. A bayesian approach for the detection of code and design smells. In 2009 Ninth International Conference on Quality Software. IEEE, 305–314.
+- Koo and Li (2016) Terry K Koo and Mae Y Li. 2016. A guideline of selecting and reporting intraclass correlation coefficients for reliability research. Journal of chiropractic medicine 15, 2 (2016), 155–163.
+- Lacerda et al. (2020) Guilherme Lacerda, Fabio Petrillo, Marcelo Pimenta, and Yann Gaël Guéhéneuc. 2020. Code smells and refactoring: A tertiary systematic review of challenges and observations. Journal of Systems and Software 167 (2020), 110610.
+- LeRay (2025) Matthew LeRay. 2025. 4 Tips for Developing Model Context Protocol Server. https://speedscale.com/blog/4-tips-for-developing-model-context-protocol-server Accessed: 2025-12-09.
+- Liang et al. (2021) Jiahui Liang, Weiqin Zou, Jingxuan Zhang, Zhiqiu Huang, and Chenxing Sun. 2021. A deep method renaming prediction and refinement approach for Java projects. In 2021 IEEE 21st International Conference on Software Quality, Reliability and Security (QRS). IEEE, 404–413.
+- Liu et al. (2026) Yao-Yang Liu, Zhen Zheng, Feng Zhang, Jin-Cheng Feng, Yi-Yang Fu, Ji-Dong Zhai, Bing-Sheng He, Xiao Zhang, and Xiao-Yong Du. 2026. A comprehensive taxonomy of prompt engineering techniques for large language models. Frontiers of Computer Science 20, 3 (2026), 2003601.
+- Liu et al. (2025) Zhiwei Liu, Jielin Qiu, Shiyu Wang, Jianguo Zhang, Zuxin Liu, Roshan Ram, Haolin Chen, Weiran Yao, Shelby Heinecke, Silvio Savarese, et al. 2025. Mcpeval: Automatic mcp-based deep evaluation for ai agent models. In Proceedings of the 2025 Conference on Empirical Methods in Natural Language Processing: System Demonstrations. 373–402.
+- Lucas et al. (2024) Keila Lucas, Rohit Gheyi, Elvys Soares, Márcio Ribeiro, and Ivan Machado. 2024. Evaluating large language models in detecting test smells. arXiv preprint arXiv:2407.19261 (2024).
+- Luo et al. (2025) Ziyang Luo, Zhiqi Shen, Wenzhuo Yang, Zirui Zhao, Prathyusha Jwalapuram, Amrita Saha, Doyen Sahoo, Silvio Savarese, Caiming Xiong, and Junnan Li. 2025. Mcp-universe: Benchmarking large language models with real-world model context protocol servers. arXiv preprint arXiv:2508.14704 (2025).
+- Mantyla et al. (2003) Mika Mantyla, Jari Vanhanen, and Casper Lassenius. 2003. A taxonomy and an initial empirical study of bad smells in code. In International Conference on Software Maintenance, 2003. ICSM 2003. Proceedings. IEEE, 381–384.
+- Marticorena et al. (2006) Raúl Marticorena, Carlos López, and Yania Crespo. 2006. Extending a taxonomy of bad code smells with metrics. In Proceedings of 7th International Workshop on Object-Oriented Reengineering (WOOR). Citeseer, 6.
+- Mei et al. (2025) Lingrui Mei, Jiayu Yao, Yuyao Ge, Yiwei Wang, Baolong Bi, Yujun Cai, Jiazhi Liu, Mingyu Li, Zhong-Zhi Li, Duzhen Zhang, et al. 2025. A survey of context engineering for large language models. arXiv preprint arXiv:2507.13334 (2025).
+- Mo et al. (2025) Guozhao Mo, Wenliang Zhong, Jiawei Chen, Xuanang Chen, Yaojie Lu, Hongyu Lin, Ben He, Xianpei Han, and Le Sun. 2025. Livemcpbench: Can agents navigate an ocean of mcp tools? arXiv preprint arXiv:2508.01780 (2025).
+- Moha et al. (2009) Naouel Moha, Yann-Gaël Guéhéneuc, Laurence Duchien, and Anne-Francoise Le Meur. 2009. Decor: A method for the specification and detection of code and design smells. IEEE Transactions on Software Engineering 36, 1 (2009), 20–36.
+- Mohan et al. (2016) Michael Mohan, Des Greer, and Paul McMullan. 2016. Technical debt reduction using search based automated refactoring. Journal of Systems and Software 120 (2016), 183–194.
+- Naik et al. (2024) Purnima Naik, Salomi Nelaballi, Venkata Sai Pusuluri, and Dae-Kyoo Kim. 2024. Deep learning-based code refactoring: A review of current knowledge. Journal of Computer Information Systems 64, 2 (2024), 314–328.
+- Olbrich et al. (2009) Steffen Olbrich, Daniela S Cruzes, Victor Basili, and Nico Zazworka. 2009. The evolution and impact of code smells: A case study of two open source systems. In 2009 3rd international symposium on empirical software engineering and measurement. IEEE, 390–400.
+- Opsahl-Ong et al. (2024) Krista Opsahl-Ong, Michael J Ryan, Josh Purtell, David Broman, Christopher Potts, Matei Zaharia, and Omar Khattab. 2024. Optimizing instructions and demonstrations for multi-stage language model programs. arXiv preprint arXiv:2406.11695 (2024).
+- Ouédraogo et al. (2024) Wendkûuni C Ouédraogo, Yinghua Li, Kader Kaboré, Xunzhu Tang, Anil Koyuncu, Jacques Klein, David Lo, and Tegawendé F Bissyandé. 2024. Test smells in LLM-Generated Unit Tests. arXiv preprint arXiv:2410.10628 (2024).
+- Palomba et al. (2014) Fabio Palomba, Gabriele Bavota, Massimiliano Di Penta, Rocco Oliveto, Denys Poshyvanyk, and Andrea De Lucia. 2014. Mining version histories for detecting code smells. IEEE Transactions on Software Engineering 41, 5 (2014), 462–489.
+- Pandini et al. (2025) Gabriele Pandini, Antonio Martini, Adela Nedisan Videsjorden, and Francesca Arcelli Fontana. 2025. An exploratory study on architectural smell refactoring using Large Languages Models. In 2025 IEEE 22nd International Conference on Software Architecture Companion (ICSA-C). IEEE, 462–471.
+- Parker et al. (2024) Michael J Parker, Caitlin Anderson, Claire Stone, and YeaRim Oh. 2024. A large language model approach to educational survey feedback analysis. International journal of artificial intelligence in education (2024), 1–38.
+- Pathak et al. (2025) Aditya Pathak, Rachit Gandhi, Vaibhav Uttam, Arnav Ramamoorthy, Pratyush Ghosh, Aaryan Raj Jindal, Shreyash Verma, Aditya Mittal, Aashna Ased, Chirag Khatri, et al. 2025. Rubric is all you need: Improving llm-based code evaluation with question-specific rubrics. In Proceedings of the 2025 ACM Conference on International Computing Education Research V. 1. 181–195.
+- Paul et al. (2025) Debalina Ghosh Paul, Hong Zhu, and Ian Bayley. 2025. Investigating The Smells of LLM Generated Code. arXiv preprint arXiv:2510.03029 (2025).
+- PBC (2025a) Anthropic PBC. 2025a. Agent Skills: What are skills. https://agentskills.io/what-are-skills Accessed: 2026-01-18.
+- PBC (2025b) Anthropic PBC. 2025b. Claude: How to implement tool use. https://docs.claude.com/en/docs/agents-and-tools/tool-use/implement-tool-use Accessed: 2025-10-27.
+- PBC (2025c) Anthropic PBC. 2025c. Getting Started with Local MCP Servers on Claude Desktop. https://support.claude.com/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop Accessed: 2025-10-28.
+- PBC (2025d) Anthropic PBC. 2025d. Introducing advanced tool use on the Claude Developer Platform. https://www.anthropic.com/engineering/advanced-tool-use Accessed: 2025-12-01.
+- PBC (2025e) Anthropic PBC. 2025e. Tool search tool. https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool Accessed: 2026-01-18.
+- PBC (2025f) Anthropic PBC. 2025f. Writing Effective Tools for Agents: Complete MCP Development Guide Writing Effective Tools for Agents. https://modelcontextprotocol.info/docs/tutorials/writing-effective-tools Accessed: 2025-12-09.
+- PBC (2025g) Anthropic PBC. 2025g. Writing effective tools for agents — with agents. https://www.anthropic.com/engineering/writing-tools-for-agents Accessed: 2025-12-09.
+- Pembury Smith and Ruxton (2020) Matilda QR Pembury Smith and Graeme D Ruxton. 2020. Effective use of the McNemar test. Behavioral Ecology and Sociobiology 74, 11 (2020), 133.
+- Qin et al. (2023) Yujia Qin, Shihao Liang, Yining Ye, Kunlun Zhu, Lan Yan, Yaxi Lu, Yankai Lin, Xin Cong, Xiangru Tang, Bill Qian, et al. 2023. Toolllm: Facilitating large language models to master 16000+ real-world apis. arXiv preprint arXiv:2307.16789 (2023).
+- Qu et al. (2025) Changle Qu, Sunhao Dai, Xiaochi Wei, Hengyi Cai, Shuaiqiang Wang, Dawei Yin, Jun Xu, and Ji-Rong Wen. 2025. Tool learning with large language models: A survey. Frontiers of Computer Science 19, 8 (2025), 198343.
+- Ronanki et al. (2024) Krishna Ronanki, Beatriz Cabrero-Daniel, and Christian Berger. 2024. Prompt smells: An omen for undesirable generative AI outputs. In Proceedings of the IEEE/ACM 3rd International Conference on AI Engineering-Software Engineering for AI. 286–287.
+- Ruxton and Beauchamp (2008) Graeme D Ruxton and Guy Beauchamp. 2008. Time for some a priori thinking about post hoc testing. Behavioral ecology 19, 3 (2008), 690–693.
+- Saadioui (2025) Zack Saadioui. 2025. Maximizing Your MCP Experience: Tips for Effective Tool Descriptions. https://www.arsturn.com/blog/maximizing-your-mcp-experience-tips-for-effective-tool-descriptions Accessed: 2025-10-27.
+- Sadik and Govind (2025) Ahmed R Sadik and Siddhata Govind. 2025. Benchmarking LLM for Code Smells Detection: OpenAI GPT-4.0 vs DeepSeek-V3. arXiv preprint arXiv:2504.16027 (2025).
+- Sahoo et al. (2024) Pranab Sahoo, Ayush Kumar Singh, Sriparna Saha, Vinija Jain, Samrat Mondal, and Aman Chadha. 2024. A systematic survey of prompt engineering in large language models: Techniques and applications. arXiv preprint arXiv:2402.07927 (2024).
+- Sarkar and Sarkar (2025) Anjana Sarkar and Soumyendu Sarkar. 2025. Survey of LLM Agent Communication with MCP: A Software Design Pattern Centric Review. arXiv preprint arXiv:2506.05364 (2025).
+- Shi et al. (2025) Jiawen Shi, Zenghui Yuan, Guiyao Tie, Pan Zhou, Neil Zhenqiang Gong, and Lichao Sun. 2025. Prompt Injection Attack to Tool Selection in LLM Agents. arXiv preprint arXiv:2504.19793 (2025).
+- Shrout and Fleiss (1979) Patrick E Shrout and Joseph L Fleiss. 1979. Intraclass correlations: uses in assessing rater reliability. Psychological bulletin 86, 2 (1979), 420.
+- Siddiq et al. (2024) Mohammed Latif Siddiq, Lindsay Roney, Jiahao Zhang, and Joanna Cecilia Da Silva Santos. 2024. Quality assessment of chatgpt generated code and their use by developers. In Proceedings of the 21st international conference on mining software repositories. 152–156.
+- Sjøberg et al. (2012) Dag IK Sjøberg, Aiko Yamashita, Bente CD Anda, Audris Mockus, and Tore Dybå. 2012. Quantifying the effect of code smells on maintenance effort. IEEE Transactions on Software Engineering 39, 8 (2012), 1144–1156.
+- sjoti (2025) Reddit User: sjoti. 2025. Good MCP design is understanding that every tool response is an opportunity to prompt the model. https://www.reddit.com/r/mcp/comments/1lq69b3/good_mcp_design_is_understanding_that_every_tool Accessed: 2025-12-09.
+- Stamoulakatos (2025) Anastasios (Tasos) Stamoulakatos. 2025. Building effective AI agents: A brief guide and best practices. https://medium.com/wpp-ai-research-labs/building-effective-ai-agents-a-guide-to-the-future-of-llms-and-our-proposed-best-practices-06f6ca7c250f Accessed: 2025-12-09.
+- Stoica et al. (2024) Ion Stoica, Matei Zaharia, Joseph Gonzalez, Ken Goldberg, Koushik Sen, Hao Zhang, Anastasios Angelopoulos, Shishir G Patil, Lingjiao Chen, Wei-Lin Chiang, et al. 2024. Specifications: The missing link to making the development of llm systems an engineering discipline. arXiv preprint arXiv:2412.05299 (2024).
+- Szalontai et al. (2021) Balázs Szalontai, András Vadász, Zsolt Richárd Borsi, Teréz A Várkonyi, Balázs Pintér, and Tibor Gregorics. 2021. Detecting and fixing nonidiomatic snippets in python source code with deep learning. In Proceedings of SAI Intelligent Systems Conference. Springer, 129–147.
+- Tiwari et al. (2025) Aditi Tiwari, Akshit Bhalla, and Darshan Prasad. 2025. Model Context Protocol for Vision Systems: Audit, Security, and Protocol Extensions. arXiv preprint arXiv:2509.22814 (2025).
+- tleyden (2025) Reddit User: tleyden. 2025. MCP Best Practices: Mapping API Endpoints to Tool Definitions. https://www.reddit.com/r/mcp/comments/1oo39hm/mcp_best_practices_mapping_api_endpoints_to_tool/ Accessed: 2025-12-09.
+- Tsantalis and Chatzigeorgiou (2009) Nikolaos Tsantalis and Alexander Chatzigeorgiou. 2009. Identification of move method refactoring opportunities. IEEE Transactions on Software Engineering 35, 3 (2009), 347–367.
+- Tsantalis and Chatzigeorgiou (2011) Nikolaos Tsantalis and Alexander Chatzigeorgiou. 2011. Identification of extract method refactoring opportunities for the decomposition of methods. Journal of Systems and Software 84, 10 (2011), 1757–1782.
+- Tufano et al. (2016) Michele Tufano, Fabio Palomba, Gabriele Bavota, Massimiliano Di Penta, Rocco Oliveto, Andrea De Lucia, and Denys Poshyvanyk. 2016. An empirical investigation into the nature of test smells. In Proceedings of the 31st IEEE/ACM international conference on automated software engineering. 4–15.
+- Tufano et al. (2019) Michele Tufano, Jevgenija Pantiuchina, Cody Watson, Gabriele Bavota, and Denys Poshyvanyk. 2019. On learning meaningful code changes via neural machine translation. In 2019 IEEE/ACM 41st International Conference on Software Engineering (ICSE). IEEE, 25–36.
+- Varda and Pai (2025) Kenton Varda and Sunil Pai. 2025. Code Mode: the better way to use MCP. https://blog.cloudflare.com/code-mode/ Accessed: 2025-12-01.
+- Verdecchia et al. (2018) Roberto Verdecchia, Giuseppe Procaccianti, Patricia Lago, et al. 2018. Empirical evaluation of the energy impact of refactoring code smells. In 5th International Conference on Information and Communication Technology for Sustainability. ICT4S2018. EasyChair, 365–383.
+- Verga et al. (2024) Pat Verga, Sebastian Hofstatter, Sophia Althammer, Yixuan Su, Aleksandra Piktus, Arkady Arkhangorodsky, Minjie Xu, Naomi White, and Patrick Lewis. 2024. Replacing judges with juries: Evaluating llm generations with a panel of diverse models. arXiv preprint arXiv:2404.18796 (2024).
+- Vislavski et al. (2018) Tijana Vislavski, Gordana Rakić, Nicolás Cardozo, and Zoran Budimac. 2018. LICCA: A tool for cross-language clone detection. In 2018 IEEE 25th international conference on software analysis, evolution and reengineering (SANER). IEEE, 512–516.
+- Vitale et al. (2025) Antonio Vitale, Rocco Oliveto, and Simone Scalabrino. 2025. A catalog of data smells for coding tasks. ACM Transactions on Software Engineering and Methodology 34, 4 (2025), 1–32.
+- Vogelsang et al. (2025) Andreas Vogelsang, Alexander Korn, Giovanna Broccia, Alessio Ferrari, Jannik Fischbach, and Chetan Arora. 2025. On the impact of requirements smells in prompts: The case of automated traceability. In 2025 IEEE/ACM 47th International Conference on Software Engineering: New Ideas and Emerging Results (ICSE-NIER). IEEE, 51–55.
+- Wang et al. (2024) Peiyi Wang, Lei Li, Liang Chen, Zefan Cai, Dawei Zhu, Binghuai Lin, Yunbo Cao, Lingpeng Kong, Qi Liu, Tianyu Liu, et al. 2024. Large language models are not fair evaluators. In Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers). 9440–9450.
+- Wang et al. (2018) Pengcheng Wang, Jeffrey Svajlenko, Yanzhao Wu, Yun Xu, and Chanchal K Roy. 2018. CCAligner: a token based large-gap clone detector. In Proceedings of the 40th International Conference on Software Engineering. 1066–1077.
+- Wang et al. (2025a) Ruiqi Wang, Jiyu Guo, Cuiyun Gao, Guodong Fan, Chun Yong Chong, and Xin Xia. 2025a. Can llms replace human evaluators? an empirical study of llm-as-a-judge in software engineering. Proceedings of the ACM on Software Engineering 2, ISSTA (2025), 1955–1977.
+- Wang et al. (2025b) Zihan Wang, Rui Zhang, Yu Liu, Wenshu Fan, Wenbo Jiang, Qingchuan Zhao, Hongwei Li, and Guowen Xu. 2025b. Mpma: Preference manipulation attack against model context protocol. arXiv preprint arXiv:2505.11154 (2025).
+- Widjaja et al. (2025) Florensia Widjaja, Zhangtianyi Chen, and Juexiao Zhou. 2025. BioinfoMCP: A Unified Platform Enabling MCP Interfaces in Agentic Bioinformatics. arXiv preprint arXiv:2510.02139 (2025).
+- Woolson (2007) Robert F Woolson. 2007. Wilcoxon signed-rank test. Wiley encyclopedia of clinical trials (2007), 1–3.
+- Wu et al. (2024b) Di Wu, Fangwen Mu, Lin Shi, Zhaoqiang Guo, Kui Liu, Weiguang Zhuang, Yuqi Zhong, and Li Zhang. 2024b. ismell: Assembling llms with expert toolsets for code smell detection and refactoring. In Proceedings of the 39th IEEE/ACM International Conference on Automated Software Engineering. 1345–1357.
+- Wu et al. (2024a) Zhaoxuan Wu, Xiaoqiang Lin, Zhongxiang Dai, Wenyang Hu, Yao Shu, See-Kiong Ng, Patrick Jaillet, and Bryan Kian Hsiang Low. 2024a. Prompt optimization with EASE? efficient ordering-aware automated selection of exemplars. Advances in Neural Information Processing Systems 37 (2024), 122706–122740.
+- Xi et al. (2025) Yunjia Xi, Jianghao Lin, Yongzhao Xiao, Zheli Zhou, Rong Shan, Te Gao, Jiachen Zhu, Weiwen Liu, Yong Yu, and Weinan Zhang. 2025. A survey of llm-based deep search agents: Paradigm, optimization, evaluation, and challenges. arXiv preprint arXiv:2508.05668 (2025).
+- Xu et al. (2025) Weikai Xu, Chengrui Huang, Shen Gao, and Shuo Shang. 2025. LLM-Based Agents for Tool Learning: A Survey: W. Xu et al. Data Science and Engineering (2025), 1–31.
+- Yamashita and Moonen (2012) Aiko Yamashita and Leon Moonen. 2012. Do code smells reflect important maintainability aspects?. In 2012 28th IEEE international conference on software maintenance (ICSM). IEEE, 306–315.
+- Yan et al. (2025) Yunhe Yan, Shihe Wang, Jiajun Du, Yexuan Yang, Yuxuan Shan, Qichen Qiu, Xianqing Jia, Xinge Wang, Xin Yuan, Xu Han, et al. 2025. MCPWorld: A Unified Benchmarking Testbed for API, GUI, and Hybrid Computer Use Agents. arXiv preprint arXiv:2506.07672 (2025).
+- Yang et al. (2025) Chenyang Yang, Yike Shi, Qianou Ma, Michael Xieyang Liu, Christian Kästner, and Tongshuang Wu. 2025. What Prompts Don’t Say: Understanding and Managing Underspecification in LLM Prompts. arXiv preprint arXiv:2505.13360 (2025).
+- Yin et al. (2023) Fan Yin, Jesse Vig, Philippe Laban, Shafiq Joty, Caiming Xiong, and Chien-Sheng Jason Wu. 2023. Did you read the instructions? rethinking the effectiveness of task definitions in instruction learning. arXiv preprint arXiv:2306.01150 (2023).
+- Yin et al. (2025) Ming Yin, Dinghan Shen, Silei Xu, Jianbing Han, Sixun Dong, Mian Zhang, Yebowen Hu, Shujian Liu, Simin Ma, Song Wang, et al. 2025. Livemcp-101: Stress testing and diagnosing mcp-enabled agents on challenging queries. arXiv preprint arXiv:2508.15760 (2025).
+- Zhang et al. (2024) Beiqi Zhang, Peng Liang, Qiong Feng, Yujia Fu, and Zengyang Li. 2024. Copilot-in-the-loop: Fixing code smells in copilot-generated python code using copilot. In Proceedings of the 39th IEEE/ACM International Conference on Automated Software Engineering. 2230–2234.
+- Zhang et al. (2025) Weizhi Zhang, Yangning Li, Yuanchen Bei, Junyu Luo, Guancheng Wan, Liangwei Yang, Chenxuan Xie, Yuyao Yang, Wei-Chieh Huang, Chunyu Miao, et al. 2025. From Web Search towards Agentic Deep Research: Incentivizing Search with Reasoning Agents. arXiv preprint arXiv:2506.18959 (2025).
+- Zhao et al. (2025) Zhimin Zhao, Abdul Ali Bangash, Filipe Roseiro Côgo, Bram Adams, and Ahmed E Hassan. 2025. On the Workflows and Smells of Leaderboard Operations (LBOps): An Exploratory Study of Foundation Model Leaderboards. IEEE Transactions on Software Engineering (2025).
+- Zheng et al. (2023) Chuanyang Zheng, Zhengying Liu, Enze Xie, Zhenguo Li, and Yu Li. 2023. Progressive-hint prompting improves reasoning in large language models. arXiv preprint arXiv:2304.09797 (2023).
+- Zhong et al. (2025) Lucen Zhong, Zhengxiao Du, Xiaohan Zhang, Haiyi Hu, and Jie Tang. 2025. ComplexFuncBench: exploring multi-step and constrained function calling under long-context scenario. arXiv preprint arXiv:2501.10132 (2025).
+- Zibran (2007) Minhaz Fahim Zibran. 2007. Chi-squared test of independence. Department of Computer Science, University of Calgary, Alberta, Canada 1, 1 (2007), 1–7.
+
+Appendix A Appendix
+
+A.1. Prompts used by the LLM-Jury
+
+Judge Tool Description Quality Using a Six-Component Rubric
+
+You are grading a tool description. Score each component from 1 to 5, then provide an overall quality score (0–100), a justification, and improvement recommendations.
+
+Scoring Rubric (1–5 scale for each component)
+
+1.  (1)
+    Purpose (What the tool does)
+
+    - •
+      5/5: Clearly explains function, behavior, and return data with precise language.
+    - •
+      4/5: Explains function and behavior with minor ambiguity.
+    - •
+      3/5: Basic explanation present but lacks behavioral details.
+    - •
+      2/5: Vague or incomplete purpose statement.
+    - •
+      1/5: Purpose unclear or missing.
+2.  (2)
+    Usage Guidelines (When to use or not use)
+
+    - •
+      5/5: Explicitly states appropriate use cases and when not to use; includes disambiguation if the tool name is ambiguous.
+    - •
+      4/5: States when to use with minimal guidance on when not to use.
+    - •
+      3/5: Implies usage context but lacks explicit boundaries.
+    - •
+      2/5: Usage context unclear or overly generic.
+    - •
+      1/5: No usage guidance provided.
+3.  (3)
+    Limitation (Caveats and boundaries)
+
+    - •
+      5/5: Clearly states what the tool does not return, scope boundaries, and important constraints.
+    - •
+      4/5: Mentions main limitations but misses some edge cases.
+    - •
+      3/5: Vague or incomplete limitation statements.
+    - •
+      2/5: Minimal or implied limitations only.
+    - •
+      1/5: No limitations or caveats mentioned.
+4.  (4)
+    Parameter Explanation (Input clarity)
+
+    - •
+      5/5: Every parameter is explained with type, meaning, behavioral effect, and required or default status.
+    - •
+      4/5: Most parameters are explained with minor omissions.
+    - •
+      3/5: Basic parameter information is present but lacks behavioral impact.
+    - •
+      2/5: Parameters are listed without meaningful explanation.
+    - •
+      1/5: Parameters are not explained or only provided in schema form.
+5.  (5)
+    Examples vs. Description Balance
+
+    - •
+      5/5: Description is self-sufficient; examples, if any, supplement rather than replace the explanation.
+    - •
+      4/5: Mostly descriptive with minor reliance on examples.
+    - •
+      3/5: Even mix of description and examples.
+    - •
+      2/5: Over-relies on examples with minimal prose.
+    - •
+      1/5: Only examples are provided with no descriptive explanation.
+6.  (6)
+    Length and Completeness
+
+    - •
+      5/5: Four or more sentences of substantive, well-structured prose covering all aspects.
+    - •
+      4/5: Three to four sentences with good coverage.
+    - •
+      3/5: Two to three sentences that are somewhat complete.
+    - •
+      2/5: One to two sentences that are too brief.
+    - •
+      1/5: Single phrase or fragment.
+
+Input
+
+    {tool_payload}
+
+Output Format (JSON)
+
+    {
+      "scores": {
+        "purpose": 1-5,
+        "usage_guideline": 1-5,
+        "limitation": 1-5,
+        "parameter_explanation": 1-5,
+        "examples_balance": 1-5,
+        "length_completeness": 1-5
+      }
+      "label": "Good" | "Bad",
+      "reason": "One sentence justification",
+      "improvement_needed": [
+        "comma separated list of specific weak areas with scores <= 3"
+      ]
+    }
+
+Labeling rules:
+
+A description is labeled Bad if:
+
+- •
+  Any of the six rubric dimensions score below 3, or
+- •
+  Examples replace the description instead of supporting it.
+
+A description is labeled Good only if:
+
+- •
+  All six dimensions score 3 or higher, and
+- •
+  All requirements in components 1 through 6 are satisfied.
+
+Generated on Mon Feb 16 16:11:05 2026 by LaTeXML[Mascot Sammy]

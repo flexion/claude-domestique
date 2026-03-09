@@ -1,6 +1,5 @@
 {
   "name": "mantra",
-  "version": "0.4.2",
   "description": "Behavioral rules for Claude Code sessions - auto-injected via hooks, zero config",
   "author": {
     "name": "David Puglielli"

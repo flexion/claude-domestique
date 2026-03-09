@@ -1,5 +1,5 @@
 ---
-name: resume
+name: memento:resume
 description: |
   Resume work from the current session. Use this skill when:
   - User asks "what's next?" or "where was I?"

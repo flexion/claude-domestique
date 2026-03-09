@@ -4,8 +4,8 @@
     "command": ".claude/statusline.js"
   },
   "enabledPlugins": {
-    "mantra@claude-domestique": true,
-    "memento@claude-domestique": true,
-    "onus@claude-domestique": true
+    "mantra@claude-domestique": false,
+    "memento@claude-domestique": false,
+    "onus@claude-domestique": false
   }
 }

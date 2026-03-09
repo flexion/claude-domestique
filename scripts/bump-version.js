@@ -13,7 +13,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const PLUGINS = ['mantra', 'memento', 'onus'];
+const PLUGINS = ['mantra', 'memento', 'onus', 'agent-artifex'];
 const VERSION_TYPES = ['patch', 'minor', 'major'];
 
 function parseArgs() {
@@ -105,14 +105,7 @@ function main() {
   });
   console.log(`  ✓ ${plugin}/package.json`);
 
-  // Update plugin.json
-  updateJsonFile(pluginJsonPath, (content) => {
-    content.version = newVersion;
-    return content;
-  });
-  console.log(`  ✓ ${plugin}/.claude-plugin/plugin.json`);
-
-  // Update marketplace.json
+  // Update marketplace.json (version is only maintained at marketplace level)
   updateJsonFile(marketplaceJsonPath, (content) => {
     const pluginEntry = content.plugins.find(p => p.name === plugin);
     if (pluginEntry) {
