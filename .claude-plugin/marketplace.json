@@ -21,6 +21,12 @@
       "source": "./onus",
       "description": "Work-item automation - fetches issues, generates commits/PRs, syncs progress",
       "version": "0.3.5"
+    },
+    {
+      "name": "agent-artifex",
+      "source": "./agent-artifex",
+      "description": "Agent Artifex - designing and testing MCP servers, agents, chatbots, and tool-calling systems",
+      "version": "0.1.0"
     }
   ]
 }
