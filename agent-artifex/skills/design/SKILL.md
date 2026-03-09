@@ -1,5 +1,5 @@
 ---
-name: agent-artifex:design
+name: design
 description: |
   Use when the user wants to design an MCP server, agent, chatbot, or tool-calling system for quality. This includes: designing tool descriptions, structuring parameters and schemas, writing error messages for LLM consumers, designing system prompts, planning multi-turn conversations, architecting tool sets, or designing response formats. Also use when someone says "how should I design", "what makes a good tool description", "how should I structure my errors", "design my MCP server", "how do I organize my tools", or any task where they want to follow evidence-based design principles before or while building.
 ---
