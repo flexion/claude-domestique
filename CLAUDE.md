@@ -73,7 +73,7 @@ node scripts/bump-version.js memento patch   # 0.1.10 → 0.1.11
 node scripts/bump-version.js mantra minor    # 0.1.5 → 0.2.0
 ```
 
-This updates `package.json`, `plugin.json`, and `marketplace.json` atomically.
+This updates `package.json` and `marketplace.json`. Version is only maintained at the marketplace level, not in plugin.json.
 
 ## Architecture
 
