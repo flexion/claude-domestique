@@ -1,5 +1,5 @@
 ---
-name: guide
+name: agent-artifex:guide
 description: |
   Use when the user is unsure which AI services skill to invoke, asks for "AI services guidance" generally, says "help me design my MCP server", "how should I structure my tools?", "what makes a good tool description?", "how do I design my agent?", "help me test my MCP server", "how should I test my agent?", "what testing do I need?", "my tests are flaky", "the agent picks the wrong tool", "how do I set up CI for AI tests?", or wants a structured guided experience that routes across multiple AI services skills. Also use when the user mentions designing or testing chatbots, tool descriptions, evals, or agent behavior without specifying a particular skill.
 ---

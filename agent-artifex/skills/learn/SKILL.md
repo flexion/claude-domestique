@@ -1,5 +1,5 @@
 ---
-name: learn
+name: agent-artifex:learn
 description: |
   Use when the user says "I'm new to AI testing", "teach me about designing MCP servers", "how do I design good tool descriptions?", "walk me through design principles", "explain the design areas", "explain the testing pyramid for agents", "how do I test tool descriptions?", "walk me through an example", "I read the docs but it's not clicking", "how do evals work?", "what's faithfulness in AI testing?", "explain the causal chain", or wants to build fluency in AI services design and testing through Socratic dialogue rather than reading reference material.
 ---

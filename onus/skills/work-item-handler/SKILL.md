@@ -1,5 +1,5 @@
 ---
-name: work-item-handler
+name: onus:work-item-handler
 description: |
   Fetch and manage work items from issue trackers. Use this skill when:
   - User references an issue number (#42, PROJ-123)

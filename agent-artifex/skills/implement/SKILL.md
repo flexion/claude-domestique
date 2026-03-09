@@ -1,5 +1,5 @@
 ---
-name: implement
+name: agent-artifex:implement
 description: |
   Use when the user wants to improve an existing MCP server, agent, chatbot, or tool-calling system. This includes: improving tool descriptions, fixing error messages, adding output schemas, writing tests, implementing quality checks, adding evals, setting up test harnesses, or any task where they say "help me improve", "fix my descriptions", "add tests", "write evals", "implement quality checks", "make my server better", "apply the design principles", or are ready to make code changes to improve quality. This skill covers both design application (making the code better) and test implementation (verifying the code is good). For scaffolding new projects, use claude-api:mcp-builder. For design principles without code changes, use agent-artifex:design.
 ---
