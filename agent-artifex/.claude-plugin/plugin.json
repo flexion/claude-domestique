@@ -1,0 +1,20 @@
+{
+  "name": "agent-artifex",
+  "description": "Agent Artifex — designing and testing MCP servers, agents, chatbots, and tool-calling systems using evidence-based patterns from Anthropic, OpenAI, RAGAS, and academic research",
+  "author": {
+    "name": "Flexion"
+  },
+  "repository": "https://github.com/flexion/claude-repertoire",
+  "homepage": "https://github.com/flexion/claude-repertoire",
+  "license": "MIT",
+  "keywords": [
+    "design",
+    "testing",
+    "ai-services",
+    "mcp",
+    "agents",
+    "chatbots",
+    "evals",
+    "flexion"
+  ]
+}
