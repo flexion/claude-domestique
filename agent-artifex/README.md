@@ -62,13 +62,13 @@ agent-artifex:      │                │                ▲
 
 ## Seven Design Areas
 
-1. **Tool Description Quality** — clear, unambiguous descriptions that enable correct tool discovery
-2. **Schema Design** — input/output schemas that constrain usage and communicate intent
-3. **Error Design** — actionable error messages that guide recovery without exposing internals
-4. **Conversation Design** — multi-turn flows that maintain context and handle degradation
-5. **Resource Design** — URI patterns, pagination, and resource relationships
-6. **Security Design** — input validation, authorization boundaries, and least-privilege defaults
-7. **Observability Design** — structured logging, tracing, and health checks for production
+1. **Tool Description Design** — clear, unambiguous descriptions that enable correct tool discovery and selection
+2. **Parameter & Schema Design** — input/output schemas that constrain usage and communicate intent
+3. **Error Message Design** — actionable error messages that guide LLM recovery without exposing internals
+4. **System Prompt Design** — system prompts that complement tool descriptions without conflict or duplication
+5. **Multi-Turn Conversation Design** — multi-turn flows that maintain context and handle degradation
+6. **Tool Set Architecture** — tool organization, token budgeting, dynamic discovery, disambiguation
+7. **Response Format Design** — consistent, verifiable result schemas that enable faithful synthesis
 
 ## Five Testing Areas
 
@@ -104,15 +104,24 @@ agent-artifex/
 │   ├── framework.md            #   Causal chain, pyramid, two-tier model
 │   ├── metrics.md              #   All formulas (SR/AE/AS, Faithfulness, CRR...)
 │   ├── rubric.md               #   Six-component rubric, labeling rules
-│   ├── design-principles.md    #   Seven design areas, principles, anti-patterns
 │   └── evidence.md             #   Key empirical numbers, source index
 ├── skills/
 │   ├── guide/SKILL.md          #   Entry point router
 │   ├── foundations/SKILL.md    #   Reference overview
 │   ├── learn/SKILL.md          #   Socratic tutor
-│   ├── design/SKILL.md         #   Design principles and patterns
+│   ├── design/
+│   │   ├── SKILL.md            #   Design principles router
+│   │   └── references/         #   Per-area design guidance
+│   │       ├── tool-descriptions.md
+│   │       ├── parameter-schema.md
+│   │       ├── error-messages.md
+│   │       ├── system-prompts.md
+│   │       ├── multi-turn.md
+│   │       ├── tool-set-architecture.md
+│   │       └── response-format.md
 │   ├── assess/SKILL.md         #   Gap analysis (design + testing)
-│   └── implement/SKILL.md      #   Implementation guidance
+│   └── implement/
+│       ├── SKILL.md            #   Implementation guidance
 │       └── references/         #   Per-area code patterns & prompts
 │           ├── tool-descriptions.md
 │           ├── server-correctness.md
