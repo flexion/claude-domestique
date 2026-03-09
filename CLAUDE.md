@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**IMPORTANT: Before completing work on any branch that modifies plugin files (mantra/, memento/, onus/, agent-artifex/), run `node scripts/bump-version.js <plugin> <patch|minor|major>` for each affected plugin. Do not merge without bumping.**
+
 ## Meta Note: Self-Referential Project
 
 This repository is the source code for memento, mantra, and onus plugins—and those same plugins are installed and running in this project. Keep these distinct:
