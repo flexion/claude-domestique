@@ -1,8 +1,10 @@
 # docs/ai-services — Canonical Reference Documents
 
-Source documentation for the `ai-services` plugin. These documents contain the full evidence base, design principles, and testing methodology that the plugin's skills distill into actionable guidance.
+> **Note:** The plugin formerly known as `ai-services` has been renamed to `agent-artifex`. The source documents in this directory remain the canonical references. The plugin skills are in `agent-artifex/`.
 
-**Skills do not load these files by default.** They are too large for routine context. Skills read from the lighter `ai-services/references/` files instead and point here for deep dives.
+Source documentation for the `agent-artifex` plugin. These documents contain the full evidence base, design principles, and testing methodology that the plugin's skills distill into actionable guidance.
+
+**Skills do not load these files by default.** They are too large for routine context. Skills read from the lighter `agent-artifex/references/` files instead and point here for deep dives.
 
 ## Documents
 
