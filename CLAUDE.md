@@ -63,14 +63,15 @@ cd onus && npm test
 
 ### Version Management
 
-Bump plugin versions consistently across all config files:
+**When to bump:** Bump the version of any plugin whose files changed in the current branch before merging to main. Use `patch` for bug fixes and minor updates, `minor` for new features or skills, `major` for breaking changes.
 
 ```bash
 node scripts/bump-version.js <plugin> <patch|minor|major>
 
 # Examples:
-node scripts/bump-version.js memento patch   # 0.1.10 → 0.1.11
-node scripts/bump-version.js mantra minor    # 0.1.5 → 0.2.0
+node scripts/bump-version.js memento patch   # bug fix or small update
+node scripts/bump-version.js mantra minor    # new rule or skill added
+node scripts/bump-version.js agent-artifex minor  # new design area
 ```
 
 This updates `package.json` and `marketplace.json`. Version is only maintained at the marketplace level, not in plugin.json.
