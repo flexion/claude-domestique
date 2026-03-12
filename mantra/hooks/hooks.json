@@ -1,12 +1,12 @@
 {
-  "description": "Mantra session monitor - shows rules loaded (SessionStart) and context freshness (UserPromptSubmit)",
+  "description": "Mantra behavior hook - injects anti-sycophancy and critical assessment rules on every prompt",
   "hooks": {
     "SessionStart": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/session-monitor.js",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/behavior.js",
             "timeout": 3
           }
         ]
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/session-monitor.js",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/behavior.js",
             "timeout": 3
           }
         ]

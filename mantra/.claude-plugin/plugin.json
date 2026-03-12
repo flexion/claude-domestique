@@ -1,6 +1,6 @@
 {
   "name": "mantra",
-  "description": "Behavioral rules for Claude Code sessions - auto-injected via hooks, zero config",
+  "description": "Behavioral skills for Claude Code - critical assessment, evidence-based debugging, and rule authoring",
   "author": {
     "name": "David Puglielli"
   },
@@ -8,14 +8,15 @@
   "homepage": "https://github.com/flexion/claude-domestique/tree/main/mantra",
   "license": "MIT",
   "keywords": [
-    "context",
-    "refresh",
-    "guidance",
-    "drift-prevention"
+    "behavior",
+    "assessment",
+    "debugging",
+    "rules"
   ],
   "commands": [
-    "./commands/make-rule.md",
+    "./commands/skeptic.md",
     "./commands/assess.md",
-    "./commands/troubleshoot.md"
+    "./commands/troubleshoot.md",
+    "./commands/make-rule.md"
   ]
 }

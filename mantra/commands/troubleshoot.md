@@ -1,5 +1,5 @@
 ---
-description: Evidence-based debugging workflow for errors and bugs
+description: Evidence-based debugging workflow for errors, bugs, crashes, and unexpected behavior. Use when diagnosing failures, investigating stack traces, fixing broken builds, resolving test failures, or when something stopped working. Triggers on error messages, exceptions, stack traces, debugging sessions, and troubleshooting any technical issue.
 argument-hint: [error message or bug description]
 ---
 

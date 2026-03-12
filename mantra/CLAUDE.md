@@ -4,75 +4,62 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**mantra** is a behavioral rules plugin for Claude Code sessions. Rules are automatically injected via hooks - zero configuration required.
+**mantra** is a behavioral skills plugin for Claude Code sessions. It provides structured workflows for critical assessment and evidence-based debugging, plus a lean rules file for guidance that goes beyond base Claude behavior.
 
-Tagline: "Consistent behavior from turn 1 to turn 100"
+Tagline: "Skeptical peer, not eager subordinate"
 
 ## Commands
 
 ```bash
-npm test          # Run tests
+npm test          # Run tests (statusline)
 ```
 
 ## Architecture
 
-Plugin type: **hook-based injection** (auto-injected via SessionStart/UserPromptSubmit hooks)
+Plugin type: **skill pack + minimal hook**
 
 Design goals:
-- Zero config: rules injected automatically, no setup required
-- Token efficient: compact YAML frontmatter (~89% reduction vs prose)
-- On-demand details: companion MD files for elaboration
-- Drift prevention: periodic refresh every 10 prompts
+- Only additive: nothing that duplicates base Claude Code behavior
+- Always-on skepticism: behavior.md injected on every prompt to prevent drift
+- Skills for structured workflows: assess, troubleshoot, skeptic trigger on demand
+- Lean injection: single rules file (~300 tokens) per prompt
 
 ### Directory Structure
 
 ```
 mantra/
-├── rules/                # Frontmatter-only MD files (auto-injected)
-│   ├── behavior.md       # AI behavior rules
-│   ├── test.md           # Testing conventions
-│   └── ...
-├── context/              # Companion docs (referenced on-demand)
-│   ├── behavior.md       # Detailed examples for behavior
-│   ├── test.md           # Detailed examples for testing
-│   └── ...
-├── hooks/                # Hook implementations
-│   └── session-monitor.js
-├── lib/                  # Bundled shared utilities
-│   └── shared.js
-└── commands/
-    └── make-rule.md      # /mantra:make-rule skill
+├── rules/                # Lean rules (injected via hook)
+│   └── behavior.md       # Critical assessment + anti-sycophancy + troubleshooting
+├── hooks/                # Minimal hook (no state, no counters)
+│   └── behavior.js       # Injects behavior.md on every prompt
+├── context/              # Companion docs (on-demand reference)
+│   ├── behavior.md       # Detailed assessment examples
+│   ├── test.md           # Testing patterns (reference only)
+│   ├── context-format.md # Context system docs (for plugin authors)
+│   ├── format-guide.md   # Compact YAML notation (for plugin authors)
+│   └── rule-design.md    # Rule authoring guide (for plugin authors)
+├── scripts/              # Utilities
+│   └── statusline.js     # Status line display
+└── commands/             # Skills
+    ├── skeptic.md         # /mantra:skeptic - anti-sycophancy behavioral gate
+    ├── assess.md          # /mantra:assess - structured critical assessment
+    ├── troubleshoot.md    # /mantra:troubleshoot - evidence-based debugging
+    └── make-rule.md       # /mantra:make-rule - convert prose to compact rules
 ```
 
-### Rule File Format
+### What mantra adds beyond base Claude
 
-Each rule file is a **frontmatter-only markdown file**:
+1. **Critical assessment stance** - Skeptical-by-default evaluation before agreeing to proposals
+2. **Evidence-based troubleshooting** - Requires 3+ documented sources before proposing fixes
+3. **Thinking-block checklists** - Enforces explicit checklist consultation before git ops
 
-```markdown
----
-companion: behavior.md
+### What mantra does NOT duplicate
 
-assess-first: correctness, architecture, alternatives
-stance: skeptical-default, find-problems-not-agreement
-# ... compact YAML rules
----
-```
-
-### How It Works
-
-1. On SessionStart, hook reads `rules/*.md` frontmatter
-2. Injects as `additionalContext` in hook response
-3. On UserPromptSubmit, refreshes context every 10 prompts
-4. Companion docs path provided for lazy loading
-
-## Context System
-
-Rules use a two-tier pattern:
-
-| File Type | Purpose | Location |
-|-----------|---------|----------|
-| `rules/*.md` | Compact rules (frontmatter) | Auto-injected via hooks |
-| `context/*.md` | Detailed examples | Plugin directory (on-demand) |
+- "Simple solutions first" (already in system prompt)
+- "Avoid over-engineering" (already in system prompt)
+- "Skip preambles" (already in system prompt)
+- TDD workflow (covered by superpowers:test-driven-development)
+- Generic testing knowledge (Claude already knows FIRST, DI, etc.)
 
 ## Git Conventions
 
