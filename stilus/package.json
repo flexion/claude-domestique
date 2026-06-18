@@ -1,0 +1,7 @@
+{
+  "name": "stilus",
+  "version": "0.1.0",
+  "description": "Stilus — adaptive writing pipeline (write/edit/revise/review) with deslop as the subtractive base",
+  "private": true,
+  "license": "MIT"
+}

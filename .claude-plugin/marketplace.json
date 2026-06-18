@@ -33,6 +33,12 @@
       "source": "./comitatus",
       "description": "herdr workflows - packages the herdr agent-orchestration skill for claude and codex, auto-injected inside herdr",
       "version": "0.4.0"
+    },
+    {
+      "name": "stilus",
+      "source": "./stilus",
+      "description": "Adaptive writing pipeline - draft in a project's voice, then remove AI slop via write/edit/revise/review phases",
+      "version": "0.1.0"
     }
   ]
 }
