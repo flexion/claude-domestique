@@ -27,6 +27,12 @@
       "source": "./agent-artifex",
       "description": "Agent Artifex - designing and testing MCP servers, agents, chatbots, and tool-calling systems",
       "version": "0.1.0"
+    },
+    {
+      "name": "custos",
+      "source": "./custos",
+      "description": "herdr workflows - packages the herdr agent-orchestration skill for claude and codex, auto-injected inside herdr",
+      "version": "0.1.0"
     }
   ]
 }
