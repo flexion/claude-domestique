@@ -18,6 +18,33 @@ companions — the followers who travel and work together under one leader.
 
 ## Installing
 
+comitatus is a companion to [herdr](https://herdr.dev): on its own it does
+nothing (see Behavior modes). Install herdr first, then the plugin.
+
+### 1. Install herdr and its agent integrations
+
+Install the herdr binary from [herdr.dev](https://herdr.dev) (and keep it current
+with `herdr update`). Then install herdr's integration for each agent you will
+run in a herd - this is how herdr detects and drives an agent (status,
+messaging), and the codex integration is what wires codex into herdr at runtime:
+
+```bash
+herdr integration install claude
+herdr integration install codex     # for codex agents in a herd
+herdr integration status            # verify (--outdated-only flags stale ones)
+```
+
+**Why this matters.** Without the integration installed and current, herdr cannot
+reliably read an agent's `agent_status`, so `wait agent-status` and the
+push-first messaging the skill depends on silently break. The codex integration
+is herdr's *own* codex hookup (e.g. `~/.codex/herdr-agent-state.sh`) and is
+**distinct from** the codex *skill* copy comitatus provisions (see Single source
+of truth): herdr's integration makes codex participate in the herd; comitatus
+delivers the skill that tells codex how to drive herdr. You need both. comitatus
+manages only the skill copy and never touches herdr's integration files.
+
+### 2. Install the comitatus plugin
+
 ```bash
 /plugin marketplace add flexion/claude-domestique
 /plugin install comitatus@claude-domestique
