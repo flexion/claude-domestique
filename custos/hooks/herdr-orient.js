@@ -49,9 +49,29 @@ function copyDir(src, dest) {
   });
 }
 
-// Implemented in Task 5.
-function provisionCodex() {
-  return { provisioned: false, reason: 'skipped' };
+function provisionCodex({ skillDir, codexHome }) {
+  if (!fs.existsSync(codexHome)) {
+    return { provisioned: false, reason: 'codex-absent' };
+  }
+  const destSkills = path.join(codexHome, 'skills', 'herdr');
+  const hashFile = path.join(destSkills, '.custos-hash');
+  const srcHash = hashDir(skillDir);
+
+  let curHash = null;
+  try {
+    curHash = fs.readFileSync(hashFile, 'utf8').trim();
+  } catch {
+    /* not provisioned yet */
+  }
+  if (curHash === srcHash) {
+    return { provisioned: false, reason: 'current' };
+  }
+
+  fs.rmSync(destSkills, { recursive: true, force: true });
+  fs.mkdirSync(path.dirname(destSkills), { recursive: true });
+  copyDir(skillDir, destSkills);
+  fs.writeFileSync(hashFile, srcHash + '\n');
+  return { provisioned: true, reason: curHash ? 'stale' : 'missing' };
 }
 
 function processSessionStart({ env, skillDir, herdJsPath, codexHome }) {
