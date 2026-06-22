@@ -64,3 +64,20 @@ label convention changes — **no code, hook, or test changes**.
   workspace label is its natural home, the tab label already carries `<handle> <glyph> <type>`.
 - **Composite `task+team` labels** (`cmt·pack`) — the ~10-char budget makes them cryptic.
 - **Mechanical truncation of the branch** — produces ugly tails (`comitatus-`).
+
+## Revision — 2026-06-22 (same day, after a live trial)
+
+Exercising the convention in a live herdr session surfaced two refinements, now the accepted
+scheme:
+
+- **Subordinate (linked) worktree workspace → the full worktree directory name**
+  (`chore-comitatus-fixes`), *not* a short ≤10-char task tag. Rationale: the label should name
+  the worktree unambiguously. Accepted cost: the long label truncates the decorated tab label
+  in the collapsed sidebar (the handle reappears when the workspace is focused/widened). The
+  **herder** workspace still uses a short repo tag (`claude-dom`).
+- **Agent tab label → `<handle> <glyph>`** (`fox ◆`), dropping the `<type>` word — the glyph
+  already encodes the model, so the type was redundant.
+
+Member handles (call-signs) and the "descriptive, not pooled" principle are unchanged. This
+revision is reconciled into `SKILL.md` (`## naming`, recipes, gotchas), `reference/cli.md`,
+and `reference/names.md`; comitatus bumped 0.1.1 → 0.1.2.
