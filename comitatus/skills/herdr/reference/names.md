@@ -1,42 +1,16 @@
 # herd naming
 
-the **member** tier draws its call-signs from a pool (below). the **herder** and **herd**
-tiers are *not* pooled - they are labeled descriptively (a herder by a short **repo tag**, a
-herd by its **worktree name**); see the `## naming` section of [SKILL.md](../SKILL.md). this
-file holds the member pool plus the rules for the descriptive labels.
+the **only** name you assign is the **member handle** - a call-sign from the pool below, set
+with `agent rename`. everything else is left at herdr's default:
 
-## worktree names + repo tags (herd + herder labels)
+- a **worktree's workspace** is auto-labeled by herdr with the **worktree directory name**
+  (`chore-comitatus-fixes`); a **repo's main checkout** with the **repo name**
+  (`claude-domestique`). you never rename either - see the `## naming` section of
+  [SKILL.md](../SKILL.md).
+- the decorated **tab** label `<handle> <glyph>` (`fox ◆`) is the one other thing you set, via
+  `tab rename`; it is not pooled either.
 
-not a pool:
-
-- a **herd** is labeled with its **worktree directory name** verbatim - the basename of
-  `~/.herdr/worktrees/<repo>/<branch-slug>`. (a herd not on a worktree gets a short
-  descriptive tag instead.)
-- a **herder** is labeled with a short **repo tag** - a ~10-char abbreviation of the repo.
-
-```
-chore/comitatus-fixes      (worktree) -> chore-comitatus-fixes
-chore/refactor-terraform   (worktree) -> chore-refactor-terraform
-repo claude-domestique     (herder)   -> claude-dom
-```
-
-rules:
-
-- **a worktree name is long and truncates the tab label.** agent rows render
-  `<workspace> · <tab>`, so a full worktree name pushes the member's decorated
-  `<handle> <glyph>` tab label off the collapsed sidebar - the handle reappears on
-  focus/widen. that is the accepted trade for an unambiguous label; keep the **herder** repo
-  tag short (~10) so its own row stays readable.
-- **unique among live workspaces.** two worktrees rarely share a basename; if they do, the
-  paths differ - qualify the label.
-- **descriptive, not stable.** the label follows the worktree - relabel when you reassign a
-  herd to a new worktree.
-
-check live labels before reusing one:
-
-```bash
-herdr workspace list | python3 -c 'import sys,json;print(sorted(w.get("label") for w in json.load(sys.stdin)["result"]["workspaces"]))'   # taken workspace labels
-```
+so this file is just the member call-sign pool.
 
 ## members - individual agents
 

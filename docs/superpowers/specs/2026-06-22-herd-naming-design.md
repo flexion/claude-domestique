@@ -81,3 +81,25 @@ scheme:
 Member handles (call-signs) and the "descriptive, not pooled" principle are unchanged. This
 revision is reconciled into `SKILL.md` (`## naming`, recipes, gotchas), `reference/cli.md`,
 and `reference/names.md`; comitatus bumped 0.1.1 → 0.1.2.
+
+## Revision 2 — 2026-06-22 (same day): drop the herder tier and all label renaming
+
+A further live finding collapsed the convention to its minimum: **herdr already labels a new
+worktree's workspace with the worktree directory name by default** (verified with a throwaway
+worktree), and a repo's main checkout with the repo name. So *no `workspace rename` and no
+`worktree create --label` are needed at all* — the defaults already are the convention.
+
+Accordingly:
+
+- **The "herder" naming tier is removed.** The repo's main checkout is just that; it keeps
+  herdr's default label (the repo name) and is never renamed. The coined term "herder" is
+  dropped from the skill in favour of plain "main checkout / home repo".
+- **No workspace or worktree renaming.** Recipes drop the `workspace rename` step and the
+  `worktree create --label` flag; herds rely on herdr's default worktree-name label.
+- **What you still assign:** only the **member handle** (`agent rename`, needed for
+  `agent send`) and the decorated **tab** label `<handle> <glyph>` (`tab rename`).
+- New gotcha recorded: `worktree create`/`open` must run from the repo's main-checkout
+  workspace (`--workspace <main>`), else `linked_worktree_source`.
+
+Reconciled across `SKILL.md` (`## naming`, `## concepts`, recipes, gotchas),
+`reference/cli.md`, and `reference/names.md`; comitatus bumped 0.1.2 → 0.1.3.
