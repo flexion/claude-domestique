@@ -49,28 +49,55 @@ function copyDir(src, dest) {
   });
 }
 
+const HASH_FILE = '.comitatus-hash';
+let tmpCounter = 0;
+
+function readHash(hashFile) {
+  try {
+    return fs.readFileSync(hashFile, 'utf8').trim();
+  } catch {
+    return null;
+  }
+}
+
 function provisionCodex({ skillDir, codexHome }) {
   if (!fs.existsSync(codexHome)) {
     return { provisioned: false, reason: 'codex-absent' };
   }
-  const destSkills = path.join(codexHome, 'skills', 'herdr');
-  const hashFile = path.join(destSkills, '.comitatus-hash');
+  const skillsDir = path.join(codexHome, 'skills');
+  const destSkills = path.join(skillsDir, 'herdr');
   const srcHash = hashDir(skillDir);
 
-  let curHash = null;
-  try {
-    curHash = fs.readFileSync(hashFile, 'utf8').trim();
-  } catch {
-    /* not provisioned yet */
-  }
+  const curHash = readHash(path.join(destSkills, HASH_FILE));
   if (curHash === srcHash) {
     return { provisioned: false, reason: 'current' };
   }
 
-  fs.rmSync(destSkills, { recursive: true, force: true });
-  fs.mkdirSync(path.dirname(destSkills), { recursive: true });
-  copyDir(skillDir, destSkills);
-  fs.writeFileSync(hashFile, srcHash + '\n');
+  // Stage the complete tree (skill files + hash marker) in a sibling temp dir on
+  // the same filesystem, then swap it into place with a single rename. A codex
+  // reader therefore never observes a half-copied skill dir: it sees either the
+  // previous complete copy or the new one, never a partial one. Concurrent
+  // provisioners stage to distinct temp dirs (keyed on pid) and converge, since
+  // they copy byte-identical content.
+  fs.mkdirSync(skillsDir, { recursive: true });
+  tmpCounter += 1;
+  const tmpDir = path.join(skillsDir, `.herdr.tmp.${process.pid}.${tmpCounter}`);
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+  try {
+    copyDir(skillDir, tmpDir);
+    fs.writeFileSync(path.join(tmpDir, HASH_FILE), srcHash + '\n');
+    try {
+      fs.rmSync(destSkills, { recursive: true, force: true });
+      fs.renameSync(tmpDir, destSkills);
+    } catch (e) {
+      // A concurrent provisioner may have recreated destSkills between our rm
+      // and rename. If the now-in-place copy already matches our content, the
+      // other writer won with identical files - accept it. Otherwise re-throw.
+      if (readHash(path.join(destSkills, HASH_FILE)) !== srcHash) throw e;
+    }
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
   return { provisioned: true, reason: curHash ? 'stale' : 'missing' };
 }
 

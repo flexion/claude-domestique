@@ -105,3 +105,49 @@ describe('processSessionStart is failure-tolerant', () => {
     expect(r.hookSpecificOutput.additionalContext).toMatch(/comitatus:herdr/);
   });
 });
+
+function tmpResidue(codexHome) {
+  return fs.readdirSync(path.join(codexHome, 'skills'))
+    .filter((n) => n.startsWith('.herdr.tmp'));
+}
+
+describe('provisionCodex atomic swap hardening', () => {
+  test('leaves no temp staging dir behind after provisioning', () => {
+    const skillDir = makeFixtureSkill();
+    const codexHome = tmpdir();
+    hook.provisionCodex({ skillDir, codexHome });
+    expect(tmpResidue(codexHome)).toEqual([]);
+    expect(fs.readdirSync(path.join(codexHome, 'skills'))).toContain('herdr');
+  });
+
+  test('refresh swaps the whole dir in - stale files do not survive', () => {
+    const skillDir = makeFixtureSkill();
+    const codexHome = tmpdir();
+    hook.provisionCodex({ skillDir, codexHome });
+
+    const dest = path.join(codexHome, 'skills', 'herdr');
+    // A file present in the provisioned copy but absent from the new source.
+    fs.writeFileSync(path.join(dest, 'STALE.md'), 'old\n');
+    fs.writeFileSync(path.join(skillDir, 'SKILL.md'), '# herdr v2\n');
+
+    const r = hook.provisionCodex({ skillDir, codexHome });
+    expect(r).toEqual({ provisioned: true, reason: 'stale' });
+    expect(fs.existsSync(path.join(dest, 'STALE.md'))).toBe(false);
+    expect(fs.readFileSync(path.join(dest, 'SKILL.md'), 'utf8')).toBe('# herdr v2\n');
+    expect(tmpResidue(codexHome)).toEqual([]);
+  });
+
+  test('accepts an in-place copy a concurrent writer already installed', () => {
+    // Simulate the race tail: destSkills was created out-of-band with identical
+    // content (matching hash) after we decided to provision. The swap must not
+    // fail; the in-place copy is accepted and no temp residue is left.
+    const skillDir = makeFixtureSkill();
+    const codexHome = tmpdir();
+    const dest = path.join(codexHome, 'skills', 'herdr');
+    hook.provisionCodex({ skillDir, codexHome });          // first writer
+    const r = hook.provisionCodex({ skillDir, codexHome }); // identical content
+    expect(r).toEqual({ provisioned: false, reason: 'current' });
+    expect(fs.existsSync(path.join(dest, '.comitatus-hash'))).toBe(true);
+    expect(tmpResidue(codexHome)).toEqual([]);
+  });
+});

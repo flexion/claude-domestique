@@ -44,6 +44,11 @@ no per-project copy to track down. This plugin does not touch
 `~/.codex/hooks.json` or herdr's own `~/.codex/herdr-agent-state.sh`, so nothing
 else needs cleanup.
 
+Provisioning is staged in a temp dir and swapped into place with an atomic
+rename, so a codex agent never sees a half-written skill dir. A provision
+interrupted by a hard kill (SIGKILL) can rarely leave an inert staging dir like
+`~/.codex/skills/.herdr.tmp.<pid>.<n>`; it is harmless and safe to delete.
+
 ## Provenance
 
 Canonical herdr documentation lives upstream at herdr.dev. This plugin packages
