@@ -22,6 +22,28 @@ There is **one** skill under `skills/herdr/`, authored in plain ASCII. Codex
 uses the identical files via the auto-provisioned copy. The codex manifest
 `agents/openai.yaml` lives in the skill dir and is inert for claude.
 
+## Uninstalling
+
+The claude side uninstalls cleanly through Claude Code (`/plugin uninstall
+comitatus@claude-domestique`). The **codex copy is not removed automatically** -
+Claude Code fires no hook on uninstall, so the files this plugin wrote outside
+its own directory persist.
+
+If you provisioned codex (ran a session inside herdr with codex installed), the
+only thing left behind is the auto-provisioned skill copy at
+`~/.codex/skills/herdr/`. Remove it by hand:
+
+```bash
+rm -rf ~/.codex/skills/herdr
+```
+
+That directory contains a `.comitatus-hash` marker file; its presence confirms
+the copy was provisioned by comitatus and is safe to delete. comitatus only ever
+provisions into `~/.codex` - the single, machine-global codex home - so there is
+no per-project copy to track down. This plugin does not touch
+`~/.codex/hooks.json` or herdr's own `~/.codex/herdr-agent-state.sh`, so nothing
+else needs cleanup.
+
 ## Provenance
 
 Canonical herdr documentation lives upstream at herdr.dev. This plugin packages
