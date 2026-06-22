@@ -94,8 +94,11 @@ model launch argv:
   (`opencode models` lists ids; format is `provider/model`.)
 
 decorated tab-label glyphs (from the legacy spawn convention): claude `◆`, codex `◇`,
-opencode `⬨`. format is `<handle> <glyph> <agent-type>`, set with `tab rename`. keep the
-workspace label short - rows render as `<workspace> · <tab>`.
+opencode `⬨`. format is `<handle> <glyph>`, set with `tab rename` (the glyph already encodes
+the type). rows render as `<workspace> · <tab>`, and herdr labels the workspace by default (a
+worktree's directory name, or a main checkout's repo name) - you don't rename it - so a long
+worktree name truncates the tab label in the collapsed sidebar; the handle reappears on
+focus/widen.
 
 json fields (`agent list` -> `result.agents[]`): `name` (handle), `agent` (integration type:
 claude/codex/opencode/...), `agent_status`, `cwd`, `foreground_cwd`, `workspace_id`, `tab_id`,

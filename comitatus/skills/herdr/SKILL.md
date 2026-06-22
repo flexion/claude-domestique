@@ -21,7 +21,7 @@ herdr nests like this: **repo -> worktree -> workspace -> tab -> pane -> agent**
 - **pane** - a real terminal split. runs a shell, an agent, a server, anything.
 - **agent** - a coding agent (claude, codex, opencode, ...) running in a pane. each agent carries a **handle** in its `name` field (e.g. `fox`, `ivy`). you address agents by handle.
 - **herd** - a *group of agents you treat as a team*: 1..n members, models mixed freely (claude, codex, opencode/local, ...). a herd is a **logical roster, not a herdr object** - there is no `herd` command and no herd field on anything; it is **orthogonal** to the worktree->...->agent nesting above. a herd can run on a worktree, on the main checkout (a plain branch), or at any cwd; and a worktree can exist with **no** herd at all. members know the roster and message each other - and members of *other* herds - by handle (see the from/to protocol). "assigning a herd to work" just means launching its agents with their `cwd` at that work (a worktree dir or a branch checkout).
-- **herder / shepherd** - the top-level orchestrator (a workspace; you, reading this, are one) that spins up and tends herds. **exactly one per herdr session** - it is the session's home repo (the single main-checkout anchor every worktree-herd nests under). a second repo means a second herdr session, i.e. a second herder; you cannot manage two repos from one session (`worktree create` always targets the home repo). herder, herd, and member all get their names from a pooled convention with no herdr enforcement - see `## naming` below.
+- **home repo / main checkout** - every herdr session is anchored to one repo, and you spin up and tend herds from its **main-checkout workspace** (the one you, reading this, are launched under). **exactly one repo per session** - the main checkout is the single anchor every worktree nests under; a second repo means a second herdr session (`worktree create` always targets the home repo, and must be run from its main-checkout workspace). nothing here is named by convention: herdr labels the main checkout with the repo name and each worktree with its directory name - you leave both. only member handles are assigned - see `## naming` below.
 
 three facts that drive most workflows:
 
@@ -33,23 +33,25 @@ three facts that drive most workflows:
 
 ids are short: workspace `w8`, tab `w8:t1`, pane `w8:p1`. they are opaque and **not durable** - they can change as things open and close. never reuse an old id; re-read the current one from `worktree list`, `workspace list`, `agent list`, or a create/start response. most commands print json, so parse ids out of the json rather than guessing.
 
-## naming (shepherd -> herd -> members)
+## naming (worktree -> members)
 
-a convention layered on top of herdr - herdr stores **none** of it. three tiers, each named from a pool in [reference/names.md](reference/names.md), each name claimed as the **next unused** entry (read live state, skip taken):
+a thin convention on top of herdr - herdr stores **none** of it. you assign exactly two things; every workspace/worktree label is left at herdr's default:
 
-- **herder** - the top-level orchestrator workspace, **one per herdr session** (the home repo's main checkout; a second repo = a second session = a second herder). label it with a herder role name - `shepherd`, `drover`, `wrangler`, ... - via `workspace rename <ws> "<herder>"`.
-- **herd** - a managed group of agents. label its workspace with a collective noun - `flock`, `pack`, `troop`, ... - unique among live herd workspaces.
-- **member** - an agent in a herd. its **handle** is a short call-sign - `tim`, `jay`, `sly`, ... - set with `agent rename <pane> <handle>`.
+- **herd** - a group of agents on a worktree. **you don't label it.** when you `worktree create`, herdr already labels the worktree's workspace with the **worktree directory name** (`chore-comitatus-fixes`) - exactly what you want in the sidebar row. (the repo's main checkout is left at its default too: herdr labels it the repo name, `claude-domestique`.)
+- **member** - an agent in a herd. its **handle** is a short call-sign - `tim`, `jay`, `sly`, ... - claimed as the next unused entry from the pool in [reference/names.md](reference/names.md), set with `agent rename <pane> <handle>`. the handle is the **addressable identity** (`agent send tim`), so it must stay short, unique, phonetically distinct, and stable across a model relaunch.
 
-**fully-qualified vs addressable.** a member's full identity is written `<herder>/<herd>/<member>` (e.g. `shepherd/flock/tim`) for humans and docs. but herdr has **no hierarchical addressing**: the only thing it stores or routes is the flat member handle, and you reach the agent with `agent send tim`. the `<herder>/` and `<herd>/` segments are operator bookkeeping (which herder owns which herd is convention, not herdr state), not part of the address.
+the agent's decorated **tab** label is `<handle> <glyph>` (`fox ◆`, `jay ◇`), set with `tab rename` (the glyph - claude `◆`, codex `◇`, opencode `⬨` - encodes the model). the handle and that tab label are the **only** labels you assign; workspace and worktree labels are herdr's defaults and are never renamed. the sidebar row is `<workspace> · <tab>` = `<worktree-name> · <handle> <glyph>`, which reads true with zero renaming.
+
+**why members are the exception.** a member handle is an identity you *route messages to*, so it has to be assigned and stable. a workspace label, by contrast, herdr already derives correctly from the worktree - there is nothing to assign, so don't.
+
+**addressing.** a member is reached by its flat handle - `agent send fox`. herdr has **no hierarchical addressing**; for humans you may write `<repo>/<worktree>/<member>` (e.g. `claude-domestique/chore-comitatus-fixes/fox`), but only the handle is real.
 
 rules that make it work:
 
 - **member handles are globally unique - herdr enforces it.** a duplicate `agent start` is rejected (`agent_name_taken`, verified), across *all* workspaces. claim each handle against live `agent list`; size the member pool above your peak concurrent agent count.
-- **labels <= ~10 chars.** rows render `<workspace> · <tab>`, so a long herder/herd label truncates the member's decorated tab label (a few collective nouns exceed this - flagged in names.md).
-- **handles are type-agnostic.** never encode the model in a handle; the tab already shows `◆ claude` / `◇ codex`, and a type-free handle survives relaunching a member on another model.
-- **names are stable, decoupled from the branch.** a herd keeps its name across reassignment to a new worktree/branch; the work is found via cwd, not the label.
-- **only home-repo worktrees nest under the herder.** a herd appears *under* the herder in the panel only when it's a linked worktree of the session's repo; plain workspaces and any other repo float separately (logical-only herds - the `<herder>/<herd>/...` path still names them, they just don't nest visually).
+- **a worktree name is long and can truncate the tab label.** rows render `<workspace> · <tab>`, so the worktree-name workspace label can push the decorated `<handle> <glyph>` tab label off the collapsed sidebar - the handle reappears on focus/widen. that is the trade for a label that names the worktree unambiguously, and it costs no renaming.
+- **handles are type-agnostic.** never encode the model in a handle; the tab glyph already shows it, and a type-free handle survives relaunching a member on another model.
+- **only home-repo worktrees nest under the main checkout.** a herd appears *under* the repo's main checkout in the panel only when it's a linked worktree of the session's repo; plain workspaces and any other repo float separately (the `<repo>/<worktree>/...` path still names them, they just don't nest visually).
 - **phonetic distinctness for members.** they message each other by handle in the from/to protocol and weak local models mis-type look-alikes - avoid rhyming clusters.
 
 ## discover state
@@ -71,7 +73,7 @@ these are the small, composable operations. chain them for bigger flows.
 
 ```bash
 git fetch origin main
-herdr worktree create --branch chore/my-slug --base origin/main --label "my slug" --no-focus --json
+herdr worktree create --branch chore/my-slug --base origin/main --no-focus --json   # workspace auto-labels as "chore-my-slug" (the worktree dir)
 ```
 
 the branch name carries the work item (`123456-slug`) or a chore (`chore/slug`). the new checkout lands at `~/.herdr/worktrees/<repo>/<branch-slug>` (slashes become dashes, lowercased); pass `--path` to override. grab the new workspace id from `result.worktree.open_workspace_id`.
@@ -105,8 +107,8 @@ WT=~/.herdr/worktrees/<repo>/chore-my-slug
 WS=wR            # worktree's open_workspace_id from step 1
 ROOT1=wR:p1      # worktree's root_pane from step 1
 
-herdr workspace rename "$WS" "my-slug"        # keep this SHORT (see gotchas): rows render "<workspace> · <tab>"
-herdr tab rename "${WS}:t1" "sly ◆ claude"    # tab label carries the decorated <handle> <glyph> <type>
+# no workspace rename: herdr already labeled "$WS" with the worktree dir name ("chore-my-slug")
+herdr tab rename "${WS}:t1" "sly ◆"    # the ONLY label you set: the decorated <handle> <glyph> tab label
 
 # agent 1 in the worktree's root pane (tab 1)
 herdr pane run "$ROOT1" "claude"
@@ -114,7 +116,7 @@ herdr wait agent-status "$ROOT1" --status idle --timeout 40000
 herdr agent rename "$ROOT1" sly
 
 # each additional agent: a new tab, run the model in its root pane, detect, name
-T=$(herdr tab create --workspace "$WS" --cwd "$WT" --label "jay ◇ codex" --no-focus)
+T=$(herdr tab create --workspace "$WS" --cwd "$WT" --label "jay ◇" --no-focus)
 ROOT=$(echo "$T" | node "$H" field result.root_pane.pane_id)
 herdr pane run "$ROOT" "codex"
 herdr wait agent-status "$ROOT" --status idle --timeout 40000
@@ -123,13 +125,13 @@ herdr agent rename "$ROOT" jay
 
 | model | `pane run` argv | glyph | tab label |
 |---|---|---|---|
-| claude | `claude` | ◆ | `sly ◆ claude` |
-| codex | `codex` | ◇ | `jay ◇ codex` |
-| opencode + qwen2.5:7b | `opencode -m ollama/qwen2.5:7b` | ⬨ | `bob ⬨ opencode` |
+| claude | `claude` | ◆ | `sly ◆` |
+| codex | `codex` | ◇ | `jay ◇` |
+| opencode + qwen2.5:7b | `opencode -m ollama/qwen2.5:7b` | ⬨ | `bob ⬨` |
 
 - `--cwd "$WT"` on `tab create` keeps each agent's working dir on the worktree (association is by cwd).
 - `agent rename` needs the agent **detected first**; that is what `wait agent-status` ensures.
-- the decorated `<handle> <glyph> <type>` format lives on the **tab** label. keep the workspace label short, or rows truncate.
+- the decorated `<handle> <glyph>` format lives on the **tab** label; the workspace label is a separate axis (the worktree name - see `## naming`).
 - `agent start <handle> --cwd "$WT" --workspace <ws> -- <argv>` is an escape hatch for an ad-hoc agent pane, but it does not give the clean one-tab-per-agent grouping - prefer tabs. see reference/cli.md.
 
 ### 4. assign or change a handle
@@ -140,7 +142,7 @@ step 3 sets the handle with `herdr agent rename <pane> <handle>`. to change it l
 herdr agent rename sly sly2
 ```
 
-the handle is also the pane label. the decorated **tab** label (step 3) does **not** auto-update - `herdr tab rename <tab> "sly2 ◆ claude"` if you want it to match.
+the handle is also the pane label. the decorated **tab** label (step 3) does **not** auto-update - `herdr tab rename <tab> "sly2 ◆"` if you want it to match.
 
 ### 5. message another agent by handle
 
@@ -188,8 +190,7 @@ WT=$(echo "$OUT"    | node "$H" field result.worktree.path)
 WS=$(echo "$OUT"    | node "$H" field result.worktree.open_workspace_id)
 ROOT1=$(echo "$OUT" | node "$H" field result.root_pane.pane_id)
 
-herdr workspace rename "$WS" "review-x"
-herdr tab rename "${WS}:t1" "sly ◆ claude"
+herdr tab rename "${WS}:t1" "sly ◆"    # workspace "$WS" is already labeled "chore-review-x" by herdr
 
 # sly = claude in tab 1 (the worktree's root pane)
 herdr pane run "$ROOT1" "claude"
@@ -197,7 +198,7 @@ herdr wait agent-status "$ROOT1" --status idle --timeout 40000
 herdr agent rename "$ROOT1" sly
 
 # jay = codex in a second tab of the same workspace
-T=$(herdr tab create --workspace "$WS" --cwd "$WT" --label "jay ◇ codex" --no-focus)
+T=$(herdr tab create --workspace "$WS" --cwd "$WT" --label "jay ◇" --no-focus)
 ROOT2=$(echo "$T" | node "$H" field result.root_pane.pane_id)
 herdr pane run "$ROOT2" "codex"
 herdr wait agent-status "$ROOT2" --status idle --timeout 40000
@@ -219,7 +220,7 @@ git branch -D chore/review-x
 
 ### assign a herd to a worktree
 
-the common case: assign a herd to its own **worktree** (isolated branch + dir). that is just step 1 (create the worktree) then step 3 (attach each agent as a tab): agent 1 in the worktree's root tab, each additional agent in its own `tab create --workspace <ws> --cwd <wt>`. nothing extra - the herd is simply the agents you launched with that worktree's cwd. name the workspace with a **herd name** and each member with a **handle** from the pools (see `## naming`); the step-3 recipe's `workspace rename` / `tab rename` / `agent rename` are where those names land.
+the common case: assign a herd to its own **worktree** (isolated branch + dir). that is just step 1 (create the worktree) then step 3 (attach each agent as a tab): agent 1 in the worktree's root tab, each additional agent in its own `tab create --workspace <ws> --cwd <wt>`. nothing extra - the herd is simply the agents you launched with that worktree's cwd. herdr already labels the workspace with the worktree name, so all you assign is each member's **handle** plus its decorated `<handle> <glyph>` tab label (see `## naming`); the step-3 recipe's `tab rename` / `agent rename` are where those land.
 
 a herd does **not** require a worktree. launch one at any cwd - most usefully the **main checkout** (a plain branch): `herdr workspace create --cwd <repo>`, then attach agents there. caveat: a plain-branch herd shares the **single** repo checkout, so "reassign to a different branch" is a global `git checkout` with no isolation - prefer a worktree when you want a herd pinned to its own branch without disturbing other work.
 
@@ -229,7 +230,7 @@ an agent's **cwd is fixed at launch**, and herdr keys worktree-association on cw
 
 ```bash
 git fetch origin main
-NEW=$(herdr worktree create --branch chore/new-slug --base origin/main --label "new-slug" --no-focus --json)
+NEW=$(herdr worktree create --branch chore/new-slug --base origin/main --no-focus --json)   # workspace auto-labels as "chore-new-slug"
 WS=$(echo "$NEW"    | node "$H" field result.worktree.open_workspace_id)
 WT=$(echo "$NEW"    | node "$H" field result.worktree.path)
 ROOT1=$(echo "$NEW" | node "$H" field result.root_pane.pane_id)
@@ -237,7 +238,7 @@ ROOT1=$(echo "$NEW" | node "$H" field result.root_pane.pane_id)
 herdr workspace close <old-herd-ws>            # take the OLD herd down -> frees the handles (sly/jay/tim)
 
 # rebuild each agent on the new worktree, reusing the SAME handles (the assign / step-3 recipe):
-herdr tab rename "${WS}:t1" "sly ◆ claude"; herdr pane run "$ROOT1" "claude"
+herdr tab rename "${WS}:t1" "sly ◆"; herdr pane run "$ROOT1" "claude"
 herdr wait agent-status "$ROOT1" --status idle --timeout 45000; herdr agent rename "$ROOT1" sly
 # jay -> tab create + pane run "codex" + rename jay ;  tim -> tab create + "claude --model haiku" + rename tim
 
@@ -330,13 +331,14 @@ herdr wait agent-status w9:p1 --status done --timeout 120000   # a sibling finis
 - **`agent send` has no Enter, and the Enter drops only while the target is `working`** - send + `pane send-keys <pane> Enter` and let the reply confirm it landed (resend on silence); only for a no-reply message poll until the target is not `working` first, or verify by reading its pane. don't blindly double-tap. (full recipe in the from/to protocol section.)
 - **codex TUI paste gotcha** - a long `send-text` / `agent send` into a codex TUI may be ingested as a bracketed paste that a single Enter does not submit. keep protocol messages one line and short. if you deliberately send a long codex message and silence follows, send one extra Enter or retry as shorter one-line chunks.
 - **opencode status needs the fix plugin** - herdr 0.7.0's managed opencode integration is out of date with opencode 1.17.8 (object-form `session.status` + fire-and-forget idle), so opencode agents get stuck `working` / never report state right. the sibling plugin `~/.config/opencode/plugins/herdr-opencode-status-fix.js` restores correct working/idle/blocked reporting. without it, `wait agent-status` on an opencode pane is unreliable.
-- **only the home repo's worktree tree nests; plain workspaces don't** - the sidebar nests exactly one repo group (main checkout -> its linked worktrees -> tabs), keyed on `repo_root`. a `workspace create --cwd` workspace gets **no** repo association and floats ungrouped, even at a repo root. give each agent in a herd a *tab* in the herd's one workspace; make the herd a worktree if you want it to nest under the herder.
-- **keep the workspace label short** - agent rows render as `<workspace> · <tab>`, so a long workspace label truncates the decorated tab label.
+- **only the home repo's worktree tree nests; plain workspaces don't** - the sidebar nests exactly one repo group (main checkout -> its linked worktrees -> tabs), keyed on `repo_root`. a `workspace create --cwd` workspace gets **no** repo association and floats ungrouped, even at a repo root. give each agent in a herd a *tab* in the herd's one workspace; make the herd a worktree if you want it to nest under the repo's main checkout.
+- **workspace label vs tab truncation** - agent rows render as `<workspace> · <tab>`, and herdr labels a worktree's workspace with its (long) directory name, so the decorated `<handle> <glyph>` tab label can truncate in the collapsed sidebar; the handle reappears on focus/widen. that label is herdr's default - you don't rename it (see `## naming`).
 - **`worktree remove` keeps the branch** - it removes the git worktree, its directory, the workspace, and all that workspace's tabs/agents, but not the branch (`git branch -D` separately).
 - **`open` reattaches, `create` makes new branches** - `worktree open` opens a workspace on a worktree that *already exists* (errors `worktree_not_found` otherwise, **including** any worktree of a repo this session does not track); `worktree create --branch` only makes a *new* branch (errors if it exists). existing branch with no worktree -> `git worktree add` first, then `open` (only works for the home repo).
-- **one repo per herdr session** - `worktree create` ignores the CLI cwd and always builds in the session's home/launch repo (verified: invoking it with cwd set to a different repo still produced a home-repo worktree). there is no way to manage a second repo's worktrees from one session; launch a separate `herdr --session <name>` inside that repo - that *is* a second herder.
+- **one repo per herdr session** - `worktree create` ignores the CLI cwd and always builds in the session's home/launch repo (verified: invoking it with cwd set to a different repo still produced a home-repo worktree). there is no way to manage a second repo's worktrees from one session; launch a separate `herdr --session <name>` inside that repo - that *is* a second session.
+- **`worktree create`/`open` run from the repo's main-checkout workspace** - invoked from inside a linked worktree they error `linked_worktree_source` ("new and open worktree actions start from the repo parent workspace"). pass `--workspace <main-checkout-ws>` (or run from there); the CLI cwd does not select the source workspace, the flag does.
 - **detect before `agent rename`** - a model launched with `pane run` is only renameable once herdr detects it. `herdr wait agent-status <pane> --status idle` first, or the rename misses the target.
-- **decorated labels are manual** - `sly ◆ claude` style labels are set with `tab rename`, not auto-derived. renaming the handle does not update the tab label; re-`tab rename` to keep them in sync.
+- **decorated labels are manual** - `sly ◆` style labels are set with `tab rename`, not auto-derived. renaming the handle does not update the tab label; re-`tab rename` to keep them in sync.
 - **`agent start` needs both `--cwd` and `--workspace`** - the ad-hoc escape hatch (vs the default `pane run` in a tab) takes `--cwd <worktree-path>` for the working dir (the cwd association `agent list` uses) and `--workspace <id>` for pane placement; they are independent. `--workspace` alone leaves the agent on *your* cwd, editing the wrong tree.
 - **cwd is the resolved path** - herdr stores an agent's `cwd` OS-resolved, so a symlinked root differs from what you launched with (macOS `/tmp` -> `/private/tmp`). when you filter `agent list` by cwd to find a herd, compare against the resolved path (`cd <dir>; pwd -P`), not the string you passed, or you'll see zero agents on a herd that is running fine.
 - **ids are not durable** - re-read them; never reuse an old id.
