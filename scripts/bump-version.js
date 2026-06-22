@@ -13,7 +13,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const PLUGINS = ['mantra', 'memento', 'onus', 'agent-artifex'];
+const PLUGINS = ['mantra', 'memento', 'onus', 'agent-artifex', 'comitatus'];
 const VERSION_TYPES = ['patch', 'minor', 'major'];
 
 function parseArgs() {

@@ -1,0 +1,16 @@
+{
+  "description": "herdr orientation + codex skill provisioning when running inside herdr",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/herdr-orient.js",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
