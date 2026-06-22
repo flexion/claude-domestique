@@ -1,0 +1,4 @@
+interface:
+  display_name: "Herdr"
+  short_description: "Control herdr worktrees, panes, agents, and messaging."
+  default_prompt: "Use $herdr to start or coordinate agents, manage herdr worktrees, or send a push-first message by handle."

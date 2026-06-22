@@ -123,16 +123,20 @@ gh auth status         # Verify authentication
 ### Install Plugins
 
 ```bash
-# Install all three
+# The core trio - work standalone, better together
 /plugin install memento@claude-domestique
 /plugin install mantra@claude-domestique
 /plugin install onus@claude-domestique
+
+# Additional standalone plugins
+/plugin install agent-artifex@claude-domestique   # design/test MCP servers, agents, tool-calling systems
+/plugin install comitatus@claude-domestique        # herdr agent-orchestration workflows (silent unless inside herdr)
 
 # Or just the ones you need
 /plugin install mantra@claude-domestique
 ```
 
-That's it. No initialization required—all plugins use hook-based injection that works automatically.
+That's it. No initialization required—plugins load automatically once installed. See each plugin's README for specifics (comitatus, for instance, stays dormant unless you're inside a herdr pane).
 
 ---
 

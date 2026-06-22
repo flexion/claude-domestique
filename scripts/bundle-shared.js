@@ -14,7 +14,7 @@ const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
 const SHARED_SRC = path.join(ROOT, 'shared', 'index.js');
-const PLUGINS = ['mantra', 'memento', 'onus'];
+const PLUGINS = ['memento', 'onus'];
 
 function bundle() {
   // Read shared module

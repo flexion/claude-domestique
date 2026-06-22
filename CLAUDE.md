@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**IMPORTANT: Before completing work on any branch that modifies plugin files (mantra/, memento/, onus/, agent-artifex/), run `node scripts/bump-version.js <plugin> <patch|minor|major>` for each affected plugin. Do not merge without bumping.**
+**IMPORTANT: Before completing work on any branch that modifies plugin files (mantra/, memento/, onus/, agent-artifex/, comitatus/), run `node scripts/bump-version.js <plugin> <patch|minor|major>` for each affected plugin. Do not merge without bumping.**
 
 ## Meta Note: Self-Referential Project
 
@@ -33,7 +33,8 @@ claude-domestique/
 ├── .claude-plugin/          # Marketplace root plugin config
 ├── mantra/                  # Context refresh plugin
 ├── memento/                 # Session persistence plugin
-└── onus/                    # Work item automation plugin
+├── onus/                    # Work item automation plugin
+└── comitatus/                  # herdr workflows plugin
 ```
 
 Each plugin follows the same structure:
@@ -121,6 +122,7 @@ Each plugin owns specific context domains. When adding or modifying context, res
 | **mantra** | AI behavior, format conventions | `rules/behavior.md`, `rules/context-format.md`, `rules/format-guide.md`, `rules/test.md`, `rules/rule-design.md` |
 | **memento** | Session management | `rules/sessions.md` |
 | **onus** | Git operations, work items | `rules/git.md`, `rules/work-items.md` |
+| **comitatus** | herdr orchestration | `skills/herdr/SKILL.md` |
 
 **Ownership rules:**
 - Single source of truth: each concept defined in exactly one place
