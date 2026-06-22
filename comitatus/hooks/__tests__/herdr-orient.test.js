@@ -25,7 +25,7 @@ describe('processSessionStart gating', () => {
     });
     expect(r).not.toBeNull();
     expect(r.hookSpecificOutput.hookEventName).toBe('SessionStart');
-    expect(r.hookSpecificOutput.additionalContext).toMatch(/custos:herdr/);
+    expect(r.hookSpecificOutput.additionalContext).toMatch(/comitatus:herdr/);
     expect(r.hookSpecificOutput.additionalContext).toContain(HERD_JS);
   });
 });
@@ -33,7 +33,7 @@ describe('processSessionStart gating', () => {
 describe('buildOrientation', () => {
   test('mentions the skill and the helper path', () => {
     const c = hook.buildOrientation('/abs/herd.js');
-    expect(c).toMatch(/custos:herdr/);
+    expect(c).toMatch(/comitatus:herdr/);
     expect(c).toContain('/abs/herd.js');
   });
 });
@@ -41,7 +41,7 @@ describe('buildOrientation', () => {
 const fs = require('fs');
 
 function tmpdir() {
-  const base = path.join(require('os').tmpdir(), 'custos-test-' + process.pid + '-' + Math.random().toString(36).slice(2));
+  const base = path.join(require('os').tmpdir(), 'comitatus-test-' + process.pid + '-' + Math.random().toString(36).slice(2));
   fs.mkdirSync(base, { recursive: true });
   return base;
 }
@@ -74,7 +74,7 @@ describe('provisionCodex', () => {
     const dest = path.join(codexHome, 'skills', 'herdr');
     expect(fs.existsSync(path.join(dest, 'SKILL.md'))).toBe(true);
     expect(fs.existsSync(path.join(dest, 'scripts', 'herd.js'))).toBe(true);
-    expect(fs.existsSync(path.join(dest, '.custos-hash'))).toBe(true);
+    expect(fs.existsSync(path.join(dest, '.comitatus-hash'))).toBe(true);
     expect(fs.existsSync(path.join(dest, '__tests__'))).toBe(false); // excluded
     expect(fs.existsSync(path.join(codexHome, 'hooks.json'))).toBe(false); // never written
 
@@ -102,6 +102,6 @@ describe('processSessionStart is failure-tolerant', () => {
       codexHome: tmpdir(),
     });
     expect(r).not.toBeNull();
-    expect(r.hookSpecificOutput.additionalContext).toMatch(/custos:herdr/);
+    expect(r.hookSpecificOutput.additionalContext).toMatch(/comitatus:herdr/);
   });
 });

@@ -1,8 +1,8 @@
-# custos Plugin Implementation Plan
+# comitatus Plugin Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add `custos`, a fifth claude-domestique plugin that packages the herdr agent-orchestration skill for claude, ships a Node roster/state helper, and auto-provisions the same skill into codex's skill path when running inside herdr.
+**Goal:** Add `comitatus`, a fifth claude-domestique plugin that packages the herdr agent-orchestration skill for claude, ships a Node roster/state helper, and auto-provisions the same skill into codex's skill path when running inside herdr.
 
 **Architecture:** One plain-ASCII skill directory (`skills/herdr/`) serves both runtimes byte-for-byte. Claude gets it via the marketplace plugin install. A standalone SessionStart hook (`herdr-orient.js`) is silent unless `HERDR_ENV=1`; inside herdr it injects a lean orientation and content-hash-copies the skill dir into `~/.codex/skills/herdr/`. A Node CLI (`herd.js`) replaces the skill's inline `python3` JSON-parsing one-liners.
 
@@ -16,36 +16,36 @@
 - **Hook silence + safety.** When `HERDR_ENV !== '1'`: emit nothing, write nothing. Provisioning only when `~/.codex/` exists; write **only** under `~/.codex/skills/herdr/`; **never** touch `~/.codex/hooks.json` or `~/.codex/herdr-agent-state.sh`; swallow all provisioning errors (never block session start or suppress orientation).
 - **Executable bit required.** `herdr-orient.js` and `herd.js` need a shebang **and** `chmod +x` (a recent repo commit fixed a missing executable bit on a hook — do not repeat).
 - **openai.yaml constraints (codex schema).** `interface.short_description` 25–64 chars; `interface.default_prompt` must reference the skill as `$herdr`.
-- **Commits.** `chore - <lowercase description>`, HEREDOC, **no attribution / no Co-Authored-By** (per CLAUDE.md). Work happens on branch `chore/add-custos-plugin` (already created).
+- **Commits.** `chore - <lowercase description>`, HEREDOC, **no attribution / no Co-Authored-By** (per CLAUDE.md). Work happens on branch `chore/add-comitatus-plugin` (already created).
 
 ---
 
-### Task 1: Scaffold and register the custos plugin
+### Task 1: Scaffold and register the comitatus plugin
 
 **Files:**
-- Create: `custos/.claude-plugin/plugin.json`
-- Create: `custos/package.json`
-- Create: `custos/jest.config.js`
-- Create: `custos/README.md`
+- Create: `comitatus/.claude-plugin/plugin.json`
+- Create: `comitatus/package.json`
+- Create: `comitatus/jest.config.js`
+- Create: `comitatus/README.md`
 - Modify: `package.json` (root — workspaces + test scripts)
-- Modify: `.claude-plugin/marketplace.json` (add custos entry)
-- Modify: `scripts/bump-version.js:14` (add custos to PLUGINS)
+- Modify: `.claude-plugin/marketplace.json` (add comitatus entry)
+- Modify: `scripts/bump-version.js:14` (add comitatus to PLUGINS)
 - Modify: `CLAUDE.md` (version-bump line, structure, ownership table)
 
 **Interfaces:**
-- Produces: a registered, installable plugin named `custos` at version `0.1.0`; `cd custos && npm install` succeeds.
+- Produces: a registered, installable plugin named `comitatus` at version `0.1.0`; `cd comitatus && npm install` succeeds.
 
-- [ ] **Step 1: Create `custos/.claude-plugin/plugin.json`**
+- [ ] **Step 1: Create `comitatus/.claude-plugin/plugin.json`**
 
 ```json
 {
-  "name": "custos",
+  "name": "comitatus",
   "description": "herdr workflows - packages the herdr agent-orchestration skill for claude and codex, auto-injected inside herdr",
   "author": {
     "name": "Flexion"
   },
   "repository": "https://github.com/flexion/claude-domestique",
-  "homepage": "https://github.com/flexion/claude-domestique/tree/main/custos",
+  "homepage": "https://github.com/flexion/claude-domestique/tree/main/comitatus",
   "license": "MIT",
   "keywords": [
     "herdr",
@@ -59,11 +59,11 @@
 }
 ```
 
-- [ ] **Step 2: Create `custos/package.json`**
+- [ ] **Step 2: Create `comitatus/package.json`**
 
 ```json
 {
-  "name": "@claude-domestique/custos",
+  "name": "@claude-domestique/comitatus",
   "version": "0.1.0",
   "description": "herdr workflows plugin for Claude Code - packages the herdr skill, auto-injected inside herdr",
   "main": "hooks/herdr-orient.js",
@@ -75,7 +75,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/flexion/claude-domestique.git",
-    "directory": "custos"
+    "directory": "comitatus"
   },
   "keywords": [
     "claude",
@@ -91,7 +91,7 @@
   "bugs": {
     "url": "https://github.com/flexion/claude-domestique/issues"
   },
-  "homepage": "https://github.com/flexion/claude-domestique/tree/main/custos#readme",
+  "homepage": "https://github.com/flexion/claude-domestique/tree/main/comitatus#readme",
   "devDependencies": {
     "jest": "^30.2.0",
     "jest-github-actions-reporter": "^1.0.3"
@@ -99,7 +99,7 @@
 }
 ```
 
-- [ ] **Step 3: Create `custos/jest.config.js`**
+- [ ] **Step 3: Create `comitatus/jest.config.js`**
 
 ```javascript
 module.exports = {
@@ -121,18 +121,18 @@ module.exports = {
 };
 ```
 
-- [ ] **Step 4: Create `custos/README.md`**
+- [ ] **Step 4: Create `comitatus/README.md`**
 
 ```markdown
-# custos
+# comitatus
 
 Packages the [herdr](https://herdr.dev) agent-orchestration skill as a
-claude-domestique plugin. `custos` is Latin for "keeper/guardian" — one who
+claude-domestique plugin. `comitatus` is Latin for "keeper/guardian" — one who
 tends and guards the herd.
 
 ## What it does
 
-- Ships the `herdr` skill (invoked `custos:herdr`) for controlling herdr from
+- Ships the `herdr` skill (invoked `comitatus:herdr`) for controlling herdr from
   inside it: worktrees, workspaces, tabs/panes, agents, messaging, waiting on
   state — all via the `herdr` CLI.
 - A SessionStart hook that is silent unless you are inside herdr
@@ -155,7 +155,7 @@ a curated workflow skill over the `herdr` CLI; it does not reimplement herdr or
 manage herdr's own codex integration (`~/.codex/herdr-agent-state.sh`).
 ```
 
-- [ ] **Step 5: Add custos to root `package.json` workspaces and test scripts**
+- [ ] **Step 5: Add comitatus to root `package.json` workspaces and test scripts**
 
 In `package.json`, change the `workspaces` array from:
 
@@ -176,38 +176,38 @@ to:
     "mantra",
     "memento",
     "onus",
-    "custos"
+    "comitatus"
   ],
 ```
 
-Then in `scripts`, change the `test` line and add a `test:custos` line:
+Then in `scripts`, change the `test` line and add a `test:comitatus` line:
 
 ```json
-    "test": "npm run test:shared && npm run test:mantra && npm run test:memento && npm run test:onus && npm run test:custos",
+    "test": "npm run test:shared && npm run test:mantra && npm run test:memento && npm run test:onus && npm run test:comitatus",
 ```
 
 Add after the `test:onus` line:
 
 ```json
-    "test:custos": "cd custos && npm test",
+    "test:comitatus": "cd comitatus && npm test",
 ```
 
 And add after `test:coverage:onus`:
 
 ```json
-    "test:coverage:custos": "cd custos && npm run test:coverage",
+    "test:coverage:comitatus": "cd comitatus && npm run test:coverage",
 ```
 
-(Also append `&& npm run test:coverage:custos` to the `test:coverage` script.)
+(Also append `&& npm run test:coverage:comitatus` to the `test:coverage` script.)
 
-- [ ] **Step 6: Add custos to `.claude-plugin/marketplace.json`**
+- [ ] **Step 6: Add comitatus to `.claude-plugin/marketplace.json`**
 
 Append this object to the `plugins` array (after the `agent-artifex` entry):
 
 ```json
     {
-      "name": "custos",
-      "source": "./custos",
+      "name": "comitatus",
+      "source": "./comitatus",
       "description": "herdr workflows - packages the herdr agent-orchestration skill for claude and codex, auto-injected inside herdr",
       "version": "0.1.0"
     }
@@ -215,7 +215,7 @@ Append this object to the `plugins` array (after the `agent-artifex` entry):
 
 (Add a comma after the preceding `agent-artifex` object's closing brace.)
 
-- [ ] **Step 7: Add custos to `scripts/bump-version.js`**
+- [ ] **Step 7: Add comitatus to `scripts/bump-version.js`**
 
 Change line 14 from:
 
@@ -226,7 +226,7 @@ const PLUGINS = ['mantra', 'memento', 'onus', 'agent-artifex'];
 to:
 
 ```javascript
-const PLUGINS = ['mantra', 'memento', 'onus', 'agent-artifex', 'custos'];
+const PLUGINS = ['mantra', 'memento', 'onus', 'agent-artifex', 'comitatus'];
 ```
 
 - [ ] **Step 8: Update `CLAUDE.md`**
@@ -237,43 +237,43 @@ const PLUGINS = ['mantra', 'memento', 'onus', 'agent-artifex', 'custos'];
 **IMPORTANT: Before completing work on any branch that modifies plugin files (mantra/, memento/, onus/, agent-artifex/), run `node scripts/bump-version.js <plugin> <patch|minor|major>` for each affected plugin. Do not merge without bumping.**
 ```
 
-to add `custos/`:
+to add `comitatus/`:
 
 ```
-**IMPORTANT: Before completing work on any branch that modifies plugin files (mantra/, memento/, onus/, agent-artifex/, custos/), run `node scripts/bump-version.js <plugin> <patch|minor|major>` for each affected plugin. Do not merge without bumping.**
+**IMPORTANT: Before completing work on any branch that modifies plugin files (mantra/, memento/, onus/, agent-artifex/, comitatus/), run `node scripts/bump-version.js <plugin> <patch|minor|major>` for each affected plugin. Do not merge without bumping.**
 ```
 
-(b) In the "Repository Structure" tree, add `custos/` under the existing plugin dirs:
+(b) In the "Repository Structure" tree, add `comitatus/` under the existing plugin dirs:
 
 ```
 ├── memento/                 # Session persistence plugin
 ├── onus/                    # Work item automation plugin
-└── custos/                  # herdr workflows plugin
+└── comitatus/                  # herdr workflows plugin
 ```
 
 (c) In the "Context Ownership" table, add a row:
 
 ```
-| **custos** | herdr orchestration | `skills/herdr/SKILL.md` |
+| **comitatus** | herdr orchestration | `skills/herdr/SKILL.md` |
 ```
 
 - [ ] **Step 9: Install and verify registration**
 
 Run: `cd /Users/dpuglielli/github/flexion/claude-domestique && npm install`
-Expected: completes without error; `custos` linked as a workspace.
+Expected: completes without error; `comitatus` linked as a workspace.
 
-Run: `node -e "['custos/.claude-plugin/plugin.json','custos/package.json','.claude-plugin/marketplace.json'].forEach(f=>JSON.parse(require('fs').readFileSync(f,'utf8')));console.log('json ok')"`
+Run: `node -e "['comitatus/.claude-plugin/plugin.json','comitatus/package.json','.claude-plugin/marketplace.json'].forEach(f=>JSON.parse(require('fs').readFileSync(f,'utf8')));console.log('json ok')"`
 Expected: `json ok`
 
-Run: `node -e "const m=require('./.claude-plugin/marketplace.json');console.log(m.plugins.some(p=>p.name==='custos')?'registered':'MISSING')"`
+Run: `node -e "const m=require('./.claude-plugin/marketplace.json');console.log(m.plugins.some(p=>p.name==='comitatus')?'registered':'MISSING')"`
 Expected: `registered`
 
 - [ ] **Step 10: Commit**
 
 ```bash
-git add custos/.claude-plugin/plugin.json custos/package.json custos/jest.config.js custos/README.md package.json package-lock.json .claude-plugin/marketplace.json scripts/bump-version.js CLAUDE.md
+git add comitatus/.claude-plugin/plugin.json comitatus/package.json comitatus/jest.config.js comitatus/README.md package.json package-lock.json .claude-plugin/marketplace.json scripts/bump-version.js CLAUDE.md
 git commit -m "$(cat <<'EOF'
-chore - scaffold and register custos plugin
+chore - scaffold and register comitatus plugin
 EOF
 )"
 ```
@@ -283,15 +283,15 @@ EOF
 ### Task 2: herd.js roster/state helper
 
 **Files:**
-- Create: `custos/skills/herdr/scripts/herd.js`
-- Test: `custos/__tests__/herd.test.js`
+- Create: `comitatus/skills/herdr/scripts/herd.js`
+- Test: `comitatus/__tests__/herd.test.js`
 
 **Interfaces:**
 - Produces: `herd.js` — a CLI reading herdr JSON on stdin. Exports pure functions `{ pane(data, handle), status(data, handleOrPane), members(data, workspaceId), field(data, dotPath), getField(obj, dotPath), dispatch(argv, data), format(value) }`. CLI usage: `herdr agent list | node herd.js pane <handle>`, `... members [--workspace <ws>]`, `... status <handle|pane>`, `<any herdr --json> | node herd.js field <dot.path>`.
 
 - [ ] **Step 1: Write the failing test**
 
-Create `custos/__tests__/herd.test.js`:
+Create `comitatus/__tests__/herd.test.js`:
 
 ```javascript
 const h = require('../skills/herdr/scripts/herd.js');
@@ -367,12 +367,12 @@ describe('dispatch', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd custos && npx jest herd.test.js`
+Run: `cd comitatus && npx jest herd.test.js`
 Expected: FAIL — `Cannot find module '../skills/herdr/scripts/herd.js'`
 
 - [ ] **Step 3: Write minimal implementation**
 
-Create `custos/skills/herdr/scripts/herd.js`:
+Create `comitatus/skills/herdr/scripts/herd.js`:
 
 ```javascript
 #!/usr/bin/env node
@@ -467,21 +467,21 @@ module.exports = { pane, status, members, field, getField, dispatch, format };
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd custos && npx jest herd.test.js`
+Run: `cd comitatus && npx jest herd.test.js`
 Expected: PASS (all suites green).
 
 - [ ] **Step 5: Make herd.js executable and smoke-test the CLI**
 
-Run: `chmod +x custos/skills/herdr/scripts/herd.js`
-Run: `echo '{"result":{"agents":[{"name":"jay","pane_id":"w1:p2"}]}}' | node custos/skills/herdr/scripts/herd.js pane jay`
+Run: `chmod +x comitatus/skills/herdr/scripts/herd.js`
+Run: `echo '{"result":{"agents":[{"name":"jay","pane_id":"w1:p2"}]}}' | node comitatus/skills/herdr/scripts/herd.js pane jay`
 Expected: `w1:p2`
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add custos/skills/herdr/scripts/herd.js custos/__tests__/herd.test.js
+git add comitatus/skills/herdr/scripts/herd.js comitatus/__tests__/herd.test.js
 git commit -m "$(cat <<'EOF'
-chore - add custos herd.js roster/state helper
+chore - add comitatus herd.js roster/state helper
 EOF
 )"
 ```
@@ -491,10 +491,10 @@ EOF
 ### Task 3: Import and adapt the herdr skill content
 
 **Files:**
-- Create: `custos/skills/herdr/SKILL.md`
-- Create: `custos/skills/herdr/reference/cli.md`
-- Create: `custos/skills/herdr/reference/names.md`
-- Create: `custos/skills/herdr/agents/openai.yaml`
+- Create: `comitatus/skills/herdr/SKILL.md`
+- Create: `comitatus/skills/herdr/reference/cli.md`
+- Create: `comitatus/skills/herdr/reference/names.md`
+- Create: `comitatus/skills/herdr/agents/openai.yaml`
 
 **Interfaces:**
 - Consumes: `herd.js` subcommands from Task 2 (the python one-liners are rewritten to call it).
@@ -508,7 +508,7 @@ EOF
 
 ```bash
 SRC=/Users/dpuglielli/github/nucor/Portal-D365-WebApp/.claude/skills/herdr
-DST=custos/skills/herdr
+DST=comitatus/skills/herdr
 mkdir -p "$DST/reference" "$DST/agents"
 fold() { sed -e 's/—/-/g' -e 's/–/-/g' -e 's/→/->/g' -e 's/←/<-/g' \
              -e 's/…/.../g' -e 's/≤/<=/g' -e 's/≥/>=/g' \
@@ -522,15 +522,15 @@ Note: the fold set deliberately does **not** include herdr's glyphs `◆ ◇ ⬨
 
 - [ ] **Step 2: Verify decorative punctuation is gone but glyphs remain**
 
-Run: `LC_ALL=C grep -nE '—|–|→|←|…|≤|≥|“|”|‘|’' custos/skills/herdr/SKILL.md custos/skills/herdr/reference/*.md; echo "exit:$?"`
+Run: `LC_ALL=C grep -nE '—|–|→|←|…|≤|≥|“|”|‘|’' comitatus/skills/herdr/SKILL.md comitatus/skills/herdr/reference/*.md; echo "exit:$?"`
 Expected: no matches; `exit:1` (grep found nothing).
 
-Run: `grep -c '◆\|◇\|⬨\|·' custos/skills/herdr/SKILL.md`
+Run: `grep -c '◆\|◇\|⬨\|·' comitatus/skills/herdr/SKILL.md`
 Expected: a non-zero count (glyphs preserved).
 
 - [ ] **Step 3: Rewrite the python3 one-liners to call herd.js**
 
-Edit `custos/skills/herdr/SKILL.md`. Define the helper path once near the top of the "building blocks" section (add this line just before the first recipe that parses JSON):
+Edit `comitatus/skills/herdr/SKILL.md`. Define the helper path once near the top of the "building blocks" section (add this line just before the first recipe that parses JSON):
 
 ```bash
 H="$CLAUDE_PLUGIN_ROOT/skills/herdr/scripts/herd.js"   # codex: H="$HOME/.codex/skills/herdr/scripts/herd.js"
@@ -556,13 +556,13 @@ four-subcommand scope) — add a trailing comment: `# (label list; helper covers
 
 - [ ] **Step 4: Verify no unconverted handle/field parsing remains**
 
-Run: `grep -nE 'a\["pane_id"\] for a in|"open_workspace_id"|root_pane"\]\["pane_id' custos/skills/herdr/SKILL.md; echo "exit:$?"`
+Run: `grep -nE 'a\["pane_id"\] for a in|"open_workspace_id"|root_pane"\]\["pane_id' comitatus/skills/herdr/SKILL.md; echo "exit:$?"`
 Expected: no matches; `exit:1`.
 
-Run: `grep -c 'node "\$H"' custos/skills/herdr/SKILL.md`
+Run: `grep -c 'node "\$H"' comitatus/skills/herdr/SKILL.md`
 Expected: a count of at least 5 (helper calls present).
 
-- [ ] **Step 5: Create `custos/skills/herdr/agents/openai.yaml`**
+- [ ] **Step 5: Create `comitatus/skills/herdr/agents/openai.yaml`**
 
 ```yaml
 interface:
@@ -575,13 +575,13 @@ interface:
 
 - [ ] **Step 6: Verify the SKILL.md frontmatter still gates on HERDR_ENV**
 
-Run: `grep -n 'HERDR_ENV=1' custos/skills/herdr/SKILL.md | head -1`
+Run: `grep -n 'HERDR_ENV=1' comitatus/skills/herdr/SKILL.md | head -1`
 Expected: a match (the self-gate line survived the fold).
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add custos/skills/herdr/SKILL.md custos/skills/herdr/reference custos/skills/herdr/agents
+git add comitatus/skills/herdr/SKILL.md comitatus/skills/herdr/reference comitatus/skills/herdr/agents
 git commit -m "$(cat <<'EOF'
 chore - import and adapt herdr skill (ascii, herd.js)
 EOF
@@ -593,16 +593,16 @@ EOF
 ### Task 4: Orientation hook (silence + HERDR_ENV gating)
 
 **Files:**
-- Create: `custos/hooks/herdr-orient.js`
-- Create: `custos/hooks/hooks.json`
-- Test: `custos/hooks/__tests__/herdr-orient.test.js`
+- Create: `comitatus/hooks/herdr-orient.js`
+- Create: `comitatus/hooks/hooks.json`
+- Test: `comitatus/hooks/__tests__/herdr-orient.test.js`
 
 **Interfaces:**
 - Produces: `herdr-orient.js` exporting `{ buildOrientation(herdJsPath), provisionCodex(opts), processSessionStart({ env, skillDir, herdJsPath, codexHome }), hashDir(dir), copyDir(src, dest), EXCLUDE }`. `processSessionStart` returns `null` when `env.HERDR_ENV !== '1'`, else `{ systemMessage, hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext } }`. In this task `provisionCodex` is a stub returning `{ provisioned: false, reason: 'skipped' }`; Task 5 implements it.
 
 - [ ] **Step 1: Write the failing test**
 
-Create `custos/hooks/__tests__/herdr-orient.test.js`:
+Create `comitatus/hooks/__tests__/herdr-orient.test.js`:
 
 ```javascript
 const path = require('path');
@@ -632,7 +632,7 @@ describe('processSessionStart gating', () => {
     });
     expect(r).not.toBeNull();
     expect(r.hookSpecificOutput.hookEventName).toBe('SessionStart');
-    expect(r.hookSpecificOutput.additionalContext).toMatch(/custos:herdr/);
+    expect(r.hookSpecificOutput.additionalContext).toMatch(/comitatus:herdr/);
     expect(r.hookSpecificOutput.additionalContext).toContain(HERD_JS);
   });
 });
@@ -640,7 +640,7 @@ describe('processSessionStart gating', () => {
 describe('buildOrientation', () => {
   test('mentions the skill and the helper path', () => {
     const c = hook.buildOrientation('/abs/herd.js');
-    expect(c).toMatch(/custos:herdr/);
+    expect(c).toMatch(/comitatus:herdr/);
     expect(c).toContain('/abs/herd.js');
   });
 });
@@ -648,12 +648,12 @@ describe('buildOrientation', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd custos && npx jest herdr-orient.test.js`
+Run: `cd comitatus && npx jest herdr-orient.test.js`
 Expected: FAIL — `Cannot find module '../herdr-orient.js'`
 
 - [ ] **Step 3: Write minimal implementation**
 
-Create `custos/hooks/herdr-orient.js`:
+Create `comitatus/hooks/herdr-orient.js`:
 
 ```javascript
 #!/usr/bin/env node
@@ -671,10 +671,10 @@ const EXCLUDE = new Set(['__tests__', 'node_modules']);
 
 function buildOrientation(herdJsPath) {
   return [
-    '# herdr (custos)',
+    '# herdr (comitatus)',
     '',
     'You are running inside herdr, a terminal-native agent multiplexer.',
-    'Invoke the `custos:herdr` skill for worktree / herd / pane / agent workflows.',
+    'Invoke the `comitatus:herdr` skill for worktree / herd / pane / agent workflows.',
     `Roster/state helper: \`node ${herdJsPath} <pane|members|status|field> ...\` (reads herdr --json on stdin).`,
   ].join('\n');
 }
@@ -728,7 +728,7 @@ function processSessionStart({ env, skillDir, herdJsPath, codexHome }) {
   }
 
   return {
-    systemMessage: `📍 custos: herdr${provision.provisioned ? ' (codex synced)' : ''}`,
+    systemMessage: `📍 comitatus: herdr${provision.provisioned ? ' (codex synced)' : ''}`,
     hookSpecificOutput: {
       hookEventName: 'SessionStart',
       additionalContext,
@@ -774,10 +774,10 @@ module.exports = {
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd custos && npx jest herdr-orient.test.js`
+Run: `cd comitatus && npx jest herdr-orient.test.js`
 Expected: PASS.
 
-- [ ] **Step 5: Create `custos/hooks/hooks.json`**
+- [ ] **Step 5: Create `comitatus/hooks/hooks.json`**
 
 ```json
 {
@@ -800,18 +800,18 @@ Expected: PASS.
 
 - [ ] **Step 6: Make the hook executable and verify the silent/loud paths end-to-end**
 
-Run: `chmod +x custos/hooks/herdr-orient.js`
-Run: `echo '{}' | HERDR_ENV=0 node custos/hooks/herdr-orient.js; echo "exit:$?"`
+Run: `chmod +x comitatus/hooks/herdr-orient.js`
+Run: `echo '{}' | HERDR_ENV=0 node comitatus/hooks/herdr-orient.js; echo "exit:$?"`
 Expected: no stdout; `exit:0` (silent).
-Run: `echo '{}' | HERDR_ENV=1 node custos/hooks/herdr-orient.js`
-Expected: a JSON line whose `hookSpecificOutput.additionalContext` mentions `custos:herdr`.
+Run: `echo '{}' | HERDR_ENV=1 node comitatus/hooks/herdr-orient.js`
+Expected: a JSON line whose `hookSpecificOutput.additionalContext` mentions `comitatus:herdr`.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add custos/hooks/herdr-orient.js custos/hooks/hooks.json custos/hooks/__tests__/herdr-orient.test.js
+git add comitatus/hooks/herdr-orient.js comitatus/hooks/hooks.json comitatus/hooks/__tests__/herdr-orient.test.js
 git commit -m "$(cat <<'EOF'
-chore - add custos herdr-orient hook (orientation + gating)
+chore - add comitatus herdr-orient hook (orientation + gating)
 EOF
 )"
 ```
@@ -821,22 +821,22 @@ EOF
 ### Task 5: Codex provisioning in the hook
 
 **Files:**
-- Modify: `custos/hooks/herdr-orient.js` (replace the `provisionCodex` stub)
-- Test: `custos/hooks/__tests__/herdr-orient.test.js` (add provisioning suite)
+- Modify: `comitatus/hooks/herdr-orient.js` (replace the `provisionCodex` stub)
+- Test: `comitatus/hooks/__tests__/herdr-orient.test.js` (add provisioning suite)
 
 **Interfaces:**
 - Consumes: `hashDir`, `copyDir`, `EXCLUDE` from Task 4.
-- Produces: `provisionCodex({ skillDir, codexHome })` → `{ provisioned: boolean, reason: 'codex-absent'|'current'|'missing'|'stale' }`. Copies `skillDir` → `<codexHome>/skills/herdr` (excluding `__tests__`/`node_modules`), writes `<codexHome>/skills/herdr/.custos-hash`, and is a no-op when the hash matches. Never creates `<codexHome>/hooks.json`.
+- Produces: `provisionCodex({ skillDir, codexHome })` → `{ provisioned: boolean, reason: 'codex-absent'|'current'|'missing'|'stale' }`. Copies `skillDir` → `<codexHome>/skills/herdr` (excluding `__tests__`/`node_modules`), writes `<codexHome>/skills/herdr/.comitatus-hash`, and is a no-op when the hash matches. Never creates `<codexHome>/hooks.json`.
 
 - [ ] **Step 1: Write the failing test (add to the existing test file)**
 
-Append to `custos/hooks/__tests__/herdr-orient.test.js`:
+Append to `comitatus/hooks/__tests__/herdr-orient.test.js`:
 
 ```javascript
 const fs = require('fs');
 
 function tmpdir() {
-  const base = path.join(require('os').tmpdir(), 'custos-test-' + process.pid + '-' + Math.random().toString(36).slice(2));
+  const base = path.join(require('os').tmpdir(), 'comitatus-test-' + process.pid + '-' + Math.random().toString(36).slice(2));
   fs.mkdirSync(base, { recursive: true });
   return base;
 }
@@ -869,7 +869,7 @@ describe('provisionCodex', () => {
     const dest = path.join(codexHome, 'skills', 'herdr');
     expect(fs.existsSync(path.join(dest, 'SKILL.md'))).toBe(true);
     expect(fs.existsSync(path.join(dest, 'scripts', 'herd.js'))).toBe(true);
-    expect(fs.existsSync(path.join(dest, '.custos-hash'))).toBe(true);
+    expect(fs.existsSync(path.join(dest, '.comitatus-hash'))).toBe(true);
     expect(fs.existsSync(path.join(dest, '__tests__'))).toBe(false); // excluded
     expect(fs.existsSync(path.join(codexHome, 'hooks.json'))).toBe(false); // never written
 
@@ -897,19 +897,19 @@ describe('processSessionStart is failure-tolerant', () => {
       codexHome: tmpdir(),
     });
     expect(r).not.toBeNull();
-    expect(r.hookSpecificOutput.additionalContext).toMatch(/custos:herdr/);
+    expect(r.hookSpecificOutput.additionalContext).toMatch(/comitatus:herdr/);
   });
 });
 ```
 
 - [ ] **Step 2: Run the new tests to verify they fail**
 
-Run: `cd custos && npx jest herdr-orient.test.js -t provisionCodex`
+Run: `cd comitatus && npx jest herdr-orient.test.js -t provisionCodex`
 Expected: FAIL — current stub returns `{ provisioned: false, reason: 'skipped' }`, not the expected results.
 
 - [ ] **Step 3: Replace the `provisionCodex` stub with the real implementation**
 
-In `custos/hooks/herdr-orient.js`, replace:
+In `comitatus/hooks/herdr-orient.js`, replace:
 
 ```javascript
 // Implemented in Task 5.
@@ -926,7 +926,7 @@ function provisionCodex({ skillDir, codexHome }) {
     return { provisioned: false, reason: 'codex-absent' };
   }
   const destSkills = path.join(codexHome, 'skills', 'herdr');
-  const hashFile = path.join(destSkills, '.custos-hash');
+  const hashFile = path.join(destSkills, '.comitatus-hash');
   const srcHash = hashDir(skillDir);
 
   let curHash = null;
@@ -949,20 +949,20 @@ function provisionCodex({ skillDir, codexHome }) {
 
 - [ ] **Step 4: Run the full hook test suite to verify it passes**
 
-Run: `cd custos && npx jest herdr-orient.test.js`
+Run: `cd comitatus && npx jest herdr-orient.test.js`
 Expected: PASS (gating + buildOrientation + provisionCodex + failure-tolerance suites all green).
 
-- [ ] **Step 5: Run the whole custos suite**
+- [ ] **Step 5: Run the whole comitatus suite**
 
-Run: `cd custos && npm test`
+Run: `cd comitatus && npm test`
 Expected: PASS — `herd.test.js` and `herdr-orient.test.js`, no failures.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add custos/hooks/herdr-orient.js custos/hooks/__tests__/herdr-orient.test.js
+git add comitatus/hooks/herdr-orient.js comitatus/hooks/__tests__/herdr-orient.test.js
 git commit -m "$(cat <<'EOF'
-chore - provision herdr skill into codex from custos hook
+chore - provision herdr skill into codex from comitatus hook
 EOF
 )"
 ```
@@ -975,7 +975,7 @@ EOF
 
 | Spec requirement | Task |
 |---|---|
-| Fifth plugin `custos`, name/positioning, version 0.1.0 | Task 1 |
+| Fifth plugin `comitatus`, name/positioning, version 0.1.0 | Task 1 |
 | One plain-ASCII `skills/herdr/` (SKILL.md + reference/ + openai.yaml) | Task 3 |
 | `agents/openai.yaml` inert-for-claude, codex constraints | Task 3 (steps 5) |
 | `herd.js` replacing python one-liners (pane/members/status/field) | Task 2 (helper), Task 3 (conversion) |

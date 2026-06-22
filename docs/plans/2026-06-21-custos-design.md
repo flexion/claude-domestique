@@ -1,18 +1,18 @@
-# Design: custos Plugin
+# Design: comitatus Plugin
 
 **Date:** 2026-06-21
 **Status:** Design
-**Branch:** chore/add-custos-plugin (proposed)
+**Branch:** chore/add-comitatus-plugin (proposed)
 
 ## Summary
 
-Add **custos**, a fifth claude-domestique plugin that packages the herdr
+Add **comitatus**, a fifth claude-domestique plugin that packages the herdr
 agent-orchestration skill so it installs cleanly from the marketplace, auto-
 orients Claude when running inside herdr, ships a small Node helper for
 roster/state queries, and **also serves codex agents** (herds mix claude and
 codex) by auto-provisioning the *same* skill into codex's skill-discovery path.
 
-`custos` is Latin for "keeper/guardian" (root of "custodian") — one who tends
+`comitatus` is Latin for "keeper/guardian" (root of "custodian") — one who tends
 and guards the herd. It follows the family's evocative-Latin naming convention
 (memento = "remember", onus = "burden"). The name deliberately avoids herdr's
 own reserved orchestrator-role labels (shepherd / drover / wrangler) so there is
@@ -20,14 +20,14 @@ no collision when those labels are used inside herdr.
 
 The plugin does **not** reimplement herdr or duplicate herdr's runtime
 integration. herdr is a terminal-native agent multiplexer with its own `herdr`
-CLI; custos packages a curated workflow skill over that CLI. Canonical herdr
+CLI; comitatus packages a curated workflow skill over that CLI. Canonical herdr
 docs live upstream at herdr.dev.
 
 ## Key decision: one identical skill for all runtimes
 
 The origin repo keeps two near-duplicate copies of the skill — a "pretty"
 claude copy (Unicode typography) and an ASCII codex copy — which drift apart
-because they are hand-maintained. custos collapses this: the skill is authored
+because they are hand-maintained. comitatus collapses this: the skill is authored
 **once, in plain ASCII**, and that single directory is what both claude and
 codex use, byte-for-byte.
 
@@ -48,9 +48,9 @@ The only thing that remains runtime-specific is *delivery*, not content.
 A herd mixes claude and codex agents in panes. Each runtime discovers skills
 differently, so the same files reach them by different routes:
 
-| Runtime | How it gets the skill | What custos does |
+| Runtime | How it gets the skill | What comitatus does |
 |---|---|---|
-| **claude** | custos installed globally as a marketplace plugin → every claude agent in every pane/worktree has `custos:herdr`. | Ship `skills/herdr/`. |
+| **claude** | comitatus installed globally as a marketplace plugin → every claude agent in every pane/worktree has `comitatus:herdr`. | Ship `skills/herdr/`. |
 | **codex** | Codex reads `~/.codex/skills/<name>/` (global) and `<repo>/.codex/skills/<name>/` (project). No plugin concept. | Auto-provision: copy `skills/herdr/` verbatim into `~/.codex/skills/herdr/`. |
 
 The codex skill-interface manifest `agents/openai.yaml` lives inside the single
@@ -84,7 +84,7 @@ Out of scope (explicit):
 - **herdr's own codex integration.** herdr installs and manages
   `~/.codex/herdr-agent-state.sh` and a SessionStart entry in
   `~/.codex/hooks.json` (version-stamped, self-overwriting, agent-state
-  reporting over the socket). custos **never reads or writes** those files and
+  reporting over the socket). comitatus **never reads or writes** those files and
   ships no codex hook of its own.
 - Slash-command wrappers around herd plays — workflows stay as prose "composed
   flows" inside the skill.
@@ -96,7 +96,7 @@ One skill, kept at its existing identity so its trigger description is unchanged
 
 | Skill | Invoked as | Description (frontmatter, unchanged) |
 |---|---|---|
-| `herdr` | `custos:herdr` | Control herdr from inside it — worktrees, workspaces, tabs/panes, agents, messaging, waiting on state, via the `herdr` CLI. Use when `HERDR_ENV=1`. |
+| `herdr` | `comitatus:herdr` | Control herdr from inside it — worktrees, workspaces, tabs/panes, agents, messaging, waiting on state, via the `herdr` CLI. Use when `HERDR_ENV=1`. |
 
 Imported from the origin skill with two edits: (1) ASCII the decorative
 punctuation (keeping herdr's literal glyphs), and (2) rewrite the inline
@@ -113,7 +113,7 @@ Registered like onus's SessionStart hook (`hooks/hooks.json` →
   side-effect-free outside herdr.
 - If `1`:
   1. **Orient claude** — return `additionalContext` (the standard SessionStart
-     contract domestique uses): you are inside herdr; invoke `custos:herdr` for
+     contract domestique uses): you are inside herdr; invoke `comitatus:herdr` for
      worktree/herd/pane/agent workflows; the helper is at the resolved absolute
      `herd.js` path. Kept lean (consistent with mantra's context-budget trim).
   2. **Provision codex (only if codex is present)** — if `~/.codex/` exists,
@@ -154,7 +154,7 @@ agents reach the copied file under `~/.codex/skills/herdr/scripts/herd.js`.
 ## Directory structure
 
 ```
-custos/
+comitatus/
 ├── .claude-plugin/plugin.json     # manifest: skills + hooks, no version field
 ├── hooks/
 │   ├── hooks.json                 # SessionStart → herdr-orient.js
@@ -173,7 +173,7 @@ custos/
 
 ## Testing
 
-Jest, matching the other plugins (`cd custos && npm test`):
+Jest, matching the other plugins (`cd comitatus && npm test`):
 
 - **Hook** — `HERDR_ENV=1`: orientation `additionalContext` contains the skill
   name + resolved helper path; with a temp `HOME`/codex dir present it copies
@@ -188,20 +188,20 @@ Jest, matching the other plugins (`cd custos && npm test`):
 ## Versioning & wiring
 
 - New plugin starts at **0.1.0** (as agent-artifex did).
-- Add a `custos` entry to `.claude-plugin/marketplace.json`.
-- **Add `custos` to the hardcoded `PLUGINS` array in `scripts/bump-version.js`.**
-  (agent-artifex's plugin.json has no `version` field; custos follows the same
+- Add a `comitatus` entry to `.claude-plugin/marketplace.json`.
+- **Add `comitatus` to the hardcoded `PLUGINS` array in `scripts/bump-version.js`.**
+  (agent-artifex's plugin.json has no `version` field; comitatus follows the same
   pattern — version lives only at the marketplace level.)
 - Update `CLAUDE.md`:
-  - the version-bump IMPORTANT line (add custos);
+  - the version-bump IMPORTANT line (add comitatus);
   - the repository-structure section;
-  - the Context Ownership table — add a custos row ("herdr orchestration",
+  - the Context Ownership table — add a comitatus row ("herdr orchestration",
     `skills/herdr/SKILL.md`).
 
 ## Provenance
 
 The skill derives from herdr's upstream documentation (origin copies currently
 live in a separate project). The README states that canonical herdr docs live
-upstream (herdr.dev) and that custos packages a curated workflow skill over the
+upstream (herdr.dev) and that comitatus packages a curated workflow skill over the
 `herdr` CLI. There is one skill source under `skills/herdr/`; codex uses the
 same files via the auto-provisioned copy.

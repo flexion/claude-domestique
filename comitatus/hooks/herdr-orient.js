@@ -13,10 +13,10 @@ const EXCLUDE = new Set(['__tests__', 'node_modules']);
 
 function buildOrientation(herdJsPath) {
   return [
-    '# herdr (custos)',
+    '# herdr (comitatus)',
     '',
     'You are running inside herdr, a terminal-native agent multiplexer.',
-    'Invoke the `custos:herdr` skill for worktree / herd / pane / agent workflows.',
+    'Invoke the `comitatus:herdr` skill for worktree / herd / pane / agent workflows.',
     `Roster/state helper: \`node ${herdJsPath} <pane|members|status|field> ...\` (reads herdr --json on stdin).`,
   ].join('\n');
 }
@@ -54,7 +54,7 @@ function provisionCodex({ skillDir, codexHome }) {
     return { provisioned: false, reason: 'codex-absent' };
   }
   const destSkills = path.join(codexHome, 'skills', 'herdr');
-  const hashFile = path.join(destSkills, '.custos-hash');
+  const hashFile = path.join(destSkills, '.comitatus-hash');
   const srcHash = hashDir(skillDir);
 
   let curHash = null;
@@ -90,7 +90,7 @@ function processSessionStart({ env, skillDir, herdJsPath, codexHome }) {
   }
 
   return {
-    systemMessage: `📍 custos: herdr${provision.provisioned ? ' (codex synced)' : ''}`,
+    systemMessage: `📍 comitatus: herdr${provision.provisioned ? ' (codex synced)' : ''}`,
     hookSpecificOutput: {
       hookEventName: 'SessionStart',
       additionalContext,

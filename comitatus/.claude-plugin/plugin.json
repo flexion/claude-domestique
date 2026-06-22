@@ -1,11 +1,11 @@
 {
-  "name": "custos",
+  "name": "comitatus",
   "description": "herdr workflows - packages the herdr agent-orchestration skill for claude and codex, auto-injected inside herdr",
   "author": {
     "name": "Flexion"
   },
   "repository": "https://github.com/flexion/claude-domestique",
-  "homepage": "https://github.com/flexion/claude-domestique/tree/main/custos",
+  "homepage": "https://github.com/flexion/claude-domestique/tree/main/comitatus",
   "license": "MIT",
   "keywords": [
     "herdr",

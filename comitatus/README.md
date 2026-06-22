@@ -1,12 +1,12 @@
-# custos
+# comitatus
 
 Packages the [herdr](https://herdr.dev) agent-orchestration skill as a
-claude-domestique plugin. `custos` is Latin for "keeper/guardian" — one who
-tends and guards the herd.
+claude-domestique plugin. `comitatus` is Latin for a retinue or band of
+companions — the followers who travel and work together under one leader.
 
 ## What it does
 
-- Ships the `herdr` skill (invoked `custos:herdr`) for controlling herdr from
+- Ships the `herdr` skill (invoked `comitatus:herdr`) for controlling herdr from
   inside it: worktrees, workspaces, tabs/panes, agents, messaging, waiting on
   state — all via the `herdr` CLI.
 - A SessionStart hook that is silent unless you are inside herdr
