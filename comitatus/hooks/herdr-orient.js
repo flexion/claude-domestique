@@ -17,7 +17,16 @@ function buildOrientation(herdJsPath) {
     '',
     'You are running inside herdr, a terminal-native agent multiplexer.',
     'Invoke the `comitatus:herdr` skill for worktree / herd / pane / agent workflows.',
-    `Roster/state helper: \`node ${herdJsPath} <pane|members|status|field> ...\` (reads herdr --json on stdin).`,
+    '',
+    'Roster/state helper - capture the path into `H`, then use `$H` in the skill recipes',
+    '(it reads `herdr ... --json` on stdin; commands: pane|members|status|field):',
+    '',
+    `    H=${herdJsPath}`,
+    '',
+    'This path is version-pinned (it moves on every comitatus update), so re-read `H`',
+    'from this orientation each session - do not persist it, and do not rebuild it from an',
+    'env var (none is set in your shell). codex agents use the stable',
+    '`$HOME/.codex/skills/herdr/scripts/herd.js` instead.',
   ].join('\n');
 }
 

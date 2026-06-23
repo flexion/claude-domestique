@@ -36,6 +36,22 @@ describe('buildOrientation', () => {
     expect(c).toMatch(/comitatus:herdr/);
     expect(c).toContain('/abs/herd.js');
   });
+
+  test('emits a copy-pasteable H= assignment of the helper path', () => {
+    const c = hook.buildOrientation('/abs/herd.js');
+    expect(c).toContain('H=/abs/herd.js');
+  });
+
+  test('warns the path is version-pinned and must be re-read, not persisted', () => {
+    const c = hook.buildOrientation('/abs/herd.js');
+    expect(c).toMatch(/version-pinned/i);
+    expect(c).toMatch(/do not persist|don't persist|re-read/i);
+  });
+
+  test('does not steer agents to the unset $CLAUDE_PLUGIN_ROOT', () => {
+    const c = hook.buildOrientation('/abs/herd.js');
+    expect(c).not.toContain('CLAUDE_PLUGIN_ROOT');
+  });
 });
 
 const fs = require('fs');
