@@ -11,6 +11,25 @@ you are running inside herdr, a terminal-native agent multiplexer. herdr gives y
 
 if you need the raw protocol, read the [socket api docs](https://herdr.dev/docs/socket-api/). for the full flag-by-flag command surface, see [reference/cli.md](reference/cli.md).
 
+## quickstart - the 80% path
+
+create a worktree and put one claude agent on it. `H` is the herd.js helper path from your herdr orientation (the `H=...` line); concepts, naming, and the rest are below.
+
+```bash
+H=...                                   # paste from your herdr orientation
+git fetch origin main                   # --base origin/main is a local ref; refresh it first
+OUT=$(herdr worktree create --branch chore/my-slug --base origin/main --no-focus --json)
+WS=$(echo "$OUT"   | node "$H" field result.worktree.open_workspace_id)
+ROOT=$(echo "$OUT" | node "$H" field result.root_pane.pane_id)
+
+herdr tab rename "${WS}:t1" "fox ◆"     # the only label you set: handle + model glyph
+herdr pane run "$ROOT" "claude"
+herdr wait agent-status "$ROOT" --status idle --timeout 40000
+herdr agent rename "$ROOT" fox          # fox is now addressable: herdr agent send fox "..."
+```
+
+that is one worktree, one agent. add more agents (a tab each), message them, and tear down with the building blocks below.
+
 ## concepts
 
 herdr nests like this: **repo -> worktree -> workspace -> tab -> pane -> agent** - but only for repo-associated workspaces; a plain `workspace create` sits *outside* this tree (see `## naming` and gotchas).
@@ -102,7 +121,10 @@ herdr ties one workspace to a worktree, so keep all its agents in that **one** w
 agent 1 runs in the worktree's root pane (from step 1, tab `<ws>:t1`). each additional agent gets a new tab in the same workspace:
 
 ```bash
-H="$CLAUDE_PLUGIN_ROOT/skills/herdr/scripts/herd.js"   # codex: H="$HOME/.codex/skills/herdr/scripts/herd.js"
+# H = the herd.js helper. take it from your herdr orientation's `H=...` line; it is
+# version-pinned on the claude side, so re-read it each session and don't persist it.
+# codex agents use the stable path: H="$HOME/.codex/skills/herdr/scripts/herd.js"
+H="${H:?set H from your herdr orientation (the 'Roster/state helper' line)}"
 WT=~/.herdr/worktrees/<repo>/chore-my-slug
 WS=wR            # worktree's open_workspace_id from step 1
 ROOT1=wR:p1      # worktree's root_pane from step 1
@@ -146,12 +168,22 @@ the handle is also the pane label. the decorated **tab** label (step 3) does **n
 
 ### 5. message another agent by handle
 
-`agent send` writes literal text and does **not** press Enter. send, then submit - the recipient's reply confirms it landed:
+`agent send` writes literal text and returns `{"result":{"type":"ok"}}` once the text is *typed* - that ack is **not** *submitted*. the message sits in the recipient's input buffer until you press Enter, so always send **and** submit; the recipient's reply confirms it landed:
 
 ```bash
 PANE=$(herdr agent list | node "$H" pane jay)
 herdr agent send jay "please rerun the failing test in src/api/"
 herdr pane send-keys "$PANE" Enter
+```
+
+prefer a reusable wrapper so you stay name-based (no hand-resolved pane id). define it once in your pane shell, then `hsend jay "..."`:
+
+```bash
+hsend() {  # hsend <handle> <one-line-message>
+  local pane; pane=$(herdr agent list | node "$H" pane "$1") || return 1
+  [ -n "$pane" ] || { echo "hsend: no agent '$1'" >&2; return 1; }
+  herdr agent send "$1" "$2" && herdr pane send-keys "$pane" Enter
+}
 ```
 
 the Enter is dropped only if `jay` was mid-generation (`working`); if no reply comes back, resend. for replies, seeding, roster, and how to handle no-reply messages, see the from/to protocol below.
@@ -279,7 +311,7 @@ while [ "$(herdr agent list | node "$H" status "$TO_PANE")" = working ]; do slee
 
 **cross-herd is the same call.** `agent send <handle>` resolves the handle from the global `agent list`, so it reaches *any* agent - same herd or not (verified: an agent in one herd messaged a member of another by handle and it landed). the only extra requirement for reaching another herd is **knowing the target handle**: rosters are per-herd, so an operator (or an explicit introduction message) must supply the outside handle before an agent can address it.
 
-**seeding (required):** a cold agent knows neither this protocol nor its own handle. before relying on it, message each agent once with its handle, the teammate handles, and this protocol. they are not born knowing it.
+**seeding (required):** a cold agent knows neither this protocol nor its own handle. before relying on it, message each agent once with its handle, the teammate handles, and this protocol. they are not born knowing it. **promoting a solo agent into a herd counts as cold:** an agent you started alone - no handle, no protocol - does not become a herd member just because you added a second agent next to it. the moment a herd forms, seed the incumbent too (handle, roster, protocol), not only the newcomer, then announce both with `[herd +<handle>]`. "it was already running" is not "it knows the protocol."
 
 **membership / roster sync (join & leave):** keep every agent's roster current as members come and go. directive form, distinct from `[from X]` so it is never relayed or replied to (handle-only - the pane is resolved at send time, so it survives restarts):
 
@@ -297,6 +329,7 @@ seed the rule into every orientation: "periodically reconcile your roster agains
 
 **delivery reliability (validated by testing):**
 
+- **`agent send` returns `ok` for *typed*, not *delivered*.** the `{"result":{"type":"ok"}}` ack means the text reached the recipient's input buffer; it does **not** mean the agent saw it. submitting is the separate `pane send-keys <pane> Enter` step (or the `hsend` helper) - until then the message sits unsubmitted in the prompt. treat the reply, not the `ok`, as proof of delivery.
 - **the reply, or its absence, is the signal.** push the message and let the reply confirm it - a `[from <to>]` turn landing in your pane means it arrived; nothing landing means the Enter dropped (the recipient was `working`), so resend. you don't pre-check the recipient for reply-expecting messages.
 - **no-reply messages need a check.** a directive that expects no reply (`[herd ...]`, a one-way note) has nothing to confirm delivery, so send it when the recipient is not `working` (poll) or read its pane to verify - reliable `agent_status` is what makes the poll checkable, so a broken integration (see the opencode status fix) breaks it. (roster directives tolerate drops anyway: peer-detection re-discovers a missed add/remove.)
 - **pre-authorize `herdr`.** an agent that prompts for per-command tool approval before running `herdr ...` stalls mid-protocol. allowlist `herdr` in each agent's tool-permission config (the legacy herdr-mate pre-authorized its send wrapper for exactly this).
@@ -328,7 +361,7 @@ herdr wait agent-status w9:p1 --status done --timeout 120000   # a sibling finis
 ## gotchas
 
 - **fetch before `worktree create`** - `--base origin/main` is the local ref; it is stale until you `git fetch origin main`.
-- **`agent send` has no Enter, and the Enter drops only while the target is `working`** - send + `pane send-keys <pane> Enter` and let the reply confirm it landed (resend on silence); only for a no-reply message poll until the target is not `working` first, or verify by reading its pane. don't blindly double-tap. (full recipe in the from/to protocol section.)
+- **`agent send` returns `ok` for *typed*, not *submitted*, and sends no Enter** - the `ok` ack only means the text reached the input buffer; the message sits unsubmitted until you press Enter (`pane send-keys <pane> Enter`, dropped only while the target is `working`). pair every send with the Enter - or use the `hsend` helper (step 5) - and let the reply confirm it landed (resend on silence); only for a no-reply message poll until the target is not `working` first, or verify by reading its pane. don't blindly double-tap. (full recipe in the from/to protocol section.)
 - **codex TUI paste gotcha** - a long `send-text` / `agent send` into a codex TUI may be ingested as a bracketed paste that a single Enter does not submit. keep protocol messages one line and short. if you deliberately send a long codex message and silence follows, send one extra Enter or retry as shorter one-line chunks.
 - **opencode status needs the fix plugin** - herdr 0.7.0's managed opencode integration is out of date with opencode 1.17.8 (object-form `session.status` + fire-and-forget idle), so opencode agents get stuck `working` / never report state right. the sibling plugin `~/.config/opencode/plugins/herdr-opencode-status-fix.js` restores correct working/idle/blocked reporting. without it, `wait agent-status` on an opencode pane is unreliable.
 - **only the home repo's worktree tree nests; plain workspaces don't** - the sidebar nests exactly one repo group (main checkout -> its linked worktrees -> tabs), keyed on `repo_root`. a `workspace create --cwd` workspace gets **no** repo association and floats ungrouped, even at a repo root. give each agent in a herd a *tab* in the herd's one workspace; make the herd a worktree if you want it to nest under the repo's main checkout.
@@ -339,8 +372,9 @@ herdr wait agent-status w9:p1 --status done --timeout 120000   # a sibling finis
 - **`worktree create`/`open` run from the repo's main-checkout workspace** - invoked from inside a linked worktree they error `linked_worktree_source` ("new and open worktree actions start from the repo parent workspace"). pass `--workspace <main-checkout-ws>` (or run from there); the CLI cwd does not select the source workspace, the flag does.
 - **detect before `agent rename`** - a model launched with `pane run` is only renameable once herdr detects it. `herdr wait agent-status <pane> --status idle` first, or the rename misses the target.
 - **decorated labels are manual** - `sly ◆` style labels are set with `tab rename`, not auto-derived. renaming the handle does not update the tab label; re-`tab rename` to keep them in sync.
+- **the herd.js helper path comes from your orientation, not an env var** - `$CLAUDE_PLUGIN_ROOT` is not set in your shell, so don't build the path from it (it silently yields a broken `/skills/.../herd.js`). copy `H` from the `H=...` line in your herdr orientation. the claude-side path is version-pinned and moves on every comitatus update, so re-read it each session - a persisted path breaks after an upgrade. codex agents use the stable `$HOME/.codex/skills/herdr/scripts/herd.js`.
 - **`agent start` needs both `--cwd` and `--workspace`** - the ad-hoc escape hatch (vs the default `pane run` in a tab) takes `--cwd <worktree-path>` for the working dir (the cwd association `agent list` uses) and `--workspace <id>` for pane placement; they are independent. `--workspace` alone leaves the agent on *your* cwd, editing the wrong tree.
 - **cwd is the resolved path** - herdr stores an agent's `cwd` OS-resolved, so a symlinked root differs from what you launched with (macOS `/tmp` -> `/private/tmp`). when you filter `agent list` by cwd to find a herd, compare against the resolved path (`cd <dir>; pwd -P`), not the string you passed, or you'll see zero agents on a herd that is running fine.
 - **ids are not durable** - re-read them; never reuse an old id.
-- **read vs wait** - `pane read` for output that already exists; `wait output` for output you expect next.
+- **read vs wait, and `recent` can lag** - `pane read` for output that already exists; `wait output` for output you expect next. `pane read --source recent` can come back **empty while a pane is still freshly producing output** (the scrollback render has not caught up); fall back to `--source visible` (the live viewport) or `wait output --match <text>` for the line you expect - do not read an empty `recent` as "nothing is there."
 - **json output** - agent/workspace/pane commands print json; worktree commands print json with `--json`. `pane read` prints text; `send-text`/`send-keys`/`run` print nothing on success.
