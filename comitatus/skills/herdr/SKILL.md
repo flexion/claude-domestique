@@ -102,7 +102,10 @@ herdr ties one workspace to a worktree, so keep all its agents in that **one** w
 agent 1 runs in the worktree's root pane (from step 1, tab `<ws>:t1`). each additional agent gets a new tab in the same workspace:
 
 ```bash
-H="$CLAUDE_PLUGIN_ROOT/skills/herdr/scripts/herd.js"   # codex: H="$HOME/.codex/skills/herdr/scripts/herd.js"
+# H = the herd.js helper. take it from your herdr orientation's `H=...` line; it is
+# version-pinned on the claude side, so re-read it each session and don't persist it.
+# codex agents use the stable path: H="$HOME/.codex/skills/herdr/scripts/herd.js"
+H="${H:?set H from your herdr orientation (the 'Roster/state helper' line)}"
 WT=~/.herdr/worktrees/<repo>/chore-my-slug
 WS=wR            # worktree's open_workspace_id from step 1
 ROOT1=wR:p1      # worktree's root_pane from step 1
@@ -339,6 +342,7 @@ herdr wait agent-status w9:p1 --status done --timeout 120000   # a sibling finis
 - **`worktree create`/`open` run from the repo's main-checkout workspace** - invoked from inside a linked worktree they error `linked_worktree_source` ("new and open worktree actions start from the repo parent workspace"). pass `--workspace <main-checkout-ws>` (or run from there); the CLI cwd does not select the source workspace, the flag does.
 - **detect before `agent rename`** - a model launched with `pane run` is only renameable once herdr detects it. `herdr wait agent-status <pane> --status idle` first, or the rename misses the target.
 - **decorated labels are manual** - `sly ◆` style labels are set with `tab rename`, not auto-derived. renaming the handle does not update the tab label; re-`tab rename` to keep them in sync.
+- **the herd.js helper path comes from your orientation, not an env var** - `$CLAUDE_PLUGIN_ROOT` is not set in your shell, so don't build the path from it (it silently yields a broken `/skills/.../herd.js`). copy `H` from the `H=...` line in your herdr orientation. the claude-side path is version-pinned and moves on every comitatus update, so re-read it each session - a persisted path breaks after an upgrade. codex agents use the stable `$HOME/.codex/skills/herdr/scripts/herd.js`.
 - **`agent start` needs both `--cwd` and `--workspace`** - the ad-hoc escape hatch (vs the default `pane run` in a tab) takes `--cwd <worktree-path>` for the working dir (the cwd association `agent list` uses) and `--workspace <id>` for pane placement; they are independent. `--workspace` alone leaves the agent on *your* cwd, editing the wrong tree.
 - **cwd is the resolved path** - herdr stores an agent's `cwd` OS-resolved, so a symlinked root differs from what you launched with (macOS `/tmp` -> `/private/tmp`). when you filter `agent list` by cwd to find a herd, compare against the resolved path (`cd <dir>; pwd -P`), not the string you passed, or you'll see zero agents on a herd that is running fine.
 - **ids are not durable** - re-read them; never reuse an old id.
