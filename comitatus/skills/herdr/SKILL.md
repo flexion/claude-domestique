@@ -301,7 +301,7 @@ while [ "$(herdr agent list | node "$H" status "$TO_PANE")" = working ]; do slee
 
 **cross-herd is the same call.** `agent send <handle>` resolves the handle from the global `agent list`, so it reaches *any* agent - same herd or not (verified: an agent in one herd messaged a member of another by handle and it landed). the only extra requirement for reaching another herd is **knowing the target handle**: rosters are per-herd, so an operator (or an explicit introduction message) must supply the outside handle before an agent can address it.
 
-**seeding (required):** a cold agent knows neither this protocol nor its own handle. before relying on it, message each agent once with its handle, the teammate handles, and this protocol. they are not born knowing it.
+**seeding (required):** a cold agent knows neither this protocol nor its own handle. before relying on it, message each agent once with its handle, the teammate handles, and this protocol. they are not born knowing it. **promoting a solo agent into a herd counts as cold:** an agent you started alone - no handle, no protocol - does not become a herd member just because you added a second agent next to it. the moment a herd forms, seed the incumbent too (handle, roster, protocol), not only the newcomer, then announce both with `[herd +<handle>]`. "it was already running" is not "it knows the protocol."
 
 **membership / roster sync (join & leave):** keep every agent's roster current as members come and go. directive form, distinct from `[from X]` so it is never relayed or replied to (handle-only - the pane is resolved at send time, so it survives restarts):
 
