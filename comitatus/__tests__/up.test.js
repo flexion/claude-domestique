@@ -155,3 +155,22 @@ describe('up', () => {
     expect(() => up(['--branch', 'b', '--claude', 'sly'], { run })).toThrow(/worktree_create_failed/);
   });
 });
+
+const { execFileSync } = require('child_process');
+const path = require('path');
+
+const HERD = path.join(__dirname, '..', 'skills', 'herdr', 'scripts', 'herd.js');
+
+describe('herd.js up wiring', () => {
+  test('node herd.js up with no flags errors on stderr and exits non-zero', () => {
+    let err;
+    try {
+      execFileSync('node', [HERD, 'up'], { encoding: 'utf8', stdio: 'pipe' });
+    } catch (e) {
+      err = e;
+    }
+    expect(err).toBeDefined();
+    expect(err.status).toBe(1);
+    expect(String(err.stderr)).toMatch(/herd up: --branch is required/);
+  });
+});
