@@ -11,6 +11,25 @@ you are running inside herdr, a terminal-native agent multiplexer. herdr gives y
 
 if you need the raw protocol, read the [socket api docs](https://herdr.dev/docs/socket-api/). for the full flag-by-flag command surface, see [reference/cli.md](reference/cli.md).
 
+## quickstart - the 80% path
+
+create a worktree and put one claude agent on it. `H` is the herd.js helper path from your herdr orientation (the `H=...` line); concepts, naming, and the rest are below.
+
+```bash
+H=...                                   # paste from your herdr orientation
+git fetch origin main                   # --base origin/main is a local ref; refresh it first
+OUT=$(herdr worktree create --branch chore/my-slug --base origin/main --no-focus --json)
+WS=$(echo "$OUT"   | node "$H" field result.worktree.open_workspace_id)
+ROOT=$(echo "$OUT" | node "$H" field result.root_pane.pane_id)
+
+herdr tab rename "${WS}:t1" "fox ◆"     # the only label you set: handle + model glyph
+herdr pane run "$ROOT" "claude"
+herdr wait agent-status "$ROOT" --status idle --timeout 40000
+herdr agent rename "$ROOT" fox          # fox is now addressable: herdr agent send fox "..."
+```
+
+that is one worktree, one agent. add more agents (a tab each), message them, and tear down with the building blocks below.
+
 ## concepts
 
 herdr nests like this: **repo -> worktree -> workspace -> tab -> pane -> agent** - but only for repo-associated workspaces; a plain `workspace create` sits *outside* this tree (see `## naming` and gotchas).
