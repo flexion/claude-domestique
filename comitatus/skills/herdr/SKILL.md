@@ -17,16 +17,37 @@ create a worktree and put one claude agent on it. `H` is the herd.js helper path
 
 ```bash
 H=...                                   # paste from your herdr orientation
-git fetch origin main                   # --base origin/main is a local ref; refresh it first
-OUT=$(herdr worktree create --branch chore/my-slug --base origin/main --no-focus --json)
-WS=$(echo "$OUT"   | node "$H" field result.worktree.open_workspace_id)
-ROOT=$(echo "$OUT" | node "$H" field result.root_pane.pane_id)
-
-herdr tab rename "${WS}:t1" "fox ◆"     # the only label you set: handle + model glyph
-herdr pane run "$ROOT" "claude"
-herdr wait agent-status "$ROOT" --status idle --timeout 40000
-herdr agent rename "$ROOT" fox          # fox is now addressable: herdr agent send fox "..."
+node "$H" up --branch chore/my-slug --base origin/main \
+  --claude fox                          # one worktree, one claude agent named "fox"
 ```
+
+`up` does it all in one process — `git fetch`, `worktree create`, and per-agent
+`pane run` + idle-wait + `agent rename` — and prints a JSON summary:
+
+```json
+{ "worktree": { "path": "…", "workspace_id": "wR" },
+  "agents": [ { "handle": "fox", "model": "claude", "pane_id": "wR:p1", "tab": "wR:t1" } ] }
+```
+
+Add more agents by repeating the per-type flag; flag order is tab order:
+
+```bash
+node "$H" up --branch chore/my-slug --base origin/main \
+  --claude sly --codex jay --opencode bob:ollama/qwen2.5:7b
+```
+
+| flag | runs | glyph |
+|---|---|---|
+| `--claude <handle>` | `claude` | ◆ |
+| `--codex <handle>` | `codex` | ◇ |
+| `--opencode <handle>:<model>` | `opencode -m <model>` | ⬨ |
+
+`up` collapses the multi-step recipe (which threaded ids through `$(…)`
+substitutions and tripped one permission prompt *per step*) into a single
+command. Defaults: `--base origin/main`, `--timeout 45000` (ms, per agent's
+idle-wait). Handles must be unique — `up` pre-checks `agent list` and refuses
+before creating the worktree if one is taken. The lower-level building blocks
+below remain for everything `up` does not cover (reattach, teardown, messaging).
 
 that is one worktree, one agent. add more agents (a tab each), message them, and tear down with the building blocks below.
 
@@ -87,6 +108,8 @@ herdr workspace list       # workspaces and labels
 these are the small, composable operations. chain them for bigger flows.
 
 ### 1. new worktree on a new branch off fresh origin/main
+
+> For the common case — create a worktree and launch a herd — use `node "$H" up …` (see the quickstart). The steps below are the primitives `up` is built from; reach for them for the cases `up` does not cover.
 
 `worktree create` uses your **local** `origin/main` and does **not** fetch. fetch first.
 
@@ -216,29 +239,12 @@ git branch -D chore/my-slug          # remove does NOT delete the branch
 ### spin up a paired reviewer in a fresh worktree
 
 ```bash
-git fetch origin main
-OUT=$(herdr worktree create --branch chore/review-x --base origin/main --no-focus --json)
-WT=$(echo "$OUT"    | node "$H" field result.worktree.path)
-WS=$(echo "$OUT"    | node "$H" field result.worktree.open_workspace_id)
-ROOT1=$(echo "$OUT" | node "$H" field result.root_pane.pane_id)
+node "$H" up --branch chore/review-x --base origin/main \
+  --claude sly --codex jay          # sly = claude in tab 1, jay = codex in tab 2
 
-herdr tab rename "${WS}:t1" "sly ◆"    # workspace "$WS" is already labeled "chore-review-x" by herdr
-
-# sly = claude in tab 1 (the worktree's root pane)
-herdr pane run "$ROOT1" "claude"
-herdr wait agent-status "$ROOT1" --status idle --timeout 40000
-herdr agent rename "$ROOT1" sly
-
-# jay = codex in a second tab of the same workspace
-T=$(herdr tab create --workspace "$WS" --cwd "$WT" --label "jay ◇" --no-focus)
-ROOT2=$(echo "$T" | node "$H" field result.root_pane.pane_id)
-herdr pane run "$ROOT2" "codex"
-herdr wait agent-status "$ROOT2" --status idle --timeout 40000
-herdr agent rename "$ROOT2" jay
-
-# sly reviews; jay cross-checks
+# sly reviews; jay cross-checks (resolve panes from up's JSON or `agent list`)
 herdr agent send sly "review the diff on this branch; jay is cross-checking"
-herdr pane send-keys "$ROOT1" Enter
+herdr pane send-keys "$(herdr agent list | node "$H" pane sly)" Enter
 ```
 
 ### tear a worktree down completely
@@ -261,20 +267,12 @@ a herd does **not** require a worktree. launch one at any cwd - most usefully th
 an agent's **cwd is fixed at launch**, and herdr keys worktree-association on cwd - you cannot re-cwd a running agent. so reassigning a herd = **relaunching** it on the new worktree. handles are preserved; conversation + protocol seeding are **not**. handles must be unique, so the old herd comes down before the new one comes up.
 
 ```bash
-git fetch origin main
-NEW=$(herdr worktree create --branch chore/new-slug --base origin/main --no-focus --json)   # workspace auto-labels as "chore-new-slug"
-WS=$(echo "$NEW"    | node "$H" field result.worktree.open_workspace_id)
-WT=$(echo "$NEW"    | node "$H" field result.worktree.path)
-ROOT1=$(echo "$NEW" | node "$H" field result.root_pane.pane_id)
+herdr workspace close <old-herd-ws>   # take the OLD herd down first -> frees the handles
 
-herdr workspace close <old-herd-ws>            # take the OLD herd down -> frees the handles (sly/jay/tim)
+node "$H" up --branch chore/new-slug --base origin/main \
+  --claude sly --codex jay            # rebuild the herd, reusing the SAME handles
 
-# rebuild each agent on the new worktree, reusing the SAME handles (the assign / step-3 recipe):
-herdr tab rename "${WS}:t1" "sly ◆"; herdr pane run "$ROOT1" "claude"
-herdr wait agent-status "$ROOT1" --status idle --timeout 45000; herdr agent rename "$ROOT1" sly
-# jay -> tab create + pane run "codex" + rename jay ;  tim -> tab create + "claude --model haiku" + rename tim
-
-git worktree remove --force <old-wt-path>; git branch -D chore/old-slug   # optional: clear the empty husk
+git worktree remove --force <old-wt-path>; git branch -D chore/old-slug   # optional: clear the husk
 ```
 
 after a reassign the relaunched agents are **cold**: if it was a from/to herd, re-seed the protocol + roster - a `[herd ...]` broadcast can't reach the dead old handles, and the new agents don't know the protocol yet.
@@ -373,6 +371,7 @@ herdr wait agent-status w9:p1 --status done --timeout 120000   # a sibling finis
 - **detect before `agent rename`** - a model launched with `pane run` is only renameable once herdr detects it. `herdr wait agent-status <pane> --status idle` first, or the rename misses the target.
 - **decorated labels are manual** - `sly ◆` style labels are set with `tab rename`, not auto-derived. renaming the handle does not update the tab label; re-`tab rename` to keep them in sync.
 - **the herd.js helper path comes from your orientation, not an env var** - `$CLAUDE_PLUGIN_ROOT` is not set in your shell, so don't build the path from it (it silently yields a broken `/skills/.../herd.js`). copy `H` from the `H=...` line in your herdr orientation. the claude-side path is version-pinned and moves on every comitatus update, so re-read it each session - a persisted path breaks after an upgrade. codex agents use the stable `$HOME/.codex/skills/herdr/scripts/herd.js`.
+- **`up` is one command on purpose** - launching a herd through `node "$H" up …` instead of the step-by-step primitives keeps the whole flow in a single invocation, so it costs one permission approval instead of one per step. The step recipes still work; they just prompt more because each `$(…)`-threaded step is approved separately.
 - **`agent start` needs both `--cwd` and `--workspace`** - the ad-hoc escape hatch (vs the default `pane run` in a tab) takes `--cwd <worktree-path>` for the working dir (the cwd association `agent list` uses) and `--workspace <id>` for pane placement; they are independent. `--workspace` alone leaves the agent on *your* cwd, editing the wrong tree.
 - **cwd is the resolved path** - herdr stores an agent's `cwd` OS-resolved, so a symlinked root differs from what you launched with (macOS `/tmp` -> `/private/tmp`). when you filter `agent list` by cwd to find a herd, compare against the resolved path (`cd <dir>; pwd -P`), not the string you passed, or you'll see zero agents on a herd that is running fine.
 - **ids are not durable** - re-read them; never reuse an old id.

@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
+const { up, defaultRun } = require('./up.js');
+
 function getField(obj, dotPath) {
   return String(dotPath).split('.').reduce(
     (o, k) => (o == null ? undefined : o[k]), obj);
@@ -64,6 +66,16 @@ async function readStdin() {
 
 async function main() {
   const argv = process.argv.slice(2);
+  if (argv[0] === 'up') {
+    try {
+      const result = up(argv.slice(1), { run: defaultRun });
+      process.stdout.write(JSON.stringify(result) + '\n');
+    } catch (e) {
+      process.stderr.write(`herd up: ${e.message}\n`);
+      process.exit(1);
+    }
+    return;
+  }
   const raw = await readStdin();
   let data;
   try {
