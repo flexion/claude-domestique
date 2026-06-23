@@ -168,12 +168,22 @@ the handle is also the pane label. the decorated **tab** label (step 3) does **n
 
 ### 5. message another agent by handle
 
-`agent send` writes literal text and does **not** press Enter. send, then submit - the recipient's reply confirms it landed:
+`agent send` writes literal text and returns `{"result":{"type":"ok"}}` once the text is *typed* - that ack is **not** *submitted*. the message sits in the recipient's input buffer until you press Enter, so always send **and** submit; the recipient's reply confirms it landed:
 
 ```bash
 PANE=$(herdr agent list | node "$H" pane jay)
 herdr agent send jay "please rerun the failing test in src/api/"
 herdr pane send-keys "$PANE" Enter
+```
+
+prefer a reusable wrapper so you stay name-based (no hand-resolved pane id). define it once in your pane shell, then `hsend jay "..."`:
+
+```bash
+hsend() {  # hsend <handle> <one-line-message>
+  local pane; pane=$(herdr agent list | node "$H" pane "$1") || return 1
+  [ -n "$pane" ] || { echo "hsend: no agent '$1'" >&2; return 1; }
+  herdr agent send "$1" "$2" && herdr pane send-keys "$pane" Enter
+}
 ```
 
 the Enter is dropped only if `jay` was mid-generation (`working`); if no reply comes back, resend. for replies, seeding, roster, and how to handle no-reply messages, see the from/to protocol below.
@@ -319,6 +329,7 @@ seed the rule into every orientation: "periodically reconcile your roster agains
 
 **delivery reliability (validated by testing):**
 
+- **`agent send` returns `ok` for *typed*, not *delivered*.** the `{"result":{"type":"ok"}}` ack means the text reached the recipient's input buffer; it does **not** mean the agent saw it. submitting is the separate `pane send-keys <pane> Enter` step (or the `hsend` helper) - until then the message sits unsubmitted in the prompt. treat the reply, not the `ok`, as proof of delivery.
 - **the reply, or its absence, is the signal.** push the message and let the reply confirm it - a `[from <to>]` turn landing in your pane means it arrived; nothing landing means the Enter dropped (the recipient was `working`), so resend. you don't pre-check the recipient for reply-expecting messages.
 - **no-reply messages need a check.** a directive that expects no reply (`[herd ...]`, a one-way note) has nothing to confirm delivery, so send it when the recipient is not `working` (poll) or read its pane to verify - reliable `agent_status` is what makes the poll checkable, so a broken integration (see the opencode status fix) breaks it. (roster directives tolerate drops anyway: peer-detection re-discovers a missed add/remove.)
 - **pre-authorize `herdr`.** an agent that prompts for per-command tool approval before running `herdr ...` stalls mid-protocol. allowlist `herdr` in each agent's tool-permission config (the legacy herdr-mate pre-authorized its send wrapper for exactly this).
@@ -350,7 +361,7 @@ herdr wait agent-status w9:p1 --status done --timeout 120000   # a sibling finis
 ## gotchas
 
 - **fetch before `worktree create`** - `--base origin/main` is the local ref; it is stale until you `git fetch origin main`.
-- **`agent send` has no Enter, and the Enter drops only while the target is `working`** - send + `pane send-keys <pane> Enter` and let the reply confirm it landed (resend on silence); only for a no-reply message poll until the target is not `working` first, or verify by reading its pane. don't blindly double-tap. (full recipe in the from/to protocol section.)
+- **`agent send` returns `ok` for *typed*, not *submitted*, and sends no Enter** - the `ok` ack only means the text reached the input buffer; the message sits unsubmitted until you press Enter (`pane send-keys <pane> Enter`, dropped only while the target is `working`). pair every send with the Enter - or use the `hsend` helper (step 5) - and let the reply confirm it landed (resend on silence); only for a no-reply message poll until the target is not `working` first, or verify by reading its pane. don't blindly double-tap. (full recipe in the from/to protocol section.)
 - **codex TUI paste gotcha** - a long `send-text` / `agent send` into a codex TUI may be ingested as a bracketed paste that a single Enter does not submit. keep protocol messages one line and short. if you deliberately send a long codex message and silence follows, send one extra Enter or retry as shorter one-line chunks.
 - **opencode status needs the fix plugin** - herdr 0.7.0's managed opencode integration is out of date with opencode 1.17.8 (object-form `session.status` + fire-and-forget idle), so opencode agents get stuck `working` / never report state right. the sibling plugin `~/.config/opencode/plugins/herdr-opencode-status-fix.js` restores correct working/idle/blocked reporting. without it, `wait agent-status` on an opencode pane is unreliable.
 - **only the home repo's worktree tree nests; plain workspaces don't** - the sidebar nests exactly one repo group (main checkout -> its linked worktrees -> tabs), keyed on `repo_root`. a `workspace create --cwd` workspace gets **no** repo association and floats ungrouped, even at a repo root. give each agent in a herd a *tab* in the herd's one workspace; make the herd a worktree if you want it to nest under the repo's main checkout.
