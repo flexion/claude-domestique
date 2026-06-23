@@ -50,3 +50,108 @@ describe('parseArgs', () => {
     expect(() => parseArgs(['--branch'])).toThrow(/missing value for --branch/);
   });
 });
+
+const { up } = require('../skills/herdr/scripts/up.js');
+
+function fakeRunner(matchers) {
+  const calls = [];
+  const run = (file, args) => {
+    calls.push([file, ...args]);
+    for (const [pred, resp] of matchers) {
+      if (pred(file, args)) {
+        if (resp instanceof Error) throw resp;
+        return resp;
+      }
+    }
+    return ''; // fetch / tab rename / pane run / wait / agent rename print nothing
+  };
+  return { run, calls };
+}
+
+const AGENT_LIST = (names = []) =>
+  JSON.stringify({ result: { agents: names.map((name) => ({ name })) } });
+const WT = JSON.stringify({
+  result: {
+    worktree: { path: '/wt/x', open_workspace_id: 'wR' },
+    root_pane: { pane_id: 'wR:p1' },
+    tab: { tab_id: 'wR:t1' },
+  },
+});
+const TAB2 = JSON.stringify({
+  result: { tab: { tab_id: 'wR:t2' }, root_pane: { pane_id: 'wR:p2' } },
+});
+
+const matchers = (listResp = AGENT_LIST()) => [
+  [(f, a) => f === 'herdr' && a[0] === 'agent' && a[1] === 'list', listResp],
+  [(f, a) => f === 'herdr' && a[0] === 'worktree' && a[1] === 'create', WT],
+  [(f, a) => f === 'herdr' && a[0] === 'tab' && a[1] === 'create', TAB2],
+];
+
+describe('up', () => {
+  test('single claude agent: exact call sequence and result', () => {
+    const { run, calls } = fakeRunner(matchers());
+    const result = up(['--branch', 'chore/x', '--claude', 'sly'], { run });
+
+    expect(result).toEqual({
+      worktree: { path: '/wt/x', workspace_id: 'wR' },
+      agents: [{ handle: 'sly', model: 'claude', pane_id: 'wR:p1', tab: 'wR:t1' }],
+    });
+    expect(calls).toEqual([
+      ['herdr', 'agent', 'list'],
+      ['git', 'fetch', 'origin', 'main'],
+      ['herdr', 'worktree', 'create', '--branch', 'chore/x', '--base', 'origin/main', '--no-focus', '--json'],
+      ['herdr', 'tab', 'rename', 'wR:t1', 'sly ◆'],
+      ['herdr', 'pane', 'run', 'wR:p1', 'claude'],
+      ['herdr', 'wait', 'agent-status', 'wR:p1', '--status', 'idle', '--timeout', '45000'],
+      ['herdr', 'agent', 'rename', 'wR:p1', 'sly'],
+    ]);
+  });
+
+  test('second agent gets a new tab and is renamed on its own pane', () => {
+    const { run, calls } = fakeRunner(matchers());
+    const result = up(['--branch', 'chore/x', '--claude', 'sly', '--codex', 'jay'], { run });
+
+    expect(result.agents).toEqual([
+      { handle: 'sly', model: 'claude', pane_id: 'wR:p1', tab: 'wR:t1' },
+      { handle: 'jay', model: 'codex', pane_id: 'wR:p2', tab: 'wR:t2' },
+    ]);
+    expect(calls).toContainEqual(
+      ['herdr', 'tab', 'create', '--workspace', 'wR', '--cwd', '/wt/x', '--label', 'jay ◇', '--no-focus']);
+    expect(calls).toContainEqual(['herdr', 'pane', 'run', 'wR:p2', 'codex']);
+    expect(calls).toContainEqual(['herdr', 'agent', 'rename', 'wR:p2', 'jay']);
+  });
+
+  test('opencode agent runs "opencode -m <model>"', () => {
+    const { run, calls } = fakeRunner(matchers());
+    up(['--branch', 'b', '--opencode', 'bob:ollama/qwen2.5:7b'], { run });
+    expect(calls).toContainEqual(['herdr', 'pane', 'run', 'wR:p1', 'opencode -m ollama/qwen2.5:7b']);
+  });
+
+  test('git fetch derives the branch from --base', () => {
+    const { run, calls } = fakeRunner(matchers());
+    up(['--branch', 'b', '--base', 'origin/dev', '--claude', 'sly'], { run });
+    expect(calls).toContainEqual(['git', 'fetch', 'origin', 'dev']);
+  });
+
+  test('--timeout flows into the wait call', () => {
+    const { run, calls } = fakeRunner(matchers());
+    up(['--branch', 'b', '--timeout', '9000', '--claude', 'sly'], { run });
+    expect(calls).toContainEqual(
+      ['herdr', 'wait', 'agent-status', 'wR:p1', '--status', 'idle', '--timeout', '9000']);
+  });
+
+  test('pre-flight rejects a globally taken handle without creating a worktree', () => {
+    const { run, calls } = fakeRunner(matchers(AGENT_LIST(['sly'])));
+    expect(() => up(['--branch', 'b', '--claude', 'sly'], { run })).toThrow(/already taken: sly/);
+    expect(calls.some((c) => c[1] === 'worktree' && c[2] === 'create')).toBe(false);
+  });
+
+  test('propagates a runner failure', () => {
+    const failing = [
+      [(f, a) => f === 'herdr' && a[0] === 'agent' && a[1] === 'list', AGENT_LIST()],
+      [(f, a) => f === 'herdr' && a[0] === 'worktree' && a[1] === 'create', new Error('worktree_create_failed')],
+    ];
+    const { run } = fakeRunner(failing);
+    expect(() => up(['--branch', 'b', '--claude', 'sly'], { run })).toThrow(/worktree_create_failed/);
+  });
+});

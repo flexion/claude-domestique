@@ -51,8 +51,56 @@ function parseArgs(argv) {
   return out;
 }
 
+function up(argv, deps) {
+  const run = deps.run;
+  const cfg = parseArgs(argv);
+
+  // pre-flight: reject a handle that already exists anywhere (herdr enforces
+  // global uniqueness, but only after the worktree is built — fail early).
+  const list = JSON.parse(run('herdr', ['agent', 'list']));
+  const taken = ((list.result && list.result.agents) || [])
+    .map((a) => a && a.name).filter(Boolean);
+  for (const a of cfg.agents) {
+    if (taken.includes(a.handle)) throw new Error(`handle already taken: ${a.handle}`);
+  }
+
+  // refresh the local base ref before worktree create resolves it
+  const baseBranch = cfg.base.replace(/^origin\//, '');
+  run('git', ['fetch', 'origin', baseBranch]);
+
+  const wt = JSON.parse(run('herdr',
+    ['worktree', 'create', '--branch', cfg.branch, '--base', cfg.base, '--no-focus', '--json']));
+  const path = wt.result.worktree.path;
+  const workspace = wt.result.worktree.open_workspace_id;
+  const rootPane = wt.result.root_pane.pane_id;
+  const rootTab = wt.result.tab.tab_id;
+
+  const agents = [];
+  cfg.agents.forEach((a, i) => {
+    let pane;
+    let tab;
+    if (i === 0) {
+      pane = rootPane;
+      tab = rootTab;
+      run('herdr', ['tab', 'rename', tab, `${a.handle} ${a.glyph}`]);
+    } else {
+      const tc = JSON.parse(run('herdr',
+        ['tab', 'create', '--workspace', workspace, '--cwd', path,
+          '--label', `${a.handle} ${a.glyph}`, '--no-focus']));
+      pane = tc.result.root_pane.pane_id;
+      tab = tc.result.tab.tab_id;
+    }
+    run('herdr', ['pane', 'run', pane, a.runArgv]);
+    run('herdr', ['wait', 'agent-status', pane, '--status', 'idle', '--timeout', String(cfg.timeout)]);
+    run('herdr', ['agent', 'rename', pane, a.handle]);
+    agents.push({ handle: a.handle, model: a.model, pane_id: pane, tab });
+  });
+
+  return { worktree: { path, workspace_id: workspace }, agents };
+}
+
 function defaultRun(file, args) {
   return execFileSync(file, args, { encoding: 'utf8' });
 }
 
-module.exports = { makeAgent, parseArgs, defaultRun };
+module.exports = { makeAgent, parseArgs, up, defaultRun };
