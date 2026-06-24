@@ -51,6 +51,30 @@ function loadAgentList(data, deps) {
   return data; // no stdin, no runner: leave as-is (pure callers)
 }
 
+function parseWait(args) {
+  const out = { handle: args[0], statuses: ['idle'], timeout: 45000, interval: 1000 };
+  for (let i = 1; i < args.length; i++) {
+    const v = () => args[++i];
+    if (args[i] === '--status') out.statuses = v().split(',').filter(Boolean);
+    else if (args[i] === '--timeout') out.timeout = Number(v());
+    else if (args[i] === '--interval') out.interval = Number(v());
+  }
+  return out;
+}
+
+function waitCmd(args, deps) {
+  const cfg = parseWait(args);
+  const deadline = deps.now() + cfg.timeout;
+  for (;;) {
+    const st = status(loadAgentList({}, deps), cfg.handle);
+    if (cfg.statuses.includes(st)) return st;
+    if (deps.now() >= deadline) {
+      throw new Error(`wait timeout: ${cfg.handle} is ${st}, want ${cfg.statuses.join(',')}`);
+    }
+    deps.sleep(cfg.interval);
+  }
+}
+
 function dispatch(argv, data, deps) {
   const [cmd, ...rest] = argv;
   switch (cmd) {
@@ -125,6 +149,8 @@ module.exports = {
   field,
   submitKeys,
   loadAgentList,
+  parseWait,
+  waitCmd,
   getField,
   dispatch,
   format,

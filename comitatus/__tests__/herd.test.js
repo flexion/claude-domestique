@@ -111,3 +111,33 @@ describe('dispatch self-exec', () => {
     expect(h.dispatch(['status', 'tim'], {}, deps)).toBe('done');
   });
 });
+
+describe('parseWait', () => {
+  test('defaults: idle, 45s, 1s interval', () => {
+    expect(h.parseWait(['jay'])).toEqual({ handle: 'jay', statuses: ['idle'], timeout: 45000, interval: 1000 });
+  });
+  test('comma statuses and overrides', () => {
+    expect(h.parseWait(['jay', '--status', 'idle,done', '--timeout', '9000', '--interval', '250']))
+      .toEqual({ handle: 'jay', statuses: ['idle', 'done'], timeout: 9000, interval: 250 });
+  });
+});
+
+describe('waitCmd', () => {
+  test('returns as soon as the status matches one of the set', () => {
+    const seq = ['working', 'working', 'done']; let i = 0;
+    const deps = {
+      run: () => JSON.stringify({ result: { agents: [{ name: 'jay', agent_status: seq[i++] }] } }),
+      sleep: () => {}, now: () => 0,
+    };
+    expect(h.waitCmd(['jay', '--status', 'idle,done', '--interval', '1'], deps)).toBe('done');
+  });
+  test('throws on timeout, reporting the last seen status', () => {
+    let t = 0;
+    const deps = {
+      run: () => JSON.stringify({ result: { agents: [{ name: 'jay', agent_status: 'working' }] } }),
+      sleep: () => {}, now: () => (t += 1000),
+    };
+    expect(() => h.waitCmd(['jay', '--timeout', '1500', '--interval', '1'], deps))
+      .toThrow(/wait timeout: jay is working, want idle/);
+  });
+});
