@@ -13,7 +13,7 @@ if you need the raw protocol, read the [socket api docs](https://herdr.dev/docs/
 
 ## quickstart - the 80% path
 
-create a worktree and put one claude agent on it. `H` is the herd.js helper path from your herdr orientation (the `H=...` line); concepts, naming, and the rest are below.
+create a worktree and put one claude agent on it. `H` is the herd.js helper path from your herdr orientation (the `H=...` line). It is STABLE across comitatus updates and can be allowlisted once with `/herd-setup`; verbs: `status|pane|members|field|submit-keys|wait|send|send-wait-read|agent`. To run a verb WITHOUT a permission prompt, call it by the absolute path from your orientation (`node /abs/.../herd.js send jay "..."`), not `node "$H" ...` (the matcher can't see through `$H`). concepts, naming, and the rest are below.
 
 ```bash
 H=...                                   # paste from your herdr orientation
@@ -149,9 +149,9 @@ herdr ties one workspace to a worktree, so keep all its agents in that **one** w
 agent 1 runs in the worktree's root pane (from step 1, tab `<ws>:t1`). each additional agent gets a new tab in the same workspace:
 
 ```bash
-# H = the herd.js helper. take it from your herdr orientation's `H=...` line; it is
-# version-pinned on the claude side, so re-read it each session and don't persist it.
-# codex agents use the stable path: H="$HOME/.codex/skills/herdr/scripts/herd.js"
+# H = the herd.js helper. take it from your herdr orientation's `H=...` line; it is a
+# stable, allowlistable path (run /herd-setup once). codex agents use the stable path:
+# H="$HOME/.codex/skills/herdr/scripts/herd.js"
 : "${H:?set H from the herdr orientation line before piping herdr JSON into node}"
 WT=~/.herdr/worktrees/<repo>/chore-my-slug
 WS=wR            # worktree's open_workspace_id from step 1
@@ -165,7 +165,13 @@ herdr pane run "$ROOT1" "claude"
 herdr wait agent-status "$ROOT1" --status idle --timeout 40000
 herdr agent rename "$ROOT1" sly
 
-# each additional agent: a new tab, run the model in its root pane, detect, name
+# each additional agent: one allowlisted call (preflight + tab create -> run -> wait -> rename)
+node "$H" agent codex jay --workspace "$WS" --cwd "$WT"   # claude|codex|opencode handle[:model]
+```
+
+the lower-level primitives `agent` collapses (reach for them only when you need the pieces):
+
+```bash
 T=$(herdr tab create --workspace "$WS" --cwd "$WT" --label "jay ◇" --no-focus)
 ROOT=$(echo "$T" | node "$H" field result.root_pane.pane_id)
 herdr pane run "$ROOT" "codex"
@@ -196,7 +202,14 @@ the handle is also the pane label. the decorated **tab** label (step 3) does **n
 
 ### 5. message another agent by handle
 
-`agent send` writes literal text and returns `{"result":{"type":"ok"}}` once the text is *typed* - that ack is **not** *submitted*. the message sits in the recipient's input buffer until you press Enter, so always send **and** submit; the recipient's reply confirms it landed:
+the one-call path: `node "$H" send <handle> <msg>` resolves the pane, sends, and submits with the model-correct keys (codex gets two Enters via `submit-keys`). add `--reply` or `--fyi` to stamp the protocol flag (below):
+
+```bash
+: "${H:?set H from the herdr orientation line before piping herdr JSON into node}"
+node "$H" send jay "please rerun the failing test in src/api/" --reply
+```
+
+it does what the primitives below show; reach for them only when you need the pieces. `agent send` writes literal text and returns `{"result":{"type":"ok"}}` once the text is *typed* - that ack is **not** *submitted*. the message sits in the recipient's input buffer until you press Enter, so always send **and** submit; the recipient's reply confirms it landed:
 
 ```bash
 : "${H:?set H from the herdr orientation line before piping herdr JSON into node}"
@@ -294,30 +307,29 @@ after a reassign the relaunched agents are **cold**: if it was a from/to herd, r
 
 a stateless convention for agents to message each other and reply, without scraping panes. no inbox, no acks - a reply is just a message back to the sender, and it arrives in the sender's pane as a normal turn.
 
-**message format - one line:**
+**message format - one line, with a mandatory reply flag:**
 
 ```
-[from <self>] <body>
+[from <self> reply] <body>     # a one-line reply IS required
+[from <self> fyi]   <body>     # no reply expected - do NOT reply
 ```
 
-`<self>` is your handle; a newline submits the turn early, so keep every message to one line.
+`<self>` is your handle; reply to `<self>` with `[from <you> ...] <answer>`. a newline submits the turn early, so keep every message to one line. `node "$H" send` / `send-wait-read` stamp this flag for you: `--reply` -> `[from <self> reply]`, `--fyi` -> `[from <self> fyi]`. they resolve `<self>` from the *focused* pane, which is you when you run it in your own pane; if you ever drive a send from a different pane, pass `--from <self>` so the sender is stamped correctly.
 
 **send to teammate `<to>`:**
 
 ```bash
 : "${H:?set H from the herdr orientation line before piping herdr JSON into node}"
 TO=jay
-TO_PANE=$(herdr agent list | node "$H" pane "$TO")
-herdr agent send "$TO" "[from <self>] <body>"
-herdr pane send-keys "$TO_PANE" $(herdr agent list | node "$H" submit-keys "$TO")
+node "$H" send "$TO" "<body>" --reply   # stamps [from <self> reply], resolves the pane, submits
 ```
 
 **push and let the reply confirm - don't pre-check.** the submit gesture is dropped only if the recipient was `working`; its `[from <to>]` reply landing in your pane means it arrived, and *no* reply means resend. only a message that expects **no** reply (e.g. a `[herd ...]` directive) has nothing to confirm it - then send when the recipient is not `working`, or read its pane to verify:
 
 ```bash
-# optional pre-check (no-reply messages, or to skip a likely-dropped send): poll until it leaves `working`
+# wait until the recipient is free to receive (idle OR done), not mid-generation:
 : "${H:?set H from the herdr orientation line before piping herdr JSON into node}"
-while [ "$(herdr agent list | node "$H" status "$TO_PANE")" = working ]; do sleep 1; done
+node "$H" wait "$TO" --status idle,done --timeout 30000
 ```
 
 **receive / reply:** a message reaching you as `[from X] ...` is from teammate X. if it needs an answer, reply by sending X back a one-line `[from <self>] <answer>` the same way. if no answer is needed, do nothing - there are no acks. X's reply arrives in *your* pane as a turn; if nothing arrives the send failed (resend) - reading the peer's pane is a diagnostic last resort, not the channel.
@@ -386,7 +398,7 @@ herdr wait agent-status w9:p1 --status done --timeout 120000   # a sibling finis
 - **`worktree create`/`open` run from the repo's main-checkout workspace** - invoked from inside a linked worktree they error `linked_worktree_source` ("new and open worktree actions start from the repo parent workspace"). pass `--workspace <main-checkout-ws>` (or run from there); the CLI cwd does not select the source workspace, the flag does.
 - **detect before `agent rename`** - a model launched with `pane run` is only renameable once herdr detects it. `herdr wait agent-status <pane> --status idle` first, or the rename misses the target.
 - **decorated labels are manual** - `sly ◆` style labels are set with `tab rename`, not auto-derived. renaming the handle does not update the tab label; re-`tab rename` to keep them in sync.
-- **the herd.js helper path comes from your orientation, not an env var** - `$CLAUDE_PLUGIN_ROOT` is not set in your shell, so don't build the path from it (it silently yields a broken `/skills/.../herd.js`). copy `H` from the `H=...` line in your herdr orientation, keep the `: "${H:?…}"` guard before helper calls, and re-read the path each session. the claude-side path is version-pinned and moves on every comitatus update; a persisted path breaks after an upgrade. codex agents use the stable `$HOME/.codex/skills/herdr/scripts/herd.js`.
+- **the herd.js helper path comes from your orientation, not an env var** - `$CLAUDE_PLUGIN_ROOT` is not set in your shell, so don't build the path from it (it silently yields a broken `/skills/.../herd.js`). copy `H` from the `H=...` line in your herdr orientation and keep the `: "${H:?…}"` guard before helper calls. the path is **stable and allowlistable**: it is a fixed `~/.claude/comitatus/...` location (refreshed each session by the comitatus hook), so `/herd-setup` can allowlist its verbs once. call the helper by that absolute path for prompt-free runs; `node "$H" ...` still prompts (the matcher can't resolve the variable). codex agents use the stable `$HOME/.codex/skills/herdr/scripts/herd.js`.
 - **`up` is one command on purpose** - launching a herd through `node "$H" up …` instead of the step-by-step primitives keeps the whole flow in a single invocation, so it costs one permission approval instead of one per step. The step recipes still work; they just prompt more because each `$(…)`-threaded step is approved separately.
 - **`agent start` needs both `--cwd` and `--workspace`** - the ad-hoc escape hatch (vs the default `pane run` in a tab) takes `--cwd <worktree-path>` for the working dir (the cwd association `agent list` uses) and `--workspace <id>` for pane placement; they are independent. `--workspace` alone leaves the agent on *your* cwd, editing the wrong tree.
 - **cwd is the resolved path** - herdr stores an agent's `cwd` OS-resolved, so a symlinked root differs from what you launched with (macOS `/tmp` -> `/private/tmp`). when you filter `agent list` by cwd to find a herd, compare against the resolved path (`cd <dir>; pwd -P`), not the string you passed, or you'll see zero agents on a herd that is running fine.

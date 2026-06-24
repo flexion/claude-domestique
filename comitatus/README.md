@@ -116,6 +116,36 @@ Installing herdr does not wake comitatus up; launching Claude *from within* herd
 does. For testing, you can force the active path with `HERDR_ENV=1 claude` from a
 normal terminal.
 
+## Permissions (cutting prompt friction)
+
+Driving a herd means many small `herdr` calls, and several recipes capture ids
+with `$(...)`, pipe into `node "$H" ...`, or poll in a loop - shapes Claude Code
+cannot statically analyze, so each one prompts. Two things reduce this to near
+zero:
+
+1. **Composite verbs.** `herd.js` exposes `status`, `pane`, `members`, `wait`,
+   `send`, `send-wait-read`, and `agent` verbs that run `herdr` themselves - one
+   static command instead of a pipe or a `while` loop. (`up` already does this
+   for spinning up a whole worktree.)
+2. **`/herd-setup`.** Run it once to merge a safe allow-list into your
+   `settings.json` (user scope by default; `--local` or `--project` to change).
+   It allows the safe herdr verbs, `git fetch`, read-only `git status`/`branch`,
+   and one rule **per helper verb** at the stable path.
+
+**Call the helper by its absolute path.** The allow-rule matches
+`node /Users/you/.claude/comitatus/skills/herdr/scripts/herd.js send ...` - the
+exact path your orientation prints after `H=`. A call written as `node "$H" ...`
+still prompts, because the matcher cannot see through the `$H` variable.
+
+**What stays prompting, on purpose.** `/herd-setup` never allows `herdr pane run`
+or `herdr pane send-keys` (raw shell / keystroke injection - the composite verbs
+cover their safe uses), nor `git branch -D`, `git reset`, `git checkout`,
+`git push`, or `git worktree remove`. It never bakes a blanket `herd.js:*` rule
+(so a future verb is not auto-allowed), and it keeps the machine-specific baked
+rules out of committed (`--project`) settings. (`herdr worktree remove` *is*
+allowed: it tears down a herdr worktree, not git history.) Re-running is
+idempotent and warns on `deny`/`ask` conflicts.
+
 ## Single source of truth
 
 There is **one** skill under `skills/herdr/`, authored in plain ASCII. Codex

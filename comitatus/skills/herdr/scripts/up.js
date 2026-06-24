@@ -17,6 +17,12 @@ function makeAgent(model, value) {
     if (!handle || !ocModel) {
       throw new Error(`--opencode needs <handle>:<model> (got "${value}")`);
     }
+    // The model token is interpolated into the `opencode -m <model>` argv that
+    // herdr `pane run` types into a shell; reject anything outside a conservative
+    // charset so it can never carry shell metacharacters (`; | $ ( ) &` etc.).
+    if (!/^[\w./:-]+$/.test(ocModel)) {
+      throw new Error(`--opencode model has unsafe characters: "${ocModel}"`);
+    }
     return { model, handle, runArgv: MODELS.opencode.argv(ocModel), glyph: MODELS.opencode.glyph };
   }
   return { model, handle: value, runArgv: MODELS[model].argv(), glyph: MODELS[model].glyph };
