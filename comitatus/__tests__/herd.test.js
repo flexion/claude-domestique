@@ -3,9 +3,9 @@ const h = require('../skills/herdr/scripts/herd.js');
 const AGENTS = {
   result: {
     agents: [
-      { name: 'sly', pane_id: 'w1:p1', workspace_id: 'w1', agent_status: 'idle' },
-      { name: 'jay', pane_id: 'w1:p2', workspace_id: 'w1', agent_status: 'working' },
-      { name: 'tim', pane_id: 'w2:p1', workspace_id: 'w2', agent_status: 'done' },
+      { name: 'sly', agent: 'claude', pane_id: 'w1:p1', workspace_id: 'w1', agent_status: 'idle' },
+      { name: 'jay', agent: 'codex', pane_id: 'w1:p2', workspace_id: 'w1', agent_status: 'working' },
+      { name: 'tim', agent: 'opencode', pane_id: 'w2:p1', workspace_id: 'w2', agent_status: 'done' },
       { pane_id: 'w3:p1', workspace_id: 'w3', agent_status: 'idle' }, // unnamed
     ],
   },
@@ -50,6 +50,21 @@ describe('field', () => {
   });
 });
 
+describe('submitKeys', () => {
+  test('codex panes get two Enters', () => {
+    expect(h.submitKeys(AGENTS, 'jay')).toEqual(['Enter', 'Enter']);
+  });
+  test('non-codex panes get one Enter', () => {
+    expect(h.submitKeys(AGENTS, 'sly')).toEqual(['Enter']);
+  });
+  test('can resolve by pane_id', () => {
+    expect(h.submitKeys(AGENTS, 'w1:p2')).toEqual(['Enter', 'Enter']);
+  });
+  test('unknown target returns no keys', () => {
+    expect(h.submitKeys(AGENTS, 'nope')).toEqual([]);
+  });
+});
+
 describe('format', () => {
   test('arrays join by newline', () => { expect(h.format(['a', 'b'])).toBe('a\nb'); });
   test('null/undefined -> empty string', () => {
@@ -62,6 +77,9 @@ describe('format', () => {
 describe('dispatch', () => {
   test('routes members --workspace', () => {
     expect(h.dispatch(['members', '--workspace', 'w2'], AGENTS)).toEqual(['tim']);
+  });
+  test('routes submit-keys', () => {
+    expect(h.dispatch(['submit-keys', 'jay'], AGENTS)).toEqual(['Enter', 'Enter']);
   });
   test('throws on unknown command', () => {
     expect(() => h.dispatch(['bogus'], AGENTS)).toThrow(/unknown command/);

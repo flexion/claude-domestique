@@ -160,8 +160,14 @@ const { execFileSync } = require('child_process');
 const path = require('path');
 
 const HERD = path.join(__dirname, '..', 'skills', 'herdr', 'scripts', 'herd.js');
+const UP = path.join(__dirname, '..', 'skills', 'herdr', 'scripts', 'up.js');
 
 describe('herd.js up wiring', () => {
+  test('helper scripts parse under the active Node runtime', () => {
+    execFileSync('node', ['--check', HERD], { encoding: 'utf8', stdio: 'pipe' });
+    execFileSync('node', ['--check', UP], { encoding: 'utf8', stdio: 'pipe' });
+  });
+
   test('node herd.js up with no flags errors on stderr and exits non-zero', () => {
     let err;
     try {
