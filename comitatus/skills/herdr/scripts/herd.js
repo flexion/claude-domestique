@@ -41,16 +41,26 @@ function submitKeys(data, handleOrPane) {
   return a.agent === 'codex' ? ['Enter', 'Enter'] : ['Enter'];
 }
 
-function dispatch(argv, data) {
+function hasAgents(data) {
+  return !!(data && data.result && Array.isArray(data.result.agents));
+}
+
+function loadAgentList(data, deps) {
+  if (hasAgents(data)) return data;
+  if (deps && deps.run) return JSON.parse(deps.run('herdr', ['agent', 'list']));
+  return data; // no stdin, no runner: leave as-is (pure callers)
+}
+
+function dispatch(argv, data, deps) {
   const [cmd, ...rest] = argv;
   switch (cmd) {
     case 'pane':
-      return pane(data, rest[0]);
+      return pane(loadAgentList(data, deps), rest[0]);
     case 'status':
-      return status(data, rest[0]);
+      return status(loadAgentList(data, deps), rest[0]);
     case 'members': {
       const i = rest.indexOf('--workspace');
-      return members(data, i >= 0 ? rest[i + 1] : undefined);
+      return members(loadAgentList(data, deps), i >= 0 ? rest[i + 1] : undefined);
     }
     case 'field':
       return field(data, rest[0]);
@@ -114,6 +124,7 @@ module.exports = {
   members,
   field,
   submitKeys,
+  loadAgentList,
   getField,
   dispatch,
   format,

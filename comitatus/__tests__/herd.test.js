@@ -85,3 +85,29 @@ describe('dispatch', () => {
     expect(() => h.dispatch(['bogus'], AGENTS)).toThrow(/unknown command/);
   });
 });
+
+describe('loadAgentList (self-exec fallback)', () => {
+  test('uses piped data when present, never calling run (TTY/no-fetch path)', () => {
+    let called = false;
+    const deps = { run: () => { called = true; return '{}'; } };
+    expect(h.loadAgentList(AGENTS, deps)).toBe(AGENTS);
+    expect(called).toBe(false);
+  });
+  test('runs `herdr agent list` when stdin data is empty (no-stdin path)', () => {
+    const calls = [];
+    const deps = { run: (f, a) => { calls.push([f, ...a]); return JSON.stringify(AGENTS); } };
+    const out = h.loadAgentList({}, deps);
+    expect(calls).toEqual([['herdr', 'agent', 'list']]);
+    expect(h.pane(out, 'jay')).toBe('w1:p2');
+  });
+  test('with neither stdin nor a runner, returns the input untouched', () => {
+    expect(h.loadAgentList({}, undefined)).toEqual({});
+  });
+});
+
+describe('dispatch self-exec', () => {
+  test('status with empty stdin fetches the list via run', () => {
+    const deps = { run: () => JSON.stringify(AGENTS) };
+    expect(h.dispatch(['status', 'tim'], {}, deps)).toBe('done');
+  });
+});
