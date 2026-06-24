@@ -33,6 +33,12 @@
       "source": "./comitatus",
       "description": "herdr workflows - packages the herdr agent-orchestration skill for claude and codex, auto-injected inside herdr",
       "version": "0.4.0"
+    },
+    {
+      "name": "stilus",
+      "source": "./stilus",
+      "description": "Writing tools - remove AI slop with deslop, write in a project's voice, and review finished prose (correctness, graded slop, human and AI perception) via /stilus:review",
+      "version": "0.1.0"
     }
   ]
 }

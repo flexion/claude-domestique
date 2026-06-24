@@ -1,0 +1,18 @@
+{
+  "name": "stilus",
+  "description": "Stilus — writing tools for Claude Code: remove AI slop with the deslop agent, write in a project's voice, and review finished prose along correctness, voice, and AI-perception dimensions.",
+  "author": {
+    "name": "Flexion"
+  },
+  "repository": "https://github.com/flexion/claude-domestique",
+  "homepage": "https://github.com/flexion/claude-domestique",
+  "license": "MIT",
+  "keywords": [
+    "writing",
+    "editing",
+    "prose",
+    "voice",
+    "deslop",
+    "flexion"
+  ]
+}

@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**IMPORTANT: Before completing work on any branch that modifies plugin files (mantra/, memento/, onus/, agent-artifex/, comitatus/), run `node scripts/bump-version.js <plugin> <patch|minor|major>` for each affected plugin. Do not merge without bumping.**
+**IMPORTANT: Before completing work on any branch that modifies plugin files (mantra/, memento/, onus/, agent-artifex/, comitatus/, stilus/), run `node scripts/bump-version.js <plugin> <patch|minor|major>` for each affected plugin. Do not merge without bumping.**
 
 ## Meta Note: Self-Referential Project
 
@@ -34,7 +34,9 @@ claude-domestique/
 ├── mantra/                  # Context refresh plugin
 ├── memento/                 # Session persistence plugin
 ├── onus/                    # Work item automation plugin
-└── comitatus/                  # herdr workflows plugin
+├── comitatus/               # herdr workflows plugin
+├── agent-artifex/           # AI design & testing guidance plugin
+└── stilus/                  # Writing tools plugin
 ```
 
 Each plugin follows the same structure:
@@ -123,6 +125,7 @@ Each plugin owns specific context domains. When adding or modifying context, res
 | **memento** | Session management | `rules/sessions.md` |
 | **onus** | Git operations, work items | `rules/git.md`, `rules/work-items.md` |
 | **comitatus** | herdr orchestration | `skills/herdr/SKILL.md` |
+| **stilus** | Prose drafting, editing, and review | `agents/deslop.md` (slop catalog), `rules/voice.md` (voice schema), `context/reviewing.md` (review flow + scoring), `agents/review-correctness.md`, `agents/review-voice.md`, `agents/review-summary.md` |
 
 **Ownership rules:**
 - Single source of truth: each concept defined in exactly one place
