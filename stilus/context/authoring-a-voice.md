@@ -40,7 +40,7 @@ Moves specific to this author beyond the base defaults.
 
 ## How it resolves
 
-When you run the write skill, stilus reads the project profile, then the user profile, then the base, and merges them section by section with the higher tier winning. It announces which profile it used. The `companion:` field, if present, points at a longer notes file in `.claude/context/` that stilus also reads.
+When stilus resolves your voice, it reads the project profile, then the user profile, then the base, and merges them section by section with the higher tier winning. It announces which profile it used. The `/stilus:review` command resolves your voice this way today (for the `review-voice` specialist); the planned drafting pipeline will read the same profile. The `companion:` field, if present, points at a longer notes file in `.claude/context/` that stilus also reads.
 
 ## Keep it honest
 

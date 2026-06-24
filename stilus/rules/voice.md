@@ -1,12 +1,12 @@
 ---
 name: voice-base
 domain: voice
-description: Generic voice base for the stilus writing pipeline. Projects extend this with their own register; the Write phase resolves and reads it.
+description: Generic voice base for the stilus writing pipeline. Projects extend this with their own register; stilus resolves and reads it when it works in your voice (today the /stilus:review command; the planned drafting pipeline later).
 ---
 
 # Voice (generic base)
 
-This file defines the shape of a voice profile and supplies neutral defaults. It carries no personality. The Write phase of stilus reads the resolved voice — project profile over user profile over this base — and drafts in it.
+This file defines the shape of a voice profile and supplies neutral defaults. It carries no personality. stilus reads the resolved voice — project profile over user profile over this base — when it works in your register: today the `/stilus:review` command resolves it for the review phase, and the planned drafting pipeline will read the same profile.
 
 ## How a project supplies its voice
 

@@ -39,8 +39,8 @@ Combine the three findings sets. When two specialists flag the same span (for ex
 
 Score each dimension:
 
-- **Correctness** — PASS if no unsupported claims, contradictions, or disproven facts survive; FAIL if any do. Always attach the claims-to-verify-by-hand list regardless of score.
-- **Voice** — PASS if no slop finding is 4 or 5 and all density budgets are within deslop's limits; CONCERN if the worst finding is 3 or a budget is mildly over; FAIL if any finding is 5 or budgets are well over.
+- **Correctness** — FAIL if any unsupported claim, unsupported leap, contradiction, disproven fact, or action-blocking missing content survives; PASS otherwise. (Non-blocking missing content is a finding, not a FAIL.) Always attach the claims-to-verify-by-hand list regardless of score.
+- **Voice** — PASS if no slop finding is 4 or 5 and all density budgets are within deslop's limits; CONCERN if the worst finding is 3 or 4, or a budget is mildly over; FAIL if any finding is 5 or budgets are well over.
 - **Human perception** — PASS if a reader keeps going; CONCERN if there are isolated bail points; FAIL if the piece reads as a wall of words or the point is buried.
 - **AI perception** — PASS if the blind takeaway matches the intended point; FAIL if it diverges; `mirror` if intent is unknown (unscored).
 
