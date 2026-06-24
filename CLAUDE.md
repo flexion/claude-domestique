@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**IMPORTANT: Before completing work on any branch that modifies plugin files (mantra/, memento/, onus/, agent-artifex/, comitatus/), run `node scripts/bump-version.js <plugin> <patch|minor|major>` for each affected plugin. Do not merge without bumping.**
+**IMPORTANT: Before completing work on any branch that modifies plugin files (mantra/, memento/, onus/, agent-artifex/, comitatus/, stilus/), run `node scripts/bump-version.js <plugin> <patch|minor|major>` for each affected plugin. Do not merge without bumping.**
 
 ## Meta Note: Self-Referential Project
 
@@ -34,7 +34,9 @@ claude-domestique/
 ├── mantra/                  # Context refresh plugin
 ├── memento/                 # Session persistence plugin
 ├── onus/                    # Work item automation plugin
-└── comitatus/                  # herdr workflows plugin
+├── comitatus/               # herdr workflows plugin
+├── agent-artifex/           # AI design & testing guidance plugin
+└── stilus/                  # Writing tools plugin
 ```
 
 Each plugin follows the same structure:

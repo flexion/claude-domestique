@@ -19,7 +19,7 @@ In the pipeline these come from the drafting context. Standalone, ask the user f
 Dispatch all three specialists on the same target in a single batch so they run concurrently. Each is read-only and independent.
 
 - `review-correctness` — pass the piece and any codebase/domain context.
-- `review-voice` — pass the piece and the resolved voice profile.
+- `review-voice` — pass the piece and the resolved voice profile (the base profile if no project or user profile resolves).
 - `review-summary` — pass ONLY the piece. Do not pass the purpose, audience, or intended point. Its blindness is the point.
 
 If the platform namespaces plugin agents, use the namespaced name; the names are unique within this plugin.
