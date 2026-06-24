@@ -195,6 +195,12 @@ describe('sendCmd', () => {
     const { run } = runner();
     expect(() => h.sendCmd(['ghost', 'hi'], { run })).toThrow(/no agent: ghost/);
   });
+
+  test('--reply with no focused agent and no --from throws (no silent mis-stamp)', () => {
+    const { run } = runner(); // no agent is focused
+    expect(() => h.sendCmd(['jay', 'hi', '--reply'], { run }))
+      .toThrow(/cannot resolve sender handle/);
+  });
 });
 
 describe('sendWaitReadCmd', () => {

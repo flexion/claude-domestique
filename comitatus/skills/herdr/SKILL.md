@@ -314,7 +314,7 @@ a stateless convention for agents to message each other and reply, without scrap
 [from <self> fyi]   <body>     # no reply expected - do NOT reply
 ```
 
-`<self>` is your handle; reply to `<self>` with `[from <you> ...] <answer>`. a newline submits the turn early, so keep every message to one line. `node "$H" send` / `send-wait-read` stamp this flag for you: `--reply` -> `[from <self> reply]`, `--fyi` -> `[from <self> fyi]`.
+`<self>` is your handle; reply to `<self>` with `[from <you> ...] <answer>`. a newline submits the turn early, so keep every message to one line. `node "$H" send` / `send-wait-read` stamp this flag for you: `--reply` -> `[from <self> reply]`, `--fyi` -> `[from <self> fyi]`. they resolve `<self>` from the *focused* pane, which is you when you run it in your own pane; if you ever drive a send from a different pane, pass `--from <self>` so the sender is stamped correctly.
 
 **send to teammate `<to>`:**
 
