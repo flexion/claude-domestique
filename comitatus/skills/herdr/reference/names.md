@@ -18,6 +18,7 @@ short, phonetically distinct call-signs, type-agnostic, each claimed as the **ne
 entry - check live state and skip any already in use:
 
 ```bash
+: "${H:?set H from the herdr orientation line before piping herdr JSON into node}"
 herdr agent list | node "$H" members  # taken member handles
 ```
 

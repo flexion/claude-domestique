@@ -65,14 +65,17 @@ herdr agent explain --file PATH --agent LABEL [--json]
   and cwd-filters depend on), and `--workspace <id>` only places the pane in that workspace. pass
   **both** to bind an agent to a worktree. with neither, the agent inherits the caller's cwd and
   current workspace; with `--workspace` only, the pane is placed but the cwd is still the caller's.
-- `agent send` writes literal text only - no Enter; submit with `pane send-keys <pane> Enter`. the
-  Enter is dropped only while the agent is `working` (`idle` and `done` both accept it), so for a
-  reply-expecting message just send and let the reply confirm (resend on silence) - pre-check
-  not-`working` only for no-reply messages. a fresh agent is `idle`; one that finished an **unviewed**
-  turn is `done` (UI focus can clear it to `idle`). see the from/to protocol in SKILL.md.
-- codex-specific: long `agent send` / `pane send-text` text may enter the codex TUI as bracketed
-  paste, and a single Enter may not submit it. keep protocol messages short and one-line; if a
-  long codex send goes silent, send one extra Enter or retry as shorter one-line chunks.
+- `agent send` writes literal text only - no Enter; submit with `pane send-keys`. after guarding
+  the helper path with the fail-fast `: "${H:?message}"` recipe line, use
+  `node "$H" submit-keys <handle>` to get the right key sequence (`Enter` for most agents,
+  `Enter Enter` for codex). the submit gesture is dropped only while the agent is `working`
+  (`idle` and `done` both accept it), so for a reply-expecting message just send and let the
+  reply confirm (resend on silence) - pre-check not-`working` only for no-reply messages. a
+  fresh agent is `idle`; one that finished an **unviewed** turn is `done` (UI focus can clear
+  it to `idle`). see the from/to protocol in SKILL.md.
+- codex-specific: codex panes can require a second Enter after `agent send`, especially when
+  text is ingested as a bracketed paste. keep protocol messages short and one-line, and use
+  `submit-keys` instead of hard-coding a single Enter.
 - `agent rename <target> <handle>` sets the handle (also the pane label); `--clear` removes it.
   the rename target must already be **detected** as an agent - `wait agent-status <pane> --status
   idle` after launching with `pane run`, or the rename misses.
