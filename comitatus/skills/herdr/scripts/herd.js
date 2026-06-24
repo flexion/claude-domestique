@@ -75,6 +75,80 @@ function waitCmd(args, deps) {
   }
 }
 
+function resolveSelf(data, override) {
+  if (override) return override;
+  const a = agentList(data).find((x) => x && x.focused && x.name);
+  return a ? a.name : undefined;
+}
+
+function stampPrefix(message, self, flag) {
+  if (/^\s*\[from /.test(message)) return message; // caller already prefixed
+  return `[from ${self} ${flag}] ${message}`;
+}
+
+function sendCmd(args, deps) {
+  const handle = args[0];
+  const message = args[1];
+  const reply = args.includes('--reply');
+  const fyi = args.includes('--fyi');
+  const fromI = args.indexOf('--from');
+  const fromOverride = fromI >= 0 ? args[fromI + 1] : undefined;
+
+  const data = loadAgentList({}, deps);
+  const p = pane(data, handle);
+  if (!p) throw new Error(`no agent: ${handle}`);
+
+  let body = message;
+  if (reply || fyi) {
+    const self = resolveSelf(data, fromOverride);
+    if (!self) throw new Error('cannot resolve sender handle (pass --from <self>)');
+    body = stampPrefix(message, self, reply ? 'reply' : 'fyi');
+  }
+
+  deps.run('herdr', ['agent', 'send', handle, body]);
+  // model-aware submit (codex needs two Enters; #138 submitKeys)
+  for (const k of submitKeys(data, handle)) deps.run('herdr', ['pane', 'send-keys', p, k]);
+  return { result: { type: 'ok' }, pane: p, sent: body };
+}
+
+function sendWaitReadCmd(args, deps) {
+  const handle = args[0];
+  const opt = (name, def) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : def; };
+  const timeout = String(Number(opt('--timeout', '60000')));
+  const lines = String(Number(opt('--lines', '40')));
+
+  const { pane: p } = sendCmd(args, deps); // parses handle/message/--reply/--fyi/--from itself
+  waitCmd([handle, '--status', 'idle,done', '--timeout', timeout], deps);
+  return deps.run('herdr', ['pane', 'read', p, '--source', 'recent', '--lines', lines]);
+}
+
+function agentCmd(args, deps) {
+  const { makeAgent } = require('./up.js'); // lazy: keep the stdin verbs independent of the launcher
+  const [model, handleVal] = args;
+  const opt = (name, def) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : def; };
+  const ws = opt('--workspace');
+  const cwd = opt('--cwd');
+  if (!ws || !cwd) throw new Error('--workspace and --cwd are required');
+  const timeout = String(Number(opt('--timeout', '45000')));
+  const a = makeAgent(model, handleVal); // validates model / opencode handle:model
+
+  // preflight: herdr enforces global handle uniqueness, but only after the tab
+  // is built. Fail before creating anything.
+  if (members(loadAgentList({}, deps)).includes(a.handle)) {
+    throw new Error(`handle already taken: ${a.handle}`);
+  }
+
+  const label = opt('--label', `${a.handle} ${a.glyph}`);
+  const tc = JSON.parse(deps.run('herdr',
+    ['tab', 'create', '--workspace', ws, '--cwd', cwd, '--label', label, '--no-focus']));
+  const paneId = tc.result.root_pane.pane_id;
+  const tab = tc.result.tab.tab_id;
+  deps.run('herdr', ['pane', 'run', paneId, a.runArgv]);
+  deps.run('herdr', ['wait', 'agent-status', paneId, '--status', 'idle', '--timeout', timeout]);
+  deps.run('herdr', ['agent', 'rename', paneId, a.handle]);
+  return { handle: a.handle, model: a.model, pane_id: paneId, tab };
+}
+
 function dispatch(argv, data, deps) {
   const [cmd, ...rest] = argv;
   switch (cmd) {
@@ -90,6 +164,14 @@ function dispatch(argv, data, deps) {
       return field(data, rest[0]);
     case 'submit-keys':
       return submitKeys(data, rest[0]);
+    case 'wait':
+      return waitCmd(rest, deps);
+    case 'send':
+      return sendCmd(rest, deps);
+    case 'send-wait-read':
+      return sendWaitReadCmd(rest, deps);
+    case 'agent':
+      return agentCmd(rest, deps);
     default:
       throw new Error(`unknown command: ${cmd}`);
   }
@@ -100,6 +182,15 @@ function format(value) {
   if (Array.isArray(value)) return value.join('\n');
   if (typeof value === 'object') return JSON.stringify(value);
   return String(value);
+}
+
+function defaultDeps() {
+  const { defaultRun } = require('./up.js'); // lazy: stdin verbs stay independent of the launcher
+  return {
+    run: defaultRun,
+    sleep: (ms) => { try { require('child_process').execFileSync('sleep', [String(ms / 1000)]); } catch { /* noop */ } },
+    now: () => Date.now(),
+  };
 }
 
 async function readStdin() {
@@ -131,7 +222,7 @@ async function main() {
   }
   let out;
   try {
-    out = dispatch(argv, data);
+    out = dispatch(argv, data, defaultDeps());
   } catch (e) {
     process.stderr.write(`herd: ${e.message}\n`);
     process.exit(1);
@@ -151,6 +242,12 @@ module.exports = {
   loadAgentList,
   parseWait,
   waitCmd,
+  resolveSelf,
+  stampPrefix,
+  sendCmd,
+  sendWaitReadCmd,
+  agentCmd,
+  defaultDeps,
   getField,
   dispatch,
   format,

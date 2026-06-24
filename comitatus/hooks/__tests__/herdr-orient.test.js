@@ -47,10 +47,15 @@ describe('buildOrientation', () => {
     expect(c).toContain(': "${H:?set H from the herdr orientation line before piping herdr JSON into node}"');
   });
 
-  test('warns the path is version-pinned and must be re-read, not persisted', () => {
+  test('frames the path as stable + allowlistable, not version-pinned', () => {
     const c = hook.buildOrientation('/abs/herd.js');
-    expect(c).toMatch(/version-pinned/i);
-    expect(c).toMatch(/do not persist|don't persist|re-read/i);
+    expect(c).toMatch(/stable/i);
+    expect(c).toMatch(/allowlist|permission/i);
+    expect(c).not.toMatch(/version-pinned/i);
+  });
+
+  test('tells the agent to call the literal path (not the $H variable)', () => {
+    expect(hook.buildOrientation('/abs/herd.js')).toMatch(/node \/abs\/herd\.js/);
   });
 
   test('does not steer agents to the unset $CLAUDE_PLUGIN_ROOT', () => {
@@ -170,5 +175,37 @@ describe('provisionCodex atomic swap hardening', () => {
     expect(r).toEqual({ provisioned: false, reason: 'current' });
     expect(fs.existsSync(path.join(dest, '.comitatus-hash'))).toBe(true);
     expect(tmpResidue(codexHome)).toEqual([]);
+  });
+});
+
+describe('stable provisioning', () => {
+  test('stableHome / stableHerdJs build the fixed paths', () => {
+    expect(hook.stableHome('/Users/x')).toBe(path.join('/Users/x', '.claude', 'comitatus'));
+    expect(hook.stableHerdJs('/h')).toBe(path.join('/h', 'skills', 'herdr', 'scripts', 'herd.js'));
+  });
+  test('provisionStable creates the home if absent, provisions, then no-ops', () => {
+    const skillDir = makeFixtureSkill();
+    const home = path.join(tmpdir(), 'claude-comitatus'); // does NOT exist yet
+    expect(hook.provisionStable({ skillDir, home })).toEqual({ provisioned: true, reason: 'missing' });
+    expect(fs.existsSync(hook.stableHerdJs(home))).toBe(true);
+    expect(hook.provisionStable({ skillDir, home })).toEqual({ provisioned: false, reason: 'current' });
+  });
+});
+
+describe('processSessionStart emits the stable path', () => {
+  test('orientation contains the stable herd.js path when provisioning succeeds', () => {
+    const stableHomeDir = path.join(tmpdir(), 'claude-comitatus');
+    const r = hook.processSessionStart({
+      env: { HERDR_ENV: '1' }, skillDir: SKILL_DIR, herdJsPath: HERD_JS,
+      codexHome: '/nonexistent', stableHome: stableHomeDir,
+    });
+    expect(r.hookSpecificOutput.additionalContext).toContain(hook.stableHerdJs(stableHomeDir));
+  });
+  test('falls back to the plugin herd.js when the stable provision throws', () => {
+    const r = hook.processSessionStart({
+      env: { HERDR_ENV: '1' }, skillDir: '/definitely/not/here', herdJsPath: '/abs/herd.js',
+      codexHome: '/nonexistent', stableHome: path.join(tmpdir(), 'claude-comitatus'),
+    });
+    expect(r.hookSpecificOutput.additionalContext).toContain('/abs/herd.js');
   });
 });

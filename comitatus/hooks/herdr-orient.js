@@ -18,16 +18,18 @@ function buildOrientation(herdJsPath) {
     'You are running inside herdr, a terminal-native agent multiplexer.',
     'Invoke the `comitatus:herdr` skill for worktree / herd / pane / agent workflows.',
     '',
-    'Roster/state helper - capture the path into `H`, guard it, then use `$H` in recipes',
-    '(it reads `herdr ... --json` on stdin; commands: pane|members|status|field|submit-keys):',
+    'Roster/state + composite helper - capture the path into `H`, guard it, then use it',
+    '(stdin verbs read `herdr ... --json`; self-exec verbs run herdr themselves):',
+    '  pane|members|status|field|submit-keys|wait|send|send-wait-read|agent',
     '',
     `    H=${herdJsPath}`,
     '    : "${H:?set H from the herdr orientation line before piping herdr JSON into node}"',
     '',
-    'This path is version-pinned (it moves on every comitatus update), so re-read `H`',
-    'from this orientation each session - do not persist it, and do not rebuild it from an',
-    'env var (none is set in your shell). codex agents use the stable',
-    '`$HOME/.codex/skills/herdr/scripts/herd.js` instead.',
+    'This path is STABLE across comitatus updates, so it can be allowlisted once with',
+    '`/herd-setup`. To run WITHOUT a permission prompt, call the helper by this absolute',
+    `path - \`node ${herdJsPath} status jay\` - NOT \`node "$H" ...\`: the permission`,
+    'matcher cannot see through the `$H` variable, so a variable call still prompts.',
+    'codex agents use the stable `$HOME/.codex/skills/herdr/scripts/herd.js`.',
   ].join('\n');
 }
 
@@ -70,11 +72,8 @@ function readHash(hashFile) {
   }
 }
 
-function provisionCodex({ skillDir, codexHome }) {
-  if (!fs.existsSync(codexHome)) {
-    return { provisioned: false, reason: 'codex-absent' };
-  }
-  const skillsDir = path.join(codexHome, 'skills');
+function provisionInto({ skillDir, home }) {
+  const skillsDir = path.join(home, 'skills');
   const destSkills = path.join(skillsDir, 'herdr');
   const srcHash = hashDir(skillDir);
 
@@ -84,11 +83,11 @@ function provisionCodex({ skillDir, codexHome }) {
   }
 
   // Stage the complete tree (skill files + hash marker) in a sibling temp dir on
-  // the same filesystem, then swap it into place with a single rename. A codex
-  // reader therefore never observes a half-copied skill dir: it sees either the
-  // previous complete copy or the new one, never a partial one. Concurrent
-  // provisioners stage to distinct temp dirs (keyed on pid) and converge, since
-  // they copy byte-identical content.
+  // the same filesystem, then swap it into place with a single rename. A reader
+  // therefore never observes a half-copied skill dir: it sees either the previous
+  // complete copy or the new one, never a partial one. Concurrent provisioners
+  // stage to distinct temp dirs (keyed on pid) and converge, since they copy
+  // byte-identical content.
   fs.mkdirSync(skillsDir, { recursive: true });
   tmpCounter += 1;
   const tmpDir = path.join(skillsDir, `.herdr.tmp.${process.pid}.${tmpCounter}`);
@@ -111,7 +110,22 @@ function provisionCodex({ skillDir, codexHome }) {
   return { provisioned: true, reason: curHash ? 'stale' : 'missing' };
 }
 
-function processSessionStart({ env, skillDir, herdJsPath, codexHome }) {
+function provisionCodex({ skillDir, codexHome }) {
+  if (!fs.existsSync(codexHome)) {
+    return { provisioned: false, reason: 'codex-absent' };
+  }
+  return provisionInto({ skillDir, home: codexHome });
+}
+
+function provisionStable({ skillDir, home }) {
+  fs.mkdirSync(home, { recursive: true });
+  return provisionInto({ skillDir, home });
+}
+
+function stableHome(homedir) { return path.join(homedir, '.claude', 'comitatus'); }
+function stableHerdJs(home) { return path.join(home, 'skills', 'herdr', 'scripts', 'herd.js'); }
+
+function processSessionStart({ env, skillDir, herdJsPath, codexHome, stableHome: stableHomeDir }) {
   if (env.HERDR_ENV !== '1') return null;
 
   let provision = { provisioned: false, reason: 'skipped' };
@@ -121,7 +135,17 @@ function processSessionStart({ env, skillDir, herdJsPath, codexHome }) {
     provision = { provisioned: false, reason: 'error', error: String((e && e.message) || e) };
   }
 
-  let additionalContext = buildOrientation(herdJsPath);
+  // Provision a stable, version-independent copy and prefer its path; fall back
+  // to the plugin's own (version-pinned) copy if that fails.
+  let helperPath = herdJsPath;
+  if (stableHomeDir) {
+    try {
+      provisionStable({ skillDir, home: stableHomeDir });
+      helperPath = stableHerdJs(stableHomeDir);
+    } catch { /* keep fallback */ }
+  }
+
+  let additionalContext = buildOrientation(helperPath);
   if (provision.provisioned) {
     additionalContext += `\n\nProvisioned the herdr skill for codex at ${path.join(codexHome, 'skills', 'herdr')}.`;
   }
@@ -152,6 +176,7 @@ async function main() {
     skillDir: SKILL_DIR,
     herdJsPath: HERD_JS,
     codexHome: path.join(os.homedir(), '.codex'),
+    stableHome: stableHome(os.homedir()),
   });
   if (result) console.log(JSON.stringify(result));
 }
@@ -162,7 +187,11 @@ module.exports = {
   buildOrientation,
   hashDir,
   copyDir,
+  provisionInto,
   provisionCodex,
+  provisionStable,
+  stableHome,
+  stableHerdJs,
   processSessionStart,
   EXCLUDE,
   PLUGIN_ROOT,
