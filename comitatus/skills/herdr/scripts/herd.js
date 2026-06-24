@@ -92,6 +92,9 @@ function sendCmd(args, deps) {
   const reply = args.includes('--reply');
   const fyi = args.includes('--fyi');
   const fromI = args.indexOf('--from');
+  if (fromI >= 0 && (args[fromI + 1] === undefined || args[fromI + 1].startsWith('--'))) {
+    throw new Error('--from needs a value');
+  }
   const fromOverride = fromI >= 0 ? args[fromI + 1] : undefined;
 
   const data = loadAgentList({}, deps);
@@ -188,7 +191,10 @@ function defaultDeps() {
   const { defaultRun } = require('./up.js'); // lazy: stdin verbs stay independent of the launcher
   return {
     run: defaultRun,
-    sleep: (ms) => { try { require('child_process').execFileSync('sleep', [String(ms / 1000)]); } catch { /* noop */ } },
+    // Block synchronously without a subprocess: no dependency on a `sleep` binary,
+    // and no busy-loop if one were missing. Atomics.wait is permitted on Node's
+    // main thread; the buffer is never signalled, so it always waits the full ms.
+    sleep: (ms) => { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, Math.max(0, ms)); },
     now: () => Date.now(),
   };
 }

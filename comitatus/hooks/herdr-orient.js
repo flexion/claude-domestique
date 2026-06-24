@@ -136,7 +136,8 @@ function processSessionStart({ env, skillDir, herdJsPath, codexHome, stableHome:
   }
 
   // Provision a stable, version-independent copy and prefer its path; fall back
-  // to the plugin's own (version-pinned) copy if that fails.
+  // to the plugin's own copy (whose path moves on each comitatus update) if that
+  // fails.
   let helperPath = herdJsPath;
   if (stableHomeDir) {
     try {

