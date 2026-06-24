@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 'use strict';
 
-const { up, defaultRun } = require('./up.js');
-
 function getField(obj, dotPath) {
   return String(dotPath).split('.').reduce(
     (o, k) => (o == null ? undefined : o[k]), obj);
@@ -12,14 +10,18 @@ function agentList(data) {
   return (data && data.result && data.result.agents) || [];
 }
 
+function findAgent(data, handleOrPane) {
+  return agentList(data).find(
+    (x) => x && (x.name === handleOrPane || x.pane_id === handleOrPane));
+}
+
 function pane(data, handle) {
   const a = agentList(data).find((x) => x && x.name === handle);
   return a ? a.pane_id : undefined;
 }
 
 function status(data, handleOrPane) {
-  const a = agentList(data).find(
-    (x) => x && (x.name === handleOrPane || x.pane_id === handleOrPane));
+  const a = findAgent(data, handleOrPane);
   return a ? a.agent_status : undefined;
 }
 
@@ -31,6 +33,12 @@ function members(data, workspaceId) {
 
 function field(data, dotPath) {
   return getField(data, dotPath);
+}
+
+function submitKeys(data, handleOrPane) {
+  const a = findAgent(data, handleOrPane);
+  if (!a) return [];
+  return a.agent === 'codex' ? ['Enter', 'Enter'] : ['Enter'];
 }
 
 function dispatch(argv, data) {
@@ -46,6 +54,8 @@ function dispatch(argv, data) {
     }
     case 'field':
       return field(data, rest[0]);
+    case 'submit-keys':
+      return submitKeys(data, rest[0]);
     default:
       throw new Error(`unknown command: ${cmd}`);
   }
@@ -68,6 +78,7 @@ async function main() {
   const argv = process.argv.slice(2);
   if (argv[0] === 'up') {
     try {
+      const { up, defaultRun } = require('./up.js');
       const result = up(argv.slice(1), { run: defaultRun });
       process.stdout.write(JSON.stringify(result) + '\n');
     } catch (e) {
@@ -97,4 +108,13 @@ async function main() {
 
 if (require.main === module) main();
 
-module.exports = { pane, status, members, field, getField, dispatch, format };
+module.exports = {
+  pane,
+  status,
+  members,
+  field,
+  submitKeys,
+  getField,
+  dispatch,
+  format,
+};

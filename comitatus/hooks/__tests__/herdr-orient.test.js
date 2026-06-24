@@ -42,6 +42,11 @@ describe('buildOrientation', () => {
     expect(c).toContain('H=/abs/herd.js');
   });
 
+  test('emits a fail-fast guard for the helper path', () => {
+    const c = hook.buildOrientation('/abs/herd.js');
+    expect(c).toContain(': "${H:?set H from the herdr orientation line before piping herdr JSON into node}"');
+  });
+
   test('warns the path is version-pinned and must be re-read, not persisted', () => {
     const c = hook.buildOrientation('/abs/herd.js');
     expect(c).toMatch(/version-pinned/i);
