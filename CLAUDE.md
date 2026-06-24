@@ -123,6 +123,7 @@ Each plugin owns specific context domains. When adding or modifying context, res
 | **memento** | Session management | `rules/sessions.md` |
 | **onus** | Git operations, work items | `rules/git.md`, `rules/work-items.md` |
 | **comitatus** | herdr orchestration | `skills/herdr/SKILL.md` |
+| **stilus** | Prose drafting, editing, and review | `agents/deslop.md` (slop catalog), `rules/voice.md` (voice schema), `context/reviewing.md` (review flow + scoring), `agents/review-correctness.md`, `agents/review-voice.md`, `agents/review-summary.md` |
 
 **Ownership rules:**
 - Single source of truth: each concept defined in exactly one place

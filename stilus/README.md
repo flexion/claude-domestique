@@ -11,7 +11,7 @@ Latin for the writing instrument and the root of "style."
 1. **Write** — draft in the project's voice (additive).
 2. **Edit** — remove slop line by line with the `deslop` agent (subtractive; changes how, never what).
 3. **Revise** — adjudicate deslop's cuts and fix structure so the piece leads with the point.
-4. **Review** — an independent, read-only judge checks fit, surviving tells, accuracy, and register.
+4. **Review** — an orchestrated phase: three parallel read-only specialists judge correctness, voice (slop graded 1–5 plus a human-perception read), and AI perception (whether a cold AI reader gets the point), and the orchestrator synthesizes a scored, quotation-grounded report. Run it standalone on any existing prose with `/stilus:review <file-or-text>`.
 
 A Slack message gets write → edit. A document gets write → edit → revise. A white paper gets all four.
 
@@ -34,4 +34,4 @@ Fill in the sections from `rules/voice.md`. A personal default can live at `~/.c
 
 ## Single source of truth
 
-The slop catalog and shared craft (lead with the point, sentence rhythm, accuracy over precision) live in the `deslop` agent. The voice layer, reviser, and reviewer reference them; they never restate them.
+The slop catalog and shared craft (lead with the point, sentence rhythm, accuracy over precision) live in the `deslop` agent. The voice layer, reviser, and the review specialists reference them; they never restate them. The review flow and its scoring live once in `context/reviewing.md`, which the `/stilus:review` command and the write skill both run.
