@@ -20,6 +20,15 @@
 - Before merging, run `node scripts/bump-version.js comitatus minor` (Task 13) — required for any branch touching plugin files.
 - Run the comitatus suite after each JS task: `cd comitatus && npx jest --runInBand`.
 
+## Re-baseline note (PR #138 landed under this plan)
+
+This plan was written against pre-#138 `herd.js`/`herdr-orient.js`/`SKILL.md`. Commit `eaaa160` ("codex submit-keys helper + fail-fast $H guards", comitatus **0.3.0**) is now in history. **These overrides take precedence over the affected task bodies below:**
+
+- **Reuse, don't reinvent.** `herd.js` already has `findAgent(data, handleOrPane)` and `submitKeys(data, handleOrPane)` (returns `['Enter']`, or `['Enter','Enter']` for `agent === 'codex'`). **Task 3/4 drop the `--codex` flag** and resolve submit keys via `submitKeys(data, handle)` instead.
+- **`up.js` is lazy-required inside `main()`** (deliberate). **Task 5** lazy-requires `makeAgent` inside `agentCmd`; **Task 6** lazy-requires `defaultRun` inside `defaultDeps`. No top-level `require('./up.js')`.
+- **Preserve #138 surface.** `dispatch` has a `submit-keys` case (**Task 6** keeps it). `buildOrientation` emits the `: "${H:?…}"` guard line and lists `submit-keys` in the verb list (**Task 8** keeps both, layering stable-path framing on top). **Task 12** builds on #138's in-recipe `${H:?}` guards + submit-keys usage.
+- **Version is already 0.3.0** → **Task 13 bumps minor to 0.4.0**.
+
 ---
 
 ### Task 1: Self-exec the data verbs (`status`/`pane`/`members`) with stdin fallback
