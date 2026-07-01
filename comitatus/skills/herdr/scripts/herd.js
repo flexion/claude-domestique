@@ -75,9 +75,14 @@ function waitCmd(args, deps) {
   }
 }
 
-function resolveSelf(data, override) {
+function resolveSelf(data, override, env = process.env) {
   if (override) return override;
-  const a = agentList(data).find((x) => x && x.focused && x.name);
+  // The executing pane is the identity source: focus is a global that drifts
+  // on any human click, which mislabels scripted sends (misroutes replies).
+  const mine = env.HERDR_PANE_ID
+    && agentList(data).find((x) => x && x.pane_id === env.HERDR_PANE_ID && x.name);
+  if (mine) return mine.name;
+  const a = agentList(data).find((x) => x && x.focused && x.name); // legacy fallback
   return a ? a.name : undefined;
 }
 
@@ -103,15 +108,41 @@ function sendCmd(args, deps) {
 
   let body = message;
   if (reply || fyi) {
-    const self = resolveSelf(data, fromOverride);
+    const self = resolveSelf(data, fromOverride, deps.env);
     if (!self) throw new Error('cannot resolve sender handle (pass --from <self>)');
     body = stampPrefix(message, self, reply ? 'reply' : 'fyi');
   }
 
   deps.run('herdr', ['agent', 'send', handle, body]);
-  // model-aware submit (codex needs two Enters; #138 submitKeys)
-  for (const k of submitKeys(data, handle)) deps.run('herdr', ['pane', 'send-keys', p, k]);
-  return { result: { type: 'ok' }, pane: p, sent: body };
+  const submitted = submitWithVerify(p, handle, deps);
+  return { result: { type: 'ok' }, pane: p, sent: body, submitted };
+}
+
+// A blind Enter races the recipient TUI's ingest of the just-typed text: slow
+// composers (codex) swallow it and the message sits unsubmitted while the
+// sender sees ok. Fire the model-aware submit keys (#138), then verify via the
+// agent_status transition — the composer buffer lags the status flip, so
+// status, not a pane read, is the reliable signal — and resend on a miss.
+// Returns false if still unconfirmed after all attempts (the message may be
+// sitting unsubmitted). A recipient already `working` at entry is ambiguous —
+// our submit is indistinguishable from its in-flight turn, so the result is
+// optimistic there; don't send to a working peer.
+function submitWithVerify(p, handle, deps, opts = {}) {
+  const attempts = opts.attempts || 3;
+  const polls = opts.polls || 4;
+  const pollMs = opts.pollMs || 750;
+  const before = status(loadAgentList({}, deps), handle);
+  for (let a = 0; a < attempts; a++) {
+    const data = loadAgentList({}, deps);
+    for (const k of submitKeys(data, handle)) deps.run('herdr', ['pane', 'send-keys', p, k]);
+    for (let i = 0; i < polls; i++) {
+      deps.sleep(pollMs);
+      const now = status(loadAgentList({}, deps), handle);
+      if (now === 'working') return true; // started our turn
+      if (before !== 'working' && now !== before && now !== 'unknown') return true; // fast turn, e.g. idle->done
+    }
+  }
+  return false;
 }
 
 function sendWaitReadCmd(args, deps) {
@@ -152,8 +183,32 @@ function agentCmd(args, deps) {
   return { handle: a.handle, model: a.model, pane_id: paneId, tab };
 }
 
+function usage() {
+  return [
+    'usage: herd.js <verb> [args]',
+    '',
+    'stdin verbs (pipe `herdr agent list` in, or let the helper fetch it):',
+    '  pane <handle>                    pane_id for a handle',
+    '  status <handle|pane>             agent_status',
+    '  members [--workspace <ws>]       handles, optionally per workspace',
+    '  field <dot.path>                 extract a field from piped JSON',
+    '  submit-keys <handle|pane>        model-correct submit gesture',
+    '',
+    'action verbs (run herdr themselves):',
+    '  wait <handle> [--status a,b] [--timeout ms] [--interval ms]',
+    '      poll until status matches; comma lists work HERE only -',
+    '      the native `herdr wait agent-status` takes exactly one status',
+    '  send <handle> <msg> [--reply|--fyi] [--from <self>]',
+    '      type, submit, verify; result reports "submitted":true|false',
+    '  send-wait-read <handle> <msg> [--timeout ms] [--lines n]',
+    '  agent <model> <handle> --workspace <ws> --cwd <dir> [--timeout ms] [--label s]',
+    '  up [...]                         one-shot worktree + herd launcher',
+  ].join('\n');
+}
+
 function dispatch(argv, data, deps) {
   const [cmd, ...rest] = argv;
+  if (!cmd || cmd === '--help' || cmd === '-h' || rest[0] === '--help') return usage();
   switch (cmd) {
     case 'pane':
       return pane(loadAgentList(data, deps), rest[0]);
@@ -218,6 +273,12 @@ async function main() {
     }
     return;
   }
+  // help never needs stdin; answer before readStdin so an interactive
+  // `herd.js send --help` doesn't sit waiting for EOF
+  if (!argv[0] || argv[0] === '--help' || argv[0] === '-h' || argv[1] === '--help') {
+    process.stdout.write(usage() + '\n');
+    return;
+  }
   const raw = await readStdin();
   let data;
   try {
@@ -251,10 +312,12 @@ module.exports = {
   resolveSelf,
   stampPrefix,
   sendCmd,
+  submitWithVerify,
   sendWaitReadCmd,
   agentCmd,
   defaultDeps,
   getField,
   dispatch,
   format,
+  usage,
 };

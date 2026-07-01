@@ -202,7 +202,7 @@ the handle is also the pane label. the decorated **tab** label (step 3) does **n
 
 ### 5. message another agent by handle
 
-the one-call path: `node "$H" send <handle> <msg>` resolves the pane, sends, and submits with the model-correct keys (codex gets two Enters via `submit-keys`). add `--reply` or `--fyi` to stamp the protocol flag (below):
+the one-call path: `node "$H" send <handle> <msg>` resolves the pane, sends, submits with the model-correct keys (codex gets two Enters via `submit-keys`), then **verifies** the submit landed - it polls the recipient's `agent_status` for the `working` transition and resends the keys on a miss (a blind Enter races the recipient TUI's ingest; slow composers like codex swallow it). the result reports `"submitted":true|false` - `false` means the recipient never started a turn, so resend. add `--reply` or `--fyi` to stamp the protocol flag (below):
 
 ```bash
 : "${H:?set H from the herdr orientation line before piping herdr JSON into node}"
@@ -233,7 +233,7 @@ hsend() {  # hsend <handle> <one-line-message>
 }
 ```
 
-the submit gesture is dropped only if `jay` was mid-generation (`working`); if no reply comes back, resend. for replies, seeding, roster, and how to handle no-reply messages, see the from/to protocol below.
+a raw `pane send-keys` submit (this manual path and `hsend`) is fire-and-forget: it drops if `jay` was mid-generation (`working`), and it can race the recipient TUI's ingest of the just-typed text - codex composers lose that race intermittently, leaving the message sitting unsubmitted. `node "$H" send` closes both gaps by verifying the status transition and retrying; on the manual path, if no reply comes back, resend. for replies, seeding, roster, and how to handle no-reply messages, see the from/to protocol below.
 
 ### 6. close agents on a worktree
 
@@ -314,7 +314,7 @@ a stateless convention for agents to message each other and reply, without scrap
 [from <self> fyi]   <body>     # no reply expected - do NOT reply
 ```
 
-`<self>` is your handle; reply to `<self>` with `[from <you> ...] <answer>`. a newline submits the turn early, so keep every message to one line. `node "$H" send` / `send-wait-read` stamp this flag for you: `--reply` -> `[from <self> reply]`, `--fyi` -> `[from <self> fyi]`. they resolve `<self>` from the *focused* pane, which is you when you run it in your own pane; if you ever drive a send from a different pane, pass `--from <self>` so the sender is stamped correctly.
+`<self>` is your handle; reply to `<self>` with `[from <you> ...] <answer>`. a newline submits the turn early, so keep every message to one line. `node "$H" send` / `send-wait-read` stamp this flag for you: `--reply` -> `[from <self> reply]`, `--fyi` -> `[from <self> fyi]`. they resolve `<self>` from the *executing* pane (`$HERDR_PANE_ID`, which your subprocesses inherit), so scripted and background sends stamp the right sender even when UI focus has drifted elsewhere; the focused pane is only a fallback when that env var is missing. pass `--from <self>` to override.
 
 **send to teammate `<to>`:**
 
@@ -324,7 +324,7 @@ TO=jay
 node "$H" send "$TO" "<body>" --reply   # stamps [from <self> reply], resolves the pane, submits
 ```
 
-**push and let the reply confirm - don't pre-check.** the submit gesture is dropped only if the recipient was `working`; its `[from <to>]` reply landing in your pane means it arrived, and *no* reply means resend. only a message that expects **no** reply (e.g. a `[herd ...]` directive) has nothing to confirm it - then send when the recipient is not `working`, or read its pane to verify:
+**push and let the reply confirm - don't pre-check.** `node "$H" send` verifies the submit against the recipient's `agent_status` and retries, reporting `"submitted":false` when it never landed; its `[from <to>]` reply landing in your pane means it arrived, and *no* reply means resend. only a message that expects **no** reply (e.g. a `[herd ...]` directive) has nothing to confirm it - then send when the recipient is not `working`, or read its pane to verify:
 
 ```bash
 # wait until the recipient is free to receive (idle OR done), not mid-generation:
@@ -355,7 +355,7 @@ seed the rule into every orientation: "periodically reconcile your roster agains
 **delivery reliability (validated by testing):**
 
 - **`agent send` returns `ok` for *typed*, not *delivered*.** the `{"result":{"type":"ok"}}` ack means the text reached the recipient's input buffer; it does **not** mean the agent saw it. submitting is a separate `pane send-keys` call; guard `H`, then use `node "$H" submit-keys <handle>` (or the `hsend` helper) so codex gets its required second Enter. until then the message sits unsubmitted in the prompt. treat the reply, not the `ok`, as proof of delivery.
-- **the reply, or its absence, is the signal.** push the message and let the reply confirm it - a `[from <to>]` turn landing in your pane means it arrived; nothing landing means the submit gesture dropped (the recipient was `working`), so resend. you don't pre-check the recipient for reply-expecting messages.
+- **the reply, or its absence, is the signal.** push the message and let the reply confirm it - a `[from <to>]` turn landing in your pane means it arrived; nothing landing means the submit gesture dropped (the recipient was `working`, or a raw send-keys lost the ingest race), so resend. `node "$H" send` retries the race for you and reports `"submitted"`; you don't pre-check the recipient for reply-expecting messages.
 - **no-reply messages need a check.** a directive that expects no reply (`[herd ...]`, a one-way note) has nothing to confirm delivery, so send it when the recipient is not `working` (poll) or read its pane to verify - reliable `agent_status` is what makes the poll checkable, so a broken integration (see the opencode status fix) breaks it. (roster directives tolerate drops anyway: peer-detection re-discovers a missed add/remove.)
 - **pre-authorize `herdr`.** an agent that prompts for per-command tool approval before running `herdr ...` stalls mid-protocol. allowlist `herdr` in each agent's tool-permission config (the legacy herdr-mate pre-authorized its send wrapper for exactly this).
 - **weak local models narrate, not execute.** small models (e.g. qwen2.5:7b) print the CLI as text instead of running it; they need an explicit "run these as real shell commands - do not print," and often a capable peer to coach them. the protocol is reliable between capable agents (claude/codex) and best-effort with weak ones.
@@ -387,8 +387,9 @@ herdr wait agent-status w9:p1 --status done --timeout 120000   # a sibling finis
 ## gotchas
 
 - **fetch before `worktree create`** - `--base origin/main` is the local ref; it is stale until you `git fetch origin main`.
-- **`agent send` returns `ok` for *typed*, not *submitted*, and sends no Enter** - the `ok` ack only means the text reached the input buffer; the message sits unsubmitted until you submit it (`pane send-keys <pane> $(herdr agent list | node "$H" submit-keys <handle>)`, dropped only while the target is `working`). guard `H`, then pair every send with the helper-driven submit keys - or use the `hsend` helper (step 5) - and let the reply confirm it landed (resend on silence); only for a no-reply message poll until the target is not `working` first, or verify by reading its pane. don't hard-code one global Enter count.
-- **codex TUI submit gotcha** - codex panes require a second Enter after `agent send` in cases where other agents submit with one. guard `H`, then use `node "$H" submit-keys <handle>` so codex gets `Enter Enter` and other agents get `Enter`; if a long codex send still goes silent, retry as shorter one-line chunks.
+- **`agent send` returns `ok` for *typed*, not *submitted*, and sends no Enter** - the `ok` ack only means the text reached the input buffer; the message sits unsubmitted until you submit it (`pane send-keys <pane> $(herdr agent list | node "$H" submit-keys <handle>)`). prefer `node "$H" send <handle> <msg>`, which submits *and* verifies via the recipient's `agent_status`, retrying on a miss and reporting `"submitted"`; let the reply confirm delivery (resend on silence). only for a no-reply message poll until the target is not `working` first, or verify by reading its pane. don't hard-code one global Enter count.
+- **codex TUI submit gotchas** - codex panes require a second Enter where other agents submit with one, *and* their composer ingests typed text slowly enough that an immediate Enter is swallowed intermittently (a raw `agent send` + `send-keys` pair silently drops ~2 in 3 messages). `node "$H" send` handles both (model-correct keys + verified, retried submit); if a long codex send still goes silent, retry as shorter one-line chunks.
+- **`--status` comma lists are helper-only** - `node "$H" wait <handle> --status idle,done` accepts a comma-separated set, but the native `herdr wait agent-status <pane>` takes exactly one status; passing it a comma list doesn't match anything. use the helper when you need "idle OR done".
 - **opencode status needs the fix plugin** - herdr 0.7.0's managed opencode integration is out of date with opencode 1.17.8 (object-form `session.status` + fire-and-forget idle), so opencode agents get stuck `working` / never report state right. the sibling plugin `~/.config/opencode/plugins/herdr-opencode-status-fix.js` restores correct working/idle/blocked reporting. without it, `wait agent-status` on an opencode pane is unreliable.
 - **only the home repo's worktree tree nests; plain workspaces don't** - the sidebar nests exactly one repo group (main checkout -> its linked worktrees -> tabs), keyed on `repo_root`. a `workspace create --cwd` workspace gets **no** repo association and floats ungrouped, even at a repo root. give each agent in a herd a *tab* in the herd's one workspace; make the herd a worktree if you want it to nest under the repo's main checkout.
 - **workspace label vs tab truncation** - agent rows render as `<workspace> · <tab>`, and herdr labels a worktree's workspace with its (long) directory name, so the decorated `<handle> <glyph>` tab label can truncate in the collapsed sidebar; the handle reappears on focus/widen. that label is herdr's default - you don't rename it (see `## naming`).
