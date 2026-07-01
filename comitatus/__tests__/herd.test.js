@@ -142,69 +142,122 @@ describe('waitCmd', () => {
   });
 });
 
+describe('resolveSelf', () => {
+  const DATA = { result: { agents: [
+    { name: 'paul', pane_id: 'w1M:p5' },
+    { name: 'cal', pane_id: 'w1M:p4', focused: true },
+  ] } };
+
+  test('override wins over everything', () => {
+    expect(h.resolveSelf(DATA, 'kris', { HERDR_PANE_ID: 'w1M:p5' })).toBe('kris');
+  });
+
+  test('resolves the executing pane from HERDR_PANE_ID, not the focused agent', () => {
+    expect(h.resolveSelf(DATA, undefined, { HERDR_PANE_ID: 'w1M:p5' })).toBe('paul');
+  });
+
+  test('falls back to the focused agent when HERDR_PANE_ID is absent', () => {
+    expect(h.resolveSelf(DATA, undefined, {})).toBe('cal');
+  });
+
+  test('falls back to the focused agent when HERDR_PANE_ID matches no agent', () => {
+    expect(h.resolveSelf(DATA, undefined, { HERDR_PANE_ID: 'w9:p9' })).toBe('cal');
+  });
+});
+
 describe('sendCmd', () => {
-  const list = (focused) => JSON.stringify({ result: { agents: [
-    { name: 'jay', agent: 'claude', pane_id: 'w1:p2' },
-    { name: 'sly', agent: 'claude', pane_id: 'w1:p1', focused: !!focused },
-    { name: 'cod', agent: 'codex', pane_id: 'w1:p3' },
-  ] } });
-  function runner(focused) {
+  // Recipient statuses are served one per `agent list` call so tests can
+  // script the idle->working transition that the submit verification polls for.
+  function runner({ focused, statuses = ['idle'] } = {}) {
     const calls = [];
-    const run = (f, a) => { calls.push([f, ...a]); return (a[0] === 'agent' && a[1] === 'list') ? list(focused) : ''; };
-    return { run, calls };
+    let i = 0;
+    const list = () => {
+      const st = statuses[Math.min(i++, statuses.length - 1)];
+      return JSON.stringify({ result: { agents: [
+        { name: 'jay', agent: 'claude', pane_id: 'w1:p2', agent_status: st },
+        { name: 'sly', agent: 'claude', pane_id: 'w1:p1', focused: !!focused },
+        { name: 'cod', agent: 'codex', pane_id: 'w1:p3', agent_status: st },
+      ] } });
+    };
+    const run = (f, a) => { calls.push([f, ...a]); return (a[0] === 'agent' && a[1] === 'list') ? list() : ''; };
+    const submits = () => calls.filter((c) => c[1] === 'pane' && c[2] === 'send-keys');
+    return { deps: { run, sleep: () => {}, env: {} }, calls, submits };
   }
 
-  test('plain send: resolve pane, send, one Enter (claude recipient)', () => {
-    const { run, calls } = runner();
-    expect(h.sendCmd(['jay', 'rerun the test'], { run }))
-      .toEqual({ result: { type: 'ok' }, pane: 'w1:p2', sent: 'rerun the test' });
-    expect(calls).toEqual([
-      ['herdr', 'agent', 'list'],
-      ['herdr', 'agent', 'send', 'jay', 'rerun the test'],
-      ['herdr', 'pane', 'send-keys', 'w1:p2', 'Enter'],
-    ]);
+  test('plain send: resolve pane, send, Enter, then verify via status poll', () => {
+    const { deps, calls, submits } = runner({ statuses: ['idle', 'idle', 'idle', 'working'] });
+    expect(h.sendCmd(['jay', 'rerun the test'], deps))
+      .toEqual({ result: { type: 'ok' }, pane: 'w1:p2', sent: 'rerun the test', submitted: true });
+    expect(calls).toContainEqual(['herdr', 'agent', 'send', 'jay', 'rerun the test']);
+    expect(submits()).toEqual([['herdr', 'pane', 'send-keys', 'w1:p2', 'Enter']]);
   });
 
   test('codex recipient gets two Enters via submitKeys', () => {
-    const { run, calls } = runner();
-    h.sendCmd(['cod', 'hello'], { run });
-    expect(calls.filter((c) => c[1] === 'pane' && c[2] === 'send-keys')).toEqual([
+    const { deps, submits } = runner({ statuses: ['idle', 'idle', 'idle', 'working'] });
+    h.sendCmd(['cod', 'hello'], deps);
+    expect(submits()).toEqual([
       ['herdr', 'pane', 'send-keys', 'w1:p3', 'Enter'],
       ['herdr', 'pane', 'send-keys', 'w1:p3', 'Enter'],
     ]);
   });
 
+  test('dropped submit is retried until the recipient starts working', () => {
+    // attempt 1: all 4 polls stay idle (Enter was swallowed); attempt 2 lands.
+    const statuses = ['idle', 'idle', 'idle', 'idle', 'idle', 'idle', 'idle', 'working'];
+    const { deps, submits } = runner({ statuses });
+    expect(h.sendCmd(['cod', 'hello'], deps).submitted).toBe(true);
+    expect(submits()).toHaveLength(4); // 2 Enters x 2 attempts
+  });
+
+  test('reports submitted:false when the recipient never starts working', () => {
+    const { deps, submits } = runner({ statuses: ['idle'] });
+    expect(h.sendCmd(['cod', 'hello'], deps).submitted).toBe(false);
+    expect(submits()).toHaveLength(6); // 2 Enters x 3 attempts, then give up
+  });
+
+  test('fast turn (idle->done between polls) still counts as submitted', () => {
+    const { deps, submits } = runner({ statuses: ['idle', 'idle', 'idle', 'done'] });
+    expect(h.sendCmd(['jay', 'quick one'], deps).submitted).toBe(true);
+    expect(submits()).toHaveLength(1);
+  });
+
   test('--reply --from stamps the compact protocol header', () => {
-    const { run, calls } = runner();
-    expect(h.sendCmd(['jay', 'status?', '--reply', '--from', 'sly'], { run }).sent)
+    const { deps, calls } = runner({ statuses: ['working'] });
+    expect(h.sendCmd(['jay', 'status?', '--reply', '--from', 'sly'], deps).sent)
       .toBe('[from sly reply] status?');
     expect(calls).toContainEqual(['herdr', 'agent', 'send', 'jay', '[from sly reply] status?']);
   });
 
-  test('--fyi resolves <self> from the focused agent when --from is omitted', () => {
-    const { run } = runner(true); // sly is focused
-    expect(h.sendCmd(['jay', 'heads up', '--fyi'], { run }).sent).toBe('[from sly fyi] heads up');
+  test('--fyi resolves <self> from the executing pane, not the focused agent', () => {
+    const { deps } = runner({ focused: true, statuses: ['working'] }); // focus drifted to sly
+    deps.env = { HERDR_PANE_ID: 'w1:p2' }; // but jay is running the send
+    expect(h.sendCmd(['cod', 'heads up', '--fyi'], deps).sent).toBe('[from jay fyi] heads up');
+  });
+
+  test('--fyi falls back to the focused agent when --from and HERDR_PANE_ID are absent', () => {
+    const { deps } = runner({ focused: true, statuses: ['working'] }); // sly is focused
+    expect(h.sendCmd(['jay', 'heads up', '--fyi'], deps).sent).toBe('[from sly fyi] heads up');
   });
 
   test('does not double-prefix an already [from ...] message', () => {
-    const { run } = runner(true);
-    expect(h.sendCmd(['jay', '[from sly reply] hi', '--reply'], { run }).sent).toBe('[from sly reply] hi');
+    const { deps } = runner({ focused: true, statuses: ['working'] });
+    expect(h.sendCmd(['jay', '[from sly reply] hi', '--reply'], deps).sent).toBe('[from sly reply] hi');
   });
 
   test('throws on unknown handle', () => {
-    const { run } = runner();
-    expect(() => h.sendCmd(['ghost', 'hi'], { run })).toThrow(/no agent: ghost/);
+    const { deps } = runner();
+    expect(() => h.sendCmd(['ghost', 'hi'], deps)).toThrow(/no agent: ghost/);
   });
 
   test('--reply with no focused agent and no --from throws (no silent mis-stamp)', () => {
-    const { run } = runner(); // no agent is focused
-    expect(() => h.sendCmd(['jay', 'hi', '--reply'], { run }))
+    const { deps } = runner(); // no agent is focused
+    expect(() => h.sendCmd(['jay', 'hi', '--reply'], deps))
       .toThrow(/cannot resolve sender handle/);
   });
 
   test('--from without a value throws instead of being silently ignored', () => {
-    const { run } = runner(true);
-    expect(() => h.sendCmd(['jay', 'hi', '--reply', '--from'], { run })).toThrow(/--from needs a value/);
+    const { deps } = runner({ focused: true });
+    expect(() => h.sendCmd(['jay', 'hi', '--reply', '--from'], deps)).toThrow(/--from needs a value/);
   });
 });
 
@@ -322,6 +375,24 @@ describe('dispatch routes action verbs', () => {
   });
 });
 
+describe('usage / --help', () => {
+  test('send --help prints usage instead of resolving --help as a handle', () => {
+    const calls = [];
+    const deps = { run: (f, a) => { calls.push([f, ...a]); return '{}'; } };
+    const out = h.dispatch(['send', '--help'], {}, deps);
+    expect(out).toMatch(/usage: herd\.js/);
+    expect(calls).toEqual([]); // short-circuits before `herdr agent list`
+  });
+  test('bare --help, -h, and no verb print usage', () => {
+    expect(h.dispatch(['--help'], {}, {})).toMatch(/usage: herd\.js/);
+    expect(h.dispatch(['-h'], {}, {})).toMatch(/usage: herd\.js/);
+    expect(h.dispatch([], {}, {})).toMatch(/usage: herd\.js/);
+  });
+  test('usage warns that the native wait takes a single status, not a comma list', () => {
+    expect(h.usage()).toMatch(/herdr wait agent-status.*one\b/i);
+  });
+});
+
 describe('herd.js main wiring (child process)', () => {
   const path = require('path');
   const { execFileSync } = require('child_process');
@@ -334,5 +405,9 @@ describe('herd.js main wiring (child process)', () => {
     expect(err).toBeDefined();
     expect(err.status).toBe(1);
     expect(String(err.stderr)).toMatch(/^herd: unknown command/m);
+  });
+  test('send --help exits 0 with usage on stdout', () => {
+    const out = execFileSync('node', [HERD, 'send', '--help'], { encoding: 'utf8', stdio: 'pipe', input: '' });
+    expect(out).toMatch(/usage: herd\.js/);
   });
 });
