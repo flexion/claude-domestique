@@ -59,11 +59,11 @@ Estimated: herd.js 329 → ~180 lines, and the 110-test suite mostly carries ove
 - Keep `pane run`/`send-keys` **out** of the allowlist (unchanged injection posture — the tight list is the point).
 - **Per-harness authorization becomes part of member seeding** (constraint 2): `/herd-setup` covers Claude's settings.json only. Document the equivalent allowlist recipe for codex and opencode config formats, authorizing the same command set. An agent that prompts mid-protocol stalls the herd; pre-authorization is seeding, not an afterthought.
 
-### Pre-work spike (~30 min, answers two questions)
+### Spike results (run live 2026-07-02 against herdr 0.7.1 — all questions answered)
 
-1. Does `herdr agent start --tab <id>` place the agent in that tab's root pane (tab-per-agent grouping preserved)?
-2. Does `herdr wait output --match` see text sitting in a codex composer (`--source recent-unwrapped` vs `visible`)?
-Also glance at the preview-channel changelog for a native `agent send --submit` — if upstream ships submission, `send` shrinks further.
+1. **Composer ingest detection: YES.** `herdr wait output <pane> --match <fragment> --source recent-unwrapped` matched text sitting unsubmitted in a live codex composer in **115ms** (also present in `--source visible`). The full deterministic send was then validated end-to-end against jay: `agent send` → `wait output` (115ms) → `send-keys Enter Enter` → `agent wait --status working` (219ms, and it emits the `pane.agent_status_changed` event JSON). Total ~350ms, zero polling, zero retries, submit landed first try. This replaces `submitWithVerify` outright.
+2. **`agent start` placement: splits, never creates its own tab.** With `--tab <id>` it adds a second pane beside the tab's root; without `--tab` it splits the currently active tab (unacceptable). But the winning shape is **3 calls with no wait**: `tab create` → `agent start <handle> --tab <id> --cwd … --no-focus -- <argv>` (name assigned instantly, survives detection — verified `agent get` shows name+type+idle) → `pane close <root>` (tab survives with the agent as its only pane). That beats the current 4-call sequence (tab create → pane run → wait idle, up to 45s → rename) on both simplicity and latency. herdr rejects duplicate handles at `agent start` (`agent_name_taken`), so the only preflight still needed is up.js's fail-before-worktree-create check.
+3. **Preview channel: no native `agent send --submit`** in preview docs or blog. Preview does mention CLI events commands (irrelevant now; useful only for the deferred store-and-forward). The deterministic send stands as our design.
 
 ## Explicitly deferred (recorded so we stop re-litigating them)
 
