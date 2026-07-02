@@ -37,14 +37,17 @@ describe('buildOrientation', () => {
     expect(c).toContain('/abs/herd.js');
   });
 
-  test('emits a copy-pasteable H= assignment of the helper path', () => {
+  test('steers to native herdr verbs by handle first', () => {
     const c = hook.buildOrientation('/abs/herd.js');
-    expect(c).toContain('H=/abs/herd.js');
+    expect(c).toMatch(/native/i);
+    expect(c).toMatch(/herdr agent/);
   });
 
-  test('emits a fail-fast guard for the helper path', () => {
+  test('has no shell-variable, guard, pipe, or stdin ceremony', () => {
     const c = hook.buildOrientation('/abs/herd.js');
-    expect(c).toContain(': "${H:?set H from the herdr orientation line before piping herdr JSON into node}"');
+    expect(c).not.toContain('H=');
+    expect(c).not.toContain('${H:?');
+    expect(c).not.toMatch(/pipe|stdin/i);
   });
 
   test('frames the path as stable + allowlistable, not version-pinned', () => {
@@ -54,8 +57,15 @@ describe('buildOrientation', () => {
     expect(c).not.toMatch(/version-pinned/i);
   });
 
-  test('tells the agent to call the literal path (not the $H variable)', () => {
+  test('shows a literal absolute-path invocation', () => {
     expect(hook.buildOrientation('/abs/herd.js')).toMatch(/node \/abs\/herd\.js/);
+  });
+
+  test('lists the composite verbs', () => {
+    const c = hook.buildOrientation('/abs/herd.js');
+    for (const v of ['status', 'members', 'wait', 'send', 'send-wait-read', 'agent', 'up']) {
+      expect(c).toContain(v);
+    }
   });
 
   test('does not steer agents to the unset $CLAUDE_PLUGIN_ROOT', () => {

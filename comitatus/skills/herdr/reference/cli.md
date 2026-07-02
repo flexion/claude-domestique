@@ -65,30 +65,28 @@ herdr agent explain --file PATH --agent LABEL [--json]
   and cwd-filters depend on), and `--workspace <id>` only places the pane in that workspace. pass
   **both** to bind an agent to a worktree. with neither, the agent inherits the caller's cwd and
   current workspace; with `--workspace` only, the pane is placed but the cwd is still the caller's.
-- `agent send` writes literal text only - no Enter; submit with `pane send-keys`. after guarding
-  the helper path with the fail-fast `: "${H:?message}"` recipe line, use
-  `node "$H" submit-keys <handle>` to get the right key sequence (`Enter` for most agents,
-  `Enter Enter` for codex). the submit gesture is dropped only while the agent is `working`
-  (`idle` and `done` both accept it), so for a reply-expecting message just send and let the
-  reply confirm (resend on silence) - pre-check not-`working` only for no-reply messages. a
-  fresh agent is `idle`; one that finished an **unviewed** turn is `done` (UI focus can clear
-  it to `idle`). see the from/to protocol in SKILL.md.
-- codex-specific: codex panes can require a second Enter after `agent send`, especially when
-  text is ingested as a bracketed paste. keep protocol messages short and one-line, and use
-  `submit-keys` instead of hard-coding a single Enter.
-- `agent rename <target> <handle>` sets the handle (also the pane label); `--clear` removes it.
-  the rename target must already be **detected** as an agent - `wait agent-status <pane> --status
-  idle` after launching with `pane run`, or the rename misses.
+- `agent send` writes literal text only - no Enter; the message sits in the recipient's
+  composer until submitted (`pane send-keys <pane> Enter`, twice for codex). prefer the
+  helper's `send` verb, which types, confirms the composer ingested the text
+  (`wait output`), submits with the model-correct keys, and confirms the turn started
+  (`agent wait --status working`) - see the from/to protocol in SKILL.md. a fresh agent
+  is `idle`; one that finished an **unviewed** turn is `done` (UI focus can clear it to
+  `idle`).
+- `agent rename <target> <handle>` changes a handle later; `--clear` removes it. new
+  agents don't need it - `agent start <name>` assigns the handle at launch.
 
 two ways to launch an agent:
-- **default (one workspace per worktree, one tab per agent)** - give each agent its own tab in
-  the worktree's workspace: `tab create --workspace <ws> --cwd <wt> --label "<decorated>"`, then
-  `pane run <root-pane> "<argv>"`, `wait agent-status idle`, `agent rename <pane> <handle>`. this
-  keeps the worktree's agents grouped under one sidebar node. see SKILL.md step 3.
-- **`agent start` (ad-hoc extra pane)** - adds a *named* agent pane to an existing workspace.
-  pass `--cwd <worktree-path>` (the working-dir association) **and** `--workspace <id>` (pane
-  placement); they are independent. `--workspace` only leaves the agent on the caller's cwd. does
-  not give the clean one-tab-per-agent grouping.
+- **default (one workspace per worktree, one tab per agent)** - the helper's `agent` verb
+  (or `up` for a whole herd) runs: `tab create --workspace <ws> --cwd <wt> --label
+  "<decorated>"`, then `agent start <handle> --tab <tab> --cwd <wt> --no-focus -- <argv>`
+  (the handle is assigned at start - no detect/rename), then `pane close <tab-root>` (the
+  leftover shell; the tab keeps the agent pane), then `agent wait <handle> --status idle`.
+  this keeps the worktree's agents grouped under one sidebar node. see SKILL.md step 3.
+- **`agent start` (ad-hoc extra pane)** - adds a *named* agent pane to an existing
+  workspace without the tab-per-agent grouping. pass `--cwd <worktree-path>` (the
+  working-dir association) **and** `--workspace <id>` or `--tab <id>` (pane placement);
+  they are independent. with `--workspace` only, the agent runs on the caller's cwd.
+  note: without `--tab` it splits the currently active tab - always pass a placement flag.
 
 model launch argv:
 - claude: `claude`
@@ -231,14 +229,12 @@ herdr update [--handoff]             # download and install the latest version
 
 ## json parsing pattern
 
-the established pattern (matches the SKILL.md recipes) is a `python3 -c` one-liner reading stdin:
+for roster and status, don't parse at all - the helper verbs (`status`, `members`) and the
+by-handle natives (`agent get <handle>`) cover the common lookups. for a rare ad-hoc
+extraction, a `node -e` one-liner over a captured string keeps it portable (node is the
+one guaranteed runtime; expect a permission prompt - ad-hoc exploration is outside the
+allowlisted protocol path):
 
 ```bash
-herdr agent list | python3 -c 'import sys,json; d=json.load(sys.stdin); print([a.get("name") or a["agent"] for a in d["result"]["agents"]])'
-```
-
-pass shell values as argv (not string interpolation) to keep quoting sane:
-
-```bash
-herdr agent list | python3 -c 'import sys,json; wt=sys.argv[1]; d=json.load(sys.stdin); print("\n".join(a["workspace_id"] for a in d["result"]["agents"] if a.get("cwd")==wt))' "$WORKTREE_PATH"
+node -e 'const d=JSON.parse(process.argv[1]); console.log(d.result.worktree.path)' "$(herdr worktree list --json)"
 ```
