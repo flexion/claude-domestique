@@ -174,8 +174,8 @@ describe('sendCmd', () => {
     expect(calls).toEqual([
       ['herdr', 'agent', 'list'],
       ['herdr', 'agent', 'send', 'jay', 'rerun the test'],
-      ['herdr', 'wait', 'output', 'w1:p2', '--match', 'rerun the test',
-        '--source', 'recent-unwrapped', '--timeout', '5000'],
+      ['herdr', 'wait', 'output', 'w1:p2', '--match', 'test',
+        '--source', 'recent-unwrapped', '--timeout', '2000'],
       ['herdr', 'pane', 'send-keys', 'w1:p2', 'Enter'],
       ['herdr', 'agent', 'wait', 'jay', '--status', 'working', '--timeout', '4000'],
     ]);
@@ -190,13 +190,22 @@ describe('sendCmd', () => {
     ]);
   });
 
-  test('long message matches on its last 60 characters', () => {
-    const body = 'x'.repeat(50) + 'y'.repeat(50);
+  // Recipient composers re-wrap long bodies with real newlines + indent, so
+  // only a whitespace-free fragment is guaranteed to survive wrapping intact.
+  test('ingest match uses the body last token, never a fragment with spaces', () => {
     const { deps, calls } = runner();
-    h.sendCmd(['jay', body], deps);
+    h.sendCmd(['jay', '[from sly reply] please rerun the suite in src/api-v2'], deps);
     const wait = calls.find((c) => c[1] === 'wait' && c[2] === 'output');
-    expect(wait[5]).toBe(body.slice(-60));
-    expect(wait[5]).toHaveLength(60);
+    expect(wait[5]).toBe('src/api-v2');
+  });
+
+  test('an overlong last token is capped at its final 40 characters', () => {
+    const token = 'a'.repeat(30) + 'b'.repeat(30);
+    const { deps, calls } = runner();
+    h.sendCmd(['jay', `see ${token}`], deps);
+    const wait = calls.find((c) => c[1] === 'wait' && c[2] === 'output');
+    expect(wait[5]).toBe(token.slice(-40));
+    expect(wait[5]).toHaveLength(40);
   });
 
   test('ingest confirm timing out does not abort the submit', () => {

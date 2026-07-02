@@ -118,9 +118,13 @@ function sendCmd(args, deps) {
 // ambiguous — our submit is indistinguishable from its in-flight turn, so the
 // result is optimistic there; don't send to a working peer.
 function submitVerified(p, handle, body, data, deps) {
+  // Recipient composers re-wrap long bodies with real newlines + indent
+  // (verified live on codex), so only a whitespace-free fragment survives
+  // wrapping intact: match the body's last token, capped.
+  const tail = body.split(/\s+/).filter(Boolean).pop() || body;
   try {
-    deps.run('herdr', ['wait', 'output', p, '--match', body.slice(-60),
-      '--source', 'recent-unwrapped', '--timeout', '5000']);
+    deps.run('herdr', ['wait', 'output', p, '--match', tail.slice(-40),
+      '--source', 'recent-unwrapped', '--timeout', '2000']);
   } catch { /* unconfirmed ingest; the turn check below is the arbiter */ }
   const before = status(data, handle);
   const keys = submitKeys(data, handle);
