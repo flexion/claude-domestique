@@ -32,7 +32,7 @@
       "name": "comitatus",
       "source": "./comitatus",
       "description": "herdr workflows - packages the herdr agent-orchestration skill for claude and codex, auto-injected inside herdr",
-      "version": "0.4.1"
+      "version": "0.4.2"
     },
     {
       "name": "stilus",

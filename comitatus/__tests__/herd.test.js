@@ -410,4 +410,28 @@ describe('herd.js main wiring (child process)', () => {
     const out = execFileSync('node', [HERD, 'send', '--help'], { encoding: 'utf8', stdio: 'pipe', input: '' });
     expect(out).toMatch(/usage: herd\.js/);
   });
+  test('stdin verbs still consume piped JSON', () => {
+    const agents = { result: { agents: [{ name: 'jay', pane_id: 'w1:p2' }] } };
+    const out = execFileSync(process.execPath, [HERD, 'pane', 'jay'],
+      { encoding: 'utf8', stdio: 'pipe', input: JSON.stringify(agents) });
+    expect(out.trim()).toBe('w1:p2');
+  });
+  // Harnesses like the Claude Code Bash tool keep the child's stdin open (a
+  // socket that never sends EOF). Action verbs must dispatch without waiting
+  // for it, or every send/wait hangs forever.
+  test('action verbs dispatch without waiting for stdin EOF', async () => {
+    const { spawn } = require('child_process');
+    // PATH without herdr: dispatch fails fast (ENOENT) instead of touching a
+    // live server, so the only way this test times out is the stdin hang.
+    const child = spawn(process.execPath, [HERD, 'send', 'no-such-agent', 'hi'], {
+      stdio: ['pipe', 'ignore', 'pipe'],
+      env: { ...process.env, PATH: '/usr/bin:/bin' },
+    });
+    // deliberately never close child.stdin
+    const exited = await new Promise((resolve) => {
+      const timer = setTimeout(() => { child.kill('SIGKILL'); resolve(false); }, 4000);
+      child.on('exit', () => { clearTimeout(timer); resolve(true); });
+    });
+    expect(exited).toBe(true);
+  });
 });

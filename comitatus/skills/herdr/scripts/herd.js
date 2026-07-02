@@ -260,6 +260,12 @@ async function readStdin() {
   return s;
 }
 
+// Only these verbs consume piped `herdr agent list` JSON. Everything else
+// must dispatch without touching stdin: readStdin blocks until EOF, and
+// harnesses like the Claude Code Bash tool keep the child's stdin open
+// forever, hanging the verb before it ever runs.
+const STDIN_VERBS = new Set(['pane', 'status', 'members', 'field', 'submit-keys']);
+
 async function main() {
   const argv = process.argv.slice(2);
   if (argv[0] === 'up') {
@@ -279,7 +285,7 @@ async function main() {
     process.stdout.write(usage() + '\n');
     return;
   }
-  const raw = await readStdin();
+  const raw = STDIN_VERBS.has(argv[0]) ? await readStdin() : '';
   let data;
   try {
     data = raw.trim() ? JSON.parse(raw) : {};
