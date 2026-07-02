@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 'use strict';
 
-function getField(obj, dotPath) {
-  return String(dotPath).split('.').reduce(
-    (o, k) => (o == null ? undefined : o[k]), obj);
-}
+// Every verb is self-contained: it fetches herdr state itself and never reads
+// stdin. Harnesses commonly keep a child's stdin open with no EOF (the Claude
+// Code Bash tool, for one), so a helper that reads stdin hangs before it ever
+// dispatches — this file must stay stdin-free.
 
 function agentList(data) {
   return (data && data.result && data.result.agents) || [];
@@ -31,24 +31,14 @@ function members(data, workspaceId) {
     .map((x) => x.name);
 }
 
-function field(data, dotPath) {
-  return getField(data, dotPath);
-}
-
 function submitKeys(data, handleOrPane) {
   const a = findAgent(data, handleOrPane);
   if (!a) return [];
   return a.agent === 'codex' ? ['Enter', 'Enter'] : ['Enter'];
 }
 
-function hasAgents(data) {
-  return !!(data && data.result && Array.isArray(data.result.agents));
-}
-
-function loadAgentList(data, deps) {
-  if (hasAgents(data)) return data;
-  if (deps && deps.run) return JSON.parse(deps.run('herdr', ['agent', 'list']));
-  return data; // no stdin, no runner: leave as-is (pure callers)
+function fetchAgents(deps) {
+  return JSON.parse(deps.run('herdr', ['agent', 'list']));
 }
 
 function parseWait(args) {
@@ -62,11 +52,13 @@ function parseWait(args) {
   return out;
 }
 
+// Comma-status OR ("idle,done") is why this exists: the native
+// `herdr wait agent-status` takes exactly one status.
 function waitCmd(args, deps) {
   const cfg = parseWait(args);
   const deadline = deps.now() + cfg.timeout;
   for (;;) {
-    const st = status(loadAgentList({}, deps), cfg.handle);
+    const st = status(fetchAgents(deps), cfg.handle);
     if (cfg.statuses.includes(st)) return st;
     if (deps.now() >= deadline) {
       throw new Error(`wait timeout: ${cfg.handle} is ${st}, want ${cfg.statuses.join(',')}`);
@@ -102,7 +94,7 @@ function sendCmd(args, deps) {
   }
   const fromOverride = fromI >= 0 ? args[fromI + 1] : undefined;
 
-  const data = loadAgentList({}, deps);
+  const data = fetchAgents(deps);
   const p = pane(data, handle);
   if (!p) throw new Error(`no agent: ${handle}`);
 
@@ -114,31 +106,35 @@ function sendCmd(args, deps) {
   }
 
   deps.run('herdr', ['agent', 'send', handle, body]);
-  const submitted = submitWithVerify(p, handle, deps);
+  const submitted = submitVerified(p, handle, body, data, deps);
   return { result: { type: 'ok' }, pane: p, sent: body, submitted };
 }
 
-// A blind Enter races the recipient TUI's ingest of the just-typed text: slow
-// composers (codex) swallow it and the message sits unsubmitted while the
-// sender sees ok. Fire the model-aware submit keys (#138), then verify via the
-// agent_status transition — the composer buffer lags the status flip, so
-// status, not a pane read, is the reliable signal — and resend on a miss.
-// Returns false if still unconfirmed after all attempts (the message may be
-// sitting unsubmitted). A recipient already `working` at entry is ambiguous —
-// our submit is indistinguishable from its in-flight turn, so the result is
-// optimistic there; don't send to a working peer.
-function submitWithVerify(p, handle, deps, opts = {}) {
-  const attempts = opts.attempts || 3;
-  const polls = opts.polls || 4;
-  const pollMs = opts.pollMs || 750;
-  const before = status(loadAgentList({}, deps), handle);
-  for (let a = 0; a < attempts; a++) {
-    const data = loadAgentList({}, deps);
-    for (const k of submitKeys(data, handle)) deps.run('herdr', ['pane', 'send-keys', p, k]);
-    for (let i = 0; i < polls; i++) {
-      deps.sleep(pollMs);
-      const now = status(loadAgentList({}, deps), handle);
-      if (now === 'working') return true; // started our turn
+// A blind Enter races the recipient TUI's ingest of the just-typed text (slow
+// composers like codex swallow it), so submission is two server-side waits,
+// not a poll loop: block until the composer visibly holds the body tail, then
+// submit, then block until the recipient's turn starts. One key retry covers
+// the rare unconfirmed-ingest case. A recipient already `working` at entry is
+// ambiguous — our submit is indistinguishable from its in-flight turn, so the
+// result is optimistic there; don't send to a working peer.
+function submitVerified(p, handle, body, data, deps) {
+  // Recipient composers re-wrap long bodies with real newlines + indent
+  // (verified live on codex), so only a whitespace-free fragment survives
+  // wrapping intact: match the body's last token, capped.
+  const tail = body.split(/\s+/).filter(Boolean).pop() || body;
+  try {
+    deps.run('herdr', ['wait', 'output', p, '--match', tail.slice(-40),
+      '--source', 'recent-unwrapped', '--timeout', '2000']);
+  } catch { /* unconfirmed ingest; the turn check below is the arbiter */ }
+  const before = status(data, handle);
+  const keys = submitKeys(data, handle);
+  for (let attempt = 0; attempt < 2; attempt++) {
+    for (const k of keys) deps.run('herdr', ['pane', 'send-keys', p, k]);
+    try {
+      deps.run('herdr', ['agent', 'wait', handle, '--status', 'working', '--timeout', '4000']);
+      return true;
+    } catch {
+      const now = status(fetchAgents(deps), handle);
       if (before !== 'working' && now !== before && now !== 'unknown') return true; // fast turn, e.g. idle->done
     }
   }
@@ -157,71 +153,53 @@ function sendWaitReadCmd(args, deps) {
 }
 
 function agentCmd(args, deps) {
-  const { makeAgent } = require('./up.js'); // lazy: keep the stdin verbs independent of the launcher
+  const { makeAgent, launchAgent } = require('./up.js'); // lazy: keep plain verbs independent of the launcher
   const [model, handleVal] = args;
   const opt = (name, def) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : def; };
   const ws = opt('--workspace');
   const cwd = opt('--cwd');
   if (!ws || !cwd) throw new Error('--workspace and --cwd are required');
-  const timeout = String(Number(opt('--timeout', '45000')));
   const a = makeAgent(model, handleVal); // validates model / opencode handle:model
 
-  // preflight: herdr enforces global handle uniqueness, but only after the tab
-  // is built. Fail before creating anything.
-  if (members(loadAgentList({}, deps)).includes(a.handle)) {
+  // preflight: herdr rejects a duplicate handle at agent start, but only after
+  // the tab is built. Fail before creating anything.
+  if (members(fetchAgents(deps)).includes(a.handle)) {
     throw new Error(`handle already taken: ${a.handle}`);
   }
 
-  const label = opt('--label', `${a.handle} ${a.glyph}`);
-  const tc = JSON.parse(deps.run('herdr',
-    ['tab', 'create', '--workspace', ws, '--cwd', cwd, '--label', label, '--no-focus']));
-  const paneId = tc.result.root_pane.pane_id;
-  const tab = tc.result.tab.tab_id;
-  deps.run('herdr', ['pane', 'run', paneId, a.runArgv]);
-  deps.run('herdr', ['wait', 'agent-status', paneId, '--status', 'idle', '--timeout', timeout]);
-  deps.run('herdr', ['agent', 'rename', paneId, a.handle]);
-  return { handle: a.handle, model: a.model, pane_id: paneId, tab };
+  return launchAgent(a,
+    { workspace: ws, cwd, timeout: opt('--timeout', 45000), label: opt('--label') }, deps);
 }
 
 function usage() {
   return [
     'usage: herd.js <verb> [args]',
     '',
-    'stdin verbs (pipe `herdr agent list` in, or let the helper fetch it):',
-    '  pane <handle>                    pane_id for a handle',
+    'verbs are self-contained - each runs herdr itself:',
     '  status <handle|pane>             agent_status',
     '  members [--workspace <ws>]       handles, optionally per workspace',
-    '  field <dot.path>                 extract a field from piped JSON',
-    '  submit-keys <handle|pane>        model-correct submit gesture',
-    '',
-    'action verbs (run herdr themselves):',
     '  wait <handle> [--status a,b] [--timeout ms] [--interval ms]',
     '      poll until status matches; comma lists work HERE only -',
     '      the native `herdr wait agent-status` takes exactly one status',
     '  send <handle> <msg> [--reply|--fyi] [--from <self>]',
-    '      type, submit, verify; result reports "submitted":true|false',
+    '      type, confirm ingest, submit, confirm the turn started;',
+    '      result reports "submitted":true|false',
     '  send-wait-read <handle> <msg> [--timeout ms] [--lines n]',
     '  agent <model> <handle> --workspace <ws> --cwd <dir> [--timeout ms] [--label s]',
     '  up [...]                         one-shot worktree + herd launcher',
   ].join('\n');
 }
 
-function dispatch(argv, data, deps) {
+function dispatch(argv, deps) {
   const [cmd, ...rest] = argv;
   if (!cmd || cmd === '--help' || cmd === '-h' || rest[0] === '--help') return usage();
   switch (cmd) {
-    case 'pane':
-      return pane(loadAgentList(data, deps), rest[0]);
     case 'status':
-      return status(loadAgentList(data, deps), rest[0]);
+      return status(fetchAgents(deps), rest[0]);
     case 'members': {
       const i = rest.indexOf('--workspace');
-      return members(loadAgentList(data, deps), i >= 0 ? rest[i + 1] : undefined);
+      return members(fetchAgents(deps), i >= 0 ? rest[i + 1] : undefined);
     }
-    case 'field':
-      return field(data, rest[0]);
-    case 'submit-keys':
-      return submitKeys(data, rest[0]);
     case 'wait':
       return waitCmd(rest, deps);
     case 'send':
@@ -243,7 +221,7 @@ function format(value) {
 }
 
 function defaultDeps() {
-  const { defaultRun } = require('./up.js'); // lazy: stdin verbs stay independent of the launcher
+  const { defaultRun } = require('./up.js'); // lazy: plain verbs stay independent of the launcher
   return {
     run: defaultRun,
     // Block synchronously without a subprocess: no dependency on a `sleep` binary,
@@ -254,13 +232,7 @@ function defaultDeps() {
   };
 }
 
-async function readStdin() {
-  let s = '';
-  for await (const chunk of process.stdin) s += chunk;
-  return s;
-}
-
-async function main() {
+function main() {
   const argv = process.argv.slice(2);
   if (argv[0] === 'up') {
     try {
@@ -273,23 +245,9 @@ async function main() {
     }
     return;
   }
-  // help never needs stdin; answer before readStdin so an interactive
-  // `herd.js send --help` doesn't sit waiting for EOF
-  if (!argv[0] || argv[0] === '--help' || argv[0] === '-h' || argv[1] === '--help') {
-    process.stdout.write(usage() + '\n');
-    return;
-  }
-  const raw = await readStdin();
-  let data;
-  try {
-    data = raw.trim() ? JSON.parse(raw) : {};
-  } catch {
-    process.stderr.write('herd: invalid JSON on stdin\n');
-    process.exit(1);
-  }
   let out;
   try {
-    out = dispatch(argv, data, defaultDeps());
+    out = dispatch(argv, defaultDeps());
   } catch (e) {
     process.stderr.write(`herd: ${e.message}\n`);
     process.exit(1);
@@ -304,19 +262,17 @@ module.exports = {
   pane,
   status,
   members,
-  field,
   submitKeys,
-  loadAgentList,
+  fetchAgents,
   parseWait,
   waitCmd,
   resolveSelf,
   stampPrefix,
   sendCmd,
-  submitWithVerify,
+  submitVerified,
   sendWaitReadCmd,
   agentCmd,
   defaultDeps,
-  getField,
   dispatch,
   format,
   usage,

@@ -4,9 +4,9 @@
 const { execFileSync } = require('child_process');
 
 const MODELS = {
-  claude: { glyph: '◆', argv: () => 'claude' },
-  codex: { glyph: '◇', argv: () => 'codex' },
-  opencode: { glyph: '⬨', argv: (model) => `opencode -m ${model}` },
+  claude: { glyph: '◆', argv: () => ['claude'] },
+  codex: { glyph: '◇', argv: () => ['codex'] },
+  opencode: { glyph: '⬨', argv: (model) => ['opencode', '-m', model] },
 };
 
 function makeAgent(model, value) {
@@ -17,9 +17,9 @@ function makeAgent(model, value) {
     if (!handle || !ocModel) {
       throw new Error(`--opencode needs <handle>:<model> (got "${value}")`);
     }
-    // The model token is interpolated into the `opencode -m <model>` argv that
-    // herdr `pane run` types into a shell; reject anything outside a conservative
-    // charset so it can never carry shell metacharacters (`; | $ ( ) &` etc.).
+    // The argv vector goes through execFile (no shell), but keep a conservative
+    // charset anyway so a model token can never smuggle metacharacters into
+    // any surface that later renders or re-quotes it.
     if (!/^[\w./:-]+$/.test(ocModel)) {
       throw new Error(`--opencode model has unsafe characters: "${ocModel}"`);
     }
@@ -57,12 +57,31 @@ function parseArgs(argv) {
   return out;
 }
 
+// One agent in one fresh tab: tab create -> agent start --tab -> close the
+// tab's leftover root shell -> wait until ready. `agent start` assigns the
+// handle at launch, so there is no detect-then-rename step; starting the
+// agent pane before closing the root keeps the tab alive throughout.
+function launchAgent(a, opts, deps) {
+  const run = deps.run;
+  const label = opts.label || `${a.handle} ${a.glyph}`;
+  const timeout = String(Number(opts.timeout || 45000));
+  const tc = JSON.parse(run('herdr', ['tab', 'create', '--workspace', opts.workspace,
+    '--cwd', opts.cwd, '--label', label, '--no-focus']));
+  const tab = tc.result.tab.tab_id;
+  const rootPane = tc.result.root_pane.pane_id;
+  const st = JSON.parse(run('herdr', ['agent', 'start', a.handle, '--tab', tab,
+    '--cwd', opts.cwd, '--no-focus', '--', ...a.runArgv]));
+  run('herdr', ['pane', 'close', rootPane]);
+  run('herdr', ['agent', 'wait', a.handle, '--status', 'idle', '--timeout', timeout]);
+  return { handle: a.handle, model: a.model, pane_id: st.result.agent.pane_id, tab };
+}
+
 function up(argv, deps) {
   const run = deps.run;
   const cfg = parseArgs(argv);
 
   // pre-flight: reject a handle that already exists anywhere (herdr enforces
-  // global uniqueness, but only after the worktree is built — fail early).
+  // global uniqueness, but only at agent start — fail before the worktree).
   const list = JSON.parse(run('herdr', ['agent', 'list']));
   const taken = ((list.result && list.result.agents) || [])
     .map((a) => a && a.name).filter(Boolean);
@@ -78,29 +97,15 @@ function up(argv, deps) {
     ['worktree', 'create', '--branch', cfg.branch, '--base', cfg.base, '--no-focus', '--json']));
   const path = wt.result.worktree.path;
   const workspace = wt.result.worktree.open_workspace_id;
-  const rootPane = wt.result.root_pane.pane_id;
   const rootTab = wt.result.tab.tab_id;
 
-  const agents = [];
-  cfg.agents.forEach((a, i) => {
-    let pane;
-    let tab;
-    if (i === 0) {
-      pane = rootPane;
-      tab = rootTab;
-      run('herdr', ['tab', 'rename', tab, `${a.handle} ${a.glyph}`]);
-    } else {
-      const tc = JSON.parse(run('herdr',
-        ['tab', 'create', '--workspace', workspace, '--cwd', path,
-          '--label', `${a.handle} ${a.glyph}`, '--no-focus']));
-      pane = tc.result.root_pane.pane_id;
-      tab = tc.result.tab.tab_id;
-    }
-    run('herdr', ['pane', 'run', pane, a.runArgv]);
-    run('herdr', ['wait', 'agent-status', pane, '--status', 'idle', '--timeout', String(cfg.timeout)]);
-    run('herdr', ['agent', 'rename', pane, a.handle]);
-    agents.push({ handle: a.handle, model: a.model, pane_id: pane, tab });
-  });
+  const agents = cfg.agents.map((a) =>
+    launchAgent(a, { workspace, cwd: path, timeout: cfg.timeout }, deps));
+
+  // Every agent lives in its own labeled tab; the worktree's original root
+  // tab is a bare shell, closed only after the agent tabs exist so the
+  // workspace is never empty.
+  run('herdr', ['tab', 'close', rootTab]);
 
   return { worktree: { path, workspace_id: workspace }, agents };
 }
@@ -109,4 +114,4 @@ function defaultRun(file, args) {
   return execFileSync(file, args, { encoding: 'utf8' });
 }
 
-module.exports = { makeAgent, parseArgs, up, defaultRun };
+module.exports = { makeAgent, parseArgs, launchAgent, up, defaultRun };
