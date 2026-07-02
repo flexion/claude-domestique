@@ -6,15 +6,19 @@ const { stableHome, stableHerdJs, provisionStable } = require('../hooks/herdr-or
 const SAFE_ALLOW = Object.freeze([
   // herdr: read / inspect
   'Bash(herdr agent list)',
+  'Bash(herdr agent get:*)',
+  'Bash(herdr agent read:*)',
   'Bash(herdr pane list)',
   'Bash(herdr pane read:*)',
   'Bash(herdr workspace list)',
   'Bash(herdr worktree list:*)',
   'Bash(herdr integration status)',
-  // herdr: messaging + lifecycle (NOT pane run / send-keys - those are arbitrary
-  // exec/injection and are reachable only through the gated composite verbs)
+  // herdr: messaging + lifecycle (NOT pane run / send-keys / agent start -
+  // those are arbitrary exec/injection and are reachable only through the
+  // gated composite verbs)
   'Bash(herdr agent send:*)',
   'Bash(herdr agent rename:*)',
+  'Bash(herdr agent wait:*)',
   'Bash(herdr wait:*)',
   'Bash(herdr tab create:*)',
   'Bash(herdr tab rename:*)',
@@ -30,15 +34,12 @@ const SAFE_ALLOW = Object.freeze([
   'Bash(git status:*)',
   'Bash(git branch)',
   'Bash(git branch --show-current:*)',
-  // misc
-  'Bash(sleep:*)',
 ]);
 
 // One rule per known-safe verb - never a blanket `herd.js:*`, so a verb added
-// later is not auto-allowed. `field` is omitted: it is only used piped (a pipe
-// can't be allowlisted anyway).
+// later is not auto-allowed.
 const HELPER_VERBS = Object.freeze([
-  'status', 'pane', 'members', 'wait', 'send', 'send-wait-read', 'agent',
+  'status', 'members', 'wait', 'send', 'send-wait-read', 'agent',
 ]);
 
 function bakedHerdRules(homedir) {
