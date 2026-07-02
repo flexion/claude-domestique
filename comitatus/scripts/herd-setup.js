@@ -39,7 +39,7 @@ const SAFE_ALLOW = Object.freeze([
 // One rule per known-safe verb - never a blanket `herd.js:*`, so a verb added
 // later is not auto-allowed.
 const HELPER_VERBS = Object.freeze([
-  'status', 'members', 'wait', 'send', 'send-wait-read', 'agent',
+  'status', 'members', 'wait', 'send', 'send-wait-read', 'agent', 'up',
 ]);
 
 function bakedHerdRules(homedir) {

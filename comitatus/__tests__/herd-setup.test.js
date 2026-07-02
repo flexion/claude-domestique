@@ -25,6 +25,7 @@ describe('bakedHerdRules', () => {
     expect(rules).toContain(`Bash(node ${base} send:*)`);
     expect(rules).toContain(`Bash(node ${base} wait:*)`);
     expect(rules).toContain(`Bash(node ${base} send-wait-read:*)`);
+    expect(rules).toContain(`Bash(node ${base} up:*)`); // the quickstart verb
     expect(rules).not.toContain(`Bash(node ${base}:*)`); // no blanket
     expect(rules).not.toContain(`Bash(node ${base} pane:*)`); // verb removed with stdin piping
     expect(rules).not.toContain(`Bash(node ${base} submit-keys:*)`); // internal to send now
