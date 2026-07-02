@@ -110,6 +110,10 @@ describe('dispatch self-exec', () => {
     const deps = { run: () => JSON.stringify(AGENTS) };
     expect(h.dispatch(['status', 'tim'], {}, deps)).toBe('done');
   });
+  test('submit-keys with empty stdin fetches the list via run', () => {
+    const deps = { run: () => JSON.stringify(AGENTS) };
+    expect(h.dispatch(['submit-keys', 'jay'], {}, deps)).toEqual(['Enter', 'Enter']);
+  });
 });
 
 describe('parseWait', () => {

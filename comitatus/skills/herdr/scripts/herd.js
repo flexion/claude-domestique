@@ -221,7 +221,7 @@ function dispatch(argv, data, deps) {
     case 'field':
       return field(data, rest[0]);
     case 'submit-keys':
-      return submitKeys(data, rest[0]);
+      return submitKeys(loadAgentList(data, deps), rest[0]);
     case 'wait':
       return waitCmd(rest, deps);
     case 'send':
