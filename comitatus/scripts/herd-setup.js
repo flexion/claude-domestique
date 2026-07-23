@@ -10,16 +10,16 @@ const SAFE_ALLOW = Object.freeze([
   'Bash(herdr agent read:*)',
   'Bash(herdr pane list)',
   'Bash(herdr pane read:*)',
+  'Bash(herdr pane wait-output:*)',
   'Bash(herdr workspace list)',
   'Bash(herdr worktree list:*)',
   'Bash(herdr integration status)',
   // herdr: messaging + lifecycle (NOT pane run / send-keys / agent start -
   // those are arbitrary exec/injection and are reachable only through the
   // gated composite verbs)
-  'Bash(herdr agent send:*)',
+  'Bash(herdr agent prompt:*)',
   'Bash(herdr agent rename:*)',
   'Bash(herdr agent wait:*)',
-  'Bash(herdr wait:*)',
   'Bash(herdr tab create:*)',
   'Bash(herdr tab rename:*)',
   'Bash(herdr tab focus:*)',

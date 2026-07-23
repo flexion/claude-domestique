@@ -34,18 +34,6 @@ describe('members', () => {
   });
 });
 
-describe('submitKeys', () => {
-  test('codex panes get two Enters', () => {
-    expect(h.submitKeys(AGENTS, 'jay')).toEqual(['Enter', 'Enter']);
-  });
-  test('non-codex panes get one Enter', () => {
-    expect(h.submitKeys(AGENTS, 'sly')).toEqual(['Enter']);
-  });
-  test('unknown target returns no keys', () => {
-    expect(h.submitKeys(AGENTS, 'nope')).toEqual([]);
-  });
-});
-
 describe('format', () => {
   test('arrays join by newline', () => { expect(h.format(['a', 'b'])).toBe('a\nb'); });
   test('null/undefined -> empty string', () => {
@@ -131,16 +119,16 @@ describe('resolveSelf', () => {
   });
 });
 
-// Deterministic send: type -> confirm the composer ingested the text
-// (wait output) -> submit keys -> confirm the turn started (agent wait).
+// Deterministic send: `agent prompt --wait --until working` types, submits, AND
+// waits for the turn to start in one atomic kind-aware call. On timeout the
+// prompt is still submitted, so a status-delta fallback (never a resend) covers
+// a turn too fast to observe as working.
 describe('sendCmd', () => {
   // statuses: sequence served by successive `agent list` calls
-  // ingest: 'ok' | 'timeout' (wait output result)
-  // turns: per-attempt `agent wait --status working` results, 'ok' | 'timeout'
-  function runner({ focused, statuses = ['idle'], ingest = 'ok', turns = ['ok'] } = {}) {
+  // prompt: 'ok' | 'timeout' - result of the atomic `agent prompt --wait` call
+  function runner({ focused, statuses = ['idle'], prompt = 'ok' } = {}) {
     const calls = [];
     let li = 0;
-    let ti = 0;
     const list = () => {
       const st = statuses[Math.min(li++, statuses.length - 1)];
       return JSON.stringify({ result: { agents: [
@@ -152,86 +140,53 @@ describe('sendCmd', () => {
     const run = (f, a) => {
       calls.push([f, ...a]);
       if (a[0] === 'agent' && a[1] === 'list') return list();
-      if (a[0] === 'wait' && a[1] === 'output') {
-        if (ingest === 'timeout') throw new Error('wait timeout');
-        return '';
-      }
-      if (a[0] === 'agent' && a[1] === 'wait') {
-        const r = turns[Math.min(ti++, turns.length - 1)];
-        if (r === 'timeout') throw new Error('wait timeout');
+      if (a[0] === 'agent' && a[1] === 'prompt') {
+        if (prompt === 'timeout') throw new Error('timed out waiting for agent status');
         return '';
       }
       return '';
     };
-    const submits = () => calls.filter((c) => c[1] === 'pane' && c[2] === 'send-keys');
-    return { deps: { run, env: {} }, calls, submits };
+    const prompts = () => calls.filter((c) => c[1] === 'agent' && c[2] === 'prompt');
+    return { deps: { run, env: {} }, calls, prompts };
   }
 
-  test('happy path: exact deterministic sequence, no polling', () => {
+  test('happy path: exact deterministic sequence, atomic submit+wait', () => {
     const { deps, calls } = runner();
     expect(h.sendCmd(['jay', 'rerun the test'], deps))
       .toEqual({ result: { type: 'ok' }, pane: 'w1:p2', sent: 'rerun the test', submitted: true });
     expect(calls).toEqual([
       ['herdr', 'agent', 'list'],
-      ['herdr', 'agent', 'send', 'jay', 'rerun the test'],
-      ['herdr', 'wait', 'output', 'w1:p2', '--match', 'test',
-        '--source', 'recent-unwrapped', '--timeout', '2000'],
-      ['herdr', 'pane', 'send-keys', 'w1:p2', 'Enter'],
-      ['herdr', 'agent', 'wait', 'jay', '--status', 'working', '--timeout', '4000'],
+      ['herdr', 'agent', 'prompt', 'jay', 'rerun the test', '--wait', '--until', 'working', '--timeout', '6000'],
     ]);
   });
 
-  test('codex recipient gets two Enters via submitKeys', () => {
-    const { deps, submits } = runner();
+  test('a single atomic prompt call carries the whole body and the wait flags', () => {
+    const { deps, prompts } = runner();
     h.sendCmd(['cod', 'hello'], deps);
-    expect(submits()).toEqual([
-      ['herdr', 'pane', 'send-keys', 'w1:p3', 'Enter'],
-      ['herdr', 'pane', 'send-keys', 'w1:p3', 'Enter'],
+    expect(prompts()).toEqual([
+      ['herdr', 'agent', 'prompt', 'cod', 'hello', '--wait', '--until', 'working', '--timeout', '6000'],
     ]);
   });
 
-  // Recipient composers re-wrap long bodies with real newlines + indent, so
-  // only a whitespace-free fragment is guaranteed to survive wrapping intact.
-  test('ingest match uses the body last token, never a fragment with spaces', () => {
-    const { deps, calls } = runner();
-    h.sendCmd(['jay', '[from sly reply] please rerun the suite in src/api-v2'], deps);
-    const wait = calls.find((c) => c[1] === 'wait' && c[2] === 'output');
-    expect(wait[5]).toBe('src/api-v2');
-  });
-
-  test('an overlong last token is capped at its final 40 characters', () => {
-    const token = 'a'.repeat(30) + 'b'.repeat(30);
-    const { deps, calls } = runner();
-    h.sendCmd(['jay', `see ${token}`], deps);
-    const wait = calls.find((c) => c[1] === 'wait' && c[2] === 'output');
-    expect(wait[5]).toBe(token.slice(-40));
-    expect(wait[5]).toHaveLength(40);
-  });
-
-  test('ingest confirm timing out does not abort the submit', () => {
-    const { deps, submits } = runner({ ingest: 'timeout' });
-    expect(h.sendCmd(['jay', 'hi'], deps).submitted).toBe(true);
-    expect(submits()).toHaveLength(1);
-  });
-
-  test('fast turn: agent wait misses but the status changed -> submitted, no retry', () => {
-    // wait times out; the follow-up list shows idle -> done
-    const { deps, submits } = runner({ statuses: ['idle', 'done'], turns: ['timeout'] });
+  test('fast turn: prompt --wait times out but the status changed -> submitted', () => {
+    // the atomic wait times out; the follow-up list shows idle -> done
+    const { deps, prompts } = runner({ statuses: ['idle', 'done'], prompt: 'timeout' });
     expect(h.sendCmd(['jay', 'quick one'], deps).submitted).toBe(true);
-    expect(submits()).toHaveLength(1);
+    expect(prompts()).toHaveLength(1); // prompt already submitted; never re-sent
   });
 
-  test('dropped submit is retried once, then reported submitted:false', () => {
-    const { deps, submits } = runner({ statuses: ['idle'], turns: ['timeout', 'timeout'] });
+  test('no turn observed and status unchanged -> submitted:false, prompt never re-sent', () => {
+    const { deps, prompts } = runner({ statuses: ['idle'], prompt: 'timeout' });
     expect(h.sendCmd(['cod', 'hello'], deps).submitted).toBe(false);
-    expect(submits()).toHaveLength(4); // 2 Enters x 2 attempts, no further polling
+    expect(prompts()).toHaveLength(1);
   });
 
   test('--reply --from stamps the compact protocol header', () => {
     const { deps, calls } = runner();
     expect(h.sendCmd(['jay', 'status?', '--reply', '--from', 'sly'], deps).sent)
       .toBe('[from sly reply] status?');
-    expect(calls).toContainEqual(['herdr', 'agent', 'send', 'jay', '[from sly reply] status?']);
+    expect(calls).toContainEqual(
+      ['herdr', 'agent', 'prompt', 'jay', '[from sly reply] status?', '--wait', '--until', 'working', '--timeout', '6000']);
   });
 
   test('--fyi resolves <self> from the executing pane, not the focused agent', () => {
@@ -284,16 +239,16 @@ describe('sendWaitReadCmd', () => {
     const { calls, deps } = runner();
     const out = h.sendWaitReadCmd(['gus', 'review please', '--reply', '--from', 'sly', '--lines', '50'], deps);
     expect(out).toBe('REVIEW: looks good\n');
-    expect(calls).toContainEqual(['herdr', 'agent', 'send', 'gus', '[from sly reply] review please']);
+    expect(calls).toContainEqual(
+      ['herdr', 'agent', 'prompt', 'gus', '[from sly reply] review please', '--wait', '--until', 'working', '--timeout', '6000']);
     expect(calls).toContainEqual(['herdr', 'pane', 'read', 'w1:p2', '--source', 'recent', '--lines', '50']);
   });
 });
 
-// agent verb: tab create -> agent start --tab (named at start, no wait/rename)
-// -> close the leftover tab root pane -> wait until the agent is ready.
+// agent verb: tab create -> agent start --kind/--pane (agent takes over the
+// tab's root pane) -> wait until the agent is ready.
 describe('agentCmd', () => {
   const TAB = JSON.stringify({ result: { tab: { tab_id: 'wR:t2' }, root_pane: { pane_id: 'wR:p2' } } });
-  const START = JSON.stringify({ result: { agent: { pane_id: 'wR:p9', name: 'jay', tab_id: 'wR:t2' } } });
   function runner(existing = []) {
     const calls = [];
     const run = (f, a) => {
@@ -302,22 +257,24 @@ describe('agentCmd', () => {
         return JSON.stringify({ result: { agents: existing.map((name) => ({ name })) } });
       }
       if (a[0] === 'tab' && a[1] === 'create') return TAB;
-      if (a[0] === 'agent' && a[1] === 'start') return START;
+      if (a[0] === 'agent' && a[1] === 'start') {
+        const paneIdx = a.indexOf('--pane') + 1;
+        return JSON.stringify({ result: { agent: { pane_id: a[paneIdx], name: a[2] } } });
+      }
       return '';
     };
     return { run, calls };
   }
 
-  test('codex agent: preflight, tab create -> agent start --tab -> close root -> wait idle', () => {
+  test('codex agent: preflight, tab create -> agent start --kind/--pane -> wait until idle', () => {
     const { run, calls } = runner();
     const out = h.agentCmd(['codex', 'jay', '--workspace', 'wR', '--cwd', '/wt/x'], { run });
-    expect(out).toEqual({ handle: 'jay', model: 'codex', pane_id: 'wR:p9', tab: 'wR:t2' });
+    expect(out).toEqual({ handle: 'jay', model: 'codex', pane_id: 'wR:p2', tab: 'wR:t2' });
     expect(calls).toEqual([
       ['herdr', 'agent', 'list'],
       ['herdr', 'tab', 'create', '--workspace', 'wR', '--cwd', '/wt/x', '--label', 'jay ◇', '--no-focus'],
-      ['herdr', 'agent', 'start', 'jay', '--tab', 'wR:t2', '--cwd', '/wt/x', '--no-focus', '--', 'codex'],
-      ['herdr', 'pane', 'close', 'wR:p2'],
-      ['herdr', 'agent', 'wait', 'jay', '--status', 'idle', '--timeout', '45000'],
+      ['herdr', 'agent', 'start', 'jay', '--kind', 'codex', '--pane', 'wR:p2', '--timeout', '45000'],
+      ['herdr', 'agent', 'wait', 'jay', '--until', 'idle', '--timeout', '45000'],
     ]);
   });
 
@@ -331,7 +288,7 @@ describe('agentCmd', () => {
   test('--timeout overrides the readiness wait', () => {
     const { run, calls } = runner();
     h.agentCmd(['claude', 'sly', '--workspace', 'wR', '--cwd', '/wt/x', '--timeout', '9000'], { run });
-    expect(calls).toContainEqual(['herdr', 'agent', 'wait', 'sly', '--status', 'idle', '--timeout', '9000']);
+    expect(calls).toContainEqual(['herdr', 'agent', 'wait', 'sly', '--until', 'idle', '--timeout', '9000']);
   });
 
   test('missing --cwd throws', () => {
@@ -340,12 +297,12 @@ describe('agentCmd', () => {
       .toThrow(/--workspace and --cwd are required/);
   });
 
-  test('opencode agent starts with the argv vector (no shell string)', () => {
+  test('opencode agent starts with its -m selector after --', () => {
     const { run, calls } = runner();
     h.agentCmd(['opencode', 'bob:ollama/qwen2.5:7b', '--workspace', 'wR', '--cwd', '/wt/x'], { run });
     expect(calls).toContainEqual(
-      ['herdr', 'agent', 'start', 'bob', '--tab', 'wR:t2', '--cwd', '/wt/x', '--no-focus',
-        '--', 'opencode', '-m', 'ollama/qwen2.5:7b']);
+      ['herdr', 'agent', 'start', 'bob', '--kind', 'opencode', '--pane', 'wR:p2', '--timeout', '45000',
+        '--', '-m', 'ollama/qwen2.5:7b']);
   });
 
   test('opencode agent with an unsafe model is rejected before any herdr call', () => {
@@ -382,8 +339,8 @@ describe('usage / --help', () => {
   test('usage no longer documents stdin or piping', () => {
     expect(h.usage()).not.toMatch(/stdin|pipe/i);
   });
-  test('usage warns that the native wait takes a single status, not a comma list', () => {
-    expect(h.usage()).toMatch(/herdr wait agent-status.*one\b/i);
+  test('usage warns that the native agent wait needs one --until per status, not a comma list', () => {
+    expect(h.usage()).toMatch(/herdr agent wait.*one\b/i);
   });
 });
 

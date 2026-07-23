@@ -4,17 +4,36 @@ Packages the [herdr](https://herdr.dev) agent-orchestration skill as a
 claude-domestique plugin. `comitatus` is Latin for a retinue or band of
 companions — the followers who travel and work together under one leader.
 
-## What it does
+## Responsibilities: herdr vs. the skill vs. comitatus
 
-- Ships the `herdr` skill (invoked `comitatus:herdr`) for controlling herdr from
-  inside it: worktrees, workspaces, tabs/panes, agents, messaging, waiting on
-  state — all via the `herdr` CLI.
-- A SessionStart hook that is silent unless you are inside herdr
-  (`HERDR_ENV=1`). Inside herdr it injects a short orientation and, if codex is
-  installed, copies the same skill into `~/.codex/skills/herdr/` so codex agents
-  in the herd get it too.
-- `herd.js`, a small Node helper for roster/state queries (pane by handle, herd
-  members, agent status, JSON field extraction).
+Three layers cooperate. Keeping them distinct is what makes the plugin small and
+keeps it from drifting when herdr changes.
+
+| Layer | What it is | Owns | Does **not** own |
+|-------|-----------|------|------------------|
+| **herdr** | The terminal-native multiplexer binary (`herdr`), installed from [herdr.dev](https://herdr.dev). | The entire command surface and runtime: worktrees, workspaces, tabs, panes, and agents; `agent start/prompt/read/wait`, `worktree`/`tab`/`pane`/`workspace` verbs; agent **detection integrations** (`~/.codex/herdr-agent-state.sh` and friends) that read each agent's status. The authoritative source for flags — run `herdr <verb> --help`. | Any notion of a "herd" as a team, the roster/naming convention, or the agent-to-agent messaging protocol. |
+| **herdr skill** (`comitatus:herdr`) | A curated workflow skill authored under `skills/herdr/`, invoked from inside a herdr pane. | The *conventions layer* herdr has no opinion on: the herd roster + short-handle naming, the `[from <self> reply\|fyi]` messaging protocol, worktree-herd setup patterns, and the `herd.js` composite verbs. Points at `herdr <verb> --help` for CLI flags rather than re-teaching them. | The herdr CLI itself (it calls it), and herdr's detection integrations. |
+| **comitatus** (this plugin) | The Claude Code plugin that packages and delivers the skill. | Delivery + activation: the SessionStart hook that gates on `HERDR_ENV=1`, injects orientation, and syncs the skill into `~/.codex/skills/herdr/` for codex agents; the `/herd-setup` permission allow-list; the stable helper path. | herdr's binary, its integrations, and the skill's *content* semantics (it ships the files, it doesn't decide what they say). |
+
+**Rule of thumb:** if it is a herdr command or agent-status mechanic, it belongs to
+herdr; if it is "how a team of agents coordinates," it belongs to the skill; if it
+is "get that skill in front of the right agent with the right permissions," it
+belongs to comitatus.
+
+## What comitatus ships
+
+- The `herdr` skill (invoked `comitatus:herdr`) for driving herdr from inside it:
+  worktrees, workspaces, tabs/panes, agents, messaging, and waiting on state —
+  all over the `herdr` CLI.
+- A SessionStart hook that is silent unless you are inside herdr (`HERDR_ENV=1`).
+  Inside herdr it injects a short orientation and, if codex is installed, syncs
+  the same skill into `~/.codex/skills/herdr/` so codex agents in the herd get it
+  too.
+- `herd.js`, a Node helper exposing composite verbs (`status`, `members`, `wait`,
+  `send`, `send-wait-read`, `agent`, `up`) that each run `herdr` themselves — one
+  static command in place of a pipe or a poll loop.
+- `/herd-setup`, which merges a safe herdr/git allow-list into your settings to
+  cut permission prompts.
 
 ## Installing
 
@@ -35,8 +54,8 @@ herdr integration status            # verify (--outdated-only flags stale ones)
 ```
 
 **Why this matters.** Without the integration installed and current, herdr cannot
-reliably read an agent's `agent_status`, so `wait agent-status` and the
-push-first messaging the skill depends on silently break. The codex integration
+reliably read an agent's `agent_status`, so `herdr agent wait --until <state>` and
+the push-first messaging the skill depends on silently break. The codex integration
 is herdr's *own* codex hookup (e.g. `~/.codex/herdr-agent-state.sh`) and is
 **distinct from** the codex *skill* copy comitatus provisions (see Single source
 of truth): herdr's integration makes codex participate in the herd; comitatus
@@ -119,14 +138,14 @@ normal terminal.
 ## Permissions (cutting prompt friction)
 
 Driving a herd means many small `herdr` calls, and several recipes capture ids
-with `$(...)`, pipe into `node "$H" ...`, or poll in a loop - shapes Claude Code
-cannot statically analyze, so each one prompts. Two things reduce this to near
-zero:
+with `$(...)`, pipe into `node <helper> ...`, or poll in a loop - shapes Claude
+Code cannot statically analyze, so each one prompts. Two things reduce this to
+near zero:
 
-1. **Composite verbs.** `herd.js` exposes `status`, `pane`, `members`, `wait`,
-   `send`, `send-wait-read`, and `agent` verbs that run `herdr` themselves - one
-   static command instead of a pipe or a `while` loop. (`up` already does this
-   for spinning up a whole worktree.)
+1. **Composite verbs.** `herd.js` exposes `status`, `members`, `wait`, `send`,
+   `send-wait-read`, and `agent` verbs that run `herdr` themselves - one static
+   command instead of a pipe or a `while` loop. (`up` already does this for
+   spinning up a whole worktree.)
 2. **`/herd-setup`.** Run it once to merge a safe allow-list into your
    `settings.json` (user scope by default; `--local` or `--project` to change).
    It allows the safe herdr verbs, `git fetch`, read-only `git status`/`branch`,
@@ -134,8 +153,9 @@ zero:
 
 **Call the helper by its absolute path.** The allow-rule matches
 `node /Users/you/.claude/comitatus/skills/herdr/scripts/herd.js send ...` - the
-exact path your orientation prints after `H=`. A call written as `node "$H" ...`
-still prompts, because the matcher cannot see through the `$H` variable.
+exact absolute path your orientation prints. A call written through a shell
+variable (`node "$H" ...`) still prompts, because the matcher cannot see through
+the variable.
 
 **What stays prompting, on purpose.** `/herd-setup` never allows `herdr pane run`
 or `herdr pane send-keys` (raw shell / keystroke injection - the composite verbs

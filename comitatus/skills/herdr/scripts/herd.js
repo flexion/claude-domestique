@@ -31,12 +31,6 @@ function members(data, workspaceId) {
     .map((x) => x.name);
 }
 
-function submitKeys(data, handleOrPane) {
-  const a = findAgent(data, handleOrPane);
-  if (!a) return [];
-  return a.agent === 'codex' ? ['Enter', 'Enter'] : ['Enter'];
-}
-
 function fetchAgents(deps) {
   return JSON.parse(deps.run('herdr', ['agent', 'list']));
 }
@@ -95,8 +89,7 @@ function sendCmd(args, deps) {
   const fromOverride = fromI >= 0 ? args[fromI + 1] : undefined;
 
   const data = fetchAgents(deps);
-  const p = pane(data, handle);
-  if (!p) throw new Error(`no agent: ${handle}`);
+  if (!findAgent(data, handle)) throw new Error(`no agent: ${handle}`);
 
   let body = message;
   if (reply || fyi) {
@@ -105,38 +98,33 @@ function sendCmd(args, deps) {
     body = stampPrefix(message, self, reply ? 'reply' : 'fyi');
   }
 
-  deps.run('herdr', ['agent', 'send', handle, body]);
-  const submitted = submitVerified(p, handle, body, data, deps);
-  return { result: { type: 'ok' }, pane: p, sent: body, submitted };
+  // herdr 0.7.5 `agent prompt --wait --until working` types, submits, AND waits
+  // for the turn to start in one kind-aware socket call (it knows codex needs two
+  // Enters and observes the state change from the moment of submission - no
+  // client-side gap where a fast working blip is missed). The prompt is submitted
+  // even if the wait then times out, so the fallback never resends.
+  const before = status(data, handle);
+  const submitted = verifyTurn(handle, before, body, deps);
+  return { result: { type: 'ok' }, pane: pane(data, handle), sent: body, submitted };
 }
 
-// A blind Enter races the recipient TUI's ingest of the just-typed text (slow
-// composers like codex swallow it), so submission is two server-side waits,
-// not a poll loop: block until the composer visibly holds the body tail, then
-// submit, then block until the recipient's turn starts. One key retry covers
-// the rare unconfirmed-ingest case. A recipient already `working` at entry is
-// ambiguous — our submit is indistinguishable from its in-flight turn, so the
-// result is optimistic there; don't send to a working peer.
-function submitVerified(p, handle, body, data, deps) {
-  // Recipient composers re-wrap long bodies with real newlines + indent
-  // (verified live on codex), so only a whitespace-free fragment survives
-  // wrapping intact: match the body's last token, capped.
-  const tail = body.split(/\s+/).filter(Boolean).pop() || body;
+// Atomic submit+wait: `agent prompt --wait --until working` returns 0 the instant
+// the recipient's turn starts. On timeout it exits non-zero but has STILL
+// submitted the prompt, so we never resend (that would duplicate it); instead we
+// fall back to a status delta for a turn too fast to catch as `working` (idle ->
+// done). The wait's own "observed state change" detector has a ~5s floor, so the
+// timeout must clear it (6000) or it reports timeout before the window elapses. A
+// recipient already `working` at entry is ambiguous - our prompt is
+// indistinguishable from its in-flight turn - so the result is optimistic there;
+// don't send to a working peer.
+function verifyTurn(handle, before, body, deps) {
   try {
-    deps.run('herdr', ['wait', 'output', p, '--match', tail.slice(-40),
-      '--source', 'recent-unwrapped', '--timeout', '2000']);
-  } catch { /* unconfirmed ingest; the turn check below is the arbiter */ }
-  const before = status(data, handle);
-  const keys = submitKeys(data, handle);
-  for (let attempt = 0; attempt < 2; attempt++) {
-    for (const k of keys) deps.run('herdr', ['pane', 'send-keys', p, k]);
-    try {
-      deps.run('herdr', ['agent', 'wait', handle, '--status', 'working', '--timeout', '4000']);
-      return true;
-    } catch {
-      const now = status(fetchAgents(deps), handle);
-      if (before !== 'working' && now !== before && now !== 'unknown') return true; // fast turn, e.g. idle->done
-    }
+    deps.run('herdr', ['agent', 'prompt', handle, body,
+      '--wait', '--until', 'working', '--timeout', '6000']);
+    return true;
+  } catch {
+    const now = status(fetchAgents(deps), handle);
+    if (before !== 'working' && now !== before && now !== 'unknown') return true; // fast turn, e.g. idle->done
   }
   return false;
 }
@@ -179,11 +167,11 @@ function usage() {
     '  status <handle|pane>             agent_status',
     '  members [--workspace <ws>]       handles, optionally per workspace',
     '  wait <handle> [--status a,b] [--timeout ms] [--interval ms]',
-    '      poll until status matches; comma lists work HERE only -',
-    '      the native `herdr wait agent-status` takes exactly one status',
+    '      poll agent list until status matches; a single-call comma set',
+    '      (idle,done) - the native `herdr agent wait` needs one --until each',
     '  send <handle> <msg> [--reply|--fyi] [--from <self>]',
-    '      type, confirm ingest, submit, confirm the turn started;',
-    '      result reports "submitted":true|false',
+    '      submit via `herdr agent prompt` (kind-aware type+submit),',
+    '      then confirm the turn started; result reports "submitted":true|false',
     '  send-wait-read <handle> <msg> [--timeout ms] [--lines n]',
     '  agent <model> <handle> --workspace <ws> --cwd <dir> [--timeout ms] [--label s]',
     '  up [...]                         one-shot worktree + herd launcher',
@@ -262,14 +250,13 @@ module.exports = {
   pane,
   status,
   members,
-  submitKeys,
   fetchAgents,
   parseWait,
   waitCmd,
   resolveSelf,
   stampPrefix,
   sendCmd,
-  submitVerified,
+  verifyTurn,
   sendWaitReadCmd,
   agentCmd,
   defaultDeps,
