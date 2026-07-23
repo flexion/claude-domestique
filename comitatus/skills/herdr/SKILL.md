@@ -9,11 +9,11 @@ before using this skill, check that `HERDR_ENV=1`. if it is not set to `1`, say 
 
 you are running inside herdr, a terminal-native agent multiplexer. herdr gives you git worktrees, workspaces, tabs, and panes, and lets you start and drive coding agents in them - all from the cli. the `herdr` binary is in your PATH; its subcommands talk to the running herdr instance over a local socket.
 
-if you need the raw protocol, read the [socket api docs](https://herdr.dev/docs/socket-api/). for the full flag-by-flag command surface, see [reference/cli.md](reference/cli.md).
+herdr owns its own command surface: run `herdr <family> --help` (e.g. `herdr agent --help`, `herdr worktree --help`) for the flag-by-flag reference, or read the [socket api docs](https://herdr.dev/docs/socket-api/) for the raw protocol. this skill covers only what herdr does **not**: the herd conventions (roster, from/reply protocol) and the composite helper verbs.
 
 ## two rules that avoid most friction
 
-1. **prefer native `herdr` verbs, addressed by handle.** `herdr agent send|read|get|wait <handle>` all resolve handles directly - no pane-id lookups, no JSON parsing. the helper exists only for what the natives don't cover.
+1. **prefer native `herdr` verbs, addressed by handle.** `herdr agent prompt|read|get|wait <handle>` all resolve handles directly - no pane-id lookups, no JSON parsing. the helper exists only for what the natives don't cover.
 2. **call the herd.js helper by its absolute path from your orientation** (the `node /abs/.../herd.js ...` line). the path is stable across comitatus updates and `/herd-setup` allowlists it once; a path built any other way (variables, relative) fails the permission matcher and prompts. every helper verb is self-contained - it runs `herdr` itself; nothing is piped and stdin is never read. codex agents use the stable `$HOME/.codex/skills/herdr/scripts/herd.js`.
 
 helper verbs: `status | members | wait | send | send-wait-read | agent | up`.
@@ -40,7 +40,7 @@ node HERD up --branch chore/my-slug --base origin/main \
 | `--codex <handle>` | `codex` | ◇ |
 | `--opencode <handle>:<model>` | `opencode -m <model>` | ⬨ |
 
-flag order is tab order. defaults: `--base origin/main`, `--timeout 45000` (ms, per-agent readiness wait). handles must be unique - `up` pre-checks `agent list` and refuses before creating the worktree if one is taken. one command also means one permission approval instead of one per step.
+flag order is tab order. defaults: `--base origin/main`, `--timeout 45000` (ms, per-agent readiness wait). handles must be unique - `up` pre-checks `agent list` and refuses before creating the worktree if one is taken. one command also means one permission approval instead of one per step. `up` resolves the repo's main-checkout workspace from your cwd, so it works run from the main checkout **or** from inside a linked worktree (a herd lead spinning up a sibling herd); pass `--source-workspace <ws>` only to override that lookup.
 
 ## concepts
 
@@ -58,7 +58,7 @@ three facts that drive most workflows:
 
 - **one workspace per worktree.** herdr groups a worktree's agents under its single workspace. run several agents on a worktree by giving each its own **tab** in that one workspace - separate `workspace create --cwd` workspaces get **no** repo association and float ungrouped, even at a repo root.
 - **a worktree and its agents are linked by `cwd`, not by a stored mapping.** to find every agent in a worktree, list agents and filter on `cwd`. there is no tracking file.
-- **`agent_status`** is detected automatically: `idle`, `working`, `blocked`, `done`, `unknown`. a fresh/ready agent is `idle`; one that **finished a task whose output you have not viewed** is `done` (a CLI `pane read` does *not* clear it - only focusing the pane in the UI does). `wait agent-status` matches **one exact state** (verified), so choose per situation: **launch/detect -> `idle`; a sibling finishing a task headlessly -> `done`; "free to receive a message" -> not `working` (i.e. `idle` *or* `done`).**
+- **`agent_status`** is detected automatically: `idle`, `working`, `blocked`, `done`, `unknown`. a fresh/ready agent is `idle`; one that **finished a task whose output you have not viewed** is `done` (a CLI `agent read` does *not* clear it - only focusing the pane in the UI does). the native `herdr agent wait <handle> --until <state>` matches the states you name (repeat `--until` for more than one), so choose per situation: **launch/detect -> `idle`; a sibling finishing a task headlessly -> `done`; "free to receive a message" -> not `working` (i.e. `idle` *or* `done`).**
 
 ## ids
 
@@ -69,7 +69,7 @@ ids are short: workspace `w8`, tab `w8:t1`, pane `w8:p1`. they are opaque and **
 a thin convention on top of herdr - herdr stores **none** of it. you assign exactly two things; every workspace/worktree label is left at herdr's default:
 
 - **herd** - a group of agents on a worktree. **you don't label it.** when you `worktree create`, herdr already labels the worktree's workspace with the **worktree directory name** (`chore-my-slug`) - exactly what you want in the sidebar row. (the repo's main checkout is left at its default too: the repo name.)
-- **member** - an agent in a herd. its **handle** is a short call-sign - `tim`, `jay`, `sly`, ... - claimed as the next unused entry from the pool in [reference/names.md](reference/names.md). the handle is the **addressable identity** (`agent send tim`), so it must stay short, unique, phonetically distinct, and stable across a model relaunch.
+- **member** - an agent in a herd. its **handle** is a short call-sign - `tim`, `jay`, `sly`, ... - claimed as the next unused entry from the pool in [reference/names.md](reference/names.md). the handle is the **addressable identity** (`agent prompt tim`), so it must stay short, unique, phonetically distinct, and stable across a model relaunch.
 
 the agent's decorated **tab** label is `<handle> <glyph>` (`fox ◆`, `jay ◇`) - the glyph (claude `◆`, codex `◇`, opencode `⬨`) encodes the model. `up` and the helper's `agent` verb set it at launch; renaming later is `tab rename`. the handle and that tab label are the **only** labels you assign. the sidebar row is `<workspace> · <tab>` = `<worktree-name> · <handle> <glyph>`, which reads true with zero renaming.
 
@@ -132,7 +132,7 @@ herdr ties one workspace to a worktree, so keep all its agents in that **one** w
 node HERD agent codex jay --workspace wR --cwd ~/.herdr/worktrees/<repo>/chore-my-slug
 ```
 
-it runs the four primitives for you: `tab create` (decorated label) -> `agent start <handle> --tab <tab> --cwd <wt> --no-focus -- <argv>` (the handle is assigned **at launch** - no detect-then-rename) -> `pane close <tab-root>` (the leftover shell; the tab keeps the agent pane) -> `agent wait <handle> --status idle` (ready to seed). `agent start` without a placement flag splits the **active** tab - always go through the helper or pass `--tab`.
+it runs the primitives for you: `tab create` (decorated label) -> `agent start <handle> --kind <kind> --pane <tab-root-pane> --timeout <ms>` (the agent takes over the tab's root shell pane, so there is no leftover shell to close; the handle is assigned **at launch** - no detect-then-rename) -> `agent wait <handle> --until idle` (ready to seed). the trailing `-- <args>` on `agent start` passes extra program args (opencode's `-m <model>`); `--timeout` alone only guarantees interactive readiness, so the explicit `--until idle` wait is what confirms the status the caller depends on.
 
 ### 4. change a handle
 
@@ -152,7 +152,7 @@ one call - it types, confirms the recipient's composer ingested the text, submit
 node HERD send jay "please rerun the failing test in src/api/" --reply
 ```
 
-the result reports `"submitted":true|false` - `false` means the recipient never started a turn (resend). add `--reply` or `--fyi` to stamp the protocol flag (below). the raw primitives (`herdr agent send jay "..."` then `herdr pane send-keys <pane> Enter`) exist but race the recipient TUI's ingest - codex drops a blind Enter intermittently - so use the helper for anything that matters.
+the result reports `"submitted":true|false` - `false` means the recipient never started a turn (resend). add `--reply` or `--fyi` to stamp the protocol flag (below). the native primitive is `herdr agent prompt <handle> "..."`, which types **and** submits in one kind-aware call (it handles codex's double-Enter itself); the helper wraps it to also stamp the sender and confirm the turn started.
 
 ### 6. close agents on a worktree
 
@@ -258,25 +258,25 @@ add sequence: seed the newcomer with the roster, then `[herd +new]`. remove sequ
 
 ## lower-level pane / tab / workspace ops
 
-you still have the raw multiplexer. full flags in [reference/cli.md](reference/cli.md).
+you still have the raw multiplexer. run `herdr pane --help`, `herdr tab --help`, `herdr workspace --help` for the flag-by-flag surface.
 
 ```bash
 herdr pane split --current --direction right --no-focus   # returns the new pane id as json
 herdr pane run w9:p2 "npm run dev"                        # types the command + Enter
-herdr wait output w9:p2 --match "ready" --timeout 30000
+herdr pane wait-output w9:p2 --match "ready" --timeout 30000
 herdr agent read jay --source recent --lines 80           # read a pane by handle
-herdr wait agent-status w9:p1 --status done --timeout 120000
+herdr agent wait w9:p1 --until done --timeout 120000      # or repeat --until for a set
 ```
 
-- `--source visible` = current viewport; `--source recent` = scrollback as rendered; `--source recent-unwrapped` = recent text with soft wraps joined (what `wait output` should match against).
+- `--source visible` = current viewport; `--source recent` = scrollback as rendered; `--source recent-unwrapped` = recent text with soft wraps joined (what `pane wait-output` should match against).
 - tabs and workspaces: `herdr tab create|rename|focus|close`, `herdr workspace create|rename|focus|close`.
 
 ## gotchas
 
 - **fetch before `worktree create`** - `--base origin/main` is the local ref; it is stale until you `git fetch origin main`.
-- **`agent send` types literal text and no Enter** - the `ok` ack means *typed*, not *submitted*. `node HERD send` is the delivery path: it confirms composer ingest, submits model-correct keys, and confirms the turn started, reporting `"submitted"`.
-- **`--status` comma lists are helper-only** - `node HERD wait jay --status idle,done` accepts a set; the native waits (`herdr wait agent-status <pane>`, `herdr agent wait <handle>`) take exactly one status - and only the pane form accepts `done`.
-- **`agent start` without a placement flag splits the active tab** - always pass `--tab` (or go through the helper/`up`, which do).
+- **`agent prompt` types AND submits** - `herdr agent prompt <handle> "..."` is the native one-call send (kind-aware: it handles codex's double-Enter). `node HERD send` wraps it to also stamp the sender, add `--wait --until working`, and report `"submitted"`.
+- **`--status` comma lists are helper-only** - `node HERD wait jay --status idle,done` accepts a set (it polls `agent list` itself); the native `herdr agent wait <handle> --until <state>` needs one `--until` per state (repeat the flag).
+- **`agent start` needs an existing shell pane** - it takes `--kind <kind> --pane <pane-at-a-shell-prompt>` and takes that pane over; it does **not** spawn its own. the helper/`up` hand it a fresh tab's root pane. `--timeout` waits only for interactive readiness, not for `idle` - wait on `idle` explicitly after.
 - **opencode status needs the fix plugin** - herdr 0.7.0's managed opencode integration is out of date with opencode 1.17.8; the sibling plugin `~/.config/opencode/plugins/herdr-opencode-status-fix.js` restores correct working/idle/blocked reporting. without it, status waits on opencode panes are unreliable.
 - **only the home repo's worktree tree nests; plain workspaces don't** - a `workspace create --cwd` workspace gets no repo association and floats ungrouped, even at a repo root. give each herd agent a *tab* in the herd's one workspace; make the herd a worktree to nest it under the repo.
 - **workspace label vs tab truncation** - rows render `<workspace> · <tab>`; the long worktree-name label can truncate the tab label in the collapsed sidebar; the handle reappears on focus/widen. that label is herdr's default - don't rename it.
@@ -288,5 +288,5 @@ herdr wait agent-status w9:p1 --status done --timeout 120000
 - **the helper path comes from your orientation** - a fixed, allowlistable location refreshed each session by the comitatus hook. call it by that absolute path; anything else (variables, `$CLAUDE_PLUGIN_ROOT`, relative paths) prompts or breaks.
 - **cwd is the resolved path** - herdr stores an agent's `cwd` OS-resolved (macOS `/tmp` -> `/private/tmp`). when filtering `agent list` by cwd, compare against the resolved path or you'll see zero agents on a healthy herd.
 - **ids are not durable** - re-read them; never reuse an old id.
-- **read vs wait, and `recent` can lag** - `pane read` for output that already exists; `wait output` for output you expect next. `--source recent` can come back empty while a pane is freshly producing output; fall back to `--source visible` or `wait output` - do not read an empty `recent` as "nothing is there."
-- **json output** - agent/workspace/pane commands print json; worktree commands need `--json`. `pane read` prints text; `send-text`/`send-keys`/`run` print nothing on success.
+- **read vs wait, and `recent` can lag** - `agent read`/`pane read` for output that already exists; `pane wait-output` for output you expect next. `--source recent` can come back empty while a pane is freshly producing output; fall back to `--source visible` or `pane wait-output` - do not read an empty `recent` as "nothing is there."
+- **json output** - agent/workspace/pane commands print json; worktree commands need `--json`. `pane read` prints text; `pane send-text`/`send-keys`/`run` print nothing on success.
