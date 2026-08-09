@@ -1,5 +1,6 @@
 ---
-# MEMENTO-MANAGED: This file is overwritten by /memento:init --force
+# MEMENTO-MANAGED: Shipped with the memento plugin; override by creating your own
+# rule file under .claude/rules/ rather than editing this one
 # To customize: create your own rule file in .claude/rules/
 #
 # Session Management - Compact Reference
@@ -25,7 +26,7 @@ verify: "Checking branch: on main? → asking about branch creation"
 consequence: Working on main causes messy history and forgotten session files
 
 ## STARTING NEW WORK
-command: /memento:start (issue|chore)
+command: memento:start (issue|chore)
 flow: ask-type → get-details → create-branch → create-session → prime-with-context
 issue: fetch-details, populate-acceptance-criteria, create-branch-with-format
 chore: gather-description, create-chore-branch
@@ -35,7 +36,7 @@ trigger: about to run `git checkout -b` or `git switch -c`
 priority: BLOCKING
 action: You MUST create session file immediately after branch creation. STOP.
 flow: create-branch → create-session (same command or immediately after)
-skill: /memento:session create
+skill: memento:session create
 verify: "Branch created → creating session file"
 consequence: Branches without sessions lose context and break 1:1 convention
 
@@ -66,7 +67,7 @@ context-checkpoint: usage > 80% → save state before compaction
 ## UPDATE TRIGGERS
 update-when: after-milestone, before-commit, when-blocked, on-reminder
 sections: Session Log (what), Files Changed (where), Next Steps (todo)
-skill: /memento:session update
+skill: memento:session update
 
 ## COMPLETION (before final commit)
 when: final commit before PR (not after PR creation)

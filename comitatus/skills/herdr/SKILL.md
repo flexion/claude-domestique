@@ -14,7 +14,7 @@ if you need the raw protocol, read the [socket api docs](https://herdr.dev/docs/
 ## two rules that avoid most friction
 
 1. **prefer native `herdr` verbs, addressed by handle.** `herdr agent send|read|get|wait <handle>` all resolve handles directly - no pane-id lookups, no JSON parsing. the helper exists only for what the natives don't cover.
-2. **call the herd.js helper by its absolute path from your orientation** (the `node /abs/.../herd.js ...` line). the path is stable across comitatus updates and `/herd-setup` allowlists it once; a path built any other way (variables, relative) fails the permission matcher and prompts. every helper verb is self-contained - it runs `herdr` itself; nothing is piped and stdin is never read. codex agents use the stable `$HOME/.codex/skills/herdr/scripts/herd.js`.
+2. **call the herd.js helper by the absolute path from your orientation** (the `node /abs/.../herd.js ...` line). every helper verb is self-contained—it runs `herdr` itself; nothing is piped and stdin is never read. Claude users can allowlist that path with the `herd-setup` skill. Codex uses its normal approval policy.
 
 helper verbs: `status | members | wait | send | send-wait-read | agent | up`.
 

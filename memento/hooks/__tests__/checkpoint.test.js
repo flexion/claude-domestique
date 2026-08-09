@@ -213,5 +213,68 @@ Do something
       const result = hook.buildCheckpointReminder(input);
       expect(result).toBe(null);
     });
+
+    it('recognizes Codex exec_command input', () => {
+      const input = {
+        tool_name: 'exec_command',
+        hook_event_name: 'PreToolUse',
+        tool_input: { cmd: 'git commit -m "test"' },
+        cwd: tmpDir
+      };
+      expect(hook.buildCheckpointReminder(input)).toContain('STOP');
+    });
+
+    it('emits the portable hook response envelope', () => {
+      const input = {
+        tool_name: 'exec_command',
+        hook_event_name: 'PreToolUse',
+        tool_input: { cmd: 'git commit -m "test"' },
+        cwd: tmpDir
+      };
+      const result = hook.buildHookResponse(input);
+      expect(result.hookSpecificOutput.hookEventName).toBe('PreToolUse');
+      expect(result.hookSpecificOutput.additionalContext).toContain('STOP');
+      expect(result.additionalContext).toBeUndefined();
+    });
+  });
+
+  describe('Codex tool aliases', () => {
+    beforeEach(() => {
+      mockExecSync.mockImplementation((cmd) => {
+        if (cmd.includes('rev-parse --show-toplevel')) return tmpDir + '\n';
+        if (cmd.includes('rev-parse --abbrev-ref')) return 'feature/test\n';
+        throw new Error('Unknown command');
+      });
+      const sessionsDir = path.join(tmpDir, '.claude', 'sessions');
+      fs.mkdirSync(sessionsDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(sessionsDir, 'feature-test.md'),
+        '## Goal\nImplement feature X\n\n## Next Steps\n1. First step'
+      );
+    });
+
+    it('recognizes update_plan as a todo checkpoint', () => {
+      const result = hook.buildCheckpointReminder({
+        tool_name: 'update_plan', hook_event_name: 'PostToolUse', cwd: tmpDir
+      });
+      expect(result).toContain('Todos updated');
+    });
+
+    it('recognizes spawn_agent planning work', () => {
+      const result = hook.buildCheckpointReminder({
+        tool_name: 'spawn_agent',
+        hook_event_name: 'PostToolUse',
+        tool_input: { task_name: 'explore' },
+        cwd: tmpDir
+      });
+      expect(result).toContain('agent completed');
+    });
+
+    it('recognizes apply_patch as a change checkpoint', () => {
+      const result = hook.buildCheckpointReminder({
+        tool_name: 'apply_patch', hook_event_name: 'PostToolUse', cwd: tmpDir
+      });
+      expect(result).toContain('Files changed');
+    });
   });
 });

@@ -1,6 +1,6 @@
 {
   "name": "agent-artifex",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Evidence-based workflows for designing and testing MCP servers, agents, chatbots, and tool-calling systems",
   "author": {
     "name": "Flexion",

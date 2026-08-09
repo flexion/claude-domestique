@@ -31,9 +31,12 @@ jobs:
       - name: Validate Claude plugin schemas
         run: |
           npx --yes @anthropic-ai/claude-code@2.1.226 plugin validate . --strict
-          for plugin in mantra memento onus agent-artifex comitatus stilus; do
+          plugins=$(node -e "require('./.claude-plugin/marketplace.json').plugins.forEach(plugin => console.log(plugin.name))") || exit 1
+          while IFS= read -r plugin; do
             npx --yes @anthropic-ai/claude-code@2.1.226 plugin validate "$plugin" --strict
-          done
+          done <<EOF
+          $plugins
+          EOF
 
       - name: Smoke test Codex plugin installs
         env:

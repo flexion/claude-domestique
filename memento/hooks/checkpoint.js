@@ -106,8 +106,13 @@ function buildCheckpointReminder(input) {
       break;
 
     case 'Task':
+    case 'Agent':
+    case 'spawn_agent':
       // Check if significant subagent
-      const subagentType = input.tool_input?.subagent_type || '';
+      const subagentType = input.tool_input?.subagent_type
+        || input.tool_input?.task_name
+        || input.tool_input?.name
+        || '';
       const significantAgents = ['Plan', 'Explore'];
       const isSignificant = significantAgents.some(a =>
         subagentType.toLowerCase().includes(a.toLowerCase())
@@ -119,16 +124,24 @@ function buildCheckpointReminder(input) {
       break;
 
     case 'TodoWrite':
+    case 'update_plan':
       // Sync reminder
       if (hasSession) {
         reminder = '📝 Todos updated. Keep session Next Steps in sync.';
       }
       break;
 
+    case 'apply_patch':
+      if (hasSession) {
+        reminder = '📝 Files changed. Record milestones, decisions, or blockers in the session when material.';
+      }
+      break;
+
     case 'Bash':
+    case 'exec_command':
       // Pre-commit checkpoint (PreToolUse)
       if (hookEvent === 'PreToolUse') {
-        const command = input.tool_input?.command || '';
+        const command = input.tool_input?.command || input.tool_input?.cmd || '';
         if (command.includes('git commit')) {
           if (!hasSession) {
             reminder = '⚠️ **STOP**: No session file found. Create session before commit.';
@@ -148,6 +161,17 @@ function buildCheckpointReminder(input) {
   return reminder;
 }
 
+function buildHookResponse(input) {
+  const reminder = buildCheckpointReminder(input);
+  if (!reminder) return {};
+  return {
+    hookSpecificOutput: {
+      hookEventName: input.hook_event_name,
+      additionalContext: `\n${reminder}`
+    }
+  };
+}
+
 // ============================================================================
 // Main
 // ============================================================================
@@ -160,14 +184,7 @@ function main() {
   process.stdin.on('end', () => {
     try {
       const input = JSON.parse(inputData);
-      const reminder = buildCheckpointReminder(input);
-
-      const response = {};
-      if (reminder) {
-        response.additionalContext = `\n${reminder}`;
-      }
-
-      console.log(JSON.stringify(response));
+      console.log(JSON.stringify(buildHookResponse(input)));
     } catch (err) {
       // Silent failure - don't break the hook chain
       console.log(JSON.stringify({}));
@@ -184,6 +201,7 @@ if (require.main === module) {
 module.exports = {
   validateSessionFile,
   buildCheckpointReminder,
+  buildHookResponse,
   getGitRoot,
   getCurrentBranch,
   getSessionPath,

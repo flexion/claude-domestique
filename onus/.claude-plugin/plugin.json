@@ -1,7 +1,7 @@
 {
   "name": "onus",
-  "version": "0.3.7",
-  "description": "Work item automation for Claude Code - auto-injected via hooks, zero config",
+  "version": "0.4.0",
+  "description": "Work-item, commit, and pull-request automation for coding agents",
   "author": {
     "name": "David Puglielli"
   },
@@ -15,17 +15,6 @@
     "pull-requests",
     "github",
     "jira"
-  ],
-  "commands": [
-    "./commands/init.md",
-    "./commands/fetch.md",
-    "./commands/create.md",
-    "./commands/update.md",
-    "./commands/close.md",
-    "./commands/commit.md",
-    "./commands/pr.md",
-    "./commands/status.md",
-    "./commands/validate-criteria.md"
   ],
   "skills": "./skills/"
 }

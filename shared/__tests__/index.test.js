@@ -157,6 +157,16 @@ describe('shared module', () => {
       expect(stateFile).toContain('testplugin-state.json');
     });
 
+    it('getStateFile honours an injected home directory', () => {
+      expect(shared.getStateFile('TestPlugin', tmpDir))
+        .toBe(path.join(tmpDir, '.claude', 'testplugin-state.json'));
+    });
+
+    it('getStateFile defaults to the real home when none is injected', () => {
+      expect(shared.getStateFile('TestPlugin'))
+        .toBe(path.join(os.homedir(), '.claude', 'testplugin-state.json'));
+    });
+
     it('loadState returns default when file does not exist', () => {
       const stateFile = path.join(tmpDir, 'state.json');
       const state = shared.loadState(stateFile, { count: 0 });
@@ -191,7 +201,7 @@ describe('shared module', () => {
       fs.mkdirSync(rulesDir);
       fs.writeFileSync(path.join(rulesDir, 'test.md'), '---\nrule: yes\n---');
 
-      const config = { pluginName: 'Test', pluginRoot: tmpDir };
+      const config = { pluginName: 'Test', pluginRoot: tmpDir, homeDir: tmpDir };
       const input = { cwd: tmpDir, source: 'startup' };
 
       const result = shared.processSessionStart(config, input);
@@ -205,6 +215,7 @@ describe('shared module', () => {
       const config = {
         pluginName: 'Test',
         pluginRoot: tmpDir,
+        homeDir: tmpDir,
         onSessionStart: (input, base) => ({
           statusLine: 'Custom status',
           additionalContext: 'Custom context'
@@ -219,7 +230,7 @@ describe('shared module', () => {
     });
 
     it('adds reloaded indicator for compact source', () => {
-      const config = { pluginName: 'Test', pluginRoot: tmpDir };
+      const config = { pluginName: 'Test', pluginRoot: tmpDir, homeDir: tmpDir };
       const input = { cwd: tmpDir, source: 'compact' };
 
       const result = shared.processSessionStart(config, input);
@@ -228,7 +239,7 @@ describe('shared module', () => {
     });
 
     it('adds resumed indicator for resume source', () => {
-      const config = { pluginName: 'Test', pluginRoot: tmpDir };
+      const config = { pluginName: 'Test', pluginRoot: tmpDir, homeDir: tmpDir };
       const input = { cwd: tmpDir, source: 'resume' };
 
       const result = shared.processSessionStart(config, input);
@@ -238,8 +249,43 @@ describe('shared module', () => {
   });
 
   describe('processUserPromptSubmit', () => {
+    // Regression: these two assertions used to depend on whatever count a
+    // previous run had left in the developer's real ~/.claude/test-state.json.
+    // The full suite passed only because processSessionStart happens to run
+    // first and resets the counter to 0; running this test alone, or reordering
+    // the file, failed with "expected 1, received 3". State is now confined to
+    // tmpDir via config.homeDir.
+    it('does not touch the real home directory', () => {
+      const realStateFile = shared.getStateFile('Test');
+      const before = fs.existsSync(realStateFile)
+        ? fs.readFileSync(realStateFile, 'utf8')
+        : null;
+
+      const config = { pluginName: 'Test', pluginRoot: tmpDir, homeDir: tmpDir };
+      shared.processUserPromptSubmit(config, { cwd: tmpDir });
+
+      const after = fs.existsSync(realStateFile)
+        ? fs.readFileSync(realStateFile, 'utf8')
+        : null;
+      expect(after).toBe(before);
+      expect(fs.existsSync(path.join(tmpDir, '.claude', 'test-state.json'))).toBe(true);
+    });
+
+    it('starts from zero regardless of prior runs', () => {
+      // Pre-seed the isolated state as a stale previous run would have.
+      const isolated = path.join(tmpDir, '.claude', 'test-state.json');
+      fs.mkdirSync(path.dirname(isolated), { recursive: true });
+      fs.writeFileSync(isolated, JSON.stringify({ count: 7 }));
+
+      const config = { pluginName: 'Test', pluginRoot: tmpDir, homeDir: tmpDir };
+      shared.processSessionStart(config, { cwd: tmpDir });
+      const result = shared.processUserPromptSubmit(config, { cwd: tmpDir });
+
+      expect(result.hookSpecificOutput.promptCount).toBe(1);
+    });
+
     it('increments counter and returns structured response', () => {
-      const config = { pluginName: 'Test', pluginRoot: tmpDir };
+      const config = { pluginName: 'Test', pluginRoot: tmpDir, homeDir: tmpDir };
       const input = { cwd: tmpDir };
 
       const result1 = shared.processUserPromptSubmit(config, input);
@@ -255,6 +301,7 @@ describe('shared module', () => {
       const config = {
         pluginName: 'Test',
         pluginRoot: tmpDir,
+        homeDir: tmpDir,
         onUserPromptSubmit: (input, base) => ({
           additionalContext: 'Custom prompt context',
           extra: { custom: true }
@@ -272,7 +319,7 @@ describe('shared module', () => {
 
   describe('processHook', () => {
     it('routes SessionStart to correct handler', () => {
-      const config = { pluginName: 'Test', pluginRoot: tmpDir };
+      const config = { pluginName: 'Test', pluginRoot: tmpDir, homeDir: tmpDir };
       const input = { hook_event_name: 'SessionStart', cwd: tmpDir };
 
       const result = shared.processHook(config, input);
@@ -281,7 +328,7 @@ describe('shared module', () => {
     });
 
     it('routes UserPromptSubmit to correct handler', () => {
-      const config = { pluginName: 'Test', pluginRoot: tmpDir };
+      const config = { pluginName: 'Test', pluginRoot: tmpDir, homeDir: tmpDir };
       const input = { hook_event_name: 'UserPromptSubmit', cwd: tmpDir };
 
       const result = shared.processHook(config, input);
@@ -290,7 +337,7 @@ describe('shared module', () => {
     });
 
     it('defaults to UserPromptSubmit for unknown events', () => {
-      const config = { pluginName: 'Test', pluginRoot: tmpDir };
+      const config = { pluginName: 'Test', pluginRoot: tmpDir, homeDir: tmpDir };
       const input = { cwd: tmpDir };
 
       const result = shared.processHook(config, input);

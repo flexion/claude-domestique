@@ -2,7 +2,7 @@
 
 > I told you. You agreed. You forgot. Repeat.
 
-Behavioral rules plugin for Claude Code sessions.
+Behavioral rules plugin for Claude Code and Codex sessions.
 
 Claude is brilliant. Claude is helpful. Claude also has the memory of a goldfish in a context window. You've written the perfect CLAUDE.md. You've carefully documented your project conventions. Claude reads it. Claude agrees. Claude then proceeds to ignore half of it by turn 47.
 
@@ -29,6 +29,8 @@ mantra helps developers embody Flexion fundamentals throughout long sessions:
 
 ## Installation
 
+### Claude Code
+
 ```bash
 # Add the marketplace
 /plugin marketplace add flexion/claude-domestique
@@ -37,11 +39,26 @@ mantra helps developers embody Flexion fundamentals throughout long sessions:
 /plugin install mantra@claude-domestique
 ```
 
-That's it. Rules are injected automatically on every session start—no initialization required.
+### Codex
+
+```bash
+codex plugin marketplace add flexion/claude-domestique
+codex plugin add mantra@claude-domestique
+```
+
+Rules are injected automatically on every session start—no initialization required.
+
+Codex does not run a plugin's hooks just because the plugin is installed: it
+holds them until you review and trust them. Open `/hooks` in a new Codex thread
+and approve this plugin's hook definitions, otherwise you get its skills but
+none of its automatic rule injection. Hooks themselves are on by default; the
+`[features] hooks` setting in `~/.codex/config.toml` only matters if they were
+turned off.
+
 
 ## How It Works
 
-mantra uses Claude Code's hook system for automatic context injection:
+mantra uses the shared plugin hook convention for automatic context injection in Claude Code and Codex:
 
 | Hook | When | What Happens |
 |------|------|--------------|
@@ -87,7 +104,9 @@ Every prompt shows mantra status:
 
 The status line is a CLI feature. In VS Code, use Claude Code from the integrated terminal (`` Ctrl+` ``) to see the status line.
 
-### Commands
+### Skills
+
+Use `/mantra:<skill>` in Claude Code or `$mantra:<skill>` in Codex.
 
 | Command | Description |
 |---------|-------------|

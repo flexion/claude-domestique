@@ -1,7 +1,7 @@
 {
   "name": "memento",
-  "version": "0.3.10",
-  "description": "Session management for Claude Code - auto-injected via hooks, zero config",
+  "version": "0.4.0",
+  "description": "Branch-based session management for coding agents, auto-injected through hooks",
   "author": {
     "name": "David Puglielli"
   },
@@ -13,10 +13,6 @@
     "persistence",
     "context",
     "branch-tracking"
-  ],
-  "commands": [
-    "./commands/session.md",
-    "./commands/start.md"
   ],
   "skills": "./skills/"
 }

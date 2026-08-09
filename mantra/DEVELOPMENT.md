@@ -41,11 +41,11 @@ mantra/
 │   └── rule-design.md
 ├── scripts/
 │   └── statusline.js
-└── commands/             # Legacy flat skills; migrate to skills/ for cross-host use
-    ├── skeptic.md
-    ├── assess.md
-    ├── troubleshoot.md
-    └── make-rule.md
+└── skills/               # Canonical workflows shared by Claude Code and Codex
+    ├── skeptic/SKILL.md
+    ├── assess/SKILL.md
+    ├── troubleshoot/SKILL.md
+    └── make-rule/SKILL.md
 ```
 
 ### What Mantra adds

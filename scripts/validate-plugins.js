@@ -9,13 +9,6 @@ const ROOT = path.resolve(__dirname, '..');
 const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 const KEBAB_CASE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-// Remove these exceptions when Phase 2 converts the remaining namespaced skills.
-const LEGACY_SKILL_NAMES = new Map([
-  ['memento/resume', 'memento:resume'],
-  ['memento/session-manager', 'memento:session-manager'],
-  ['onus/work-item-handler', 'onus:work-item-handler'],
-]);
-
 function readJson(filePath, errors, label) {
   try {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -49,7 +42,7 @@ function readFrontmatter(filePath, errors, label) {
   const closing = closingMatch.index + 4;
 
   try {
-    const frontmatter = yaml.safeLoad(normalized.slice(4, closing));
+    const frontmatter = yaml.load(normalized.slice(4, closing));
     if (!frontmatter || typeof frontmatter !== 'object' || Array.isArray(frontmatter)) {
       errors.push(`${label}: frontmatter must be a YAML mapping`);
       return null;
@@ -78,7 +71,7 @@ function validatePromptFile(filePath, pluginRoot, errors) {
   }
 }
 
-function validateSkills(pluginRoot, pluginName, errors) {
+function validateSkills(pluginRoot, errors) {
   const skillsRoot = path.join(pluginRoot, 'skills');
   if (!fs.existsSync(skillsRoot)) return;
 
@@ -93,7 +86,6 @@ function validateSkills(pluginRoot, pluginName, errors) {
     }
     if (!entry.isDirectory()) continue;
 
-    const relativeSkill = `${pluginName}/${entry.name}`;
     const skillPath = path.join(skillsRoot, entry.name, 'SKILL.md');
     const label = path.relative(pluginRoot, skillPath);
 
@@ -109,8 +101,7 @@ function validateSkills(pluginRoot, pluginName, errors) {
     if (!frontmatter) continue;
 
     const expectedName = entry.name;
-    const legacyName = LEGACY_SKILL_NAMES.get(relativeSkill);
-    if (frontmatter.name !== expectedName && frontmatter.name !== legacyName) {
+    if (frontmatter.name !== expectedName) {
       errors.push(`${label}: skill name ${String(frontmatter.name)} must match directory ${expectedName}`);
     }
     if (typeof frontmatter.description !== 'string' || !frontmatter.description.trim()) {
@@ -180,7 +171,9 @@ function validate(root = ROOT) {
       ['Claude manifest', claudeManifest.version],
     ];
 
-    if (fs.existsSync(codexManifestPath)) {
+    if (!fs.existsSync(codexManifestPath)) {
+      errors.push(`${entry.name}: missing .codex-plugin/plugin.json`);
+    } else {
       const codexManifest = readJson(codexManifestPath, errors, `${entry.name} Codex manifest`);
       if (codexManifest) {
         versions.push(['Codex manifest', codexManifest.version]);
@@ -203,7 +196,7 @@ function validate(root = ROOT) {
       }
     }
 
-    validateSkills(pluginRoot, entry.name, errors);
+    validateSkills(pluginRoot, errors);
     validatePromptFrontmatter(pluginRoot, errors);
   }
 
@@ -224,7 +217,6 @@ function main() {
 if (require.main === module) main();
 
 module.exports = {
-  LEGACY_SKILL_NAMES,
   readFrontmatter,
   readJson,
   validate,

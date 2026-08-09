@@ -1,0 +1,35 @@
+{
+  "name": "mantra",
+  "version": "0.6.0",
+  "description": "Behavioral skills for critical assessment, evidence-based debugging, and rule authoring",
+  "author": {
+    "name": "David Puglielli"
+  },
+  "repository": "https://github.com/flexion/claude-domestique",
+  "homepage": "https://github.com/flexion/claude-domestique/tree/main/mantra",
+  "license": "MIT",
+  "keywords": [
+    "behavior",
+    "assessment",
+    "debugging",
+    "rules"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Mantra",
+    "shortDescription": "Critical assessment and debugging discipline",
+    "longDescription": "Reinforces skeptical analysis, evidence-based debugging, and compact behavioral rule authoring.",
+    "developerName": "Flexion",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Analyze",
+      "Debug",
+      "Author rules"
+    ],
+    "websiteURL": "https://github.com/flexion/claude-domestique/tree/main/mantra",
+    "defaultPrompt": [
+      "Assess this proposal critically before I implement it.",
+      "Troubleshoot this failure using documented evidence."
+    ]
+  }
+}

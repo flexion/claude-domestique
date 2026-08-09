@@ -1,14 +1,16 @@
 ---
-name: memento:resume
+name: resume
 description: |
   Resume work from the current session. Use this skill when:
   - User asks "what's next?" or "where was I?"
-  - User starts a new conversation on a feature branch
+  - User starts a new conversation or thread on a feature branch
   - User returns after a break and needs context
   - User asks about current work status
 ---
 
 # Resume Work
+
+Relative plugin paths in this skill are resolved from this `SKILL.md`.
 
 Load and display session context to resume work after a break or new conversation.
 
@@ -22,8 +24,8 @@ Proactively invoke when user:
 
 ## Context Files (Auto-Injected)
 
-- **rules/sessions.md**: Rules for session workflow
-- **context/sessions.md**: Session file structure and patterns
+- **`../../rules/sessions.md`**: Rules for session workflow
+- **`../../context/sessions.md`**: Session file structure and patterns
 
 Read these files for complete session management guidance.
 
@@ -72,11 +74,11 @@ Recent activity:
 
 ## What This Skill Does NOT Do
 
-- Create new sessions (use `/memento:session create`)
+- Create new sessions (use `memento:session create`)
 - Update session content (edit directly or use hooks)
 - Handle branch switching (handled by session-manager)
 
-## Key Rules (from rules/sessions.md)
+## Key Rules (from `../../rules/sessions.md`)
 
 1. **Never guess branch** - always `git branch --show-current`
 2. **Session = Branch = Issue** - 1:1:1 mapping

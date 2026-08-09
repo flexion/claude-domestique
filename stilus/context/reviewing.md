@@ -1,6 +1,6 @@
 # Reviewing — the stilus review phase
 
-This document is the single source of truth for how stilus reviews a finished piece. The `/stilus:review` command and the write skill's review step both run this flow. It owns synthesis: how the review phase gathers intent, fans out to the specialist agents, compares the blind summary to the intended point, dedups and scores findings, assigns a verdict, and writes the report. The per-dimension rubrics live in the specialist agents, not here.
+This document is the single source of truth for how stilus reviews a finished piece. The `review` skill and the write skill's review step both run this flow. It owns synthesis: how the review phase gathers intent, runs the specialist skills, compares the blind summary to the intended point, dedups and scores findings, assigns a verdict, and writes the report. The per-dimension rubrics live in the specialist skills, not here.
 
 ## The flow
 
@@ -14,15 +14,15 @@ Establish three things before dispatching:
 
 In the pipeline these come from the drafting context. Standalone, ask the user for them in one prompt. If the user supplies none, proceed with intent unknown: the AI-perception step becomes a mirror (Step 3) rather than a pass/fail.
 
-### Step 2 — Fan out (parallel, read-only)
+### Step 2 — Isolated specialist passes
 
-Dispatch all three specialists on the same target in a single batch so they run concurrently. Each is read-only and independent.
+Run all three specialists on the same target. Each is read-only and independent. Use parallel subagents when the host supports them. Otherwise run the three skills sequentially with isolated inputs and do not let one specialist's findings influence another.
 
 - `review-correctness` — pass the piece and any codebase/domain context.
 - `review-voice` — pass the piece and the resolved voice profile (the base profile if no project or user profile resolves).
 - `review-summary` — pass ONLY the piece. Do not pass the purpose, audience, or intended point. Its blindness is the point.
 
-If the platform namespaces plugin agents, use the namespaced name; the names are unique within this plugin.
+Invoke the plugin-namespaced skill names exposed by the host.
 
 ### Step 3 — AI perception (synthesis)
 

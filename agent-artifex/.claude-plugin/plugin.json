@@ -1,6 +1,6 @@
 {
   "name": "agent-artifex",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Agent Artifex — designing and testing MCP servers, agents, chatbots, and tool-calling systems using evidence-based patterns from Anthropic, OpenAI, RAGAS, and academic research",
   "author": {
     "name": "Flexion"

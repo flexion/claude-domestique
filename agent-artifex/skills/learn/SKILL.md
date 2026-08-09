@@ -12,7 +12,7 @@ Interactive learning skill for the AI services design and testing framework. Ada
 
 ## Shared References
 
-Paths in this table are relative to this `SKILL.md`.
+Relative paths in this skill are resolved from this `SKILL.md`.
 
 When a learner's question goes deeper than what this skill covers, read the relevant file:
 

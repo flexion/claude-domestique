@@ -1,0 +1,37 @@
+{
+  "name": "onus",
+  "version": "0.4.0",
+  "description": "Work-item, commit, and pull-request automation",
+  "author": {
+    "name": "David Puglielli"
+  },
+  "repository": "https://github.com/flexion/claude-domestique",
+  "homepage": "https://github.com/flexion/claude-domestique/tree/main/onus",
+  "license": "MIT",
+  "keywords": [
+    "issues",
+    "work-items",
+    "commits",
+    "pull-requests",
+    "github",
+    "jira"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Onus",
+    "shortDescription": "Automate work-item delivery workflows",
+    "longDescription": "Fetches and updates work items, validates acceptance criteria, and guides commits and pull requests.",
+    "developerName": "Flexion",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Manage work items",
+      "Create commits",
+      "Create pull requests"
+    ],
+    "websiteURL": "https://github.com/flexion/claude-domestique/tree/main/onus",
+    "defaultPrompt": [
+      "Fetch the work item for my current branch.",
+      "Validate this change and prepare its commit."
+    ]
+  }
+}

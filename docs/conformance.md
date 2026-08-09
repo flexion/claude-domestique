@@ -7,11 +7,11 @@ This document records deliberate decisions about conformance to official Claude 
 | Pattern | Status | Notes |
 |---------|--------|-------|
 | Hook implementation (Node.js) | ✅ Adopted | Claude Code requires Node.js |
-| Commands (`commands/*.md`) | ✅ Aligned | Same pattern |
-| Plugin manifest | ✅ Aligned | Same `.claude-plugin/plugin.json` |
-| Portable paths (`${CLAUDE_PLUGIN_ROOT}`) | ✅ Adopted | Used in hooks.json |
-| Agents directory | 🔄 Adopt when needed | Will use for #48 |
-| Skills directory | 🔄 Adopt when needed | Will use for #48 |
+| Commands (`commands/*.md`) | ⛔ Retired | Replaced by folder skills for cross-model support |
+| Plugin manifest | ✅ Aligned | `.claude-plugin/plugin.json` plus `.codex-plugin/plugin.json` |
+| Portable paths (`${CLAUDE_PLUGIN_ROOT}`) | ✅ Adopted | Used in hooks.json; Codex exports it for compatibility |
+| Agents directory | ✅ Adopted | Claude-only thin wrappers over canonical skills (stilus) |
+| Skills directory | ✅ Adopted | `skills/<name>/SKILL.md` is the canonical form on both hosts |
 | Config format (YAML vs frontmatter) | 📝 Divergent | Token-efficient choice |
 | Context system (two-tier yml/md) | 🆕 Innovation | No official equivalent |
 | Session persistence | 🆕 Innovation | No official equivalent |
@@ -38,11 +38,22 @@ This document records deliberate decisions about conformance to official Claude 
 
 ### 2. Commands Directory
 
-**Decision:** Already aligned
+**Decision:** ⛔ Retired in favour of folder skills
 
-**Pattern:** `commands/*.md` with YAML frontmatter
+**Pattern (former):** `commands/*.md` with YAML frontmatter
 
-Both official plugins and claude-domestique use this pattern. No changes needed.
+Claude Code still accepts flat commands, but Codex discovers only
+`skills/<name>/SKILL.md`, so a flat command is a Claude-only workflow. Keeping both
+forms would mean maintaining two copies of every instruction body. All 17 commands
+were converted to folder skills and the `commands/` directories removed; see
+`docs/plans/2026-08-08-cross-model-plugin-architecture.md`.
+
+`scripts/validate-plugins.js` now fails on any `skills/*.md` flat file, so the old
+shape cannot creep back in.
+
+**Consequence to remember:** a command was user-invoked only, whereas a skill is
+also model-invoked from its `description`. Descriptions carried over from command
+help text therefore had to be rewritten as triggering conditions.
 
 ---
 

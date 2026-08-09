@@ -6,6 +6,8 @@ description: |
 
 # Implement — AI Services Implementation Guide
 
+Relative paths in this skill are resolved from this `SKILL.md`.
+
 ## When to Use
 
 This is the hands-on improvement skill. It covers both applying design principles to make code better AND writing tests to verify code quality. Use it whenever the user is ready to make changes — whether that means rewriting tool descriptions, restructuring error messages, adding output schemas, writing test harnesses, or building eval pipelines.
@@ -45,8 +47,6 @@ Then **read the relevant reference files** before writing any code.
 ---
 
 ## Reference Files
-
-Paths in this section are relative to this `SKILL.md`.
 
 ### Design references (for applying improvements)
 

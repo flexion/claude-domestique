@@ -11,7 +11,7 @@ const SKILL_DIR = path.join(PLUGIN_ROOT, 'skills', 'herdr');
 const HERD_JS = path.join(SKILL_DIR, 'scripts', 'herd.js');
 const EXCLUDE = new Set(['__tests__', 'node_modules']);
 
-function buildOrientation(herdJsPath) {
+function buildOrientation(herdJsPath, { codexPlugin } = {}) {
   return [
     '# herdr (comitatus)',
     '',
@@ -27,8 +27,13 @@ function buildOrientation(herdJsPath) {
     '',
     'This path is STABLE across comitatus updates; allowlist it once with',
     '`/herd-setup` and always call it by this absolute path so the permission',
-    'matcher can match it. codex agents use the stable',
-    '`$HOME/.codex/skills/herdr/scripts/herd.js`.',
+    'matcher can match it.',
+    '',
+    codexPlugin === true
+      ? 'comitatus is installed as a Codex plugin, so codex agents in this herd load the same `herdr` skill from their own plugin install.'
+      : codexPlugin === false
+        ? 'comitatus is NOT installed as a Codex plugin, so codex agents in this herd cannot see the `herdr` skill. Install it there with `codex plugin add comitatus@claude-domestique`.'
+        : 'Codex plugin status for comitatus is unknown.',
   ].join('\n');
 }
 
@@ -109,11 +114,41 @@ function provisionInto({ skillDir, home }) {
   return { provisioned: true, reason: curHash ? 'stale' : 'missing' };
 }
 
-function provisionCodex({ skillDir, codexHome }) {
-  if (!fs.existsSync(codexHome)) {
-    return { provisioned: false, reason: 'codex-absent' };
+function realpath(p) {
+  try {
+    return fs.realpathSync(p);
+  } catch {
+    return path.resolve(p);
   }
-  return provisionInto({ skillDir, home: codexHome });
+}
+
+// True when this very copy of comitatus is the one Codex installed, i.e. we are
+// running out of a Codex plugin cache. Derived from our own location rather than
+// an environment variable: both hosts export CLAUDE_PLUGIN_ROOT (Codex does so
+// deliberately, for compatibility), so no env var distinguishes them. Both sides
+// are realpath'd because __dirname is already resolved while $CODEX_HOME may not
+// be (on macOS /var is a symlink to /private/var).
+function isCodexInstall({ pluginRoot, codexHome }) {
+  if (!pluginRoot || !codexHome) return false;
+  const cacheRoot = realpath(path.resolve(codexHome, 'plugins', 'cache'));
+  const root = realpath(pluginRoot);
+  return root === cacheRoot || root.startsWith(cacheRoot + path.sep);
+}
+
+// Whether comitatus is installed as a Codex plugin. Reported to the agent so it
+// knows if codex peers in the herd can see the herdr skill. Nothing is copied
+// into the Codex home: a Codex agent gets the skill by installing the plugin.
+function codexPluginInstalled({ codexHome }) {
+  const cacheRoot = path.join(codexHome, 'plugins', 'cache');
+  let marketplaces;
+  try {
+    marketplaces = fs.readdirSync(cacheRoot, { withFileTypes: true });
+  } catch {
+    return false;
+  }
+  return marketplaces.some(entry =>
+    entry.isDirectory() && fs.existsSync(path.join(cacheRoot, entry.name, 'comitatus'))
+  );
 }
 
 function provisionStable({ skillDir, home }) {
@@ -124,37 +159,35 @@ function provisionStable({ skillDir, home }) {
 function stableHome(homedir) { return path.join(homedir, '.claude', 'comitatus'); }
 function stableHerdJs(home) { return path.join(home, 'skills', 'herdr', 'scripts', 'herd.js'); }
 
-function processSessionStart({ env, skillDir, herdJsPath, codexHome, stableHome: stableHomeDir }) {
+function processSessionStart({ env, skillDir, herdJsPath, codexHome, stableHome: stableHomeDir, directCodex = false }) {
   if (env.HERDR_ENV !== '1') return null;
 
-  let provision = { provisioned: false, reason: 'skipped' };
+  // Report-only: comitatus never writes into the Codex home. A codex agent gets
+  // the herdr skill by installing the plugin, not by having it copied there.
+  let codexPlugin;
   try {
-    provision = provisionCodex({ skillDir, codexHome });
-  } catch (e) {
-    provision = { provisioned: false, reason: 'error', error: String((e && e.message) || e) };
+    codexPlugin = codexPluginInstalled({ codexHome });
+  } catch {
+    codexPlugin = undefined;
   }
 
   // Provision a stable, version-independent copy and prefer its path; fall back
   // to the plugin's own copy (whose path moves on each comitatus update) if that
-  // fails.
+  // fails. Skipped when we are the Codex-installed copy: there is no Claude
+  // permission matcher to keep stable in that case.
   let helperPath = herdJsPath;
-  if (stableHomeDir) {
+  if (stableHomeDir && !directCodex) {
     try {
       provisionStable({ skillDir, home: stableHomeDir });
       helperPath = stableHerdJs(stableHomeDir);
     } catch { /* keep fallback */ }
   }
 
-  let additionalContext = buildOrientation(helperPath);
-  if (provision.provisioned) {
-    additionalContext += `\n\nProvisioned the herdr skill for codex at ${path.join(codexHome, 'skills', 'herdr')}.`;
-  }
-
   return {
-    systemMessage: `📍 comitatus: herdr${provision.provisioned ? ' (codex synced)' : ''}`,
+    systemMessage: `📍 Comitatus: herdr${codexPlugin === undefined ? '' : codexPlugin ? ' (codex: installed)' : ' (codex: not installed)'}`,
     hookSpecificOutput: {
       hookEventName: 'SessionStart',
-      additionalContext,
+      additionalContext: buildOrientation(helperPath, { codexPlugin }),
     },
   };
 }
@@ -169,14 +202,20 @@ async function readStdin() {
   return s;
 }
 
+function resolveCodexHome(env, homedir) {
+  return env.CODEX_HOME ? path.resolve(env.CODEX_HOME) : path.join(homedir, '.codex');
+}
+
 async function main() {
   await readStdin(); // drain stdin; input is unused
+  const codexHome = resolveCodexHome(process.env, os.homedir());
   const result = processSessionStart({
     env: process.env,
     skillDir: SKILL_DIR,
     herdJsPath: HERD_JS,
-    codexHome: path.join(os.homedir(), '.codex'),
+    codexHome,
     stableHome: stableHome(os.homedir()),
+    directCodex: isCodexInstall({ pluginRoot: PLUGIN_ROOT, codexHome }),
   });
   if (result) console.log(JSON.stringify(result));
 }
@@ -188,8 +227,10 @@ module.exports = {
   hashDir,
   copyDir,
   provisionInto,
-  provisionCodex,
   provisionStable,
+  isCodexInstall,
+  codexPluginInstalled,
+  resolveCodexHome,
   stableHome,
   stableHerdJs,
   processSessionStart,

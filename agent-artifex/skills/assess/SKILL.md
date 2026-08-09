@@ -12,7 +12,7 @@ Diagnostic skill that identifies design quality issues and testing gaps in an ex
 
 ## Shared References
 
-Paths in this table are relative to this `SKILL.md`.
+Relative paths in this skill are resolved from this `SKILL.md`.
 
 Read these when you need precise definitions during assessment:
 

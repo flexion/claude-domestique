@@ -118,6 +118,8 @@ When onus generates a PR, consider running a review first:
 
 ## Installation
 
+### Claude Code
+
 ```bash
 # Add the marketplace
 /plugin marketplace add flexion/claude-domestique
@@ -126,7 +128,22 @@ When onus generates a PR, consider running a review first:
 /plugin install onus@claude-domestique
 ```
 
-That's it. Work item detection works automatically—no initialization required.
+### Codex
+
+```bash
+codex plugin marketplace add flexion/claude-domestique
+codex plugin add onus@claude-domestique
+```
+
+Work item detection works automatically—no initialization required.
+
+Codex does not run a plugin's hooks just because the plugin is installed: it
+holds them until you review and trust them. Open `/hooks` in a new Codex thread
+and approve this plugin's hook definitions, otherwise you get its skills but
+none of its automatic work-item detection. Hooks themselves are on by default; the
+`[features] hooks` setting in `~/.codex/config.toml` only matters if they were
+turned off.
+
 
 ## Configuration
 
@@ -195,7 +212,7 @@ init(projectPath, { platform: 'azure', force: true });
 
 ## How It Works
 
-onus uses Claude Code's hook system for automatic work item detection:
+onus uses the shared plugin hook convention for automatic work-item detection in Claude Code and Codex:
 
 | Hook | When | What Happens |
 |------|------|--------------|
@@ -218,7 +235,9 @@ Every prompt shows issue status:
 📋 Issue: 42
 ```
 
-## Commands
+## Skills
+
+Use `/onus:<skill>` in Claude Code or `$onus:<skill>` in Codex. Both hosts intentionally share `.claude/config.json` and the existing Onus cache format.
 
 | Command | Description |
 |---------|-------------|

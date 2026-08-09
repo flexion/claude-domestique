@@ -1,7 +1,7 @@
 ---
-name: memento:session-manager
+name: session-manager
 description: |
-  Manage Claude Code sessions for the current branch. Use this skill when:
+  Manage coding-agent sessions for the current branch. Use this skill when:
   - User asks "what's next?" or "where was I?"
   - User starts work on a new branch without a session
   - Before committing (to update session log)
@@ -9,6 +9,8 @@ description: |
 ---
 
 # Session Manager
+
+Relative plugin paths in this skill are resolved from this `SKILL.md`.
 
 Manage work sessions that persist context across conversation resets.
 
@@ -22,8 +24,8 @@ Proactively invoke when user:
 
 ## Context Files (Auto-Injected)
 
-- **rules/sessions.md**: Rules for session workflow (BLOCKING requirements)
-- **context/sessions.md**: Detailed examples and patterns
+- **`../../rules/sessions.md`**: Rules for session workflow (BLOCKING requirements)
+- **`../../context/sessions.md`**: Detailed examples and patterns
 
 Read these files for complete guidance. This skill provides quick reference only.
 
@@ -38,7 +40,7 @@ git branch --show-current
 ```
 
 ### Create Session
-Use `/memento:session create` command.
+Use `memento:session create` command.
 
 ### Update Session
 Edit session file directly. Update triggers:
@@ -47,7 +49,7 @@ Edit session file directly. Update triggers:
 - Before pause
 - Before commit (atomic with code)
 
-## Key Rules (from rules/sessions.md)
+## Key Rules (from `../../rules/sessions.md`)
 
 1. **Never guess current branch** — always `git branch --show-current`
 2. **Session = Branch = Issue** (1:1:1 mapping)
@@ -56,6 +58,6 @@ Edit session file directly. Update triggers:
 
 ## What This Skill Does NOT Do
 
-- Define session file format (see context/sessions.md)
-- Define workflow patterns (see rules/sessions.md)
-- Handle git operations (see rules/git.md, context/git.md via onus)
+- Define session file format (see `../../context/sessions.md`)
+- Define workflow patterns (see `../../rules/sessions.md`)
+- Handle git operations through the Onus plugin when it is installed

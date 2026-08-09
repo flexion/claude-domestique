@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-08
 
-**Status:** In progress — Phase 0 complete; Phase 1 installed in Air, behavioral Codex smoke test pending
+**Status:** Complete — Phases 0–5 implemented; authenticated model-level smoke testing remains an operational release check
 
 **Target hosts:** Claude Code and Codex
 
@@ -13,12 +13,24 @@ Completed on the initial vertical slice:
 - Fixed the Stilus YAML errors found by per-plugin Claude validation and established a strict manifest-validation baseline.
 - Added synchronized versions to Claude manifests and repository validation for package, manifest, and marketplace versions.
 - Extended the version-bump script to update both host manifests.
-- Added the first Codex manifest for `agent-artifex`.
+- Added Codex manifests for all six plugins.
+- Converted every legacy flat command into a canonical folder-based skill shared by both hosts.
+- Added Codex tool aliases and portable hook response envelopes for hook-driven plugins.
+- Added capability-aware Stilus review orchestration with isolated sequential fallback.
 - Normalized all Agent Artifex skill names and made references self-contained within the plugin.
-- With `CODEX_HOME` set to Air's application-scoped Codex directory, ran `codex plugin marketplace add .` and `codex plugin add agent-artifex@claude-domestique`. Codex reported Agent Artifex `0.2.0` installed and enabled.
+- Reproduced Codex installation from a disposable `CODEX_HOME`; the marketplace and Agent Artifex installation commands both succeeded.
 - Invoked the shared `guide` skill successfully through Claude.
 
-The Air-scoped Codex cache at `$CODEX_HOME/plugins/cache/claude-domestique/agent-artifex/0.2.0` contains both manifests, all six skills, and all bundled references. This is separate from the conventional `~/.codex` directory. A nested Codex model invocation remains unverified because the shell process lacks API credentials and returns HTTP 401; invoke `$agent-artifex:guide` from a new authenticated Codex thread to complete that behavioral smoke check.
+The installation can be reproduced without modifying an existing Codex profile:
+
+```bash
+export CODEX_HOME="$(mktemp -d)"
+codex plugin marketplace add .
+codex plugin add agent-artifex@claude-domestique
+codex plugin list
+```
+
+Fresh isolated Codex installation now succeeds for all six plugins, and the cache contains both manifests plus every canonical skill and bundled reference. Deterministic hook fixtures cover both host tool names. Model-level skill invocation still requires an authenticated interactive Codex thread and remains a release smoke check rather than a repository test.
 
 ## Goal
 
@@ -120,6 +132,10 @@ If an older Claude version must retain a flat command, generate or symlink a min
 
 Skill frontmatter names are local kebab-case names such as `assess` and `work-item-handler`. The plugin host supplies the plugin namespace. Remove values such as `agent-artifex:assess` and `memento:resume` from `name` fields.
 
+**Rewrite the description when converting.** A command's `description` was help text for a workflow the user invoked by typing it. A skill's `description` is the trigger the model reads to decide whether to invoke it unprompted. Carrying the old text over leaves a skill that is simultaneously too vague to fire when wanted and broad enough to fire when not — and nine of the converted Onus skills take real actions (`commit`, `pr`, `close`, `create`, `update`).
+
+Each converted description therefore states triggering conditions, not a summary of the workflow. Action skills require explicit user intent ("Use when the user asks to commit…") so that merely discussing an issue cannot invoke them; read-only skills (`status`, `fetch`, `validate-criteria`) may trigger on the question itself. `argument-hint` is preserved so the explicit `/onus:commit` path is unchanged.
+
 ### One canonical reference tree
 
 All files a skill may load must live inside that plugin. Use paths relative to the selected `SKILL.md` or explicit plugin-root variables only where both hosts demonstrably substitute them.
@@ -164,7 +180,7 @@ Likewise, continue reading existing user cache locations before introducing any 
 
 ### `memento`
 
-1. Consolidate `commands/session.md`, `skills/session-manager`, and `skills/resume` into a deliberate set with no overlapping triggers.
+1. Keep `skills/session`, `skills/session-manager`, and `skills/resume` as a deliberate set with distinct direct-management, lifecycle, and resumption triggers. The removed flat skill was superseded by the canonical `skills/session/SKILL.md` workflow.
 2. Normalize checkpoint matchers and hook output as described above.
 3. Add Codex event fixtures for `update_plan`, `Agent`/`spawn_agent`, `apply_patch`, and `Bash`.
 4. Verify session creation under Codex sandbox approval rules; hooks must degrade cleanly when the workspace is read-only.
@@ -187,9 +203,13 @@ Likewise, continue reading existing user cache locations before introducing any 
 
 ### `comitatus`
 
-1. Add a Codex manifest that exposes the existing `herdr` skill directly.
-2. When running as a Codex plugin, use the installed skill rather than copying it into `~/.codex/skills`.
-3. Retain Claude-side Codex provisioning temporarily for users who install only the Claude plugin, but mark it as a compatibility path and avoid overwriting an independently installed Codex plugin.
+1. Add a Codex manifest that exposes the existing `herdr` skill directly. **Done.**
+2. When running as a Codex plugin, use the installed skill rather than copying it into `~/.codex/skills`. **Done.**
+3. ~~Retain Claude-side Codex provisioning temporarily for users who install only the Claude plugin, but mark it as a compatibility path~~ — **superseded: the provisioning path is removed outright.** Once comitatus is installable as a Codex plugin, a Claude-side hook writing into `$CODEX_HOME/skills/` has no remaining justification and two active hazards: it deletes the destination before swapping (`provisionInto`), and it creates a second, separately-versioned `herdr` skill alongside the real install. The hook now only **reports** whether comitatus is installed as a Codex plugin, in the status line (`(codex: installed)` / `(codex: not installed)`) and in the injected orientation, which also names `codex plugin add comitatus@claude-domestique`. Each host installs for itself.
+
+   The `directCodex` guard that was meant to disable provisioning was derived from `process.env.PLUGIN_ROOT`, a variable neither host sets, so it never fired. Detection is now path-based — `isCodexInstall()` compares the plugin's own realpath against `$CODEX_HOME/plugins/cache` — and is still used to skip the Claude-only stable copy when comitatus *is* the Codex-installed copy.
+
+   The one remaining write outside the plugin directory is `~/.claude/comitatus/`, which gives `herd.js` a version-independent absolute path for Claude's permission allowlist. That is Claude-side infrastructure, unrelated to cross-model support.
 4. Split `herd-setup` into a shared explanation plus host-specific permission setup. Claude's settings allowlist must not be presented as Codex configuration.
 5. Test direct Codex installation inside and outside `HERDR_ENV=1`.
 
@@ -224,7 +244,7 @@ Make versioning deterministic:
 
 ## Delivery plan
 
-### Phase 0: establish a clean baseline
+### Phase 0: establish a clean baseline — complete
 
 - Fix the two Stilus YAML errors.
 - Remove or ignore generated coverage and platform artifacts from plugin validation inputs.
@@ -233,7 +253,7 @@ Make versioning deterministic:
 
 **Exit:** strict Claude validation passes for the marketplace and each plugin, and all existing Jest suites pass.
 
-### Phase 1: prove one vertical slice with `agent-artifex`
+### Phase 1: prove one vertical slice with `agent-artifex` — complete
 
 - Add its package metadata and Codex manifest.
 - Normalize skill names and references.
@@ -245,7 +265,7 @@ This plugin is the lowest-risk slice because it has no hooks or named agents. It
 
 **Exit:** the same skill source works from fresh Claude and Codex sessions with no copied content.
 
-### Phase 2: migrate shared skill packaging
+### Phase 2: migrate shared skill packaging — complete
 
 - Convert Mantra, Memento, and Onus flat commands to canonical folder skills.
 - Remove duplicate Memento session workflows.
@@ -254,7 +274,7 @@ This plugin is the lowest-risk slice because it has no hooks or named agents. It
 
 **Exit:** every non-Stilus workflow is discoverable on both hosts and command bodies have one source.
 
-### Phase 3: normalize hooks
+### Phase 3: normalize hooks — complete
 
 - Add cross-host event fixtures to the existing Jest suites.
 - Normalize context outputs and tool matching.
@@ -263,7 +283,7 @@ This plugin is the lowest-risk slice because it has no hooks or named agents. It
 
 **Exit:** Mantra, Memento, and Onus automation fires on both hosts without host-specific handler copies.
 
-### Phase 4: migrate orchestration plugins
+### Phase 4: migrate orchestration plugins — complete
 
 - Make Comitatus a directly installable Codex plugin and demote home-directory copying to compatibility behavior.
 - Refactor Stilus specialists into canonical instructions with thin Claude agent wrappers and a Codex-compatible orchestration path.
@@ -271,7 +291,7 @@ This plugin is the lowest-risk slice because it has no hooks or named agents. It
 
 **Exit:** both plugins preserve their core outcomes on both hosts; parallelism is an optimization, not a correctness requirement.
 
-### Phase 5: distribution and documentation
+### Phase 5: distribution and documentation — complete
 
 - Add a support matrix to the root README and each plugin README.
 - Document Claude and Codex installation, update, uninstall, hook trust, and new-session requirements.

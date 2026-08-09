@@ -21,8 +21,7 @@ The repository is an npm workspace using CommonJS. Runtime code targets Node.js 
 - `<plugin>/.claude-plugin/plugin.json`: per-plugin Claude manifest
 - `<plugin>/.codex-plugin/plugin.json`: per-plugin Codex manifest when supported
 - `<plugin>/hooks/`: Claude Code hook implementations
-- `<plugin>/commands/`: slash-command prompt definitions
-- `<plugin>/skills/`: skill definitions and supporting references/scripts
+- `<plugin>/skills/`: canonical cross-host skill definitions and supporting references/scripts
 - `<plugin>/rules/`: compact, automatically injected rules
 - `<plugin>/context/`: detailed documentation loaded on demand
 - `shared/`: common JavaScript utilities bundled into plugins
@@ -74,6 +73,32 @@ Run the CI-equivalent coverage suites:
 npm run test:coverage
 ```
 
+Validate repository metadata and every Claude plugin declared by the marketplace:
+
+```bash
+npm run validate:plugins
+npx --yes @anthropic-ai/claude-code@2.1.226 plugin validate . --strict
+plugins=$(node -e "require('./.claude-plugin/marketplace.json').plugins.forEach(plugin => console.log(plugin.name))") || exit 1
+while IFS= read -r plugin; do
+  npx --yes @anthropic-ai/claude-code@2.1.226 plugin validate "$plugin" --strict
+done <<EOF
+$plugins
+EOF
+```
+
+Smoke-test every plugin that declares a Codex manifest from an isolated Codex home:
+
+```bash
+export CODEX_HOME="$(mktemp -d)"
+npx --yes @openai/codex@0.141.0 plugin marketplace add .
+marketplace=$(node -p "require('./.claude-plugin/marketplace.json').name")
+for manifest in */.codex-plugin/plugin.json; do
+  [ -e "$manifest" ] || continue
+  plugin=${manifest%%/*}
+  npx --yes @openai/codex@0.141.0 plugin add "${plugin}@${marketplace}"
+done
+```
+
 Rebuild bundled shared code after changing `shared/index.js`:
 
 ```bash
@@ -109,5 +134,6 @@ Before handing off a change:
 1. Review the diff for accidental generated files, duplicated guidance, and stale references.
 2. Run the focused tests for every affected package, plus the full suite when the change crosses package boundaries.
 3. Run `npm run build` and verify generated copies when `shared/index.js` changed.
-4. Bump every modified plugin at the appropriate level.
-5. Report what changed, what validation ran, and any remaining risks or unverified behavior.
+4. Run `npm run validate:plugins` and the Claude and Codex manifest checks for every affected plugin.
+5. Bump every modified plugin at the appropriate level.
+6. Report what changed, what validation ran, and any remaining risks or unverified behavior.

@@ -12,7 +12,7 @@ Design principles for building quality AI services. When a compatible MCP scaffo
 
 ## Shared References
 
-Paths in this section are relative to this `SKILL.md`.
+Relative paths in this skill are resolved from this `SKILL.md`.
 
 | Reference | When to read |
 |-----------|-------------|

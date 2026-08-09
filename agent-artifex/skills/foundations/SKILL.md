@@ -12,7 +12,7 @@ Reference overview of the AI design and testing framework. Read this when you ne
 
 ## Shared References
 
-Paths in this section are relative to this `SKILL.md`.
+Relative paths in this skill are resolved from this `SKILL.md`.
 
 For detailed content referenced throughout this skill, read:
 
