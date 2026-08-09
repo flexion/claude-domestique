@@ -1,6 +1,8 @@
 ---
 name: herdr
-description: "Control herdr from inside it: manage git worktrees, workspaces, tabs and panes; start coding agents (claude/codex/opencode) with short handles; message agents by handle; and wait for state - all via CLI over a local unix socket. Use when running inside herdr (HERDR_ENV=1)."
+description: >-
+  Use when running inside herdr (HERDR_ENV=1) to manage its worktrees,
+  workspaces, panes, coding agents, messages, or state.
 ---
 
 # herdr - agent skill

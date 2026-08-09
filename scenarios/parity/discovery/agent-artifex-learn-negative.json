@@ -1,0 +1,21 @@
+{
+  "id": "agent-artifex-learn-negative",
+  "class": "discovery",
+  "prompt": "Build the evaluation loop in this repository.",
+  "fixture": "discovery/catalog",
+  "invariants": [
+    {
+      "type": "skill_not_selected",
+      "description": "The host does not select agent-artifex:learn.",
+      "value": "agent-artifex:learn"
+    }
+  ],
+  "forbidden": [
+    "forces the target skill despite contrary intent"
+  ],
+  "target_skill": "agent-artifex:learn",
+  "expectation": "ordinary-negative",
+  "control": {
+    "ablate_description": true
+  }
+}

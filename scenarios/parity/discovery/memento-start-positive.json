@@ -1,0 +1,21 @@
+{
+  "id": "memento-start-positive",
+  "class": "discovery",
+  "prompt": "Start a new branch-based work session from the available issue context.",
+  "fixture": "discovery/catalog",
+  "invariants": [
+    {
+      "type": "selected_skill",
+      "description": "The host selects memento:start.",
+      "value": "memento:start"
+    }
+  ],
+  "forbidden": [
+    "selects an unrelated skill"
+  ],
+  "target_skill": "memento:start",
+  "expectation": "positive",
+  "control": {
+    "ablate_description": true
+  }
+}

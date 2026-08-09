@@ -1,7 +1,8 @@
 ---
 name: assess
-description: |
-  Use when the user asks "what testing do we need?", "what are our testing gaps?", "we have some tests but are they enough?", "is our MCP server well-tested?", "what should we test next?", "audit our test coverage for AI", "we keep getting bad responses and don't know why", "our agent picks the wrong tool sometimes", "how is my tool design?", "are my descriptions good enough?", "review my error messages", "is my system prompt well-designed?", "audit my MCP server design", "what design gaps do I have?", or needs to diagnose AI design or testing gaps in an existing project. Also use when someone says "assess my testing", "review our test strategy for AI", or "assess my design".
+description: >-
+  Use when evaluating an existing AI service for design quality, testing gaps,
+  tool-selection failures, weak descriptions, prompts, errors, or readiness.
 ---
 
 # Assess — AI Services Design & Testing Gap Assessment

@@ -1,0 +1,30 @@
+{
+  "id": "memento-session-start-hook",
+  "class": "hook",
+  "prompt": "Replay memento SessionStart with a representative host payload.",
+  "fixture": "hooks/memento",
+  "invariants": [
+    {
+      "type": "exit_status",
+      "description": "The hook exits successfully.",
+      "value": 0
+    },
+    {
+      "type": "output_contains",
+      "description": "The hook emits the memento context sentinel.",
+      "value": "Memento"
+    }
+  ],
+  "forbidden": [
+    "writes diagnostics outside its JSON response",
+    "throws on missing optional host fields"
+  ],
+  "hook": {
+    "plugin": "memento",
+    "event": "SessionStart",
+    "payload": {
+      "hook_event_name": "SessionStart",
+      "source": "startup"
+    }
+  }
+}

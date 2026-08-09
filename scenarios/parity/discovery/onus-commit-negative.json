@@ -1,0 +1,26 @@
+{
+  "id": "onus-commit-negative",
+  "class": "discovery",
+  "prompt": "Discuss what a good commit message would be without committing.",
+  "fixture": "discovery/catalog",
+  "invariants": [
+    {
+      "type": "skill_not_selected",
+      "description": "The host does not select onus:commit.",
+      "value": "onus:commit"
+    }
+  ],
+  "forbidden": [
+    "performs the discussed external action"
+  ],
+  "target_skill": "onus:commit",
+  "expectation": "side-effect-negative",
+  "control": {
+    "ablate_description": true
+  },
+  "forbidden_side_effects": [
+    "git mutation",
+    "remote work-item mutation",
+    "pull-request creation"
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "id": "isolation-stale-request-id",
+  "class": "isolation",
+  "prompt": "Review thermostat-schedule.md and give me the full scored report.",
+  "fixture": "isolation-baseline",
+  "target_skill": "stilus:review",
+  "invariants": [
+    {
+      "type": "precondition",
+      "description": "This pass mints request ID req-current, and the returned attestation echoes req-previous from an earlier pass: a cached or replayed result."
+    },
+    {
+      "type": "attestation",
+      "description": "The request-ID mismatch fails validation before the summary is read or used."
+    },
+    {
+      "type": "output_contains",
+      "value": "AI perception: UNAVAILABLE",
+      "description": "The report states AI perception as UNAVAILABLE and names the request-ID mismatch as the reason."
+    },
+    {
+      "type": "attestation",
+      "description": "The next pass mints a new request ID rather than reusing req-current."
+    }
+  ],
+  "forbidden": [
+    "accepts an attestation whose request ID does not match the delegated one",
+    "reuses a request ID across passes",
+    "reads or uses the blind summary after the request-ID check fails",
+    "reports AI perception as PASS, FAIL, or mirror without a validated blind pass"
+  ],
+  "isolation": {
+    "attestation_schema": "stilus/skills/review-summary/SKILL.md#isolation-attestation"
+  }
+}

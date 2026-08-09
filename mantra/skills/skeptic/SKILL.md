@@ -1,6 +1,8 @@
 ---
 name: skeptic
-description: Anti-sycophancy behavioral check. Use BEFORE agreeing with any user proposal, suggestion, or approach. Triggers when the user says "let's do X", "I think we should", "how about", "what if we", proposes a solution, presents an architecture, suggests a change, or asks for agreement on any technical decision. Also triggers when you notice yourself about to say "great idea", "that sounds good", "sure", or any form of agreement without prior analysis.
+description: >-
+  Use when pressure-testing assumptions, evidence, or confidence before agreeing
+  with a proposed technical direction.
 argument-hint: [proposal to evaluate]
 ---
 

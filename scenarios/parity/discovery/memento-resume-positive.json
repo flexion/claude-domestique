@@ -1,0 +1,21 @@
+{
+  "id": "memento-resume-positive",
+  "class": "discovery",
+  "prompt": "Resume the saved work session for this branch.",
+  "fixture": "discovery/catalog",
+  "invariants": [
+    {
+      "type": "selected_skill",
+      "description": "The host selects memento:resume.",
+      "value": "memento:resume"
+    }
+  ],
+  "forbidden": [
+    "selects an unrelated skill"
+  ],
+  "target_skill": "memento:resume",
+  "expectation": "positive",
+  "control": {
+    "ablate_description": true
+  }
+}

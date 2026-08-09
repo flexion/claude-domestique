@@ -1,6 +1,8 @@
 ---
 name: troubleshoot
-description: Evidence-based debugging workflow for errors, bugs, crashes, and unexpected behavior. Use when diagnosing failures, investigating stack traces, fixing broken builds, resolving test failures, or when something stopped working. Triggers on error messages, exceptions, stack traces, debugging sessions, and troubleshooting any technical issue.
+description: >-
+  Use when diagnosing an error, bug, crash, stack trace, broken build, failing test,
+  regression, or other unexpected technical behavior.
 argument-hint: [error message or bug description]
 ---
 

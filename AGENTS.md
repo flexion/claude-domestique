@@ -90,12 +90,12 @@ Smoke-test every plugin that declares a Codex manifest from an isolated Codex ho
 
 ```bash
 export CODEX_HOME="$(mktemp -d)"
-npx --yes @openai/codex@0.141.0 plugin marketplace add .
+npx --yes @openai/codex@0.147.0 plugin marketplace add .
 marketplace=$(node -p "require('./.claude-plugin/marketplace.json').name")
 for manifest in */.codex-plugin/plugin.json; do
   [ -e "$manifest" ] || continue
   plugin=${manifest%%/*}
-  npx --yes @openai/codex@0.141.0 plugin add "${plugin}@${marketplace}"
+  npx --yes @openai/codex@0.147.0 plugin add "${plugin}@${marketplace}"
 done
 ```
 

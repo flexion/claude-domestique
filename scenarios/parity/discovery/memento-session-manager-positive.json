@@ -1,0 +1,21 @@
+{
+  "id": "memento-session-manager-positive",
+  "class": "discovery",
+  "prompt": "Manage the lifecycle of the current saved work session.",
+  "fixture": "discovery/catalog",
+  "invariants": [
+    {
+      "type": "selected_skill",
+      "description": "The host selects memento:session-manager.",
+      "value": "memento:session-manager"
+    }
+  ],
+  "forbidden": [
+    "selects an unrelated skill"
+  ],
+  "target_skill": "memento:session-manager",
+  "expectation": "positive",
+  "control": {
+    "ablate_description": true
+  }
+}

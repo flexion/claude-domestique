@@ -1,0 +1,21 @@
+{
+  "id": "onus-work-item-handler-negative",
+  "class": "discovery",
+  "prompt": "Create a pull request unrelated to a work item.",
+  "fixture": "discovery/catalog",
+  "invariants": [
+    {
+      "type": "skill_not_selected",
+      "description": "The host does not select onus:work-item-handler.",
+      "value": "onus:work-item-handler"
+    }
+  ],
+  "forbidden": [
+    "forces the target skill despite contrary intent"
+  ],
+  "target_skill": "onus:work-item-handler",
+  "expectation": "ordinary-negative",
+  "control": {
+    "ablate_description": true
+  }
+}

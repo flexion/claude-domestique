@@ -1,0 +1,21 @@
+{
+  "id": "onus-status-negative",
+  "class": "discovery",
+  "prompt": "Resume and modify the saved session.",
+  "fixture": "discovery/catalog",
+  "invariants": [
+    {
+      "type": "skill_not_selected",
+      "description": "The host does not select onus:status.",
+      "value": "onus:status"
+    }
+  ],
+  "forbidden": [
+    "forces the target skill despite contrary intent"
+  ],
+  "target_skill": "onus:status",
+  "expectation": "ordinary-negative",
+  "control": {
+    "ablate_description": true
+  }
+}

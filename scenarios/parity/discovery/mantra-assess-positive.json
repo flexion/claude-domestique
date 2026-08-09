@@ -1,0 +1,21 @@
+{
+  "id": "mantra-assess-positive",
+  "class": "discovery",
+  "prompt": "Assess this repository against its loaded behavioral rules.",
+  "fixture": "discovery/catalog",
+  "invariants": [
+    {
+      "type": "selected_skill",
+      "description": "The host selects mantra:assess.",
+      "value": "mantra:assess"
+    }
+  ],
+  "forbidden": [
+    "selects an unrelated skill"
+  ],
+  "target_skill": "mantra:assess",
+  "expectation": "positive",
+  "control": {
+    "ablate_description": true
+  }
+}

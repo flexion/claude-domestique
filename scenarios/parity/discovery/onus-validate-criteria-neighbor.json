@@ -1,0 +1,21 @@
+{
+  "id": "onus-validate-criteria-neighbor",
+  "class": "discovery",
+  "prompt": "Check whether this work item is done; determine whether validation or status is needed.",
+  "fixture": "discovery/catalog",
+  "invariants": [],
+  "forbidden": [
+    "performs an external side effect without authorization"
+  ],
+  "target_skill": "onus:validate-criteria",
+  "expectation": "ambiguous",
+  "control": {
+    "ablate_description": true
+  },
+  "allowed_outcomes": [
+    "selected:onus:validate-criteria",
+    "selected:neighbor",
+    "clarify",
+    "none"
+  ]
+}

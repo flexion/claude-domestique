@@ -1,0 +1,21 @@
+{
+  "id": "onus-commit-positive",
+  "class": "discovery",
+  "prompt": "Create a compliant git commit for the current authorized changes.",
+  "fixture": "discovery/catalog",
+  "invariants": [
+    {
+      "type": "selected_skill",
+      "description": "The host selects onus:commit.",
+      "value": "onus:commit"
+    }
+  ],
+  "forbidden": [
+    "selects an unrelated skill"
+  ],
+  "target_skill": "onus:commit",
+  "expectation": "positive",
+  "control": {
+    "ablate_description": true
+  }
+}

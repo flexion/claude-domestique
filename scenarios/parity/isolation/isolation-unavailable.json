@@ -1,0 +1,39 @@
+{
+  "id": "isolation-unavailable",
+  "class": "isolation",
+  "prompt": "Review thermostat-schedule.md and give me the full scored report.",
+  "fixture": "isolation-baseline",
+  "target_skill": "stilus:review",
+  "invariants": [
+    {
+      "type": "precondition",
+      "description": "The session exposes neither Agent nor spawn_agent, so no fresh specialist context can be created."
+    },
+    {
+      "type": "attestation",
+      "description": "review-summary is skipped entirely; no attestation is expected and none is fabricated."
+    },
+    {
+      "type": "output_contains",
+      "value": "AI perception: UNAVAILABLE",
+      "description": "The report states AI perception as UNAVAILABLE with a short explanation that the host could not provide a fresh context."
+    },
+    {
+      "type": "report_section",
+      "description": "Correctness, voice, and human perception are still scored and reported."
+    },
+    {
+      "type": "verdict",
+      "description": "The overall verdict is calculated from the available dimensions; UNAVAILABLE neither raises nor lowers it and is not counted as a pass."
+    }
+  ],
+  "forbidden": [
+    "runs review-summary in the orchestrator context",
+    "launches another CLI process to emulate a fresh context",
+    "reports AI perception as PASS, FAIL, or mirror without a validated blind pass",
+    "treats UNAVAILABLE as a passing dimension"
+  ],
+  "isolation": {
+    "attestation_schema": "stilus/skills/review-summary/SKILL.md#isolation-attestation"
+  }
+}

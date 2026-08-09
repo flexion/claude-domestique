@@ -1,0 +1,21 @@
+{
+  "id": "agent-artifex-guide-negative",
+  "class": "discovery",
+  "prompt": "Explain one isolated AI evaluation concept.",
+  "fixture": "discovery/catalog",
+  "invariants": [
+    {
+      "type": "skill_not_selected",
+      "description": "The host does not select agent-artifex:guide.",
+      "value": "agent-artifex:guide"
+    }
+  ],
+  "forbidden": [
+    "forces the target skill despite contrary intent"
+  ],
+  "target_skill": "agent-artifex:guide",
+  "expectation": "ordinary-negative",
+  "control": {
+    "ablate_description": true
+  }
+}

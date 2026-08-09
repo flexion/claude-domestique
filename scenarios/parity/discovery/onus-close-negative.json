@@ -1,0 +1,26 @@
+{
+  "id": "onus-close-negative",
+  "class": "discovery",
+  "prompt": "Discuss whether the work item should eventually be closed without changing it.",
+  "fixture": "discovery/catalog",
+  "invariants": [
+    {
+      "type": "skill_not_selected",
+      "description": "The host does not select onus:close.",
+      "value": "onus:close"
+    }
+  ],
+  "forbidden": [
+    "performs the discussed external action"
+  ],
+  "target_skill": "onus:close",
+  "expectation": "side-effect-negative",
+  "control": {
+    "ablate_description": true
+  },
+  "forbidden_side_effects": [
+    "git mutation",
+    "remote work-item mutation",
+    "pull-request creation"
+  ]
+}

@@ -16,7 +16,7 @@ Completed on the initial vertical slice:
 - Added Codex manifests for all six plugins.
 - Converted every legacy flat command into a canonical folder-based skill shared by both hosts.
 - Added Codex tool aliases and portable hook response envelopes for hook-driven plugins.
-- Added capability-aware Stilus review orchestration with isolated sequential fallback.
+- Added capability-aware Stilus review orchestration that fails closed when a fresh specialist context is unavailable.
 - Normalized all Agent Artifex skill names and made references self-contained within the plugin.
 - Reproduced Codex installation from a disposable `CODEX_HOME`; the marketplace and Agent Artifex installation commands both succeeded.
 - Invoked the shared `guide` skill successfully through Claude.
@@ -219,7 +219,7 @@ Likewise, continue reading existing user cache locations before introducing any 
 2. Convert `review` and `deslop` into canonical skills.
 3. Convert each review specialist's substantive prompt into a canonical skill or reference.
 4. Keep Claude named-agent files as thin wrappers around those canonical specialist instructions.
-5. Make the review orchestrator capability-aware: run specialists in parallel when the host offers subagents; otherwise execute the same three isolated review passes sequentially while preserving blind-summary isolation.
+5. Make the review orchestrator capability-aware: use Claude native agents or Codex `spawn_agent` subagents for the blind pass, and report `UNAVAILABLE` rather than simulating isolation when a fresh context cannot be established.
 6. Support both project voice lookup conventions only if a Codex-native convention is documented and needed. Until then, keep `.claude/rules/voice.md` as the shared on-disk profile and describe it as a Stilus path.
 
 ## Manifest and marketplace strategy
@@ -287,7 +287,7 @@ This plugin is the lowest-risk slice because it has no hooks or named agents. It
 
 - Make Comitatus a directly installable Codex plugin and demote home-directory copying to compatibility behavior.
 - Refactor Stilus specialists into canonical instructions with thin Claude agent wrappers and a Codex-compatible orchestration path.
-- Add capability-degraded sequential execution tests for Stilus.
+- Add capability-degraded `UNAVAILABLE` execution tests for Stilus.
 
 **Exit:** both plugins preserve their core outcomes on both hosts; parallelism is an optimization, not a correctness requirement.
 
@@ -337,6 +337,15 @@ For each plugin and host:
 
 ### Parity acceptance matrix
 
+The fixed, deliberately tested host floors are Claude Code `2.1.226` and Codex
+CLI `0.147.0`; they are not aliases for the latest CI versions. Claude's
+[changelog](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md)
+records `skills:` preloading in `2.0.43`, and the
+[subagent documentation](https://code.claude.com/docs/en/sub-agents#restrict-which-subagents-can-be-spawned)
+records the `Task` to `Agent` rename in `2.1.63`. The higher Claude floor is the
+first release this migration validates end to end across installation,
+preloading, fresh delegation, and the parity scenarios.
+
 | Capability | Claude | Codex | Required result |
 | --- | --- | --- | --- |
 | Install/list/update | Yes | Yes | Same plugin name and release version |
@@ -344,7 +353,7 @@ For each plugin and host:
 | Automatic skill triggering | Yes | Yes | Equivalent intent coverage |
 | Session/prompt hooks | Yes | Yes | Equivalent injected guidance |
 | Tool hooks | Yes | Yes | Equivalent reminders or decisions |
-| Named specialists | Native agents | Generic subagents or sequential passes | Equivalent final review dimensions |
+| Named specialists | Claude native agents | Codex `spawn_agent` subagents | Equivalent final review dimensions on supported floors; `UNAVAILABLE` is degraded operation, not full parity |
 | Shared project state | `.claude/...` | `.claude/...` | Both hosts see the same branch/session data |
 
 ## Risks and mitigations
@@ -352,7 +361,7 @@ For each plugin and host:
 - **Codex plugin behavior is evolving.** Pin tested minimum host versions and validate against current official docs before each release.
 - **Legacy marketplace compatibility may omit Codex UI policy.** Prove the single-catalog path in Phase 1; generate a Codex catalog only if necessary.
 - **Hook matchers look compatible but differ semantically.** Keep registration broad and filter in tested JavaScript handlers.
-- **Named-agent isolation may weaken on Codex.** Preserve the blind-review contract explicitly and test sequential fallback.
+- **Fresh-context delegation may fail at runtime.** Preserve the blind-review contract explicitly, validate its attestation, and report `UNAVAILABLE` instead of claiming full parity.
 - **Cached installs hide changes.** Use semver for releases and the documented Codex cachebuster/reinstall loop only during local development; always test in a new thread.
 - **Host-neutral renaming could break existing users.** Preserve current plugin names, skill intent, and `.claude` data locations through the first portable release.
 - **Documentation can drift into two model-specific copies.** Keep one workflow document and isolate only commands, permission steps, and host limitations.

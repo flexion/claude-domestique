@@ -1,10 +1,8 @@
 ---
 name: work-item-handler
-description: |
-  Fetch and manage work items from issue trackers. Use this skill when:
-  - User references an issue number (#42, PROJ-123)
-  - User asks about requirements or acceptance criteria
-  - User needs to understand current task scope
+description: >-
+  Use when a referenced work item needs safe generic triage before choosing a
+  specific fetch, update, validation, creation, or closure workflow.
 ---
 
 # Work Item Handler

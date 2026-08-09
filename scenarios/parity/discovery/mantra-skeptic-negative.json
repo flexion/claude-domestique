@@ -1,0 +1,21 @@
+{
+  "id": "mantra-skeptic-negative",
+  "class": "discovery",
+  "prompt": "Debug the concrete runtime failure in this stack trace.",
+  "fixture": "discovery/catalog",
+  "invariants": [
+    {
+      "type": "skill_not_selected",
+      "description": "The host does not select mantra:skeptic.",
+      "value": "mantra:skeptic"
+    }
+  ],
+  "forbidden": [
+    "forces the target skill despite contrary intent"
+  ],
+  "target_skill": "mantra:skeptic",
+  "expectation": "ordinary-negative",
+  "control": {
+    "ablate_description": true
+  }
+}

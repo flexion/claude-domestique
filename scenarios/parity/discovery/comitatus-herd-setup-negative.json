@@ -1,0 +1,21 @@
+{
+  "id": "comitatus-herd-setup-negative",
+  "class": "discovery",
+  "prompt": "Run the existing herdr workflow on this task.",
+  "fixture": "discovery/catalog",
+  "invariants": [
+    {
+      "type": "skill_not_selected",
+      "description": "The host does not select comitatus:herd-setup.",
+      "value": "comitatus:herd-setup"
+    }
+  ],
+  "forbidden": [
+    "forces the target skill despite contrary intent"
+  ],
+  "target_skill": "comitatus:herd-setup",
+  "expectation": "ordinary-negative",
+  "control": {
+    "ablate_description": true
+  }
+}

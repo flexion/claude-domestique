@@ -1,7 +1,8 @@
 ---
 name: foundations
-description: |
-  Use when the user asks "what is the AI testing framework?", "what are the design principles?", "explain the 7 design areas", "explain MCP testing", "what are the testing areas?", "what's the testing pyramid for AI?", "how do the testing layers relate?", "what should I test in my MCP server?", "overview of AI agent design and testing", or needs a comprehensive reference overview of the AI design and testing guidelines. Also use when someone is new to designing or testing AI systems and wants the big picture before diving into implementation.
+description: >-
+  Use when the user needs a reference overview of AI-service design principles,
+  testing areas, testing layers, or the broader framework before focused work.
 ---
 
 # Foundations — AI Services Design & Testing Framework Reference

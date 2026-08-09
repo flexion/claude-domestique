@@ -1,0 +1,21 @@
+{
+  "id": "agent-artifex-assess-neighbor",
+  "class": "discovery",
+  "prompt": "I need help deciding whether this AI service design is ready or needs more design work.",
+  "fixture": "discovery/catalog",
+  "invariants": [],
+  "forbidden": [
+    "performs an external side effect without authorization"
+  ],
+  "target_skill": "agent-artifex:assess",
+  "expectation": "ambiguous",
+  "control": {
+    "ablate_description": true
+  },
+  "allowed_outcomes": [
+    "selected:agent-artifex:assess",
+    "selected:neighbor",
+    "clarify",
+    "none"
+  ]
+}

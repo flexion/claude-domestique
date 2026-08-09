@@ -1,0 +1,21 @@
+{
+  "id": "memento-session-manager-negative",
+  "class": "discovery",
+  "prompt": "Create a pull request for the completed work.",
+  "fixture": "discovery/catalog",
+  "invariants": [
+    {
+      "type": "skill_not_selected",
+      "description": "The host does not select memento:session-manager.",
+      "value": "memento:session-manager"
+    }
+  ],
+  "forbidden": [
+    "forces the target skill despite contrary intent"
+  ],
+  "target_skill": "memento:session-manager",
+  "expectation": "ordinary-negative",
+  "control": {
+    "ablate_description": true
+  }
+}

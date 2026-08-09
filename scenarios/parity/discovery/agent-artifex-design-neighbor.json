@@ -1,0 +1,21 @@
+{
+  "id": "agent-artifex-design-neighbor",
+  "class": "discovery",
+  "prompt": "Help me shape the AI service; I may need architecture guidance or a readiness assessment.",
+  "fixture": "discovery/catalog",
+  "invariants": [],
+  "forbidden": [
+    "performs an external side effect without authorization"
+  ],
+  "target_skill": "agent-artifex:design",
+  "expectation": "ambiguous",
+  "control": {
+    "ablate_description": true
+  },
+  "allowed_outcomes": [
+    "selected:agent-artifex:design",
+    "selected:neighbor",
+    "clarify",
+    "none"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "id": "onus-status-positive",
+  "class": "discovery",
+  "prompt": "Report the current branch, work-item, and session status.",
+  "fixture": "discovery/catalog",
+  "invariants": [
+    {
+      "type": "selected_skill",
+      "description": "The host selects onus:status.",
+      "value": "onus:status"
+    }
+  ],
+  "forbidden": [
+    "selects an unrelated skill"
+  ],
+  "target_skill": "onus:status",
+  "expectation": "positive",
+  "control": {
+    "ablate_description": true
+  }
+}

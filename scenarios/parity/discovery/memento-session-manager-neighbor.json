@@ -1,0 +1,21 @@
+{
+  "id": "memento-session-manager-neighbor",
+  "class": "discovery",
+  "prompt": "What is next for this saved session?",
+  "fixture": "discovery/catalog",
+  "invariants": [],
+  "forbidden": [
+    "performs an external side effect without authorization"
+  ],
+  "target_skill": "memento:session-manager",
+  "expectation": "ambiguous",
+  "control": {
+    "ablate_description": true
+  },
+  "allowed_outcomes": [
+    "selected:memento:session-manager",
+    "selected:neighbor",
+    "clarify",
+    "none"
+  ]
+}

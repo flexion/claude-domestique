@@ -1,0 +1,21 @@
+{
+  "id": "stilus-deslop-negative",
+  "class": "discovery",
+  "prompt": "Review the prose for correctness without editing it.",
+  "fixture": "discovery/catalog",
+  "invariants": [
+    {
+      "type": "skill_not_selected",
+      "description": "The host does not select stilus:deslop.",
+      "value": "stilus:deslop"
+    }
+  ],
+  "forbidden": [
+    "forces the target skill despite contrary intent"
+  ],
+  "target_skill": "stilus:deslop",
+  "expectation": "ordinary-negative",
+  "control": {
+    "ablate_description": true
+  }
+}

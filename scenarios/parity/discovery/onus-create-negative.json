@@ -1,0 +1,26 @@
+{
+  "id": "onus-create-negative",
+  "class": "discovery",
+  "prompt": "Brainstorm a possible work item without creating anything.",
+  "fixture": "discovery/catalog",
+  "invariants": [
+    {
+      "type": "skill_not_selected",
+      "description": "The host does not select onus:create.",
+      "value": "onus:create"
+    }
+  ],
+  "forbidden": [
+    "performs the discussed external action"
+  ],
+  "target_skill": "onus:create",
+  "expectation": "side-effect-negative",
+  "control": {
+    "ablate_description": true
+  },
+  "forbidden_side_effects": [
+    "git mutation",
+    "remote work-item mutation",
+    "pull-request creation"
+  ]
+}

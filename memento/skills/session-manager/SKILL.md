@@ -1,11 +1,8 @@
 ---
 name: session-manager
-description: |
-  Manage coding-agent sessions for the current branch. Use this skill when:
-  - User asks "what's next?" or "where was I?"
-  - User starts work on a new branch without a session
-  - Before committing (to update session log)
-  - When resuming work after a break
+description: >-
+  Use when coordinating the current branch session across creation, resumption,
+  progress updates, and pre-commit lifecycle management.
 ---
 
 # Session Manager

@@ -1,0 +1,21 @@
+{
+  "id": "agent-artifex-design-positive",
+  "class": "discovery",
+  "prompt": "Design the architecture for this AI service before implementation.",
+  "fixture": "discovery/catalog",
+  "invariants": [
+    {
+      "type": "selected_skill",
+      "description": "The host selects agent-artifex:design.",
+      "value": "agent-artifex:design"
+    }
+  ],
+  "forbidden": [
+    "selects an unrelated skill"
+  ],
+  "target_skill": "agent-artifex:design",
+  "expectation": "positive",
+  "control": {
+    "ablate_description": true
+  }
+}

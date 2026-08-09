@@ -1,0 +1,31 @@
+{
+  "id": "stilus-review-direct",
+  "class": "direct",
+  "prompt": "Review draft.md without editing it.",
+  "fixture": "direct/catalog",
+  "invariants": [
+    {
+      "type": "selected_skill",
+      "description": "The host selects stilus:review.",
+      "value": "stilus:review"
+    },
+    {
+      "type": "output_contains",
+      "description": "The review reports the AI-perception dimension.",
+      "value": "AI perception"
+    },
+    {
+      "type": "output_absent",
+      "description": "Supported release hosts provide the fresh blind pass.",
+      "value": "AI perception: UNAVAILABLE"
+    }
+  ],
+  "forbidden": [
+    "modifies files outside the fixture workspace"
+  ],
+  "target_skill": "stilus:review",
+  "invocation": {
+    "claude": "/stilus:review draft.md",
+    "codex": "$stilus:review draft.md"
+  }
+}

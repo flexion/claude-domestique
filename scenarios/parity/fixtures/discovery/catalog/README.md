@@ -1,0 +1,1 @@
+This fixture intentionally contains no project-specific skill guidance. Discovery trials install the same six-plugin catalog into an isolated host home; the control arm changes only the target skill description.

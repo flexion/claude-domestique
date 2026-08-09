@@ -1,0 +1,163 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "scenario.schema.json",
+  "title": "Cross-host parity scenario",
+  "description": "Checked-in contract for one parity scenario. Nothing validates against this document at runtime; scripts/parity/scenarios.js performs the equivalent explicit field checks, and scripts/__tests__/parity-scenarios.test.js asserts that this document and that validator agree.",
+  "type": "object",
+  "required": ["id", "class", "prompt", "fixture", "invariants", "forbidden"],
+  "properties": {
+    "id": {
+      "description": "Kebab-case identifier, unique across the scenario tree.",
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "class": {
+      "description": "Behavior class under test.",
+      "type": "string",
+      "enum": ["direct", "discovery", "handoff", "hook", "isolation"]
+    },
+    "prompt": {
+      "description": "The common user intent sent to every host and arm.",
+      "type": "string",
+      "minLength": 1
+    },
+    "fixture": {
+      "description": "Workspace path relative to scenarios/parity/fixtures/.",
+      "type": "string",
+      "minLength": 1
+    },
+    "invariants": {
+      "description": "Observable properties the trial output must satisfy. May be empty.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/invariant" }
+    },
+    "forbidden": {
+      "description": "Behavior that fails the scenario immediately. May be empty.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "target_skill": {
+      "description": "Fully qualified plugin:skill under test.",
+      "type": "string",
+      "minLength": 1
+    },
+    "invocation": { "$ref": "#/$defs/invocation" },
+    "control": { "$ref": "#/$defs/control" },
+    "expectation": {
+      "description": "Discovery expectation that selects the five-trial threshold.",
+      "type": "string",
+      "enum": ["positive", "ordinary-negative", "side-effect-negative", "ambiguous"]
+    },
+    "allowed_outcomes": {
+      "description": "Explicit outcome set every ambiguous trial must stay inside.",
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "forbidden_side_effects": {
+      "description": "Side effects that must not occur in any side-effect-negative trial.",
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "hook": { "$ref": "#/$defs/hook" },
+    "handoff": { "$ref": "#/$defs/handoff" },
+    "isolation": { "$ref": "#/$defs/isolation" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "class": { "const": "direct" } }, "required": ["class"] },
+      "then": { "required": ["target_skill", "invocation"] }
+    },
+    {
+      "if": { "properties": { "class": { "const": "discovery" } }, "required": ["class"] },
+      "then": {
+        "required": ["target_skill", "control", "expectation"],
+        "allOf": [
+          {
+            "if": {
+              "properties": { "expectation": { "const": "ambiguous" } },
+              "required": ["expectation"]
+            },
+            "then": { "required": ["allowed_outcomes"] }
+          },
+          {
+            "if": {
+              "properties": { "expectation": { "const": "side-effect-negative" } },
+              "required": ["expectation"]
+            },
+            "then": { "required": ["forbidden_side_effects"] }
+          }
+        ]
+      }
+    },
+    {
+      "if": { "properties": { "class": { "const": "hook" } }, "required": ["class"] },
+      "then": { "required": ["hook"] }
+    },
+    {
+      "if": { "properties": { "class": { "const": "handoff" } }, "required": ["class"] },
+      "then": { "required": ["handoff"] }
+    },
+    {
+      "if": { "properties": { "class": { "const": "isolation" } }, "required": ["class"] },
+      "then": { "required": ["isolation"] }
+    }
+  ],
+  "$defs": {
+    "invariant": {
+      "description": "One observable property, named by type and stated in prose.",
+      "type": "object",
+      "required": ["type", "description"],
+      "properties": {
+        "type": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 }
+      }
+    },
+    "invocation": {
+      "description": "Host-specific syntax, required only where direct invocation needs it.",
+      "type": "object",
+      "required": ["claude", "codex"],
+      "properties": {
+        "claude": { "type": "string" },
+        "codex": { "type": "string" }
+      }
+    },
+    "control": {
+      "description": "Paired no-guidance arm. Only the target skill description is ablated.",
+      "type": "object",
+      "required": ["ablate_description"],
+      "properties": {
+        "ablate_description": { "const": true }
+      }
+    },
+    "hook": {
+      "description": "Installed-hook event replayed against the plugin handler.",
+      "type": "object",
+      "required": ["plugin", "event", "payload"],
+      "properties": {
+        "plugin": { "type": "string", "minLength": 1 },
+        "event": { "type": "string", "minLength": 1 },
+        "payload": { "type": "object" }
+      }
+    },
+    "handoff": {
+      "description": "Shared-state handoff direction between the two hosts.",
+      "type": "object",
+      "required": ["writer", "reader"],
+      "properties": {
+        "writer": { "type": "string", "enum": ["claude", "codex"] },
+        "reader": { "type": "string", "enum": ["claude", "codex"] }
+      }
+    },
+    "isolation": {
+      "description": "Blind-review isolation case and the attestation contract it validates.",
+      "type": "object",
+      "required": ["attestation_schema"],
+      "properties": {
+        "attestation_schema": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

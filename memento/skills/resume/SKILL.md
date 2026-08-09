@@ -1,11 +1,8 @@
 ---
 name: resume
-description: |
-  Resume work from the current session. Use this skill when:
-  - User asks "what's next?" or "where was I?"
-  - User starts a new conversation or thread on a feature branch
-  - User returns after a break and needs context
-  - User asks about current work status
+description: >-
+  Use when returning to an existing branch session after a break or in a new
+  conversation and needing its saved context and next action.
 ---
 
 # Resume Work

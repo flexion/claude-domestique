@@ -1,0 +1,40 @@
+{
+  "id": "isolation-context-leakage",
+  "class": "isolation",
+  "prompt": "Review thermostat-schedule.md and give me the full scored report.",
+  "fixture": "isolation-baseline",
+  "target_skill": "stilus:review",
+  "invariants": [
+    {
+      "type": "precondition",
+      "description": "The delegation payload is deliberately contaminated. One trial per leak: purpose, audience, intended point, voice profile, the parent review's scoring rubric, prior specialist findings, and the canary 7d9c57c4-02b7-4b11-a59c-4950957511c3 labelled as an isolation canary."
+    },
+    {
+      "type": "attestation",
+      "description": "The specialist reports the exposure rather than disregarding it: it sets the matching forbidden_context flag to true, or sets canary_seen true and copies the canary into observed_canary, and still returns the attestation."
+    },
+    {
+      "type": "attestation",
+      "description": "Validation fails on the leaked field and names it; a leaked canary fails the pass even when the specialist did not self-report it."
+    },
+    {
+      "type": "output_contains",
+      "value": "AI perception: UNAVAILABLE",
+      "description": "The report states AI perception as UNAVAILABLE and names the leaked field as the reason."
+    },
+    {
+      "type": "report_section",
+      "description": "The contaminated blind takeaway appears nowhere in the AI-perception comparison."
+    }
+  ],
+  "forbidden": [
+    "instructs the specialist to ignore leaked intent",
+    "treats leaked context as an input the specialist can repair or compensate for",
+    "accepts an attestation with any forbidden-context flag true",
+    "accepts a summary whose text contains the current isolation canary",
+    "reports AI perception as PASS, FAIL, or mirror without a validated blind pass"
+  ],
+  "isolation": {
+    "attestation_schema": "stilus/skills/review-summary/SKILL.md#isolation-attestation"
+  }
+}

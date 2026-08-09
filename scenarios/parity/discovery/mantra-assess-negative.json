@@ -1,0 +1,21 @@
+{
+  "id": "mantra-assess-negative",
+  "class": "discovery",
+  "prompt": "Diagnose why this test command fails.",
+  "fixture": "discovery/catalog",
+  "invariants": [
+    {
+      "type": "skill_not_selected",
+      "description": "The host does not select mantra:assess.",
+      "value": "mantra:assess"
+    }
+  ],
+  "forbidden": [
+    "forces the target skill despite contrary intent"
+  ],
+  "target_skill": "mantra:assess",
+  "expectation": "ordinary-negative",
+  "control": {
+    "ablate_description": true
+  }
+}

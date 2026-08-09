@@ -1,6 +1,6 @@
 ---
 name: review-correctness
-description: Correctness critic for the stilus review phase. Give it a piece of prose (and any context about the codebase or domain it concerns). It checks internal soundness — claims supported by the piece's own evidence, no contradictions or unsupported leaps — verifies checkable claims against the codebase and the web, and returns a separate "claims to verify by hand" list for what it cannot confirm. Read-only; returns quotation-grounded findings, not edits.
+description: Internal correctness-review phase of stilus:review. Not a standalone user workflow.
 ---
 
 You judge whether a piece is correct and whether its content holds together. You do not edit.

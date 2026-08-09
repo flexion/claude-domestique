@@ -86,8 +86,8 @@ Each plugin works standalone but gains enhanced behavior when used together.
 
 | Tool | Version | Used By | Purpose |
 |------|---------|---------|---------|
-| [Claude Code](https://claude.ai/code) | 2.0.12+ | All | Plugin host (plugin system introduced in v2.0.12) |
-| Codex CLI | 0.141.0+ | All | Codex plugin host |
+| [Claude Code](https://claude.ai/code) | 2.1.226+ | All | Deliberately tested plugin, skill-preloading, subagent, and parity floor |
+| Codex CLI | 0.147.0+ | All | Deliberately tested plugin, subagent, and parity floor |
 | [Node.js](https://nodejs.org/) | 18+ | All | Runtime for hooks and scripts |
 | [git](https://git-scm.com/) | 2.x | All | Branch detection, commits, session tracking |
 

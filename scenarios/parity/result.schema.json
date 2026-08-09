@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "result.schema.json",
+  "title": "Normalized host-trial result",
+  "description": "One scenario trial on one host in one arm, normalized before invariant evaluation and evidence sanitization. Nothing validates against this document at runtime; it is the checked-in contract the parity modules and release evidence agree on.",
+  "type": "object",
+  "required": [
+    "scenario_id",
+    "host",
+    "host_version",
+    "arm",
+    "trial",
+    "outcome",
+    "observations",
+    "state_changes",
+    "invariants"
+  ],
+  "properties": {
+    "scenario_id": {
+      "description": "Identifier of the scenario this trial executed.",
+      "type": "string",
+      "minLength": 1
+    },
+    "host": {
+      "description": "Host that executed the trial.",
+      "type": "string",
+      "enum": ["claude", "codex"]
+    },
+    "host_version": {
+      "description": "Exact host CLI version, recorded verbatim.",
+      "type": "string",
+      "minLength": 1
+    },
+    "arm": {
+      "description": "Guided arm, or the paired control arm with the target description ablated.",
+      "type": "string",
+      "enum": ["control", "guided"]
+    },
+    "trial": {
+      "description": "One-based trial number within the arm.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "outcome": {
+      "description": "Trial outcome. UNAVAILABLE records a degraded dimension; INFRASTRUCTURE_FAILURE is retryable and is never a behavioral result.",
+      "type": "string",
+      "enum": ["PASS", "FAIL", "UNAVAILABLE", "INFRASTRUCTURE_FAILURE"]
+    },
+    "observations": {
+      "description": "Observable facts extracted from the trial. Recognized keys are selected_skill, output, exit_status, extra, and state_files. state_files maps a project-relative path to that file's contents and is what state_file_contains invariants read; it is distinct from the sibling state_changes array below.",
+      "type": "object",
+      "properties": {
+        "selected_skill": { "type": ["string", "null"] },
+        "output": { "type": "string" },
+        "exit_status": { "type": "integer" },
+        "state_files": {
+          "description": "Project-relative path to file contents, captured after the trial.",
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "extra": { "type": "object" }
+      }
+    },
+    "state_changes": {
+      "description": "Files and project state the trial created, modified, or removed.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "change"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "change": { "type": "string", "enum": ["created", "modified", "removed", "unchanged"] },
+          "detail": { "type": "string" }
+        }
+      }
+    },
+    "invariants": {
+      "description": "Per-invariant results for this trial.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "pass"],
+        "properties": {
+          "type": { "type": "string", "minLength": 1 },
+          "pass": { "type": "boolean" },
+          "message": { "type": "string" }
+        }
+      }
+    },
+    "infrastructure_failure": {
+      "description": "Classified infrastructure cause, present only when the trial did not produce behavioral evidence.",
+      "type": "object",
+      "required": ["kind", "detail"],
+      "properties": {
+        "kind": { "type": "string", "minLength": 1 },
+        "detail": { "type": "string" }
+      }
+    },
+    "reviewed_hook_hash": {
+      "description": "Hook hash an operator approved through /hooks for a trusted-hook trial.",
+      "type": "string",
+      "minLength": 1
+    },
+    "plugin_versions": {
+      "description": "Installed plugin versions, keyed by plugin name.",
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "prompt": {
+      "description": "Sanitized prompt actually sent to the host.",
+      "type": "string"
+    },
+    "extra": {
+      "description": "Adapter-specific detail retained after sanitization.",
+      "type": "object"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "id": "onus-create-positive",
+  "class": "discovery",
+  "prompt": "Create a new work item from these requirements.",
+  "fixture": "discovery/catalog",
+  "invariants": [
+    {
+      "type": "selected_skill",
+      "description": "The host selects onus:create.",
+      "value": "onus:create"
+    }
+  ],
+  "forbidden": [
+    "selects an unrelated skill"
+  ],
+  "target_skill": "onus:create",
+  "expectation": "positive",
+  "control": {
+    "ablate_description": true
+  }
+}

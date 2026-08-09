@@ -1,6 +1,8 @@
 ---
 name: assess
-description: Perform structured critical assessment of a proposal, approach, design, or solution. Use when evaluating ideas, reviewing approaches, comparing options, giving feedback on plans, or when asked "what do you think" about any technical decision. Triggers on proposals, suggestions, architecture decisions, tradeoff analysis, design review, and solution evaluation.
+description: >-
+  Use when critically evaluating a proposal, approach, design, solution, tradeoff,
+  architecture decision, or technical plan.
 argument-hint: [proposal or context]
 ---
 

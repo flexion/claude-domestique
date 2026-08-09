@@ -1,7 +1,8 @@
 ---
 name: implement
-description: |
-  Use when the user wants to improve an existing MCP server, agent, chatbot, or tool-calling system. This includes: improving tool descriptions, fixing error messages, adding output schemas, writing tests, implementing quality checks, adding evals, setting up test harnesses, or any task where they say "help me improve", "fix my descriptions", "add tests", "write evals", "implement quality checks", "make my server better", "apply the design principles", or are ready to make code changes to improve quality. This skill covers both design application (making the code better) and test implementation (verifying the code is good). For design principles without code changes, use the design skill.
+description: >-
+  Use when changing an existing AI service to improve tools, descriptions, errors,
+  schemas, tests, evals, harnesses, or other approved quality measures.
 ---
 
 # Implement — AI Services Implementation Guide

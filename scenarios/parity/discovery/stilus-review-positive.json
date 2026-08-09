@@ -1,0 +1,21 @@
+{
+  "id": "stilus-review-positive",
+  "class": "discovery",
+  "prompt": "Review this finished prose for correctness, voice, and reader perception.",
+  "fixture": "discovery/catalog",
+  "invariants": [
+    {
+      "type": "selected_skill",
+      "description": "The host selects stilus:review.",
+      "value": "stilus:review"
+    }
+  ],
+  "forbidden": [
+    "selects an unrelated skill"
+  ],
+  "target_skill": "stilus:review",
+  "expectation": "positive",
+  "control": {
+    "ablate_description": true
+  }
+}

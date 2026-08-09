@@ -1,0 +1,21 @@
+{
+  "id": "onus-init-positive",
+  "class": "discovery",
+  "prompt": "Configure this repository's work-item provider settings.",
+  "fixture": "discovery/catalog",
+  "invariants": [
+    {
+      "type": "selected_skill",
+      "description": "The host selects onus:init.",
+      "value": "onus:init"
+    }
+  ],
+  "forbidden": [
+    "selects an unrelated skill"
+  ],
+  "target_skill": "onus:init",
+  "expectation": "positive",
+  "control": {
+    "ablate_description": true
+  }
+}

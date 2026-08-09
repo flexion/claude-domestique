@@ -1,0 +1,21 @@
+{
+  "id": "agent-artifex-implement-neighbor",
+  "class": "discovery",
+  "prompt": "Help me turn this AI service idea into something real; determine whether design or implementation is next.",
+  "fixture": "discovery/catalog",
+  "invariants": [],
+  "forbidden": [
+    "performs an external side effect without authorization"
+  ],
+  "target_skill": "agent-artifex:implement",
+  "expectation": "ambiguous",
+  "control": {
+    "ablate_description": true
+  },
+  "allowed_outcomes": [
+    "selected:agent-artifex:implement",
+    "selected:neighbor",
+    "clarify",
+    "none"
+  ]
+}

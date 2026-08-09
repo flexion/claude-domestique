@@ -17,6 +17,37 @@ function writeJson(root, relativePath, content) {
   write(root, relativePath, JSON.stringify(content, null, 2) + '\n');
 }
 
+function writeSkill(root, plugin, directory, name, description = 'Use when reviewing a project.') {
+  write(root, `${plugin}/skills/${directory}/SKILL.md`, `---
+name: ${name || directory}
+description: ${description}
+---
+
+# ${directory}
+`);
+}
+
+function discoveryScenario(id, targetSkill, expectation) {
+  const scenario = {
+    id,
+    class: 'discovery',
+    prompt: `Exercise ${targetSkill} for ${expectation} discovery.`,
+    fixture: 'discovery/example',
+    invariants: [],
+    forbidden: [],
+    target_skill: targetSkill,
+    expectation,
+    control: { ablate_description: true },
+  };
+  if (expectation === 'ambiguous') {
+    scenario.allowed_outcomes = [`selected:${targetSkill}`, 'clarify', 'none'];
+  }
+  return scenario;
+}
+
+// Every fixture ships a catalog covering its own skills, because catalog
+// coverage is now a repository-wide invariant rather than an opt-in check.
+// `catalogSkills` overrides the entries and `omitCatalog` removes the file.
 function fixture(options = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'validate-plugins-'));
   roots.push(root);
@@ -40,13 +71,36 @@ function fixture(options = {}) {
     name: options.codexName || plugin,
     version: options.codexVersion || version,
   });
-  write(root, `${plugin}/skills/review/SKILL.md`, `---
-name: ${options.skillName || 'review'}
-description: Review a project.
----
+  writeSkill(
+    root,
+    plugin,
+    'review',
+    options.skillName || 'review',
+    options.skillDescription
+  );
 
-# Review
-`);
+  const qualifiedSkill = `${plugin}:review`;
+  const defaultScenarios = [
+    discoveryScenario('review-positive', qualifiedSkill, 'positive'),
+    discoveryScenario('review-negative', qualifiedSkill, 'ordinary-negative'),
+    discoveryScenario('review-neighbor', qualifiedSkill, 'ambiguous'),
+  ];
+  const scenarios = options.discoveryScenarios || defaultScenarios;
+  for (const scenario of scenarios) {
+    writeJson(root, `scenarios/parity/discovery/${scenario.id}.json`, scenario);
+  }
+
+  if (options.omitCatalog !== true) {
+    writeJson(root, 'metadata/skill-catalog.json', {
+      skills: options.catalogSkills || [
+        {
+          name: qualifiedSkill,
+          classification: 'public',
+          scenarios: scenarios.map(scenario => scenario.id),
+        },
+      ],
+    });
+  }
 
   return { plugin, root };
 }
@@ -67,7 +121,7 @@ test('accepts CRLF-delimited frontmatter', () => {
   write(root, `${plugin}/skills/review/SKILL.md`, [
     '---',
     'name: review',
-    'description: Review a project.',
+    'description: Use when reviewing a project.',
     '---',
     '',
     '# Review',
@@ -246,6 +300,276 @@ test.each([
   const { plugin, root } = fixture();
   write(root, `${plugin}/skills/review/SKILL.md`, content);
   expect(validate(root)).toContain(`skills/review/SKILL.md: ${expected}`);
+});
+
+// The catalog is the repository's only source of truth for public/internal
+// classification, so an unclassified skill must fail before it can be shipped
+// with an accidentally discoverable description.
+test('reports a missing skill catalog', () => {
+  const { root } = fixture({ omitCatalog: true });
+  expect(validate(root)).toContain('skill-catalog: missing metadata/skill-catalog.json');
+});
+
+test('reports a malformed skill catalog instead of throwing', () => {
+  const { root } = fixture();
+  write(root, 'metadata/skill-catalog.json', '{nope}\n');
+  expect(() => validate(root)).not.toThrow();
+  expect(validate(root).some(error => error.startsWith('skill-catalog: invalid JSON'))).toBe(true);
+});
+
+test('reports a skill catalog whose skills field is not an array', () => {
+  const { root } = fixture();
+  writeJson(root, 'metadata/skill-catalog.json', { skills: {} });
+  expect(validate(root)).toContain('skill-catalog: skills must be an array');
+});
+
+test('reports a catalog entry with no name', () => {
+  const { root } = fixture({ catalogSkills: [{ classification: 'public', scenarios: [] }] });
+  expect(validate(root)).toContain('skill-catalog: every entry must have a name');
+});
+
+test('reports a filesystem skill missing from the catalog', () => {
+  const { root } = fixture({ catalogSkills: [] });
+  expect(validate(root)).toContain('skill-catalog: missing entry for example-plugin:review');
+});
+
+test('reports a duplicate catalog entry', () => {
+  const { root } = fixture({
+    catalogSkills: [
+      { name: 'example-plugin:review', classification: 'public', scenarios: [] },
+      { name: 'example-plugin:review', classification: 'public', scenarios: [] },
+    ],
+  });
+  expect(validate(root)).toContain('skill-catalog: duplicate entry for example-plugin:review');
+});
+
+test('reports a catalog entry naming a skill that does not exist', () => {
+  const { root } = fixture({
+    catalogSkills: [
+      { name: 'example-plugin:review', classification: 'public', scenarios: [] },
+      { name: 'example-plugin:nonexistent', classification: 'public', scenarios: [] },
+    ],
+  });
+  expect(validate(root)).toContain('skill-catalog: example-plugin:nonexistent does not exist');
+});
+
+test('rejects a classification that is neither public nor internal', () => {
+  const { root } = fixture({
+    catalogSkills: [{ name: 'example-plugin:review', classification: 'hidden', scenarios: [] }],
+  });
+  expect(validate(root)).toContain(
+    'skill-catalog: example-plugin:review classification must be public or internal'
+  );
+});
+
+test('rejects an internal entry whose orchestrator does not exist', () => {
+  const { plugin, root } = fixture({
+    catalogSkills: [
+      { name: 'example-plugin:review', classification: 'public', scenarios: [] },
+      {
+        name: 'example-plugin:review-summary',
+        classification: 'internal',
+        orchestrator: 'example-plugin:missing',
+      },
+    ],
+  });
+  writeSkill(
+    root,
+    plugin,
+    'review-summary',
+    'review-summary',
+    'Internal summary phase of example-plugin:review. Not a standalone user workflow.'
+  );
+  expect(validate(root)).toContain(
+    'skill-catalog: example-plugin:review-summary orchestrator example-plugin:missing does not exist'
+  );
+});
+
+test('rejects an internal entry whose orchestrator is not public', () => {
+  const { plugin, root } = fixture({
+    catalogSkills: [
+      { name: 'example-plugin:review', classification: 'public', scenarios: [] },
+      {
+        name: 'example-plugin:review-summary',
+        classification: 'internal',
+        orchestrator: 'example-plugin:review-voice',
+      },
+      {
+        name: 'example-plugin:review-voice',
+        classification: 'internal',
+        orchestrator: 'example-plugin:review',
+      },
+    ],
+  });
+  writeSkill(root, plugin, 'review-summary');
+  writeSkill(root, plugin, 'review-voice');
+  expect(validate(root)).toContain(
+    'skill-catalog: example-plugin:review-summary orchestrator example-plugin:review-voice must be classified public'
+  );
+});
+
+test('rejects an internal entry that declares no orchestrator', () => {
+  const { root } = fixture({
+    catalogSkills: [{ name: 'example-plugin:review', classification: 'internal' }],
+  });
+  expect(validate(root)).toContain(
+    'skill-catalog: example-plugin:review must declare an orchestrator'
+  );
+});
+
+test('rejects a public entry that declares an orchestrator', () => {
+  const { root } = fixture({
+    catalogSkills: [
+      {
+        name: 'example-plugin:review',
+        classification: 'public',
+        orchestrator: 'example-plugin:review',
+        scenarios: [],
+      },
+    ],
+  });
+  expect(validate(root)).toContain(
+    'skill-catalog: example-plugin:review must not declare an orchestrator'
+  );
+});
+
+test('aggregates every catalog defect in one run', () => {
+  const { plugin, root } = fixture({
+    catalogSkills: [
+      { name: 'example-plugin:ghost', classification: 'public', scenarios: [] },
+      { name: 'example-plugin:review', classification: 'sometimes', scenarios: [] },
+      { name: 'example-plugin:review', classification: 'public', scenarios: [] },
+    ],
+  });
+  writeSkill(root, plugin, 'deslop');
+
+  const errors = validate(root);
+  expect(errors).toContain('skill-catalog: example-plugin:ghost does not exist');
+  expect(errors).toContain('skill-catalog: example-plugin:review classification must be public or internal');
+  expect(errors).toContain('skill-catalog: duplicate entry for example-plugin:review');
+  expect(errors).toContain('skill-catalog: missing entry for example-plugin:deslop');
+});
+
+test('accepts a catalog that classifies an internal skill under a public orchestrator', () => {
+  const { plugin, root } = fixture({
+    catalogSkills: [
+      {
+        name: 'example-plugin:review',
+        classification: 'public',
+        scenarios: ['review-positive', 'review-negative', 'review-neighbor'],
+      },
+      {
+        name: 'example-plugin:review-summary',
+        classification: 'internal',
+        orchestrator: 'example-plugin:review',
+      },
+    ],
+  });
+  writeSkill(
+    root,
+    plugin,
+    'review-summary',
+    'review-summary',
+    'Internal summary phase of example-plugin:review. Not a standalone user workflow.'
+  );
+  expect(validate(root)).toEqual([]);
+});
+
+test('rejects a public catalog entry with an empty scenario array', () => {
+  const { root } = fixture({
+    catalogSkills: [{ name: 'example-plugin:review', classification: 'public', scenarios: [] }],
+  });
+  expect(validate(root)).toContain(
+    'skill-catalog: example-plugin:review must reference discovery scenarios'
+  );
+});
+
+test('rejects a public catalog entry that references a nonexistent scenario', () => {
+  const { root } = fixture({
+    catalogSkills: [{
+      name: 'example-plugin:review',
+      classification: 'public',
+      scenarios: ['review-positive', 'review-negative', 'missing-neighbor'],
+    }],
+  });
+  expect(validate(root)).toContain(
+    'skill-catalog: example-plugin:review references missing scenario missing-neighbor'
+  );
+});
+
+test.each([
+  ['positive', ['review-negative', 'review-neighbor']],
+  ['negative', ['review-positive', 'review-neighbor']],
+  ['ambiguous/neighboring', ['review-positive', 'review-negative']],
+])('rejects a public catalog entry missing %s discovery coverage', (label, scenarios) => {
+  const { root } = fixture({
+    catalogSkills: [{
+      name: 'example-plugin:review',
+      classification: 'public',
+      scenarios,
+    }],
+  });
+  expect(validate(root)).toContain(
+    `skill-catalog: example-plugin:review must reference a ${label} discovery scenario`
+  );
+});
+
+test('rejects a catalog reference to a scenario targeting another skill', () => {
+  const { root } = fixture({
+    catalogSkills: [{
+      name: 'example-plugin:review',
+      classification: 'public',
+      scenarios: ['review-positive', 'review-negative', 'other-neighbor'],
+    }],
+    discoveryScenarios: [
+      discoveryScenario('review-positive', 'example-plugin:review', 'positive'),
+      discoveryScenario('review-negative', 'example-plugin:review', 'ordinary-negative'),
+      discoveryScenario('other-neighbor', 'example-plugin:other', 'ambiguous'),
+    ],
+  });
+  expect(validate(root)).toContain(
+    'skill-catalog: example-plugin:review references scenario other-neighbor targeting example-plugin:other'
+  );
+});
+
+test('rejects a public description that does not begin with Use when', () => {
+  const { root } = fixture({ skillDescription: 'Review a project when the user asks.' });
+  expect(validate(root)).toContain(
+    'skills/review/SKILL.md: public description must begin with "Use when"'
+  );
+});
+
+test('rejects an internal description that advertises a user trigger', () => {
+  const { plugin, root } = fixture({
+    catalogSkills: [{
+      name: 'example-plugin:review',
+      classification: 'internal',
+      orchestrator: 'example-plugin:orchestrate',
+    }, {
+      name: 'example-plugin:orchestrate',
+      classification: 'public',
+      scenarios: ['orchestrate-positive', 'orchestrate-negative', 'orchestrate-neighbor'],
+    }],
+    discoveryScenarios: [
+      discoveryScenario('orchestrate-positive', 'example-plugin:orchestrate', 'positive'),
+      discoveryScenario('orchestrate-negative', 'example-plugin:orchestrate', 'ordinary-negative'),
+      discoveryScenario('orchestrate-neighbor', 'example-plugin:orchestrate', 'ambiguous'),
+    ],
+  });
+  writeSkill(root, plugin, 'orchestrate', 'orchestrate');
+  expect(validate(root)).toContain(
+    'skills/review/SKILL.md: internal description must use the non-triggering phase form'
+  );
+});
+
+test.each([
+  ['Use when reviewing prose. Invoke with /example-plugin:review.', 'invocation syntax'],
+  ['Use when reviewing prose with $example-plugin:review.', 'invocation syntax'],
+  ['Use when reviewing prose. It then runs three workflow steps.', 'workflow or output-summary language'],
+  ['Use when reviewing prose and returns a scored report.', 'workflow or output-summary language'],
+])('rejects description policy violation: %s', (description, violation) => {
+  const { root } = fixture({ skillDescription: description });
+  expect(validate(root)).toContain(`skills/review/SKILL.md: description contains ${violation}`);
 });
 
 test.each([

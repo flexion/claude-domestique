@@ -1,0 +1,21 @@
+{
+  "id": "onus-init-negative",
+  "class": "discovery",
+  "prompt": "Create a work item using an already configured provider.",
+  "fixture": "discovery/catalog",
+  "invariants": [
+    {
+      "type": "skill_not_selected",
+      "description": "The host does not select onus:init.",
+      "value": "onus:init"
+    }
+  ],
+  "forbidden": [
+    "forces the target skill despite contrary intent"
+  ],
+  "target_skill": "onus:init",
+  "expectation": "ordinary-negative",
+  "control": {
+    "ablate_description": true
+  }
+}

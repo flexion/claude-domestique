@@ -1,0 +1,21 @@
+{
+  "id": "memento-start-neighbor",
+  "class": "discovery",
+  "prompt": "Begin or continue work on this branch; determine whether a session already exists.",
+  "fixture": "discovery/catalog",
+  "invariants": [],
+  "forbidden": [
+    "performs an external side effect without authorization"
+  ],
+  "target_skill": "memento:start",
+  "expectation": "ambiguous",
+  "control": {
+    "ablate_description": true
+  },
+  "allowed_outcomes": [
+    "selected:memento:start",
+    "selected:neighbor",
+    "clarify",
+    "none"
+  ]
+}

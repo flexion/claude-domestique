@@ -1,0 +1,21 @@
+{
+  "id": "onus-validate-criteria-negative",
+  "class": "discovery",
+  "prompt": "Fetch the work item only to summarize its title.",
+  "fixture": "discovery/catalog",
+  "invariants": [
+    {
+      "type": "skill_not_selected",
+      "description": "The host does not select onus:validate-criteria.",
+      "value": "onus:validate-criteria"
+    }
+  ],
+  "forbidden": [
+    "forces the target skill despite contrary intent"
+  ],
+  "target_skill": "onus:validate-criteria",
+  "expectation": "ordinary-negative",
+  "control": {
+    "ablate_description": true
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "id": "agent-artifex-foundations-negative",
+  "class": "discovery",
+  "prompt": "Implement the service described in this finished design.",
+  "fixture": "discovery/catalog",
+  "invariants": [
+    {
+      "type": "skill_not_selected",
+      "description": "The host does not select agent-artifex:foundations.",
+      "value": "agent-artifex:foundations"
+    }
+  ],
+  "forbidden": [
+    "forces the target skill despite contrary intent"
+  ],
+  "target_skill": "agent-artifex:foundations",
+  "expectation": "ordinary-negative",
+  "control": {
+    "ablate_description": true
+  }
+}

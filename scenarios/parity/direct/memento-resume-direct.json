@@ -1,0 +1,21 @@
+{
+  "id": "memento-resume-direct",
+  "class": "direct",
+  "prompt": "Resume the saved session for this branch.",
+  "fixture": "direct/catalog",
+  "invariants": [
+    {
+      "type": "selected_skill",
+      "description": "The host selects memento:resume.",
+      "value": "memento:resume"
+    }
+  ],
+  "forbidden": [
+    "modifies files outside the fixture workspace"
+  ],
+  "target_skill": "memento:resume",
+  "invocation": {
+    "claude": "/memento:resume",
+    "codex": "$memento:resume"
+  }
+}
