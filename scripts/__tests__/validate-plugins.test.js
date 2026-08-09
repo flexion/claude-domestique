@@ -567,6 +567,8 @@ test.each([
   ['Use when reviewing prose with $example-plugin:review.', 'invocation syntax'],
   ['Use when reviewing prose. It then runs three workflow steps.', 'workflow or output-summary language'],
   ['Use when reviewing prose and returns a scored report.', 'workflow or output-summary language'],
+  ['Use when you want the best prose review available.', 'persuasive claims'],
+  ['Use when reviewing prose with this comprehensive critic.', 'persuasive claims'],
 ])('rejects description policy violation: %s', (description, violation) => {
   const { root } = fixture({ skillDescription: description });
   expect(validate(root)).toContain(`skills/review/SKILL.md: description contains ${violation}`);

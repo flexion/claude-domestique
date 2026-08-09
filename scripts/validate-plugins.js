@@ -285,6 +285,9 @@ function validateDescriptionPolicy(root, entries, errors) {
     if (/\b(?:workflow steps?|then runs?|returns?|reports?|produces?|works in \w+ phases?|give it)\b/i.test(description)) {
       errors.push(`${relativeLabel}: description contains workflow or output-summary language`);
     }
+    if (/\b(?:best|comprehensive|powerful|robust|seamless|essential)\b/i.test(description)) {
+      errors.push(`${relativeLabel}: description contains persuasive claims`);
+    }
   }
 }
 

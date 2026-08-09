@@ -14,7 +14,7 @@ Latin for the writing instrument and the root of "style."
 
 ## On-demand only
 
-`stilus` ships no hooks and injects no global context. Its skills run only when invoked and cost nothing otherwise. Claude retains thin named-agent wrappers; Codex runs the same specialist skills with parallel subagents when available or isolated sequential passes otherwise.
+`stilus` ships no hooks and injects no global context. Its skills run only when invoked and cost nothing otherwise. Claude retains thin named-agent wrappers; Codex runs the same specialist skills through `spawn_agent`. The blind summarizer runs only in a genuinely fresh specialist context: when neither host exposes a fresh-context delegation tool, or the returned isolation attestation fails validation, the review reports `AI perception: UNAVAILABLE` rather than summarizing in a context that has already seen the intended point.
 
 ## Installation
 
