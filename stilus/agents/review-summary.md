@@ -1,6 +1,12 @@
 ---
 name: review-summary
-description: Blind summarizer for the stilus review phase. Give it ONLY a piece of prose (a file path or raw text) and nothing else — no intended point, no purpose, no rubric. It reports what a cold reader takes away: the point in one sentence, the key claims, a two-sentence "what was this about", and where it stalled. Used to test AI perception — whether the writing's point survives an independent machine read.
+description: >-
+  Blind summarizer for the stilus review phase. Give it ONLY a piece of prose
+  (a file path or raw text) and nothing else — no intended point, no purpose,
+  no rubric. It reports what a cold reader takes away: the point in one
+  sentence, the key claims, a two-sentence "what was this about", and where it
+  stalled. Used to test AI perception — whether the writing's point survives
+  an independent machine read.
 tools: Read
 ---
 

@@ -7,6 +7,7 @@
  * Updates version in:
  * - <plugin>/package.json
  * - <plugin>/.claude-plugin/plugin.json
+ * - <plugin>/.codex-plugin/plugin.json (when present)
  * - .claude-plugin/marketplace.json
  */
 
@@ -81,6 +82,15 @@ function updateJsonFile(filePath, updateFn) {
   return updated;
 }
 
+function updateVersionIfPresent(filePath, version) {
+  if (!fs.existsSync(filePath)) return false;
+  updateJsonFile(filePath, (content) => {
+    content.version = version;
+    return content;
+  });
+  return true;
+}
+
 function main() {
   const { plugin, versionType } = parseArgs();
   const rootDir = path.resolve(__dirname, '..');
@@ -88,7 +98,17 @@ function main() {
   // Paths
   const packageJsonPath = path.join(rootDir, plugin, 'package.json');
   const pluginJsonPath = path.join(rootDir, plugin, '.claude-plugin', 'plugin.json');
+  const codexPluginJsonPath = path.join(rootDir, plugin, '.codex-plugin', 'plugin.json');
   const marketplaceJsonPath = path.join(rootDir, '.claude-plugin', 'marketplace.json');
+
+  if (!fs.existsSync(pluginJsonPath)) {
+    throw new Error(`Missing required Claude manifest: ${pluginJsonPath}`);
+  }
+
+  const marketplace = JSON.parse(fs.readFileSync(marketplaceJsonPath, 'utf8'));
+  if (!marketplace.plugins.some(entry => entry.name === plugin)) {
+    throw new Error(`Plugin ${plugin} not found in marketplace.json`);
+  }
 
   // Read current version from package.json
   const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
@@ -105,13 +125,18 @@ function main() {
   });
   console.log(`  ✓ ${plugin}/package.json`);
 
-  // Update marketplace.json (version is only maintained at marketplace level)
+  // Update host manifests
+  updateVersionIfPresent(pluginJsonPath, newVersion);
+  console.log(`  ✓ ${plugin}/.claude-plugin/plugin.json`);
+  if (updateVersionIfPresent(codexPluginJsonPath, newVersion)) {
+    console.log(`  ✓ ${plugin}/.codex-plugin/plugin.json`);
+  }
+
+  // Update marketplace.json
   updateJsonFile(marketplaceJsonPath, (content) => {
     const pluginEntry = content.plugins.find(p => p.name === plugin);
     if (pluginEntry) {
       pluginEntry.version = newVersion;
-    } else {
-      console.error(`  ⚠ Plugin ${plugin} not found in marketplace.json`);
     }
     return content;
   });

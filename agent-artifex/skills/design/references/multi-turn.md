@@ -43,6 +43,6 @@ Single-turn quality does not predict multi-turn quality.[^1] Context length alon
 
 ---
 
-**Related testing:** To test these design decisions → `agent-artifex:implement` (area: Chatbot Integration)
+**Related testing:** To test these design decisions → use the `implement` skill (area: Chatbot Integration)
 
 **Related design areas:** [System Prompt Design](system-prompts.md) (prompt length contributes to context pressure), [Response Format Design](response-format.md) (result verbosity drives context growth), [Tool Set Architecture](tool-set-architecture.md) (dynamic loading mitigates context pressure)

@@ -40,6 +40,6 @@ Before any individual tool is designed, the tool set as a whole must be architec
 
 ---
 
-**Related testing:** To test these design decisions → `agent-artifex:implement` (area: Tool Description Quality + Agent Behavior)
+**Related testing:** To test these design decisions → use the `implement` skill (area: Tool Description Quality + Agent Behavior)
 
 **Related design areas:** [Tool Description Design](tool-descriptions.md) (individual tool quality within the set), [System Prompt Design](system-prompts.md) (context budget shared between prompt and definitions), [Multi-Turn Conversation Design](multi-turn.md) (dynamic loading mitigates context pressure)

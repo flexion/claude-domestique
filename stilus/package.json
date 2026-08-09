@@ -1,6 +1,6 @@
 {
-  "name": "stilus",
-  "version": "0.1.0",
+  "name": "@claude-domestique/stilus",
+  "version": "0.1.1",
   "description": "Stilus — writing tools: the deslop editor, a project voice layer, and a standalone review phase",
   "private": true,
   "license": "MIT"

@@ -1,169 +1,17 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Read and follow `AGENTS.md` before working in this repository. It is the single source of truth for repository structure, commands, testing, versioning, and git conventions.
 
-**IMPORTANT: Before completing work on any branch that modifies plugin files (mantra/, memento/, onus/, agent-artifex/, comitatus/, stilus/), run `node scripts/bump-version.js <plugin> <patch|minor|major>` for each affected plugin. Do not merge without bumping.**
+## Claude-specific context
 
-## Meta Note: Self-Referential Project
+This repository is self-referential: it contains the source for plugins that may also be installed in the active Claude Code session. Source edits do not change the running plugin instance until that plugin is rebuilt, versioned, and reinstalled.
 
-This repository is the source code for memento, mantra, and onus plugins—and those same plugins are installed and running in this project. Keep these distinct:
+| Concept | Source being developed | Active Claude instance |
+| --- | --- | --- |
+| Plugin files | `<plugin>/` | Claude's versioned plugin cache |
+| Session data | Memento source and templates | `.claude/sessions/` in the current project |
+| Work-item behavior | `onus/` | Onus state and cached issue context |
 
-| Concept | Source Code (what we develop) | Running Instance (what's active) |
-|---------|------------------------------|----------------------------------|
-| mantra rules | `mantra/rules/*.md` | Injected via hooks on each prompt |
-| memento sessions | `memento/templates/*.md` | `.claude/sessions/*.md` in each plugin dir |
-| onus work items | `onus/hooks/work-item.js` | Tracking issues for this repo |
+Claude Code uses `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`. Codex metadata lives alongside it under `.codex-plugin/`; shared skills, hooks, scripts, references, and templates remain at each plugin root.
 
-When modifying plugin behavior, you're changing the source. The running plugins won't pick up changes until reinstalled.
-
-## Project Overview
-
-**Claude Domestique** is a Claude Code plugin marketplace containing three plugins that work together to improve Claude Code sessions:
-
-- **memento** - Session persistence: tracks work context across conversation resets
-- **mantra** - Context refresh: periodically re-injects behavioral guidance to prevent drift
-- **onus** - Work item automation: fetches issues from GitHub/JIRA/Azure DevOps, generates commits/PRs
-
-Each plugin is independently installable but gains enhanced behavior when used together.
-
-## Repository Structure
-
-```
-claude-domestique/
-├── .claude-plugin/          # Marketplace root plugin config
-├── mantra/                  # Context refresh plugin
-├── memento/                 # Session persistence plugin
-├── onus/                    # Work item automation plugin
-├── comitatus/               # herdr workflows plugin
-├── agent-artifex/           # AI design & testing guidance plugin
-└── stilus/                  # Writing tools plugin
-```
-
-Each plugin follows the same structure:
-```
-<plugin>/
-├── .claude-plugin/plugin.json   # Plugin manifest
-├── hooks/                       # Hook implementations (SessionStart, UserPromptSubmit)
-├── rules/                       # Rule files (*.md with YAML frontmatter, auto-injected)
-├── context/                     # Companion docs (*.md, loaded on-demand)
-├── commands/                    # Skill commands (*.md)
-├── lib/                         # Bundled shared utilities
-└── package.json                 # Plugin dependencies
-```
-
-## Commands
-
-Each plugin has its own test suite:
-
-```bash
-# mantra (uses Jest)
-cd mantra && npm test
-
-# memento (uses Jest)
-cd memento && npm test
-
-# onus (uses Jest)
-cd onus && npm test
-```
-
-### Version Management
-
-**When to bump:** Bump the version of any plugin whose files changed in the current branch before merging to main. Use `patch` for bug fixes and minor updates, `minor` for new features or skills, `major` for breaking changes.
-
-```bash
-node scripts/bump-version.js <plugin> <patch|minor|major>
-
-# Examples:
-node scripts/bump-version.js memento patch   # bug fix or small update
-node scripts/bump-version.js mantra minor    # new rule or skill added
-node scripts/bump-version.js agent-artifex minor  # new design area
-```
-
-This updates `package.json` and `marketplace.json`. Version is only maintained at the marketplace level, not in plugin.json.
-
-## Architecture
-
-### Hook-Based Injection (Zero Config)
-
-All three plugins use hooks to automatically inject context - no `/init` commands required:
-
-1. **SessionStart**: Inject rules/context via `additionalContext` field
-2. **UserPromptSubmit**: Periodic refresh every 10 prompts to prevent drift
-3. **Status line**: Shows plugin name, loaded files, and companion docs path
-
-Hook implementations live in `<plugin>/hooks/<hook-name>.js` with tests in `__tests__/`.
-
-### Shared Module
-
-Common utilities are centralized in `shared/` and bundled into each plugin:
-
-```
-shared/
-└── index.js          # Hash utils, file discovery, context loading, state management
-
-<plugin>/lib/
-└── shared.js         # Bundled copy (generated by npm run build)
-```
-
-Run `npm run build` to re-bundle shared code after changes.
-
-### Context System
-
-Two-tier context pattern:
-- `rules/*.md` - Compact rules in YAML frontmatter (auto-injected via hooks)
-- `context/*.md` - Detailed examples and companion docs (loaded on-demand)
-
-Context loading order: base (plugin) → sibling plugins → project extensions → CLAUDE.md
-
-### Context Ownership
-
-Each plugin owns specific context domains. When adding or modifying context, respect these boundaries:
-
-| Plugin | Domain | Files |
-|--------|--------|-------|
-| **mantra** | AI behavior, format conventions | `rules/behavior.md`, `rules/context-format.md`, `rules/format-guide.md`, `rules/test.md`, `rules/rule-design.md` |
-| **memento** | Session management | `rules/sessions.md` |
-| **onus** | Git operations, work items | `rules/git.md`, `rules/work-items.md` |
-| **comitatus** | herdr orchestration | `skills/herdr/SKILL.md` |
-| **stilus** | Prose drafting, editing, and review | `agents/deslop.md` (slop catalog), `rules/voice.md` (voice schema), `context/reviewing.md` (review flow + scoring), `agents/review-correctness.md`, `agents/review-voice.md`, `agents/review-summary.md` |
-
-**Ownership rules:**
-- Single source of truth: each concept defined in exactly one place
-- Cross-references over duplication: reference other plugins' context rather than redefining
-- Domain boundaries: commit/branch/PR formats → onus, session lifecycle → memento, behavioral rules → mantra
-
-### Session Conventions
-
-All plugins share these conventions:
-- 1 session = 1 issue = 1 branch
-- Branch format: `issue/feature-N/desc` or `chore/desc`
-- Session files: `.claude/sessions/<branch-sanitized>.md`
-- Branch metadata: `.claude/branches/<branch-sanitized>`
-
-### Plugin Family Detection
-
-mantra loads context from sibling plugins (memento, onus) when installed together, using the installed plugins registry at `~/.claude/plugins/installed_plugins.json`.
-
-## Key Implementation Details
-
-### State Management
-
-Each plugin maintains state in `~/.claude/`:
-- `mantra-state.json` - Interaction counter for refresh timing
-- `memento-state.json` - Session update counter
-- `onus/state.json` - Current issue tracking
-- `onus/work-item-cache.json` - Cached issue details
-
-### Branch Parsing
-
-The `parseBranchName()` function in `memento/scripts/session.js` extracts issue numbers, types, and descriptions from branch names. Used by both memento and onus.
-
-### Testing Approach
-
-- All plugins use Jest
-- Tests use dependency injection for paths/filesystem to enable isolated testing
-
-## Git Conventions
-
-Commits: `#N - verb description` or `chore - description` using HEREDOC format, no attribution
-PRs: Title matches commit format, lowercase
+When validating changes, run the marketplace validator and each affected plugin validator separately. Validating the repository root checks the marketplace but does not replace per-plugin validation.

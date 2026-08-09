@@ -2,7 +2,7 @@
   "name": "claude-domestique",
   "version": "0.1.0",
   "private": true,
-  "description": "Claude Code plugin marketplace - memento, mantra, onus",
+  "description": "Cross-model plugin marketplace for Claude Code and Codex",
   "workspaces": [
     "shared",
     "mantra",
@@ -12,13 +12,16 @@
   ],
   "scripts": {
     "install:all": "npm install",
-    "test": "npm run test:shared && npm run test:mantra && npm run test:memento && npm run test:onus && npm run test:comitatus",
+    "test": "npm run test:scripts && npm run test:shared && npm run test:mantra && npm run test:memento && npm run test:onus && npm run test:comitatus",
+    "test:scripts": "jest scripts/__tests__/validate-plugins.test.js --runInBand",
     "test:shared": "cd shared && npm test",
     "test:mantra": "cd mantra && npm test",
     "test:memento": "cd memento && npm test",
     "test:onus": "cd onus && npm test",
     "test:comitatus": "cd comitatus && npm test",
-    "test:coverage": "npm run test:coverage:shared && npm run test:coverage:mantra && npm run test:coverage:memento && npm run test:coverage:onus && npm run test:coverage:comitatus",
+    "validate:plugins": "node scripts/validate-plugins.js",
+    "test:coverage": "npm run test:coverage:scripts && npm run test:coverage:shared && npm run test:coverage:mantra && npm run test:coverage:memento && npm run test:coverage:onus && npm run test:coverage:comitatus",
+    "test:coverage:scripts": "jest scripts/__tests__/validate-plugins.test.js --runInBand --coverage --collectCoverageFrom=scripts/validate-plugins.js",
     "test:coverage:shared": "cd shared && npm run test:coverage",
     "test:coverage:mantra": "cd mantra && npm run test:coverage",
     "test:coverage:memento": "cd memento && npm run test:coverage",
@@ -30,6 +33,10 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/flexion/claude-domestique"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "js-yaml": "^3.14.2"
   },
   "license": "MIT"
 }

@@ -1,25 +1,27 @@
 ---
-name: agent-artifex:assess
+name: assess
 description: |
   Use when the user asks "what testing do we need?", "what are our testing gaps?", "we have some tests but are they enough?", "is our MCP server well-tested?", "what should we test next?", "audit our test coverage for AI", "we keep getting bad responses and don't know why", "our agent picks the wrong tool sometimes", "how is my tool design?", "are my descriptions good enough?", "review my error messages", "is my system prompt well-designed?", "audit my MCP server design", "what design gaps do I have?", or needs to diagnose AI design or testing gaps in an existing project. Also use when someone says "assess my testing", "review our test strategy for AI", or "assess my design".
 ---
 
-# agent-artifex:assess — AI Services Design & Testing Gap Assessment
+# Assess — AI Services Design & Testing Gap Assessment
 
 ## When to Use
 
-Diagnostic skill that identifies design quality issues and testing gaps in an existing project. Produces a prioritized gap analysis with specific recommendations covering both how well the AI integration is designed and how well it is tested. For learning the concepts first, use `agent-artifex:foundations` or `agent-artifex:learn`. For applying design principles, use `agent-artifex:design`. For writing tests or implementing design fixes after assessment, use `agent-artifex:implement`.
+Diagnostic skill that identifies design quality issues and testing gaps in an existing project. Produces a prioritized gap analysis with specific recommendations covering both how well the AI integration is designed and how well it is tested. For learning the concepts first, use the `foundations` or `learn` skill. For applying design principles, use `design`. For writing tests or implementing design fixes after assessment, use `implement`.
 
 ## Shared References
+
+Paths in this table are relative to this `SKILL.md`.
 
 Read these when you need precise definitions during assessment:
 
 | Reference | When to read |
 |---|---|
-| `agent-artifex/references/framework.md` | Causal chain diagnostic flow, testing pyramid layers, two-tier model, impact/effort table |
-| `agent-artifex/references/metrics.md` | Formulas for any metric (SR/AE/AS, Faithfulness/Completeness, CRR/WCR/DASR) |
-| `agent-artifex/references/rubric.md` | Six-component rubric, labeling rules, structural detection markers |
-| `agent-artifex/references/evidence.md` | Key numbers to cite when justifying recommendations |
+| `../../references/framework.md` | Causal chain diagnostic flow, testing pyramid layers, two-tier model, impact/effort table |
+| `../../references/metrics.md` | Formulas for any metric (SR/AE/AS, Faithfulness/Completeness, CRR/WCR/DASR) |
+| `../../references/rubric.md` | Six-component rubric, labeling rules, structural detection markers |
+| `../../references/evidence.md` | Key numbers to cite when justifying recommendations |
 
 ---
 
@@ -277,6 +279,6 @@ Present the assessment as:
 
 After assessment:
 
-- For design gaps → `agent-artifex:design` to learn the principles, then `agent-artifex:implement` to apply them
-- For testing gaps → `agent-artifex:implement`
-- For areas where the user doesn't understand *why* it matters → `agent-artifex:learn`
+- For design gaps → use `design` to learn the principles, then `implement` to apply them
+- For testing gaps → use `implement`
+- For areas where the user doesn't understand *why* it matters → use `learn`

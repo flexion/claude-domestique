@@ -1,5 +1,6 @@
 {
   "name": "mantra",
+  "version": "0.5.2",
   "description": "Behavioral skills for Claude Code - critical assessment, evidence-based debugging, and rule authoring",
   "author": {
     "name": "David Puglielli"

@@ -24,3 +24,26 @@ jobs:
 
       - name: Run tests with coverage
         run: npm run test:coverage
+
+      - name: Validate plugin metadata
+        run: npm run validate:plugins
+
+      - name: Validate Claude plugin schemas
+        run: |
+          npx --yes @anthropic-ai/claude-code@2.1.226 plugin validate . --strict
+          for plugin in mantra memento onus agent-artifex comitatus stilus; do
+            npx --yes @anthropic-ai/claude-code@2.1.226 plugin validate "$plugin" --strict
+          done
+
+      - name: Smoke test Codex plugin installs
+        env:
+          CODEX_HOME: ${{ runner.temp }}/codex-home
+        run: |
+          mkdir -p "$CODEX_HOME"
+          npx --yes @openai/codex@0.141.0 plugin marketplace add .
+          marketplace=$(node -p "require('./.claude-plugin/marketplace.json').name")
+          for manifest in */.codex-plugin/plugin.json; do
+            [ -e "$manifest" ] || continue
+            plugin=${manifest%%/*}
+            npx --yes @openai/codex@0.141.0 plugin add "${plugin}@${marketplace}"
+          done

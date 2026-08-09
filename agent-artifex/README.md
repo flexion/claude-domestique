@@ -4,20 +4,42 @@ A suite of skills for designing and testing AI tool sets and agents — MCP serv
 
 The framework's core claim: design quality and test coverage share a single causal chain — from tool descriptions through agent behavior and server correctness to the response the user actually receives. Good design makes systems testable; good tests reveal design gaps.
 
+## Installation
+
+Agent Artifex uses the same skills and references in Claude Code and Codex.
+
+### Claude Code
+
+```text
+/plugin marketplace add flexion/claude-domestique
+/plugin install agent-artifex@claude-domestique
+```
+
+Invoke skills with the plugin namespace, for example `/agent-artifex:guide`.
+
+### Codex
+
+```bash
+codex plugin marketplace add flexion/claude-domestique
+codex plugin add agent-artifex@claude-domestique
+```
+
+Start a new thread after installation, then invoke a skill such as `$agent-artifex:guide`.
+
 ## Skills
 
 | Skill | Purpose | Best when you... |
 |-------|---------|-----------------|
-| **agent-artifex:guide** | Entry point — routes to the right skill | Aren't sure where to start |
-| **agent-artifex:foundations** | Complete framework reference overview | Need the big picture in one place |
-| **agent-artifex:learn** | Socratic teaching through dialogue | Are new to AI services design/testing or want concepts to *click* |
-| **agent-artifex:design** | Design principles for quality (7 areas) | Are building or improving an MCP server, agent, or chatbot |
-| **agent-artifex:assess** | Diagnose design and testing gaps | Want to know what's missing and what to prioritize |
-| **agent-artifex:implement** | Apply design improvements + write tests | Are ready to make code changes |
+| **guide** | Entry point — routes to the right skill | Aren't sure where to start |
+| **foundations** | Complete framework reference overview | Need the big picture in one place |
+| **learn** | Socratic teaching through dialogue | Are new to AI services design/testing or want concepts to *click* |
+| **design** | Design principles for quality (7 areas) | Are building or improving an MCP server, agent, or chatbot |
+| **assess** | Diagnose design and testing gaps | Want to know what's missing and what to prioritize |
+| **implement** | Apply design improvements + write tests | Are ready to make code changes |
 
-## Start Here: agent-artifex:guide
+## Start Here: guide
 
-If you're not sure which skill to use, start with `agent-artifex:guide`. It asks what you're working on and routes you to the right path:
+If you're not sure which skill to use, start with `guide`. In Claude Code invoke `/agent-artifex:guide`; in Codex invoke `$agent-artifex:guide`. It asks what you're working on and routes you to the right path:
 
 > "Are you designing a new AI service, improving an existing one, learning about AI services design and testing, or ready to implement changes?"
 
@@ -40,7 +62,7 @@ Response Accuracy is the only measure the user experiences. The other four are l
 
 ```
                     ┌─────────────────────────┐
-                    │   agent-artifex:guide    │  Entry point — routes to everything
+                    │          guide           │  Entry point — routes to everything
                     └───────────┬─────────────┘
                                 │
        ┌───────────┬────────────┼────────────────────┐
@@ -51,10 +73,9 @@ Response Accuracy is the only measure the user experiences. The other four are l
 └─────┬──────┘ └────┬────┘ └──────┬──────┘   └──────┬──────┘
       │             │             │                  │
       ▼             ▼             ▼                  ▼
-agent-artifex:  agent-artifex:  agent-artifex:   agent-artifex:
-  foundations     design          assess           implement
-agent-artifex:      │                │                ▲
-  learn             └────────────────┼────────────────┘
+ foundations       design          assess           implement
+    learn             │                │                ▲
+                      └────────────────┼────────────────┘
                                 (design informs assessment,
                                  assess identifies gaps,
                                  implement closes them)
@@ -90,17 +111,11 @@ Three layers of uncertainty tolerance:
 | **Middle: Recorded Replay** | Captured FM interactions replayed deterministically (TestProvider pattern) | After recording | Near zero |
 | **Upper: Probabilistic** | Agent behavior scenarios, response accuracy evals, chatbot integration | On-demand | LLM API costs |
 
-## Relationship to claude-api:mcp-builder
+## Relationship to MCP scaffolding skills
 
-`claude-api:mcp-builder` scaffolds MCP servers — it generates boilerplate, defines tools/resources/prompts, and produces working TypeScript/Python servers. `agent-artifex` makes it *good* — applying design principles and test coverage that turn a scaffold into a production-quality service. They are complementary, not overlapping: mcp-builder for structure, agent-artifex for substance.
+An installed MCP scaffolding skill can generate boilerplate, tools, resources, and prompts. `agent-artifex` focuses on applying design principles and test coverage that turn a scaffold into a production-quality service. They are complementary: scaffolding for structure, Agent Artifex for substance.
 
-To install mcp-builder:
-
-```
-/install claude-api@anthropic-agent-skills
-```
-
-Typical workflow: scaffold with `claude-api:mcp-builder` → design with `agent-artifex:design` → assess with `agent-artifex:assess` → improve and test with `agent-artifex:implement`.
+Typical workflow: scaffold with an available host skill → use `design` → use `assess` → improve and test with `implement`.
 
 ## Reference Architecture
 
@@ -136,8 +151,11 @@ agent-artifex/
 │           ├── agent-behavior.md
 │           ├── response-accuracy.md
 │           └── chatbot-testing.md
-└── .claude-plugin/
-    └── plugin.json
+├── .claude-plugin/
+│   └── plugin.json
+├── .codex-plugin/
+│   └── plugin.json
+└── package.json
 ```
 
 Skills read shared references on demand. The `implement` skill additionally reads per-area implementation references containing working TypeScript/Python code, prompt templates, and pass/fail criteria.

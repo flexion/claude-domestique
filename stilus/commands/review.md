@@ -1,5 +1,8 @@
 ---
-description: Review a finished piece of prose — correctness, voice (graded slop), human perception, and whether an AI reader gets the point. Read-only; produces a scored report, never edits. Usage: /stilus:review <file-or-text>
+description: >-
+  Review a finished piece of prose — correctness, voice (graded slop), human
+  perception, and whether an AI reader gets the point. Read-only; produces a
+  scored report, never edits. Usage: /stilus:review <file-or-text>
 ---
 
 # /stilus:review

@@ -1,5 +1,6 @@
 {
   "name": "comitatus",
+  "version": "0.5.1",
   "description": "herdr workflows - packages the herdr agent-orchestration skill for claude and codex, auto-injected inside herdr",
   "author": {
     "name": "Flexion"
