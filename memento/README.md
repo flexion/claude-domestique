@@ -98,6 +98,8 @@ Each plugin works standalone but gains enhanced behavior when used together.
 
 ## Installation
 
+### Claude Code
+
 ```bash
 # Add the marketplace
 /plugin marketplace add flexion/claude-domestique
@@ -106,11 +108,26 @@ Each plugin works standalone but gains enhanced behavior when used together.
 /plugin install memento@claude-domestique
 ```
 
-That's it. Session management works automatically—no initialization required.
+### Codex
+
+```bash
+codex plugin marketplace add flexion/claude-domestique
+codex plugin add memento@claude-domestique
+```
+
+Session management works automatically—no initialization required.
+
+Codex does not run a plugin's hooks just because the plugin is installed: it
+holds them until you review and trust them. Open `/hooks` in a new Codex thread
+and approve this plugin's hook definitions, otherwise you get its skills but
+none of its automatic session tracking. Hooks themselves are on by default; the
+`[features] hooks` setting in `~/.codex/config.toml` only matters if they were
+turned off.
+
 
 ## How It Works
 
-memento uses Claude Code's hook system for automatic session management:
+memento uses the shared plugin hook convention for automatic session management in Claude Code and Codex:
 
 | Hook | When | What Happens |
 |------|------|--------------|
@@ -122,8 +139,8 @@ memento uses Claude Code's hook system for automatic session management:
 When you start a conversation on a feature branch like `issue/feature-42/add-auth`:
 1. memento detects the branch name
 2. Creates `.claude/sessions/issue-feature-42-add-auth.md` if it doesn't exist
-3. Injects session file path into Claude's context
-4. Claude reads the session and picks up where you left off
+3. Injects the session file path into the agent's context
+4. The agent reads the session and picks up where you left off
 
 ### Branch Switch Detection
 
@@ -194,16 +211,16 @@ Next Steps:
 2. Second pending task
 ```
 
-## Commands
+## Skills
+
+Use `/memento:<skill>` in Claude Code or `$memento:<skill>` in Codex. Both hosts share the `.claude/sessions` and `.claude/branches` project state so work can move between them.
 
 | Command | Description |
 |---------|-------------|
 | `/memento:start` | Start new work - creates branch and session together |
 | `/memento:session` | Show current session status or create new session |
 
-## Skills
-
-Skills are proactively invoked by Claude when context matches:
+Skills can also trigger automatically when context matches:
 
 | Skill | Triggers |
 |-------|----------|
@@ -211,7 +228,7 @@ Skills are proactively invoked by Claude when context matches:
 
 ## Requirements
 
-- Node.js (required by Claude CLI)
+- Node.js 18 or newer
 - All tools written in JavaScript
 
 ## License

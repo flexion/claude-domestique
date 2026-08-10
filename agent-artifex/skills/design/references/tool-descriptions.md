@@ -48,6 +48,6 @@ Tool descriptions are the root cause of most downstream quality issues. They are
 
 ---
 
-**Related testing:** To test these design decisions → `agent-artifex:implement` (area: Tool Description Quality)
+**Related testing:** To test these design decisions → use the `implement` skill (area: Tool Description Quality)
 
 **Related design areas:** [Parameter & Schema Design](parameter-schema.md) (parameters are part of the description), [Tool Set Architecture](tool-set-architecture.md) (inter-tool disambiguation)

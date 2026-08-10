@@ -124,8 +124,21 @@ function ensureDir(dirPath) {
   }
 }
 
-function getStateFile(pluginName) {
-  return path.join(os.homedir(), '.claude', `${pluginName.toLowerCase()}-state.json`);
+/**
+ * Resolve a plugin's state file.
+ *
+ * `homeDir` is injectable so callers - tests especially - can redirect state
+ * away from the real home directory. Without it, a test that exercises the
+ * prompt counter reads and writes the user's actual
+ * ~/.claude/<plugin>-state.json, which both pollutes the machine and makes the
+ * assertion depend on whatever count a previous run left behind.
+ *
+ * @param {string} pluginName
+ * @param {string} [homeDir] - Defaults to the current user's home directory
+ * @returns {string} Absolute path to the state file
+ */
+function getStateFile(pluginName, homeDir = os.homedir()) {
+  return path.join(homeDir, '.claude', `${pluginName.toLowerCase()}-state.json`);
 }
 
 function loadState(filePath, defaultValue = {}) {
@@ -169,8 +182,8 @@ function estimateTokens(content) {
  * @returns {object} Hook response
  */
 function processSessionStart(config, input) {
-  const { pluginName, pluginRoot } = config;
-  const stateFile = getStateFile(pluginName);
+  const { pluginName, pluginRoot, homeDir } = config;
+  const stateFile = getStateFile(pluginName, homeDir);
 
   // Reset state
   saveState(stateFile, { count: 0 });
@@ -228,8 +241,8 @@ function processSessionStart(config, input) {
  * @returns {object} Hook response
  */
 function processUserPromptSubmit(config, input) {
-  const { pluginName, pluginRoot } = config;
-  const stateFile = getStateFile(pluginName);
+  const { pluginName, pluginRoot, homeDir } = config;
+  const stateFile = getStateFile(pluginName, homeDir);
   const refreshInterval = config.refreshInterval || DEFAULT_REFRESH_INTERVAL;
 
   // Load and increment state
@@ -269,8 +282,8 @@ function processUserPromptSubmit(config, input) {
     }
   }
 
-  // Precedence reminder: project rules > CLAUDE.md > plugin > defaults
-  const precedenceReminder = 'IMPORTANT: You MUST prioritize: 1) project .claude/rules/, 2) CLAUDE.md, 3) plugin context. These override your default behavior.';
+  // Precedence reminder: project guidance > plugin > defaults
+  const precedenceReminder = 'IMPORTANT: You MUST prioritize: 1) project rules and AGENTS.md/CLAUDE.md, 2) plugin context, 3) default behavior.';
   additionalContext = `${precedenceReminder}\n${additionalContext}`;
 
   return {

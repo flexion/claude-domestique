@@ -1,0 +1,41 @@
+{
+  "name": "agent-artifex",
+  "version": "0.2.1",
+  "description": "Evidence-based workflows for designing and testing MCP servers, agents, chatbots, and tool-calling systems",
+  "author": {
+    "name": "Flexion",
+    "url": "https://github.com/flexion"
+  },
+  "homepage": "https://github.com/flexion/claude-domestique/tree/main/agent-artifex",
+  "repository": "https://github.com/flexion/claude-domestique",
+  "license": "MIT",
+  "keywords": [
+    "design",
+    "testing",
+    "ai-services",
+    "mcp",
+    "agents",
+    "chatbots",
+    "evals"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Agent Artifex",
+    "shortDescription": "Design and test reliable AI services",
+    "longDescription": "Evidence-based workflows for designing, assessing, improving, and testing MCP servers, agents, chatbots, and tool-calling systems.",
+    "developerName": "Flexion",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Analyze",
+      "Design",
+      "Test"
+    ],
+    "websiteURL": "https://github.com/flexion/claude-domestique/tree/main/agent-artifex",
+    "defaultPrompt": [
+      "Assess the design and testing gaps in my AI service.",
+      "Help me design reliable tools for my MCP server.",
+      "Add an evidence-based test strategy to my agent."
+    ],
+    "brandColor": "#4B5563"
+  }
+}

@@ -1,6 +1,6 @@
 # stilus
 
-Writing tools for Claude Code: remove AI slop, write in a project's voice, and review finished prose.
+Writing tools for Claude Code and Codex: remove AI slop, write in a project's voice, and review finished prose.
 
 Latin for the writing instrument and the root of "style."
 
@@ -14,7 +14,27 @@ Latin for the writing instrument and the root of "style."
 
 ## On-demand only
 
-`stilus` ships no hooks and injects no global context. Its agents and the `/stilus:review` command run only when you invoke them, and cost nothing otherwise.
+`stilus` ships no hooks and injects no global context. Its skills run only when invoked and cost nothing otherwise. Claude retains thin named-agent wrappers; Codex runs the same specialist skills through `spawn_agent`. The blind summarizer runs only in a genuinely fresh specialist context: when neither host exposes a fresh-context delegation tool, or the returned isolation attestation fails validation, the review reports `AI perception: UNAVAILABLE` rather than summarizing in a context that has already seen the intended point.
+
+## Installation
+
+### Claude Code
+
+```bash
+/plugin marketplace add flexion/claude-domestique
+/plugin install stilus@claude-domestique
+```
+
+Invoke `/stilus:deslop` or `/stilus:review`.
+
+### Codex
+
+```bash
+codex plugin marketplace add flexion/claude-domestique
+codex plugin add stilus@claude-domestique
+```
+
+Invoke `$stilus:deslop` or `$stilus:review`.
 
 ## Voice profiles
 
@@ -31,7 +51,7 @@ Fill in the sections from `rules/voice.md`. A personal default can live at `~/.c
 
 ## Single source of truth
 
-The slop catalog and shared craft (lead with the point, sentence rhythm, accuracy over precision) live in the `deslop` agent. The voice layer and the review specialists reference them; they never restate them. The review flow and its scoring live once in `context/reviewing.md`, which the `/stilus:review` command runs.
+The slop catalog and shared craft (lead with the point, sentence rhythm, accuracy over precision) live in the `deslop` skill. The voice layer and review specialists reference it; they never restate it. The review flow and scoring live once in `context/reviewing.md`, which the `review` skill runs.
 
 ## Roadmap
 

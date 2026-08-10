@@ -1,25 +1,28 @@
 ---
-name: agent-artifex:foundations
-description: |
-  Use when the user asks "what is the AI testing framework?", "what are the design principles?", "explain the 7 design areas", "explain MCP testing", "what are the testing areas?", "what's the testing pyramid for AI?", "how do the testing layers relate?", "what should I test in my MCP server?", "overview of AI agent design and testing", or needs a comprehensive reference overview of the AI design and testing guidelines. Also use when someone is new to designing or testing AI systems and wants the big picture before diving into implementation.
+name: foundations
+description: >-
+  Use when the user needs a reference overview of AI-service design principles,
+  testing areas, testing layers, or the broader framework before focused work.
 ---
 
-# agent-artifex:foundations — AI Services Design & Testing Framework Reference
+# Foundations — AI Services Design & Testing Framework Reference
 
 ## When to Use
 
-Reference overview of the AI design and testing framework. Read this when you need the big picture — what the framework covers, how the pieces fit together, and what the key principles are. For interactive learning, use `agent-artifex:learn`. For implementation guidance, use `agent-artifex:implement`.
+Reference overview of the AI design and testing framework. Read this when you need the big picture — what the framework covers, how the pieces fit together, and what the key principles are. For interactive learning, use the `learn` skill. For implementation guidance, use `implement`.
 
 ## Shared References
+
+Relative paths in this skill are resolved from this `SKILL.md`.
 
 For detailed content referenced throughout this skill, read:
 
 | Reference | What it contains |
 |---|---|
-| `agent-artifex/references/framework.md` | Causal chain, testing pyramid (3 layers + recorded replay), two-tier grading model, diagnostic flow, impact/effort table |
-| `agent-artifex/references/metrics.md` | All formulas: SR/AE/AS, Faithfulness/Completeness, CRR/WCR/DASR, claim decomposition, multi-judge methodology, grading method selection |
-| `agent-artifex/references/rubric.md` | Six-component rubric (5-point scale), labeling rules, component notes, structural detection markers |
-| `agent-artifex/references/evidence.md` | Key empirical numbers, source index, benchmark scale |
+| `../../references/framework.md` | Causal chain, testing pyramid (3 layers + recorded replay), two-tier grading model, diagnostic flow, impact/effort table |
+| `../../references/metrics.md` | All formulas: SR/AE/AS, Faithfulness/Completeness, CRR/WCR/DASR, claim decomposition, multi-judge methodology, grading method selection |
+| `../../references/rubric.md` | Six-component rubric (5-point scale), labeling rules, component notes, structural detection markers |
+| `../../references/evidence.md` | Key empirical numbers, source index, benchmark scale |
 
 ---
 
@@ -75,7 +78,7 @@ Tool definitions consume 50K–134K tokens of context window. Stay under approxi
 
 Result schemas must be consistent across tools — inconsistent structures force the LLM to learn per-tool parsing patterns, increasing synthesis errors. Design results for dual consumption: machine parsing (structured fields, predictable types) and LLM synthesis (human-readable values, meaningful field names). Control verbosity to manage context pressure — oversized results crowd out conversation history in the context window.
 
-For detailed design principles and assessment criteria → `agent-artifex:design`
+For detailed design principles and assessment criteria → use `design`
 
 ---
 
@@ -93,7 +96,7 @@ For detailed design principles and assessment criteria → `agent-artifex:design
 
 ## The Testing Pyramid
 
-Three layers of uncertainty tolerance. Read `agent-artifex/references/framework.md` for full detail including the recorded replay pattern (TestProvider, recording vs replay mode).
+Three layers of uncertainty tolerance. Read `../../references/framework.md` for full detail including the recorded replay pattern (TestProvider, recording vs replay mode).
 
 ### Base Layer: Deterministic (CI-safe, every commit)
 
@@ -132,7 +135,7 @@ Impact is domain-and-model-dependent — no single component combination consist
 
 ### Six-Component Rubric (Tool Description Quality)
 
-Every tool description scored on: **Purpose, Usage Guidelines, Limitations, Parameter Explanation, Examples vs Description, Length and Completeness**. Score ≥ 3 on all six = no smells. 97.1% have at least one smell. Limitations is uniquely dangerous — vague Limitations are worse than none (−10pp SR in one domain). Parameter Explanation is most objectively assessable (ICC 0.90). Read `agent-artifex/references/rubric.md` for the full 5-point rubric table and labeling rules.
+Every tool description scored on: **Purpose, Usage Guidelines, Limitations, Parameter Explanation, Examples vs Description, Length and Completeness**. Score ≥ 3 on all six = no smells. 97.1% have at least one smell. Limitations is uniquely dangerous — vague Limitations are worse than none (−10pp SR in one domain). Parameter Explanation is most objectively assessable (ICC 0.90). Read `../../references/rubric.md` for the full 5-point rubric table and labeling rules.
 
 ### Two-Tier Grading Model
 
@@ -142,7 +145,7 @@ Applies across all areas, not just Response Accuracy:
 
 ### Three Agent Behavior Metrics
 
-Read `agent-artifex/references/metrics.md` for formulas and statistical guidance.
+Read `../../references/metrics.md` for formulas and statistical guidance.
 - **SR** = (tasks where all evaluators pass) / (total tasks) × 100
 - **AE** = (1/N) × Σ (evaluators_passed_i / total_evaluators_i)
 - **AS** = (1/N) × Σ steps_i
@@ -163,7 +166,7 @@ Seed data → Define scenario (query + seed state + golden answer + grading mode
 
 ### Chatbot-Specific Metrics
 
-Read `agent-artifex/references/metrics.md` for formulas.
+Read `../../references/metrics.md` for formulas.
 - **CRR** — Coreference Resolution Rate: are indirect references ("that one") resolved correctly?
 - **DASR** — Depth-Adjusted Success Rate: does accuracy hold at turn 15 vs turn 1?
 - **WCR** — Workflow Completion Rate: do multi-turn workflows complete?
@@ -173,17 +176,15 @@ Read `agent-artifex/references/metrics.md` for formulas.
 
 ## Evidence Base
 
-Read `agent-artifex/references/evidence.md` for the full source index and key numbers.
+Read `../../references/evidence.md` for the full source index and key numbers.
 
 The framework draws from: Hasan et al. (description quality), MCP Specification, Anthropic (evals, tool use), OpenAI (evaluation best practices), RAGAS (faithfulness/completeness), Google DeepMind (FACTS Grounding), Block Engineering (testing pyramid), Wang et al./MINT (multi-turn), Du et al. (context degradation), Chatterjee & Agarwal (coreference), RFC 9457 (error structure), Fowler (contract testing), Microsoft ISE (chatbot evaluation).
-
-Full source documents: `docs/ai-services/sources/`
 
 ---
 
 ## Recommended Next Step
 
-- To learn about design principles → `agent-artifex:design`
-- To learn interactively → `agent-artifex:learn`
-- To assess your project's testing gaps → `agent-artifex:assess`
-- To start writing tests → `agent-artifex:implement`
+- To learn about design principles → use `design`
+- To learn interactively → use `learn`
+- To assess your project's testing gaps → use `assess`
+- To start writing tests → use `implement`

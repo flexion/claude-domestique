@@ -25,7 +25,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "ExitPlanMode|EnterPlanMode|Task|TodoWrite",
+        "matcher": "ExitPlanMode|EnterPlanMode|Task|TodoWrite|Agent|spawn_agent|update_plan|apply_patch",
         "hooks": [
           {
             "type": "command",
@@ -37,7 +37,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Bash(git commit*)",
+        "matcher": "Bash|exec_command",
         "hooks": [
           {
             "type": "command",

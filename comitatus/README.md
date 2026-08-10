@@ -1,7 +1,7 @@
 # comitatus
 
-Packages the [herdr](https://herdr.dev) agent-orchestration skill as a
-claude-domestique plugin. `comitatus` is Latin for a retinue or band of
+Packages the [herdr](https://herdr.dev) agent-orchestration skill for Claude Code
+and Codex. `comitatus` is Latin for a retinue or band of
 companions — the followers who travel and work together under one leader.
 
 ## Responsibilities: herdr vs. the skill vs. comitatus
@@ -57,20 +57,36 @@ herdr integration status            # verify (--outdated-only flags stale ones)
 reliably read an agent's `agent_status`, so `herdr agent wait --until <state>` and
 the push-first messaging the skill depends on silently break. The codex integration
 is herdr's *own* codex hookup (e.g. `~/.codex/herdr-agent-state.sh`) and is
-**distinct from** the codex *skill* copy comitatus provisions (see Single source
-of truth): herdr's integration makes codex participate in the herd; comitatus
-delivers the skill that tells codex how to drive herdr. You need both. comitatus
-manages only the skill copy and never touches herdr's integration files.
+**distinct from** the comitatus plugin: herdr's integration makes codex
+participate in the herd; comitatus delivers the skill that tells codex how to
+drive herdr. You need both, and you install each one yourself — comitatus never
+writes into `~/.codex` and never touches herdr's integration files.
 
 ### 2. Install the comitatus plugin
+
+Claude Code:
 
 ```bash
 /plugin marketplace add flexion/claude-domestique
 /plugin install comitatus@claude-domestique
 ```
 
-No init step - the skill and hook load on the next session (or run
-`/reload-plugins` to pick them up immediately).
+Codex:
+
+```bash
+codex plugin marketplace add flexion/claude-domestique
+codex plugin add comitatus@claude-domestique
+```
+
+No init step—the skill and hook load in a new session. Claude users may run
+`/reload-plugins` to pick up an installation immediately.
+
+On Codex the skill is available as soon as the plugin installs, but the
+`SessionStart` hook is not: Codex holds plugin hooks until you review and trust
+them via `/hooks` in a new thread. (Hooks are on by default; the
+`[features] hooks` setting in `~/.codex/config.toml` only matters if they were
+turned off.) Until you trust them you can invoke the herdr skill by hand, but you
+will not get the automatic in-herd orientation or the status line.
 
 ### Install at the user level (recommended)
 
@@ -94,8 +110,8 @@ used. Project or local scope leaves comitatus silent in every herdr session you
 launch from a different repo, which is rarely what you want. Reach for project
 scope only if one repo is the sole place you ever drive herdr and you want
 teammates to get it automatically. Note that scope only controls *when the hook
-runs* - the codex copy is always machine-global at `~/.codex` regardless of
-scope.
+runs*; Codex support is a separate installation you make with
+`codex plugin add comitatus@claude-domestique`.
 
 ## Behavior modes
 
@@ -113,8 +129,6 @@ matters is whether the current session is running *inside* a herdr pane.
 **Dormant** - the SessionStart hook returns immediately:
 
 - No orientation injected, no `comitatus` status line, no files written.
-- Nothing is copied into `~/.codex` (the codex check never runs - the
-  `HERDR_ENV` gate precedes it).
 - The `comitatus:herdr` skill is present in the catalog but self-gated: invoking
   it from outside a herdr pane makes it stop and report that you are not in a
   herdr-managed pane, so it will not reach into a live herdr from the wrong
@@ -124,12 +138,16 @@ matters is whether the current session is running *inside* a herdr pane.
 
 - Injects a short orientation telling the agent it is inside herdr, to use the
   `comitatus:herdr` skill, and the resolved `herd.js` helper path.
-- Shows the `📍 comitatus: herdr` status line (`(codex synced)` when it just
-  refreshed the codex copy).
-- If `~/.codex/` exists, content-hash-syncs the skill into
-  `~/.codex/skills/herdr/` so codex agents in the herd get the identical skill
-  (atomic, idempotent - no-op when already current).
-- Un-gates the `comitatus:herdr` skill so Claude can orchestrate the herd.
+- Shows the `📍 Comitatus: herdr` status line, suffixed `(codex: installed)` or
+  `(codex: not installed)` to report whether comitatus is installed as a Codex
+  plugin — so you can tell at a glance whether codex peers in this herd can see
+  the `herdr` skill.
+- Reports the same in the injected orientation, including the
+  `codex plugin add comitatus@claude-domestique` command when it is missing.
+- Un-gates the `comitatus:herdr` skill so the current agent can orchestrate the herd.
+
+Each host installs comitatus for itself. The hook only **reports** Codex install
+status; it never writes into `~/.codex`.
 
 Installing herdr does not wake comitatus up; launching Claude *from within* herdr
 does. For testing, you can force the active path with `HERDR_ENV=1 claude` from a
@@ -168,38 +186,46 @@ idempotent and warns on `deny`/`ask` conflicts.
 
 ## Single source of truth
 
-There is **one** skill under `skills/herdr/`, authored in plain ASCII. Codex
-uses the identical files via the auto-provisioned copy. The codex manifest
-`agents/openai.yaml` lives in the skill dir and is inert for claude.
+There is **one** skill under `skills/herdr/`, authored in plain ASCII. Codex and
+Claude load those identical files from their own installed copy of the plugin.
+Nothing is copied between hosts, so there is no fork and no shadow copy to keep
+in sync.
 
 ## Uninstalling
 
-The claude side uninstalls cleanly through Claude Code (`/plugin uninstall
-comitatus@claude-domestique`). Uninstall from each scope you enabled it at
+The Claude side uninstalls cleanly through Claude Code (`/plugin uninstall
+comitatus@claude-domestique`). Codex uninstalls with
+`codex plugin remove comitatus@claude-domestique`. Uninstall Claude from each scope you enabled it at
 (`--scope user|project|local`, mirroring how you installed it); `/plugin disable`
-turns it off without removing it. The **codex copy is not removed
-automatically** - Claude Code fires no hook on uninstall, so the files this
-plugin wrote outside its own directory persist.
+turns it off without removing it.
 
-If you provisioned codex (ran a session inside herdr with codex installed), the
-only thing left behind is the auto-provisioned skill copy at
-`~/.codex/skills/herdr/`. Remove it by hand:
+comitatus writes exactly one thing outside its plugin directory: a
+version-independent copy of the skill at `~/.claude/comitatus/`, which exists so
+the `herd.js` helper has a stable absolute path for the Claude permission
+allowlist (see `/herd-setup`). Claude Code fires no hook on uninstall, so remove
+it by hand if you want a clean slate:
+
+```bash
+rm -rf ~/.claude/comitatus
+```
+
+It is staged in a temp dir and swapped into place with an atomic rename, so an
+agent never reads a half-written skill dir. A run interrupted by a hard kill
+(SIGKILL) can rarely leave an inert staging dir like
+`~/.claude/comitatus/skills/.herdr.tmp.<pid>.<n>`; it is harmless and safe to delete.
+
+Nothing is ever written into `~/.codex`. Earlier versions of comitatus
+content-hash-synced the skill into `~/.codex/skills/herdr/` so codex agents could
+see it before comitatus was installable as a Codex plugin. That path is gone. If
+you ran one of those versions, remove the leftover copy — the `.comitatus-hash`
+marker inside confirms comitatus wrote it:
 
 ```bash
 rm -rf ~/.codex/skills/herdr
 ```
 
-That directory contains a `.comitatus-hash` marker file; its presence confirms
-the copy was provisioned by comitatus and is safe to delete. comitatus only ever
-provisions into `~/.codex` - the single, machine-global codex home - so there is
-no per-project copy to track down. This plugin does not touch
-`~/.codex/hooks.json` or herdr's own `~/.codex/herdr-agent-state.sh`, so nothing
-else needs cleanup.
-
-Provisioning is staged in a temp dir and swapped into place with an atomic
-rename, so a codex agent never sees a half-written skill dir. A provision
-interrupted by a hard kill (SIGKILL) can rarely leave an inert staging dir like
-`~/.codex/skills/.herdr.tmp.<pid>.<n>`; it is harmless and safe to delete.
+This plugin does not touch `~/.codex/hooks.json` or herdr's own
+`~/.codex/herdr-agent-state.sh`, so nothing else needs cleanup.
 
 ## Provenance
 

@@ -1,6 +1,7 @@
 {
   "name": "mantra",
-  "description": "Behavioral skills for Claude Code - critical assessment, evidence-based debugging, and rule authoring",
+  "version": "0.6.0",
+  "description": "Behavioral skills for coding agents - critical assessment, evidence-based debugging, and rule authoring",
   "author": {
     "name": "David Puglielli"
   },
@@ -13,10 +14,5 @@
     "debugging",
     "rules"
   ],
-  "commands": [
-    "./commands/skeptic.md",
-    "./commands/assess.md",
-    "./commands/troubleshoot.md",
-    "./commands/make-rule.md"
-  ]
+  "skills": "./skills/"
 }

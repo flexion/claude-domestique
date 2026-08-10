@@ -1,0 +1,35 @@
+{
+  "name": "stilus",
+  "version": "0.2.0",
+  "description": "Prose editing and review workflows for correctness, voice, and reader perception",
+  "author": {
+    "name": "Flexion"
+  },
+  "repository": "https://github.com/flexion/claude-domestique",
+  "homepage": "https://github.com/flexion/claude-domestique/tree/main/stilus",
+  "license": "MIT",
+  "keywords": [
+    "writing",
+    "editing",
+    "prose",
+    "voice",
+    "deslop"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Stilus",
+    "shortDescription": "Edit and review clear human prose",
+    "longDescription": "Removes AI slop and reviews prose for correctness, voice, human readability, and whether the intended point survives.",
+    "developerName": "Flexion",
+    "category": "Writing",
+    "capabilities": [
+      "Edit prose",
+      "Review writing"
+    ],
+    "websiteURL": "https://github.com/flexion/claude-domestique/tree/main/stilus",
+    "defaultPrompt": [
+      "Remove AI slop from this prose without changing its facts.",
+      "Review this writing for correctness, voice, and reader perception."
+    ]
+  }
+}

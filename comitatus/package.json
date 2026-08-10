@@ -1,7 +1,7 @@
 {
   "name": "@claude-domestique/comitatus",
-  "version": "0.6.0",
-  "description": "herdr workflows plugin for Claude Code - packages the herdr skill, auto-injected inside herdr",
+  "version": "0.7.0",
+  "description": "herdr orchestration workflows for Claude Code and Codex",
   "main": "hooks/herdr-orient.js",
   "scripts": {
     "test": "jest",

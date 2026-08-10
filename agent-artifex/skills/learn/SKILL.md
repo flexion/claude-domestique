@@ -1,27 +1,30 @@
 ---
-name: agent-artifex:learn
-description: |
-  Use when the user says "I'm new to AI testing", "teach me about designing MCP servers", "how do I design good tool descriptions?", "walk me through design principles", "explain the design areas", "explain the testing pyramid for agents", "how do I test tool descriptions?", "walk me through an example", "I read the docs but it's not clicking", "how do evals work?", "what's faithfulness in AI testing?", "explain the causal chain", or wants to build fluency in AI services design and testing through Socratic dialogue rather than reading reference material.
+name: learn
+description: >-
+  Use when the user wants interactive teaching about AI-service design, testing,
+  tool descriptions, evals, faithfulness, or causal reasoning.
 ---
 
-# agent-artifex:learn — Socratic AI Services Design & Testing Tutor
+# Learn — Socratic AI Services Design & Testing Tutor
 
 ## When to Use
 
-Interactive learning skill for the AI services design and testing framework. Adapts to your level — whether you're new to designing and testing AI systems or experienced and want to sharpen specific areas. For reference reading, use `agent-artifex:foundations`. For implementation, use `agent-artifex:implement`.
+Interactive learning skill for the AI services design and testing framework. Adapts to your level — whether you're new to designing and testing AI systems or experienced and want to sharpen specific areas. For reference reading, use the `foundations` skill. For implementation, use `implement`.
 
 ## Shared References
+
+Relative paths in this skill are resolved from this `SKILL.md`.
 
 When a learner's question goes deeper than what this skill covers, read the relevant file:
 
 | Reference | When to read |
 |---|---|
-| `agent-artifex/references/framework.md` | Teaching the causal chain, testing pyramid, two-tier model, diagnostic flow |
-| `agent-artifex/references/metrics.md` | Teaching any formula (SR/AE/AS, Faithfulness/Completeness, CRR/WCR/DASR), claim decomposition, statistical guidance |
-| `agent-artifex/references/rubric.md` | Teaching the six-component rubric, component importance, structural markers |
-| `agent-artifex/references/evidence.md` | Grounding claims in research — key numbers, source citations |
-| `docs/ai-services/*.md` | Full detail with code examples and footnotes per testing area |
-| `docs/ai-services/design-for-quality.md` | Full design principles with evidence and footnotes per design area |
+| `../../references/framework.md` | Teaching the causal chain, testing pyramid, two-tier model, diagnostic flow |
+| `../../references/metrics.md` | Teaching any formula (SR/AE/AS, Faithfulness/Completeness, CRR/WCR/DASR), claim decomposition, statistical guidance |
+| `../../references/rubric.md` | Teaching the six-component rubric, component importance, structural markers |
+| `../../references/evidence.md` | Grounding claims in research — key numbers, source citations |
+| `../implement/references/` | Full implementation and testing detail with code examples |
+| `../design/references/` | Full design principles by design area |
 
 ---
 
@@ -57,11 +60,11 @@ Start with one question:
 
 3. **Tool Description Quality (Discovery)** — Structural checks that are like linting. The six-component rubric: Purpose, Usage Guidelines, Limitations, Parameter Explanation, Examples, Length. 97.1% of descriptions have at least one smell. The most impactful fix is often adding Usage Guidelines and concrete Limitations. Caution: vague Limitations are worse than none (-10pp SR in one domain).
 
-4. **The Causal Chain** — Walk through a concrete example: a user asks "Record a decision about PostgreSQL" -> the FM sees tool descriptions (Discovery) -> selects `create_adr` with arguments (Tool Selection) -> the server creates the ADR and returns a result (Invocation) -> the FM synthesizes an answer for the user (Response Synthesis). Each link is testable. Use the MCP runtime interaction loop from `docs/ai-services/framework.md`.
+4. **The Causal Chain** — Walk through a concrete example: a user asks "Record a decision about PostgreSQL" -> the FM sees tool descriptions (Discovery) -> selects `create_adr` with arguments (Tool Selection) -> the server creates the ADR and returns a result (Invocation) -> the FM synthesizes an answer for the user (Response Synthesis). Each link is testable. Use the MCP runtime interaction loop from `../../references/framework.md`.
 
 5. **Server Correctness (Invocation)** — Schema validation is like contract testing. Golden-file/snapshot tests detect when result shapes change silently. Error messages must be actionable for the FM (not stack traces, not opaque codes) — the RFC 9457 principle: non-human consumers need structured error details. This is deterministic testing, familiar territory.
 
-6. **Agent Behavior (Tool Selection)** — This is where it gets unfamiliar. The FM is making non-deterministic decisions. Key insight: "a single run tells us almost nothing but patterns tell us everything." Teach the three metrics (SR, AE, AS — read `agent-artifex/references/metrics.md` for formulas), the five scenario categories (single-tool, multi-step, ambiguous, negative, edge-case), and why you run 5-10 times and aggregate. Introduce recorded replay as a bridge: record once, replay deterministically in CI.
+6. **Agent Behavior (Tool Selection)** — This is where it gets unfamiliar. The FM is making non-deterministic decisions. Key insight: "a single run tells us almost nothing but patterns tell us everything." Teach the three metrics (SR, AE, AS — read `../../references/metrics.md` for formulas), the five scenario categories (single-tool, multi-step, ambiguous, negative, edge-case), and why you run 5-10 times and aggregate. Introduce recorded replay as a bridge: record once, replay deterministically in CI.
 
 7. **Response Accuracy (Full Loop)** — The scoreboard. The closed-loop harness: seed data -> define scenario -> execute full loop -> capture both layers -> grade. Two-tier grading: Tier 1 (code-based: counts, IDs, statuses) in CI; Tier 2 (LLM-based: faithfulness and completeness via claim decomposition) on-demand. Teach claim decomposition: break response into atomic facts, verify each. Faithfulness = "did it hallucinate?" Completeness = "did it omit?" They're independent.
 
@@ -94,11 +97,11 @@ Ask: **"What do you test today, and what concerns you most?"**
 
 - **The testing pyramid** — Why uncertainty tolerance replaces unit/integration/e2e. Three layers: deterministic base (CI), recorded replay middle (CI after recording), probabilistic top (on-demand). Why LLM tests don't belong in CI. The TestProvider pattern for recorded replay.
 
-- **Tool description smells** — The six-component rubric in detail (read `agent-artifex/references/rubric.md`). Show real examples of each smell. Why 97.1% fail. Limitations are uniquely dangerous. Parameter Explanation is most objectively testable. The multi-model jury: 3 LLMs, mean < 3 = smell.
+- **Tool description smells** — The six-component rubric in detail (read `../../references/rubric.md`). Show real examples of each smell. Why 97.1% fail. Limitations are uniquely dangerous. Parameter Explanation is most objectively testable. The multi-model jury: 3 LLMs, mean < 3 = smell.
 
 - **Scenario design** — Five categories with examples. How many scenarios (3-5 per tool + multi-tool workflows). Evaluator design. Why you grade outcomes not paths. Statistical comparison: McNemar's (SR), Wilcoxon (AE/AS). Multi-model stability: test across 2-3 FM families.
 
-- **Multi-turn failure modes** — Five categories: coreference corruption (5 reference types), context pressure (4 accelerating factors), workflow fragmentation (5 patterns), system prompt conflicts (4 types), graceful degradation (6 failure modes). Read `docs/ai-services/chatbot-testing.md` for the full tables.
+- **Multi-turn failure modes** — Five categories: coreference corruption (5 reference types), context pressure (4 accelerating factors), workflow fragmentation (5 patterns), system prompt conflicts (4 types), graceful degradation (6 failure modes). Read `../implement/references/chatbot-testing.md` for the full tables.
 
 - **The closed-loop harness** — Five steps in detail. Why you capture both tool results AND FM answer. Why faithfulness checks against tool results (not seed data). Multi-judge evaluation for high-stakes: 2-3 LLMs, majority verdict per claim.
 
@@ -134,7 +137,7 @@ Don't say "tool descriptions need usage guidelines." Instead: "Your `create_adr`
 ## Recommended Next Step
 
 When the learner is ready to apply what they've learned:
-- To assess their project -> `agent-artifex:assess`
-- To start writing tests -> `agent-artifex:implement`
-- To dive into design principles -> `agent-artifex:design`
-- To get guided through the full process -> `agent-artifex:guide`
+- To assess their project -> use `assess`
+- To start writing tests -> use `implement`
+- To dive into design principles -> use `design`
+- To get guided through the full process -> use `guide`

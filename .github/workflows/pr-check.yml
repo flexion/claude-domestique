@@ -3,13 +3,19 @@ name: PR Check
 on:
   pull_request:
 
+env:
+  CLAUDE_MIN_VERSION: 2.1.226
+  CLAUDE_CURRENT_VERSION: 2.1.226
+  CODEX_MIN_VERSION: 0.147.0
+  CODEX_CURRENT_VERSION: 0.147.0
+
 jobs:
   test:
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        node-version: [22, 24]
+        node-version: [24]
 
     steps:
       - uses: actions/checkout@v4
@@ -24,3 +30,29 @@ jobs:
 
       - name: Run tests with coverage
         run: npm run test:coverage
+
+      - name: Validate plugin metadata
+        run: npm run validate:plugins
+
+      - name: Validate Claude plugin schemas
+        run: |
+          npx --yes @anthropic-ai/claude-code@2.1.226 plugin validate . --strict
+          plugins=$(node -e "require('./.claude-plugin/marketplace.json').plugins.forEach(plugin => console.log(plugin.name))") || exit 1
+          while IFS= read -r plugin; do
+            npx --yes @anthropic-ai/claude-code@2.1.226 plugin validate "$plugin" --strict
+          done <<EOF
+          $plugins
+          EOF
+
+      - name: Smoke test Codex plugin installs
+        env:
+          CODEX_HOME: ${{ runner.temp }}/codex-home
+        run: |
+          mkdir -p "$CODEX_HOME"
+          npx --yes @openai/codex@0.147.0 plugin marketplace add .
+          marketplace=$(node -p "require('./.claude-plugin/marketplace.json').name")
+          for manifest in */.codex-plugin/plugin.json; do
+            [ -e "$manifest" ] || continue
+            plugin=${manifest%%/*}
+            npx --yes @openai/codex@0.147.0 plugin add "${plugin}@${marketplace}"
+          done

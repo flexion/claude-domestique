@@ -1,0 +1,127 @@
+{
+  "skills": [
+    {
+      "name": "agent-artifex:assess",
+      "classification": "public"
+    },
+    {
+      "name": "agent-artifex:design",
+      "classification": "public"
+    },
+    {
+      "name": "agent-artifex:foundations",
+      "classification": "public"
+    },
+    {
+      "name": "agent-artifex:guide",
+      "classification": "public"
+    },
+    {
+      "name": "agent-artifex:implement",
+      "classification": "public"
+    },
+    {
+      "name": "agent-artifex:learn",
+      "classification": "public"
+    },
+    {
+      "name": "comitatus:herd-setup",
+      "classification": "public"
+    },
+    {
+      "name": "comitatus:herdr",
+      "classification": "public"
+    },
+    {
+      "name": "mantra:assess",
+      "classification": "public"
+    },
+    {
+      "name": "mantra:make-rule",
+      "classification": "public"
+    },
+    {
+      "name": "mantra:skeptic",
+      "classification": "public"
+    },
+    {
+      "name": "mantra:troubleshoot",
+      "classification": "public"
+    },
+    {
+      "name": "memento:resume",
+      "classification": "public"
+    },
+    {
+      "name": "memento:session",
+      "classification": "public"
+    },
+    {
+      "name": "memento:start",
+      "classification": "public"
+    },
+    {
+      "name": "onus:close",
+      "classification": "public"
+    },
+    {
+      "name": "onus:commit",
+      "classification": "public"
+    },
+    {
+      "name": "onus:create",
+      "classification": "public"
+    },
+    {
+      "name": "onus:fetch",
+      "classification": "public"
+    },
+    {
+      "name": "onus:init",
+      "classification": "public"
+    },
+    {
+      "name": "onus:pr",
+      "classification": "public"
+    },
+    {
+      "name": "onus:status",
+      "classification": "public"
+    },
+    {
+      "name": "onus:update",
+      "classification": "public"
+    },
+    {
+      "name": "onus:validate-criteria",
+      "classification": "public"
+    },
+    {
+      "name": "onus:work-item-handler",
+      "classification": "public"
+    },
+    {
+      "name": "stilus:deslop",
+      "classification": "public"
+    },
+    {
+      "name": "stilus:review",
+      "classification": "public"
+    },
+    {
+      "name": "stilus:review-correctness",
+      "classification": "internal",
+      "orchestrator": "stilus:review"
+    },
+    {
+      "name": "stilus:review-summary",
+      "classification": "internal",
+      "orchestrator": "stilus:review"
+    },
+    {
+      "name": "stilus:review-voice",
+      "classification": "internal",
+      "orchestrator": "stilus:review"
+    }
+  ]
+}
