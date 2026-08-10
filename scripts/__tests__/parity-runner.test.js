@@ -118,3 +118,161 @@ test('UNAVAILABLE passes an allowed degraded scenario but fails a full-parity sc
   const full = await runScenario({ scenario: scenario({ class: 'isolation', allow_unavailable: false }), hosts: { codex: adapter([unavailable]) }, versions: { codex: ['v'] }, tempRoot: tempRoot(), release: true });
   expect(full.pass).toBe(false);
 });
+
+// Post-state must come from the filesystem: a side-effect negative that mutates
+// the workspace fails even when it reports forbidden_actions: [].
+test('an observed workspace mutation fails a side-effect negative despite a clean self-report', async () => {
+  const mutating = {
+    install: async () => ({ ok: true }),
+    run: async options => {
+      fs.writeFileSync(path.join(options.cwd, 'committed.txt'), 'side effect\n');
+      return {
+        scenario_id: options.scenarioId, host: options.host, host_version: options.hostVersion,
+        arm: options.arm, trial: options.trial, outcome: 'PASS',
+        observations: { selected_skill: null, output: '', exit_status: 0, state_files: {}, extra: {} },
+        state_changes: [], invariants: [], forbidden_actions: [],
+      };
+    },
+  };
+  const report = await runScenario({
+    scenario: scenario({ expectation: 'side-effect-negative', forbidden_side_effects: ['git mutation'] }),
+    hosts: { claude: mutating }, versions: { claude: ['v'] }, tempRoot: tempRoot(), release: true,
+  });
+  expect(report.pass).toBe(false);
+  expect(report.reason).toContain('committed.txt created');
+});
+
+test('an observed git mutation fails a side-effect negative', async () => {
+  const committing = {
+    install: async () => ({ ok: true }),
+    run: async options => {
+      const { execFileSync } = require('child_process');
+      // Under .claude/, so only the git movement can be the observed effect.
+      fs.mkdirSync(path.join(options.cwd, '.claude'), { recursive: true });
+      fs.writeFileSync(path.join(options.cwd, '.claude', 'note.md'), 'x\n');
+      execFileSync('git', ['add', '-A'], { cwd: options.cwd });
+      execFileSync('git', [
+        '-c', 'user.name=T', '-c', 'user.email=t@example.invalid', '-c', 'commit.gpgSign=false',
+        'commit', '-q', '-m', 'unauthorized',
+      ], { cwd: options.cwd });
+      return {
+        scenario_id: options.scenarioId, host: options.host, host_version: options.hostVersion,
+        arm: options.arm, trial: options.trial, outcome: 'PASS',
+        observations: { selected_skill: null, output: '', exit_status: 0, state_files: {}, extra: {} },
+        state_changes: [], invariants: [], forbidden_actions: [],
+      };
+    },
+  };
+  const report = await runScenario({
+    scenario: scenario({ expectation: 'side-effect-negative', forbidden_side_effects: ['git mutation'] }),
+    hosts: { claude: committing }, versions: { claude: ['v'] }, tempRoot: tempRoot(), release: true,
+  });
+  expect(report.pass).toBe(false);
+  expect(report.reason).toContain('observed git mutation');
+});
+
+test('state_changes and state_files are populated from the workspace', async () => {
+  const writer = {
+    install: async () => ({ ok: true }),
+    run: async options => {
+      fs.writeFileSync(path.join(options.cwd, 'report.md'), 'generated\n');
+      return {
+        scenario_id: options.scenarioId, host: options.host, host_version: options.hostVersion,
+        arm: options.arm, trial: options.trial, outcome: 'PASS',
+        observations: { selected_skill: 'stilus:review', output: '', exit_status: 0, state_files: {}, extra: {} },
+        state_changes: [], invariants: [],
+      };
+    },
+  };
+  const report = await runScenario({
+    scenario: scenario({ class: 'direct', invocation: { claude: '/stilus:review', codex: '$stilus:review' } }),
+    hosts: { claude: writer }, versions: { claude: ['v'] }, tempRoot: tempRoot(), release: true,
+  });
+  expect(report.pass).toBe(true);
+  const [result] = report.results;
+  expect(result.state_changes).toEqual(expect.arrayContaining([{ path: 'report.md', change: 'created' }]));
+  expect(result.observations.state_files['report.md']).toBe('generated\n');
+});
+
+const HANDOFF = {
+  id: 'claude-writes-codex-reads',
+  class: 'handoff',
+  prompt: 'Resume the exact saved session and report its unique marker.',
+  fixture: 'handoff/issue-feature-42-auth',
+  invariants: [],
+  forbidden: [],
+  handoff: { writer: 'claude', reader: 'codex' },
+};
+
+function handoffHost({ write = false, echo = false } = {}) {
+  return {
+    install: async () => ({ ok: true }),
+    run: async options => {
+      const marker = /PARITY-HANDOFF-[0-9a-f-]+/i.exec(options.prompt);
+      const sessionPath = path.join(options.cwd, '.claude', 'sessions', 'issue-feature-42-auth.md');
+      if (write && marker) {
+        fs.mkdirSync(path.dirname(sessionPath), { recursive: true });
+        fs.appendFileSync(sessionPath, `\n${marker[0]}\n`);
+      }
+      const recorded = fs.existsSync(sessionPath) ? fs.readFileSync(sessionPath, 'utf8') : '';
+      return {
+        scenario_id: options.scenarioId, host: options.host, host_version: options.hostVersion,
+        arm: options.arm, trial: options.trial, outcome: 'PASS',
+        observations: {
+          selected_skill: 'memento:resume',
+          output: echo ? recorded : 'no session content',
+          exit_status: 0, state_files: {}, extra: {},
+        },
+        state_changes: [], invariants: [],
+      };
+    },
+  };
+}
+
+// The transition is real: the writing host must put the marker on disk and the
+// reading host must recover it from the same workspace.
+test('a handoff runs the writing host then the reading host over one workspace', async () => {
+  const report = await runScenario({
+    scenario: HANDOFF,
+    hosts: { claude: handoffHost({ write: true }), codex: handoffHost({ echo: true }) },
+    versions: { claude: ['2.1.226'], codex: ['0.147.0'] },
+    tempRoot: tempRoot(), release: true,
+  });
+  expect(report.pass).toBe(true);
+  expect(report.assessments.map(entry => entry.role)).toEqual(['writer', 'reader']);
+  expect(report.assessments[0].host).toBe('claude');
+  expect(report.assessments[1].host).toBe('codex');
+});
+
+test('a handoff fails when the writing host never records the marker', async () => {
+  const report = await runScenario({
+    scenario: HANDOFF,
+    hosts: { claude: handoffHost({ write: false }), codex: handoffHost({ echo: true }) },
+    versions: { claude: ['2.1.226'], codex: ['0.147.0'] },
+    tempRoot: tempRoot(), release: true,
+  });
+  expect(report.pass).toBe(false);
+  expect(report.reason).toContain('did not record');
+});
+
+test('a handoff fails when the reading host does not report the written marker', async () => {
+  const report = await runScenario({
+    scenario: HANDOFF,
+    hosts: { claude: handoffHost({ write: true }), codex: handoffHost({ echo: false }) },
+    versions: { claude: ['2.1.226'], codex: ['0.147.0'] },
+    tempRoot: tempRoot(), release: true,
+  });
+  expect(report.pass).toBe(false);
+  expect(report.reason).toContain('did not recover the exact session');
+});
+
+test('a handoff fails when an adapter for either direction is missing', async () => {
+  const report = await runScenario({
+    scenario: HANDOFF,
+    hosts: { claude: handoffHost({ write: true }) },
+    versions: { claude: ['2.1.226'] },
+    tempRoot: tempRoot(), release: true,
+  });
+  expect(report.pass).toBe(false);
+  expect(report.reason).toContain('requires adapters for both claude and codex');
+});
