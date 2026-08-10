@@ -36,6 +36,9 @@
     "type": "git",
     "url": "https://github.com/flexion/claude-domestique"
   },
+  "engines": {
+    "node": ">=24"
+  },
   "devDependencies": {
     "jest": "^29.7.0",
     "js-yaml": "^5.2.3"

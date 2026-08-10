@@ -88,7 +88,7 @@ Each plugin works standalone but gains enhanced behavior when used together.
 |------|---------|---------|---------|
 | [Claude Code](https://claude.ai/code) | 2.1.226+ | All | Deliberately tested plugin, skill-preloading, subagent, and parity floor |
 | Codex CLI | 0.147.0+ | All | Deliberately tested plugin, subagent, and parity floor |
-| [Node.js](https://nodejs.org/) | 18+ | All | Runtime for hooks and scripts |
+| [Node.js](https://nodejs.org/) | 24+ | All | Runtime for hooks and scripts |
 | [git](https://git-scm.com/) | 2.x | All | Branch detection, commits, session tracking |
 
 ### Platform-Specific (onus)
