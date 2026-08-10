@@ -31,8 +31,9 @@ Add `--local` for `~/.claude/settings.local.json` (machine, gitignored), or
 
 ## What it adds
 
-- Safe herdr verbs: `agent list/get/read/send/rename/wait`, `pane read`, `wait`,
-  and the `tab`/`workspace`/`worktree` lifecycle (including `worktree remove`).
+- Safe herdr verbs: `agent list/get/read/prompt/rename/wait`, `pane read`,
+  `pane wait-output`, and the `tab`/`workspace`/`worktree` lifecycle (including
+  `worktree remove`).
 - `git fetch`, read-only `git status`/`git branch`.
 - One rule **per helper verb** at the stable path, e.g.
   `Bash(node <home>/.claude/comitatus/skills/herdr/scripts/herd.js send:*)` -

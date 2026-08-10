@@ -18,7 +18,7 @@ function buildOrientation(herdJsPath, { codexPlugin } = {}) {
     'You are running inside herdr, a terminal-native agent multiplexer.',
     'Invoke the `comitatus:herdr` skill for worktree / herd / pane / agent workflows.',
     '',
-    'Prefer native `herdr` verbs by handle: `herdr agent send|read|get|wait <handle>`.',
+    'Prefer native `herdr` verbs by handle: `herdr agent prompt|read|get|wait <handle>`.',
     'The herd.js helper adds the composite verbs (each is self-contained and',
     'runs herdr itself - no shell variables):',
     '  status|members|wait|send|send-wait-read|agent|up',

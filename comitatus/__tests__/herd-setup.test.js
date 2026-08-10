@@ -3,14 +3,15 @@ const s = require('../scripts/herd-setup.js');
 describe('SAFE_ALLOW', () => {
   test('includes safe read/lifecycle verbs + read-only git', () => {
     expect(s.SAFE_ALLOW).toEqual(expect.arrayContaining([
-      'Bash(herdr agent list)', 'Bash(herdr agent send:*)', 'Bash(herdr wait:*)',
+      'Bash(herdr agent list)', 'Bash(herdr agent prompt:*)', 'Bash(herdr pane wait-output:*)',
       'Bash(herdr agent get:*)', 'Bash(herdr agent read:*)', 'Bash(herdr agent wait:*)',
       'Bash(herdr worktree remove:*)', 'Bash(git fetch:*)', 'Bash(git branch)',
     ]));
   });
-  test('NEVER includes arbitrary-exec or destructive rules', () => {
+  test('NEVER includes arbitrary-exec, destructive, or removed 0.7.5 rules', () => {
     for (const bad of ['Bash(herdr pane run:*)', 'Bash(herdr pane send-keys:*)',
       'Bash(herdr agent start:*)', 'Bash(sleep:*)',
+      'Bash(herdr agent send:*)', 'Bash(herdr wait:*)', // removed in herdr 0.7.5
       'Bash(git branch:*)', 'Bash(git reset:*)', 'Bash(git checkout:*)',
       'Bash(git push:*)', 'Bash(git worktree remove:*)']) {
       expect(s.SAFE_ALLOW).not.toContain(bad);
