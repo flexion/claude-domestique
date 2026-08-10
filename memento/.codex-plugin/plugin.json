@@ -1,6 +1,6 @@
 {
   "name": "memento",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Branch-based session persistence and work resumption",
   "author": {
     "name": "David Puglielli"
