@@ -4,7 +4,6 @@
 const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
-const { loadScenarios } = require('./parity/scenarios');
 
 const ROOT = path.resolve(__dirname, '..');
 const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
@@ -195,59 +194,6 @@ function validateCatalogOrchestrators(entries, errors) {
   }
 }
 
-function validateCatalogScenarios(root, entries, errors) {
-  let scenarios;
-  try {
-    scenarios = loadScenarios(path.join(root, 'scenarios', 'parity'));
-  } catch (error) {
-    for (const problem of error.message.split('\n')) {
-      errors.push(`skill-catalog: invalid scenario (${problem})`);
-    }
-    return;
-  }
-
-  const scenariosById = new Map(scenarios.map(scenario => [scenario.id, scenario]));
-
-  for (const [name, entry] of entries) {
-    if (entry.classification !== 'public') continue;
-    if (!Array.isArray(entry.scenarios) || entry.scenarios.length === 0) {
-      errors.push(`skill-catalog: ${name} must reference discovery scenarios`);
-      continue;
-    }
-
-    const referenced = [];
-    for (const scenarioId of entry.scenarios) {
-      const scenario = scenariosById.get(scenarioId);
-      if (!scenario) {
-        errors.push(`skill-catalog: ${name} references missing scenario ${String(scenarioId)}`);
-        continue;
-      }
-      if (scenario.class !== 'discovery') {
-        errors.push(`skill-catalog: ${name} references non-discovery scenario ${scenarioId}`);
-        continue;
-      }
-      if (scenario.target_skill !== name) {
-        errors.push(
-          `skill-catalog: ${name} references scenario ${scenarioId} targeting ${scenario.target_skill}`
-        );
-        continue;
-      }
-      referenced.push(scenario);
-    }
-
-    if (!referenced.some(scenario => scenario.expectation === 'positive')) {
-      errors.push(`skill-catalog: ${name} must reference a positive discovery scenario`);
-    }
-    if (!referenced.some(scenario =>
-      ['ordinary-negative', 'side-effect-negative'].includes(scenario.expectation))) {
-      errors.push(`skill-catalog: ${name} must reference a negative discovery scenario`);
-    }
-    if (!referenced.some(scenario => scenario.expectation === 'ambiguous')) {
-      errors.push(`skill-catalog: ${name} must reference a ambiguous/neighboring discovery scenario`);
-    }
-  }
-}
-
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -315,7 +261,6 @@ function validateSkillCatalog(root, plugins, errors) {
   }
 
   validateCatalogOrchestrators(entries, errors);
-  validateCatalogScenarios(root, entries, errors);
   validateDescriptionPolicy(root, entries, errors);
 }
 

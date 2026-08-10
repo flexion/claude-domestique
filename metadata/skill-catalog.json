@@ -2,255 +2,115 @@
   "skills": [
     {
       "name": "agent-artifex:assess",
-      "classification": "public",
-      "scenarios": [
-        "agent-artifex-assess-positive",
-        "agent-artifex-assess-negative",
-        "agent-artifex-assess-neighbor"
-      ]
+      "classification": "public"
     },
     {
       "name": "agent-artifex:design",
-      "classification": "public",
-      "scenarios": [
-        "agent-artifex-design-positive",
-        "agent-artifex-design-negative",
-        "agent-artifex-design-neighbor"
-      ]
+      "classification": "public"
     },
     {
       "name": "agent-artifex:foundations",
-      "classification": "public",
-      "scenarios": [
-        "agent-artifex-foundations-positive",
-        "agent-artifex-foundations-negative",
-        "agent-artifex-foundations-neighbor"
-      ]
+      "classification": "public"
     },
     {
       "name": "agent-artifex:guide",
-      "classification": "public",
-      "scenarios": [
-        "agent-artifex-guide-positive",
-        "agent-artifex-guide-negative",
-        "agent-artifex-guide-neighbor"
-      ]
+      "classification": "public"
     },
     {
       "name": "agent-artifex:implement",
-      "classification": "public",
-      "scenarios": [
-        "agent-artifex-implement-positive",
-        "agent-artifex-implement-negative",
-        "agent-artifex-implement-neighbor"
-      ]
+      "classification": "public"
     },
     {
       "name": "agent-artifex:learn",
-      "classification": "public",
-      "scenarios": [
-        "agent-artifex-learn-positive",
-        "agent-artifex-learn-negative",
-        "agent-artifex-learn-neighbor"
-      ]
+      "classification": "public"
     },
     {
       "name": "comitatus:herd-setup",
-      "classification": "public",
-      "scenarios": [
-        "comitatus-herd-setup-positive",
-        "comitatus-herd-setup-negative",
-        "comitatus-herd-setup-neighbor"
-      ]
+      "classification": "public"
     },
     {
       "name": "comitatus:herdr",
-      "classification": "public",
-      "scenarios": [
-        "comitatus-herdr-positive",
-        "comitatus-herdr-negative",
-        "comitatus-herdr-neighbor"
-      ]
+      "classification": "public"
     },
     {
       "name": "mantra:assess",
-      "classification": "public",
-      "scenarios": [
-        "mantra-assess-positive",
-        "mantra-assess-negative",
-        "mantra-assess-neighbor"
-      ]
+      "classification": "public"
     },
     {
       "name": "mantra:make-rule",
-      "classification": "public",
-      "scenarios": [
-        "mantra-make-rule-positive",
-        "mantra-make-rule-negative",
-        "mantra-make-rule-neighbor"
-      ]
+      "classification": "public"
     },
     {
       "name": "mantra:skeptic",
-      "classification": "public",
-      "scenarios": [
-        "mantra-skeptic-positive",
-        "mantra-skeptic-negative",
-        "mantra-skeptic-neighbor"
-      ]
+      "classification": "public"
     },
     {
       "name": "mantra:troubleshoot",
-      "classification": "public",
-      "scenarios": [
-        "mantra-troubleshoot-positive",
-        "mantra-troubleshoot-negative",
-        "mantra-troubleshoot-neighbor"
-      ]
+      "classification": "public"
     },
     {
       "name": "memento:resume",
-      "classification": "public",
-      "scenarios": [
-        "memento-resume-positive",
-        "memento-resume-negative",
-        "memento-resume-neighbor"
-      ]
+      "classification": "public"
     },
     {
       "name": "memento:session",
-      "classification": "public",
-      "scenarios": [
-        "memento-session-positive",
-        "memento-session-negative",
-        "memento-session-neighbor"
-      ]
+      "classification": "public"
     },
     {
       "name": "memento:session-manager",
-      "classification": "public",
-      "scenarios": [
-        "memento-session-manager-positive",
-        "memento-session-manager-negative",
-        "memento-session-manager-neighbor"
-      ]
+      "classification": "public"
     },
     {
       "name": "memento:start",
-      "classification": "public",
-      "scenarios": [
-        "memento-start-positive",
-        "memento-start-negative",
-        "memento-start-neighbor"
-      ]
+      "classification": "public"
     },
     {
       "name": "onus:close",
-      "classification": "public",
-      "scenarios": [
-        "onus-close-positive",
-        "onus-close-negative",
-        "onus-close-neighbor"
-      ]
+      "classification": "public"
     },
     {
       "name": "onus:commit",
-      "classification": "public",
-      "scenarios": [
-        "onus-commit-positive",
-        "onus-commit-negative",
-        "onus-commit-neighbor"
-      ]
+      "classification": "public"
     },
     {
       "name": "onus:create",
-      "classification": "public",
-      "scenarios": [
-        "onus-create-positive",
-        "onus-create-negative",
-        "onus-create-neighbor"
-      ]
+      "classification": "public"
     },
     {
       "name": "onus:fetch",
-      "classification": "public",
-      "scenarios": [
-        "onus-fetch-positive",
-        "onus-fetch-negative",
-        "onus-fetch-neighbor"
-      ]
+      "classification": "public"
     },
     {
       "name": "onus:init",
-      "classification": "public",
-      "scenarios": [
-        "onus-init-positive",
-        "onus-init-negative",
-        "onus-init-neighbor"
-      ]
+      "classification": "public"
     },
     {
       "name": "onus:pr",
-      "classification": "public",
-      "scenarios": [
-        "onus-pr-positive",
-        "onus-pr-negative",
-        "onus-pr-neighbor"
-      ]
+      "classification": "public"
     },
     {
       "name": "onus:status",
-      "classification": "public",
-      "scenarios": [
-        "onus-status-positive",
-        "onus-status-negative",
-        "onus-status-neighbor"
-      ]
+      "classification": "public"
     },
     {
       "name": "onus:update",
-      "classification": "public",
-      "scenarios": [
-        "onus-update-positive",
-        "onus-update-negative",
-        "onus-update-neighbor"
-      ]
+      "classification": "public"
     },
     {
       "name": "onus:validate-criteria",
-      "classification": "public",
-      "scenarios": [
-        "onus-validate-criteria-positive",
-        "onus-validate-criteria-negative",
-        "onus-validate-criteria-neighbor"
-      ]
+      "classification": "public"
     },
     {
       "name": "onus:work-item-handler",
-      "classification": "public",
-      "scenarios": [
-        "onus-work-item-handler-positive",
-        "onus-work-item-handler-negative",
-        "onus-work-item-handler-neighbor"
-      ]
+      "classification": "public"
     },
     {
       "name": "stilus:deslop",
-      "classification": "public",
-      "scenarios": [
-        "stilus-deslop-positive",
-        "stilus-deslop-negative",
-        "stilus-deslop-neighbor"
-      ]
+      "classification": "public"
     },
     {
       "name": "stilus:review",
-      "classification": "public",
-      "scenarios": [
-        "stilus-review-positive",
-        "stilus-review-negative",
-        "stilus-review-neighbor"
-      ]
+      "classification": "public"
     },
     {
       "name": "stilus:review-correctness",

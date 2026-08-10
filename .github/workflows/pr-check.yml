@@ -31,9 +31,6 @@ jobs:
       - name: Run tests with coverage
         run: npm run test:coverage
 
-      - name: Run credential-free deterministic parity checks
-        run: npm run parity:deterministic
-
       - name: Validate plugin metadata
         run: npm run validate:plugins
 

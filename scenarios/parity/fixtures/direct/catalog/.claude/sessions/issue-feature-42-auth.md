@@ -1,3 +1,0 @@
-# Session
-
-PARITY-DIRECT-SESSION
