@@ -9,6 +9,7 @@ const {
   homeVariable,
   parseAuthStatus,
   seedHostAuth,
+  shredSeededAuth,
 } = require('../parity/auth');
 
 const roots = [];
@@ -85,6 +86,11 @@ test('reads real Claude authentication status', () => {
   expect(parseAuthStatus('claude', JSON.stringify({
     loggedIn: true, authMethod: 'claude.ai', subscriptionType: 'team',
   }))).toEqual({ authenticated: true, detail: 'claude.ai' });
+  // The shape an isolated CLAUDE_CONFIG_DIR reports when CLAUDE_CODE_OAUTH_TOKEN
+  // carries a subscription token, which is how Claude authenticates per trial.
+  expect(parseAuthStatus('claude', JSON.stringify({
+    loggedIn: true, authMethod: 'oauth_token', apiProvider: 'firstParty',
+  }))).toEqual({ authenticated: true, detail: 'oauth_token' });
   expect(parseAuthStatus('claude', '{"loggedIn": false, "authMethod": "none"}').authenticated).toBe(false);
 });
 
@@ -155,4 +161,27 @@ test('preflight reports the method when the seeded home authenticates', async ()
     execute: async () => ({ stdout: 'Logged in using ChatGPT', stderr: '', code: 0 }),
   });
   expect(outcome).toMatchObject({ host: 'codex', seeded: ['auth.json'], method: 'ChatGPT' });
+});
+
+// Residency, not write count, is the mitigation: nothing downstream reads the
+// seeded login, so it goes as soon as the host invocation returns.
+test('shredding removes the seeded login and reports what it removed', () => {
+  const source = tempHome({ 'auth.json': '{"token":"secret-value"}' });
+  const target = path.join(tempHome(), 'fresh');
+  const seeded = seedHostAuth({ sourceHome: source, targetHome: target });
+  expect(shredSeededAuth(target, seeded)).toEqual(['auth.json']);
+  expect(fs.existsSync(path.join(target, 'auth.json'))).toBe(false);
+  expect(fs.existsSync(source)).toBe(true);
+});
+
+test('shredding is idempotent and tolerates an already absent file', () => {
+  const target = tempHome();
+  expect(shredSeededAuth(target, ['auth.json'])).toEqual([]);
+  expect(shredSeededAuth(target, undefined)).toEqual([]);
+});
+
+test('shredding leaves the rest of the home intact for post-run inspection', () => {
+  const target = tempHome({ 'auth.json': '{}', 'settings.json': '{"a":1}' });
+  shredSeededAuth(target, ['auth.json']);
+  expect(fs.readdirSync(target)).toEqual(['settings.json']);
 });

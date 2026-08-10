@@ -35,10 +35,45 @@ CODEX_HOME=$(mktemp -d) codex login status         # Not logged in
 CLAUDE_CONFIG_DIR=$(mktemp -d) claude auth status  # {"loggedIn": false}
 ```
 
-The runner therefore seeds only the login artifact into each fresh home and
-carries nothing else, because settings, plugin state, and history all influence
-the behavior under test. Discovery matches `credentials.json`, `auth.json`, and
-`token.json`, with or without a leading dot.
+The two hosts need different answers, because they store a subscription login
+differently.
+
+**Claude: a token, no seeding.** On macOS the subscription login lives in the
+Keychain under service `Claude Code-credentials`, and an isolated config directory
+cannot reach it — confirmed by copying a near-complete `~/.claude` into a
+temporary directory, which still reported `loggedIn: false`. Mint a long-lived
+token instead and pass it through the environment, where it reaches every trial
+home without any file being written:
+
+```bash
+claude setup-token   # run in a real terminal; it is an interactive OAuth flow
+export CLAUDE_CODE_OAUTH_TOKEN=...
+CLAUDE_CONFIG_DIR=$(mktemp -d) claude auth status
+# {"loggedIn": true, "authMethod": "oauth_token", ...}
+```
+
+Keep the token out of the repository, out of shell history, and out of argv. With
+the 1Password CLI, inject it for the single command so it never enters the
+ambient shell:
+
+```bash
+op run --env-file=<(echo 'CLAUDE_CODE_OAUTH_TOKEN=op://<vault>/Claude Code parity token/credential') -- \
+  env PARITY_RELEASE=1 npm run parity:release -- --release candidate-1 \
+  --temp-root /absolute/disposable/parity-root
+```
+
+`op run` masks secrets only in its own output, so the token's protection in
+retained evidence comes from `sanitizeEvidence`, which redacts it under the
+`TOKEN` name rule, and from `verify-release-evidence`, which rejects a bundle
+where an unsanitized value survives.
+
+**Codex: a seeded login file.** `auth.json` copied into the isolated `CODEX_HOME`
+authenticates it (`Logged in using ChatGPT`). The runner seeds only the login
+artifact and carries nothing else, because settings, plugin state, and history all
+influence the behavior under test. Discovery matches `credentials.json`,
+`auth.json`, and `token.json`, with or without a leading dot. The seeded file is
+overwritten and removed as soon as the host invocation returns, so residency stays
+at a few files rather than one per trial across the matrix.
 
 Seeding is an allowlist and can be wrong, so preflight probes each host's status
 command inside a seeded home before any scenario runs. A host that is not

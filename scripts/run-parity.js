@@ -130,8 +130,14 @@ async function verifyHostAuthentication({
     throw new Error(
       `${host} is not authenticated inside an isolated ${variable}. ` +
       `Seeded ${copied.length > 0 ? copied.join(', ') : 'nothing'} from ${sourceHome}. ` +
-      `Log in with the host CLI, then name the login file explicitly via ` +
-      `PARITY_${host.toUpperCase()}_AUTH_FILES if it is not one of credentials.json, auth.json, or token.json.`
+      (host === 'claude'
+        ? 'Claude stores a subscription login in the macOS Keychain, which an isolated ' +
+          'config directory cannot reach, so seeding a file will not help. Run ' +
+          '`claude setup-token` and export the token as CLAUDE_CODE_OAUTH_TOKEN; it ' +
+          'propagates into every trial home through the environment.'
+        : 'Log in with the host CLI, then name the login file explicitly via ' +
+          `PARITY_${host.toUpperCase()}_AUTH_FILES if it is not one of credentials.json, ` +
+          'auth.json, or token.json.')
     );
   }
   return { host, home, seeded: copied, method: status.detail };

@@ -6,7 +6,7 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 const { createControlCopy } = require('./control-copy');
 const { evaluateInvariant, evaluateTrials } = require('./invariants');
-const { seedHostAuth } = require('./auth');
+const { seedHostAuth, shredSeededAuth } = require('./auth');
 
 const REPOSITORY_ROOT = path.resolve(__dirname, '..', '..');
 
@@ -138,8 +138,11 @@ function defaultPrepare({
   // The home stays fresh for plugins, sessions, and caches; only the login is
   // carried in, because a directory-scoped subscription login does not survive
   // isolation on either host.
+  let seededAuth = [];
   if (authSources[host]) {
-    seedHostAuth({ sourceHome: authSources[host], targetHome: home, artifacts: authArtifacts[host] });
+    seededAuth = seedHostAuth({
+      sourceHome: authSources[host], targetHome: home, artifacts: authArtifacts[host],
+    });
   }
   fs.mkdirSync(cwd, { recursive: true });
   const fixture = path.join(REPOSITORY_ROOT, 'scenarios', 'parity', 'fixtures', scenario.fixture);
@@ -178,6 +181,7 @@ function defaultPrepare({
     home,
     cwd,
     marketplace,
+    seededAuth,
     plugins: catalog.plugins.map(plugin => plugin.name),
     pluginVersions: Object.fromEntries(catalog.plugins.map(plugin => [plugin.name, plugin.version])),
   };
@@ -313,6 +317,7 @@ async function runHandoff(options) {
     const writeResult = writeInstalled && writeInstalled.ok === false
       ? normalizedInstallFailure(writeOptions, writeInstalled.infrastructure_failure)
       : await adapterFor(writer, writerVersion).run(writeOptions);
+    shredSeededAuth(writePrepared.home, writePrepared.seededAuth);
     writeResult.prompt = writeOptions.prompt;
     results.push(writeResult);
     assessments.push({
@@ -339,6 +344,13 @@ async function runHandoff(options) {
 
     const readHome = path.join(path.dirname(writePrepared.home), `reader-${safe(reader)}-home`);
     fs.mkdirSync(readHome, { recursive: true });
+    const readerSeeded = (options.authSources || {})[reader]
+      ? seedHostAuth({
+        sourceHome: options.authSources[reader],
+        targetHome: readHome,
+        artifacts: (options.authArtifacts || {})[reader],
+      })
+      : [];
     const readOptions = {
       scenarioId: scenario.id, host: reader, hostVersion: readerVersion, arm: 'guided', trial: 1,
       prompt: `${scenario.prompt}\n\nEvaluation protocol: on the final line, write PARITY_RESULT followed by one compact JSON object with selected_skill, outcome, and forbidden_actions.`,
@@ -351,6 +363,7 @@ async function runHandoff(options) {
     const readResult = readInstalled && readInstalled.ok === false
       ? normalizedInstallFailure(readOptions, readInstalled.infrastructure_failure)
       : await adapterFor(reader, readerVersion).run(readOptions);
+    shredSeededAuth(readHome, readerSeeded);
     readResult.prompt = readOptions.prompt;
     readResult.observed_side_effects = applyPostState(readResult, scenario, writePrepared.cwd, snapshots);
 
@@ -455,6 +468,7 @@ async function runScenario(options) {
           let result = installed && installed.ok === false
             ? normalizedInstallFailure(runOptions, installed.infrastructure_failure)
             : await adapter.run(runOptions);
+          shredSeededAuth(prepared.home, prepared.seededAuth);
           if (result.outcome === 'INFRASTRUCTURE_FAILURE' && attempt === 1) {
             infrastructureAttempts.push(result.infrastructure_failure);
             continue;

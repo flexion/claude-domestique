@@ -103,6 +103,28 @@ function homeVariable(host) {
   return HOME_ENVIRONMENT[host] || null;
 }
 
+// The seeded login is needed only while the host process runs; nothing
+// downstream reads it, because post-state analysis inspects the workspace rather
+// than the home. Removing it as soon as the invocation returns keeps residency to
+// a handful of files at a time instead of one per trial across the whole matrix.
+// Overwriting before unlinking is best effort on a copy-on-write filesystem; the
+// short residency is the real mitigation.
+function shredSeededAuth(home, names) {
+  const removed = [];
+  for (const name of names || []) {
+    const target = path.join(home, name);
+    try {
+      const { size } = fs.statSync(target);
+      if (size > 0) fs.writeFileSync(target, Buffer.alloc(size, 0));
+      fs.rmSync(target, { force: true });
+      removed.push(name);
+    } catch (error) {
+      continue;
+    }
+  }
+  return removed;
+}
+
 module.exports = {
   AUTH_ARTIFACT_PATTERN,
   authArtifactNames,
@@ -110,4 +132,5 @@ module.exports = {
   homeVariable,
   parseAuthStatus,
   seedHostAuth,
+  shredSeededAuth,
 };
