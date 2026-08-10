@@ -86,9 +86,21 @@ function runHandoff(root, scenario, workspace, home) {
   return observation;
 }
 
-function runDeterministic({ root }) {
+// An unknown id must fail rather than silently yield an empty set: an empty run
+// reports pass and would read as coverage.
+function filterScenarios(scenarios, requested) {
+  if (typeof requested !== 'string' || requested.trim() === '') return scenarios;
+  const wanted = requested.split(',').map(value => value.trim()).filter(Boolean);
+  const available = new Set(scenarios.map(scenario => scenario.id));
+  for (const id of wanted) {
+    if (!available.has(id)) throw new Error(`unknown scenario id: ${id}`);
+  }
+  return scenarios.filter(scenario => wanted.includes(scenario.id));
+}
+
+function runDeterministic({ root, scenario: requested }) {
   const scenarioRoot = path.join(root, 'scenarios', 'parity');
-  const scenarios = loadScenarios(scenarioRoot);
+  const scenarios = filterScenarios(loadScenarios(scenarioRoot), requested);
   const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'parity-deterministic-'));
   let hookPassed = 0;
   let handoffPassed = 0;

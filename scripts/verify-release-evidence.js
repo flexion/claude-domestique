@@ -45,6 +45,27 @@ function validateCells(cells, errors) {
   }
 }
 
+// Every host cell the manifest declares must be backed by at least one trial
+// recorded against that host and version. Otherwise a declared cell is a label
+// with no execution behind it.
+function validateCellCoverage(cells, root, errors) {
+  const executed = new Set();
+  for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith('.json') || entry.name === 'manifest.json') continue;
+    try {
+      const record = JSON.parse(fs.readFileSync(path.join(root, entry.name), 'utf8'));
+      executed.add(`${record.host}:${record.host_version}`);
+    } catch (error) {
+      continue;
+    }
+  }
+  for (const cell of Array.isArray(cells) ? cells : []) {
+    if (!executed.has(`${cell.host}:${cell.version}`)) {
+      errors.push(`host cell ${cell.host}:${cell.version} has no trial evidence`);
+    }
+  }
+}
+
 function validateBundle(root) {
   const errors = [];
   const manifestPath = path.join(root, 'manifest.json');
@@ -58,6 +79,7 @@ function validateBundle(root) {
   validateTrust(manifest.manual_trust, errors);
   validateCells(manifest.host_cells, errors);
 
+  let trialRecords = 0;
   for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
     if (!entry.isFile() || !entry.name.endsWith('.json') || entry.name === 'manifest.json') continue;
     let record;
@@ -67,9 +89,28 @@ function validateBundle(root) {
       errors.push(`${entry.name}: invalid JSON`);
       continue;
     }
+    trialRecords += 1;
     if (JSON.stringify(stable(record)) !== JSON.stringify(stable(sanitizeEvidence(record)))) {
       errors.push(`${entry.name}: unsanitized or non-allowlisted evidence`);
     }
+    // A recorded behavioral failure is a failed release result. Accepting one
+    // here would let the gate certify a bundle that documents its own failure.
+    if (record.result !== 'PASS') {
+      errors.push(`${entry.name}: trial result is ${JSON.stringify(record.result)}; every retained trial must be PASS`);
+    }
+    for (const [host, role] of [['host', record.host], ['host_version', record.host_version]]) {
+      if (typeof role !== 'string' || role.trim() === '') {
+        errors.push(`${entry.name}: ${host} is required to attribute the trial to a host cell`);
+      }
+    }
+  }
+
+  // A manifest can claim every host role while no trial ever ran. Evidence has
+  // to contain the executions it asserts.
+  if (trialRecords === 0) {
+    errors.push('bundle contains no trial evidence; a manifest alone cannot support a parity claim');
+  } else {
+    validateCellCoverage(manifest.host_cells, root, errors);
   }
   return errors;
 }

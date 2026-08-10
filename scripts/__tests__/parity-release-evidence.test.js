@@ -17,11 +17,25 @@ function bundle(manualTrust, cells) {
     ],
     manual_trust: manualTrust,
   }, null, 2));
-  fs.writeFileSync(path.join(root, 'trial.json'), JSON.stringify({
+  // Every declared host cell needs a trial behind it, so a complete bundle
+  // carries both hosts.
+  fs.writeFileSync(path.join(root, 'trial-claude.json'), JSON.stringify({
     scenario_id: 'one', host: 'claude', host_version: '2.1.226', arm: 'guided',
     trial: 1, observations: { output: 'safe' }, state_changes: [], invariants: [], result: 'PASS',
   }, null, 2));
+  fs.writeFileSync(path.join(root, 'trial-codex.json'), JSON.stringify({
+    scenario_id: 'one', host: 'codex', host_version: '0.147.0', arm: 'guided',
+    trial: 1, observations: { output: 'safe' }, state_changes: [], invariants: [], result: 'PASS',
+  }, null, 2));
   return root;
+}
+
+function writeTrial(root, name, overrides) {
+  fs.writeFileSync(path.join(root, name), JSON.stringify({
+    scenario_id: 'one', host: 'claude', host_version: '2.1.226', arm: 'guided',
+    trial: 1, observations: { output: 'safe' }, state_changes: [], invariants: [], result: 'PASS',
+    ...overrides,
+  }, null, 2));
 }
 
 const HASH = 'a'.repeat(64);
@@ -71,4 +85,40 @@ test('rejects unsanitized secrets and absolute home paths', () => {
   }));
   const errors = validateBundle(root).join('\n');
   expect(errors).toContain('unsanitized');
+});
+
+// A manifest can assert every host role while no trial ever ran. Accepting that
+// would let the gate certify a bundle that proves nothing.
+test('rejects a bundle whose manifest claims roles but holds no trial evidence', () => {
+  const root = bundle(validTrust());
+  for (const name of fs.readdirSync(root)) {
+    if (name !== 'manifest.json') fs.rmSync(path.join(root, name));
+  }
+  expect(validateBundle(root)).toContain(
+    'bundle contains no trial evidence; a manifest alone cannot support a parity claim'
+  );
+});
+
+// A behavioral failure remains a failed release result; it cannot be retained
+// as passing evidence.
+test('rejects a retained trial whose result is not PASS', () => {
+  const root = bundle(validTrust());
+  writeTrial(root, 'trial-claude.json', { result: 'FAIL' });
+  expect(validateBundle(root)).toContain(
+    'trial-claude.json: trial result is "FAIL"; every retained trial must be PASS'
+  );
+});
+
+test('rejects a declared host cell with no matching trial', () => {
+  const root = bundle(validTrust());
+  fs.rmSync(path.join(root, 'trial-codex.json'));
+  expect(validateBundle(root)).toContain('host cell codex:0.147.0 has no trial evidence');
+});
+
+test('rejects a trial that cannot be attributed to a host cell', () => {
+  const root = bundle(validTrust());
+  writeTrial(root, 'trial-claude.json', { host: '' });
+  expect(validateBundle(root)).toContain(
+    'trial-claude.json: host is required to attribute the trial to a host cell'
+  );
 });

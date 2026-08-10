@@ -16,16 +16,56 @@ const { validateBundle } = require('./verify-release-evidence');
 
 const ROOT = path.resolve(__dirname, '..');
 
+const KNOWN_OPTIONS = Object.freeze([
+  'mode', 'release', 'temp-root', 'claude-current', 'codex-current', 'scenario',
+]);
+
+// Unknown options used to be collected and ignored. A misspelled
+// --claude-current then fell through to its default, silently rerunning the
+// minimum binary while the manifest still stamped a "current" role on it.
 function argumentsFrom(argv) {
   const values = {};
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
     if (!token.startsWith('--')) continue;
-    values[token.slice(2)] = argv[index + 1] && !argv[index + 1].startsWith('--')
+    const name = token.slice(2);
+    if (!KNOWN_OPTIONS.includes(name)) {
+      throw new Error(`unknown parity option: --${name}`);
+    }
+    values[name] = argv[index + 1] && !argv[index + 1].startsWith('--')
       ? argv[++index]
       : true;
   }
   return values;
+}
+
+function parseVersion(text) {
+  if (typeof text !== 'string') return null;
+  const match = /(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)/.exec(text);
+  return match ? match[1] : null;
+}
+
+// The declared floor is only meaningful if the binary reports it. A mismatch
+// would record a host_version the execution never used.
+function assertObservedVersion(host, declared, output) {
+  const observed = parseVersion(output);
+  if (!observed) {
+    throw new Error(`${host} did not report a parsable version: ${JSON.stringify(String(output).slice(0, 80))}`);
+  }
+  if (observed !== declared) {
+    throw new Error(`${host} reported version ${observed} but the matrix declared ${declared}`);
+  }
+  return observed;
+}
+
+function selectScenarios(scenarios, requested) {
+  if (typeof requested !== 'string' || requested.trim() === '') return scenarios;
+  const wanted = requested.split(',').map(value => value.trim()).filter(Boolean);
+  const available = new Set(scenarios.map(scenario => scenario.id));
+  for (const id of wanted) {
+    if (!available.has(id)) throw new Error(`unknown scenario id: ${id}`);
+  }
+  return scenarios.filter(scenario => wanted.includes(scenario.id));
 }
 
 function adapterFactory(packageName, createAdapter) {
@@ -74,6 +114,18 @@ async function manualTrustCheckpoint({ tempRoot, codexVersion }) {
   return record;
 }
 
+const TRUST_FIELDS = Object.freeze([
+  'reviewed_hook_hash', 'approved_hook_hash', 'approved_via', 'before', 'after', 'bypass_used',
+]);
+
+function trustRecord(trust) {
+  const record = {};
+  for (const field of TRUST_FIELDS) {
+    if (Object.prototype.hasOwnProperty.call(trust, field)) record[field] = trust[field];
+  }
+  return record;
+}
+
 function hostCells(versions) {
   const cells = [];
   for (const host of ['claude', 'codex']) {
@@ -94,7 +146,7 @@ async function main(argv = process.argv.slice(2), env = process.env) {
   const args = argumentsFrom(argv);
   const mode = args.mode || 'deterministic';
   if (mode === 'deterministic') {
-    const report = runDeterministic({ root: ROOT });
+    const report = runDeterministic({ root: ROOT, scenario: args.scenario });
     console.log(JSON.stringify(report, null, 2));
     if (!report.pass) process.exitCode = 1;
     return report;
@@ -113,22 +165,39 @@ async function main(argv = process.argv.slice(2), env = process.env) {
   if (typeof args.release !== 'string' || args.release.trim() === '') {
     throw new Error('--release <label> is required');
   }
-  const scenarios = loadScenarios(path.join(ROOT, 'scenarios', 'parity'))
-    .filter(scenario => scenario.class === 'direct' || scenario.class === 'discovery' || scenario.class === 'handoff');
+  // 'hook' belongs in the release matrix: the plan requires direct and hook
+  // scenarios to run once per host/version, not only in deterministic mode.
+  const RELEASE_CLASSES = ['direct', 'discovery', 'handoff', 'hook'];
+  const scenarios = selectScenarios(
+    loadScenarios(path.join(ROOT, 'scenarios', 'parity'))
+      .filter(scenario => RELEASE_CLASSES.includes(scenario.class)),
+    args.scenario,
+  );
+  if (scenarios.length === 0) throw new Error('no scenarios selected for the release matrix');
   const versions = {
     claude: ['2.1.226', args['claude-current'] || '2.1.226'],
     codex: ['0.147.0', args['codex-current'] || '0.147.0'],
   };
+  const hostFactories = {
+    claude: adapterFactory('@anthropic-ai/claude-code', createClaudeAdapter),
+    codex: adapterFactory('@openai/codex', createCodexAdapter),
+  };
+  const cells = hostCells(versions);
+  for (const cell of cells) {
+    const probe = await execute(
+      'npx',
+      ['--yes', `${cell.host === 'claude' ? '@anthropic-ai/claude-code' : '@openai/codex'}@${cell.version}`, '--version'],
+      { env: process.env, cwd: ROOT },
+    );
+    cell.observed_version = assertObservedVersion(cell.host, cell.version, `${probe.stdout || ''}${probe.stderr || ''}`);
+  }
   const trust = await manualTrustCheckpoint({
     tempRoot: path.resolve(args['temp-root']),
     codexVersion: versions.codex[0],
   });
   const report = await runMatrix({
     scenarios,
-    hosts: {
-      claude: adapterFactory('@anthropic-ai/claude-code', createClaudeAdapter),
-      codex: adapterFactory('@openai/codex', createCodexAdapter),
-    },
+    hosts: hostFactories,
     versions,
     tempRoot: path.resolve(args['temp-root']),
     release: true,
@@ -147,8 +216,11 @@ async function main(argv = process.argv.slice(2), env = process.env) {
   if (bundleDirectory) {
     fs.writeFileSync(path.join(bundleDirectory, 'manifest.json'), `${JSON.stringify({
       release: args.release,
-      host_cells: hostCells(versions),
-      manual_trust: trust,
+      host_cells: cells,
+      // Allowlist the operator-authored record. It is hand-written JSON, so an
+      // extra api_key or absolute home path would otherwise reach the retained
+      // bundle unsanitized.
+      manual_trust: trustRecord(trust),
     }, null, 2)}\n`);
     const evidenceErrors = validateBundle(bundleDirectory);
     if (evidenceErrors.length > 0) {
@@ -167,4 +239,12 @@ if (require.main === module) {
   });
 }
 
-module.exports = { argumentsFrom, main };
+module.exports = {
+  KNOWN_OPTIONS,
+  argumentsFrom,
+  assertObservedVersion,
+  main,
+  parseVersion,
+  selectScenarios,
+  trustRecord,
+};

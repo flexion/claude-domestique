@@ -22,6 +22,21 @@ current version equals its minimum, execute it once and record both role labels.
 Behavioral failures are not retried; one classified infrastructure failure may
 be retried and both attempts remain evidence.
 
+Before spending the full matrix, calibrate with a single scenario. The spawn path
+in `scripts/parity/process.js` is exercised only by injected fakes in CI, so the
+first authenticated run is also its first real execution:
+
+```bash
+node scripts/run-parity.js --mode deterministic --scenario stilus-review-positive
+```
+
+`--scenario` accepts a comma-separated list of scenario ids and applies to both
+modes. An unknown id fails the run rather than yielding an empty pass. Unknown
+options are rejected outright, so a misspelled `--claude-current` can no longer
+fall back to the minimum while the manifest still stamps a `current` role. Each
+host cell's binary is probed with `--version` and the run aborts unless the
+binary reports the declared version.
+
 ## Manual Codex hook trust checkpoint
 
 Hook trust is intentionally interactive and cannot be satisfied with
