@@ -180,7 +180,7 @@ Likewise, continue reading existing user cache locations before introducing any 
 
 ### `memento`
 
-1. Keep `skills/session`, `skills/session-manager`, and `skills/resume` as a deliberate set with distinct direct-management, lifecycle, and resumption triggers. The removed flat skill was superseded by the canonical `skills/session/SKILL.md` workflow.
+1. Keep `skills/session` and `skills/resume` as a deliberate pair with distinct direct-management and resumption triggers. The removed flat skill was superseded by the canonical `skills/session/SKILL.md` workflow. `skills/session-manager` was removed: its description claimed creation, resumption, progress updates, and pre-commit lifecycle, which is the union of `session`, `resume`, and `start`, so no user intent selected it in preference to a specific sibling.
 2. Normalize checkpoint matchers and hook output as described above.
 3. Add Codex event fixtures for `update_plan`, `Agent`/`spawn_agent`, `apply_patch`, and `Bash`.
 4. Verify session creation under Codex sandbox approval rules; hooks must degrade cleanly when the workspace is read-only.

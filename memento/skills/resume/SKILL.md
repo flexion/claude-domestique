@@ -73,7 +73,7 @@ Recent activity:
 
 - Create new sessions (use `memento:session create`)
 - Update session content (edit directly or use hooks)
-- Handle branch switching (handled by session-manager)
+- Handle branch switching (handled by the `SessionStart` and `UserPromptSubmit` hooks)
 
 ## Key Rules (from `../../rules/sessions.md`)
 

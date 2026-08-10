@@ -57,10 +57,6 @@
       "classification": "public"
     },
     {
-      "name": "memento:session-manager",
-      "classification": "public"
-    },
-    {
       "name": "memento:start",
       "classification": "public"
     },
