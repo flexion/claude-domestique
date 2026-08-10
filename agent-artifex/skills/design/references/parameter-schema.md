@@ -37,6 +37,6 @@ Parameters are how the LLM communicates intent to the server. Ambiguous paramete
 
 ---
 
-**Related testing:** To test these design decisions → `agent-artifex:implement` (area: Tool Description Quality + Server Correctness)
+**Related testing:** To test these design decisions → use the `implement` skill (area: Tool Description Quality + Server Correctness)
 
 **Related design areas:** [Tool Description Design](tool-descriptions.md) (parameters are a component of descriptions), [Response Format Design](response-format.md) (output schemas define response shape)

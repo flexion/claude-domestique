@@ -1,5 +1,5 @@
 ---
-# ONUS-MANAGED: This file is overwritten by /onus:init --force
+# ONUS-MANAGED: This file is overwritten by the onus:init skill
 # To customize: create your own rule file in .claude/rules/
 #
 # Work Item Integration - Compact Reference
@@ -11,7 +11,7 @@ type: reference
 detect: branch-name-first (issue/feature-N, PROJ-123, #N)
 inject: session-start (full-context), prompt (status-line)
 platforms: github-issues, jira, azure-devops
-skill: /onus:status (dashboard-view)
+skill: onus:status (dashboard-view)
 
 ## GIT CONVENTIONS
 see: git.md (commit-format, branch-naming, pr-format)
@@ -25,7 +25,7 @@ comments: milestone-updates, blockers, decisions
 ## ACCEPTANCE CRITERIA
 track: checkbox-list (from issue description)
 validate: before-commit, before-PR
-skill: /onus:validate-criteria (check-completion)
+skill: onus:validate-criteria (check-completion)
 
 ## SESSION INTEGRATION
 with-memento: populate-session-from-issue

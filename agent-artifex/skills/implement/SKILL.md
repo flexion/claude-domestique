@@ -1,19 +1,22 @@
 ---
-name: agent-artifex:implement
-description: |
-  Use when the user wants to improve an existing MCP server, agent, chatbot, or tool-calling system. This includes: improving tool descriptions, fixing error messages, adding output schemas, writing tests, implementing quality checks, adding evals, setting up test harnesses, or any task where they say "help me improve", "fix my descriptions", "add tests", "write evals", "implement quality checks", "make my server better", "apply the design principles", or are ready to make code changes to improve quality. This skill covers both design application (making the code better) and test implementation (verifying the code is good). For scaffolding new projects, use claude-api:mcp-builder. For design principles without code changes, use agent-artifex:design.
+name: implement
+description: >-
+  Use when changing an existing AI service to improve tools, descriptions, errors,
+  schemas, tests, evals, harnesses, or other approved quality measures.
 ---
 
-# agent-artifex:implement — AI Services Implementation Guide
+# Implement — AI Services Implementation Guide
+
+Relative paths in this skill are resolved from this `SKILL.md`.
 
 ## When to Use
 
 This is the hands-on improvement skill. It covers both applying design principles to make code better AND writing tests to verify code quality. Use it whenever the user is ready to make changes — whether that means rewriting tool descriptions, restructuring error messages, adding output schemas, writing test harnesses, or building eval pipelines.
 
 Cross-references:
-- Scaffolding new projects → `claude-api:mcp-builder`
-- Design principles without code changes → `agent-artifex:design`
-- Gap diagnosis → `agent-artifex:assess`
+- Scaffolding new projects → use an installed MCP or plugin scaffolding skill when available
+- Design principles without code changes → use `design`
+- Gap diagnosis → use `assess`
 
 ---
 
@@ -22,7 +25,7 @@ Cross-references:
 Start by understanding what the user needs:
 
 1. **Determine the work type:**
-   - **Design application**: Improving tool descriptions, fixing error messages, adding schemas, restructuring tool sets → read the corresponding design reference (`agent-artifex/skills/design/references/`)
+   - **Design application**: Improving tool descriptions, fixing error messages, adding schemas, restructuring tool sets → read the corresponding design reference (`../design/references/`)
    - **Test implementation**: Writing quality checks, evals, test harnesses → read the corresponding testing reference (`references/`)
    - **Both**: Improve the code AND add tests (the ideal flow)
 2. **What are you building?** MCP server? Agent? Chatbot? All three?
@@ -52,13 +55,13 @@ Read these when making code changes to improve quality. Each file contains princ
 
 | Design Area | Reference File | What it contains |
 |---|---|---|
-| Tool Description Design | `agent-artifex/skills/design/references/tool-descriptions.md` | Six-component rubric, structural markers, augmentation patterns, domain-specific guidance |
-| Parameter & Schema Design | `agent-artifex/skills/design/references/parameter-schema.md` | `.describe()` patterns, output schema design, argument count guidance, naming conventions |
-| Error Message Design | `agent-artifex/skills/design/references/error-messages.md` | Problem/input/why/recovery structure, anti-patterns, `isError` usage, cross-references in recovery |
-| System Prompt Design | `agent-artifex/skills/design/references/system-prompts.md` | Knowledge placement, ordering instructions, prompt sizing, collision avoidance |
-| Multi-Turn Conversation Design | `agent-artifex/skills/design/references/multi-turn.md` | Result trimming, stable ID patterns, pagination, context pressure mitigation |
-| Tool Set Architecture | `agent-artifex/skills/design/references/tool-set-architecture.md` | Dynamic discovery, cross-references, tool splitting, token footprint management |
-| Response Format Design | `agent-artifex/skills/design/references/response-format.md` | Field naming, pagination patterns, fact vs. narrative, schema consistency |
+| Tool Description Design | `../design/references/tool-descriptions.md` | Six-component rubric, structural markers, augmentation patterns, domain-specific guidance |
+| Parameter & Schema Design | `../design/references/parameter-schema.md` | `.describe()` patterns, output schema design, argument count guidance, naming conventions |
+| Error Message Design | `../design/references/error-messages.md` | Problem/input/why/recovery structure, anti-patterns, `isError` usage, cross-references in recovery |
+| System Prompt Design | `../design/references/system-prompts.md` | Knowledge placement, ordering instructions, prompt sizing, collision avoidance |
+| Multi-Turn Conversation Design | `../design/references/multi-turn.md` | Result trimming, stable ID patterns, pagination, context pressure mitigation |
+| Tool Set Architecture | `../design/references/tool-set-architecture.md` | Dynamic discovery, cross-references, tool splitting, token footprint management |
+| Response Format Design | `../design/references/response-format.md` | Field naming, pagination patterns, fact vs. narrative, schema consistency |
 
 ### Testing references (for writing tests)
 
@@ -72,7 +75,7 @@ Read these when writing test code, assertions, harness setup, or eval pipelines.
 | Response Accuracy | `references/response-accuracy.md` | Closed-loop harness 5 steps, claim decomposition with LLM prompt templates, DeepMind FACTS two-phase evaluation |
 | Chatbot Integration | `references/chatbot-testing.md` | 5 coreference categories, 5 workflow patterns, 6 scenario categories, 4 conflict types, 6 degradation failure modes |
 
-The canonical source documents with full evidence and footnotes are in `docs/ai-services/`.
+The plugin's evidence summary and source index are bundled in `../../references/evidence.md`.
 
 ---
 
@@ -406,4 +409,4 @@ After implementing improvements and tests:
 - Run the deterministic tests and fix failures
 - When deterministic tests pass, run on-demand tests to validate behavioral quality
 - If response accuracy is low, trace through the causal chain
-- Use `agent-artifex:assess` periodically to re-evaluate coverage as the project evolves
+- Use `assess` periodically to re-evaluate coverage as the project evolves

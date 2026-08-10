@@ -29,6 +29,6 @@ System prompts and tool definitions compete for the same context window and the 
 
 ---
 
-**Related testing:** To test these design decisions → `agent-artifex:implement` (area: Chatbot Integration)
+**Related testing:** To test these design decisions → use the `implement` skill (area: Chatbot Integration)
 
 **Related design areas:** [Tool Description Design](tool-descriptions.md) (prompt and descriptions must not conflict), [Tool Set Architecture](tool-set-architecture.md) (context budget shared between prompt and definitions), [Multi-Turn Conversation Design](multi-turn.md) (prompt length affects context pressure)

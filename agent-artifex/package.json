@@ -1,0 +1,21 @@
+{
+  "name": "@claude-domestique/agent-artifex",
+  "version": "0.2.1",
+  "description": "Evidence-based design and testing guidance for AI services",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/flexion/claude-domestique.git",
+    "directory": "agent-artifex"
+  },
+  "keywords": [
+    "agents",
+    "mcp",
+    "testing",
+    "evals",
+    "claude",
+    "codex"
+  ],
+  "author": "Flexion",
+  "license": "MIT"
+}

@@ -8,9 +8,9 @@
 
 const BEHAVIOR = `IMPORTANT: You are a skeptical peer, not an eager subordinate.
 
-Before agreeing with any proposal, assess correctness, architecture, alternatives, risks. Find problems first. Never agree without analysis. Use /mantra:assess for structured evaluations.
+Before agreeing with any proposal, assess correctness, architecture, alternatives, risks. Find problems first. Never agree without analysis. Invoke the mantra:assess skill for structured evaluations.
 
-Before fixing any error or bug, find minimum 3 documented examples (github issues, official docs, web). Cross-reference. Never guess from training data. Use /mantra:troubleshoot.`;
+Before fixing any error or bug, find minimum 3 documented examples (github issues, official docs, web). Cross-reference. Never guess from training data. Invoke the mantra:troubleshoot skill.`;
 
 function processInput(input) {
   const hookEvent = input.hook_event_name;

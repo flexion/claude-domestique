@@ -72,4 +72,4 @@
 | **Microsoft ISE** — "Evaluation Framework for Agentic Chatbots" | User Agent simulation, Reliability Score, test case factory, error analysis |
 | **Jest** — "Snapshot Testing" | Golden-file pattern: capture known-good, detect deviations |
 
-Full source documents: `docs/ai-services/sources/`
+Each citation above names its source document; the plugin carries no external source files.

@@ -1,0 +1,35 @@
+{
+  "name": "comitatus",
+  "version": "0.7.0",
+  "description": "herdr worktree and coding-agent orchestration workflows",
+  "author": {
+    "name": "Flexion"
+  },
+  "repository": "https://github.com/flexion/claude-domestique",
+  "homepage": "https://github.com/flexion/claude-domestique/tree/main/comitatus",
+  "license": "MIT",
+  "keywords": [
+    "herdr",
+    "agents",
+    "orchestration",
+    "worktrees",
+    "multiplexer"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Comitatus",
+    "shortDescription": "Orchestrate coding agents through herdr",
+    "longDescription": "Provides herdr workflows for worktrees, workspaces, panes, and coordinated Claude, Codex, and OpenCode agents.",
+    "developerName": "Flexion",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Orchestrate agents",
+      "Manage worktrees"
+    ],
+    "websiteURL": "https://github.com/flexion/claude-domestique/tree/main/comitatus",
+    "defaultPrompt": [
+      "Show the agents in my current herdr workspace.",
+      "Start and coordinate a coding-agent herd."
+    ]
+  }
+}

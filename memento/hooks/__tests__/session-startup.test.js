@@ -270,4 +270,33 @@ describe('memento session-startup hook', () => {
       expect(context).toContain('compaction');
     });
   });
+
+  describe('isolated state paths', () => {
+    it('threads an injected home through shared counters and branch state', () => {
+      const defaultHome = path.join(tmpDir, 'default-home');
+      const isolatedHome = path.join(tmpDir, 'isolated-home');
+      const homedir = jest.spyOn(os, 'homedir').mockReturnValue(defaultHome);
+      jest.resetModules();
+      jest.doMock('child_process', () => ({ execSync: mockExecSync }));
+      hook = require('../session-startup.js');
+      mockExecSync.mockImplementation(command =>
+        command.includes('--show-toplevel') ? `${tmpDir}\n` : 'issue/feature-42/auth\n'
+      );
+      const session = path.join(tmpDir, '.claude', 'sessions', 'issue-feature-42-auth.md');
+      fs.mkdirSync(path.dirname(session), { recursive: true });
+      fs.writeFileSync(session, '# existing\n');
+
+      hook.processHook(
+        { hook_event_name: 'SessionStart', cwd: tmpDir },
+        { homeDir: isolatedHome }
+      );
+
+      expect(JSON.parse(fs.readFileSync(
+        path.join(isolatedHome, '.claude', 'memento-state.json'),
+        'utf8'
+      ))).toEqual({ count: 0, branch: 'issue/feature-42/auth' });
+      expect(fs.existsSync(path.join(defaultHome, '.claude', 'memento-state.json'))).toBe(false);
+      homedir.mockRestore();
+    });
+  });
 });

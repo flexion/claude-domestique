@@ -216,12 +216,12 @@ function buildTriggerContext(triggers, sessionPath) {
   return context;
 }
 
-function loadState() {
-  return shared.loadState(shared.getStateFile('Memento'), {});
+function loadState(homeDir) {
+  return shared.loadState(shared.getStateFile('Memento', homeDir), {});
 }
 
-function saveState(state) {
-  shared.saveState(shared.getStateFile('Memento'), state);
+function saveState(state, homeDir) {
+  shared.saveState(shared.getStateFile('Memento', homeDir), state);
 }
 
 function createSession(sessionPath, branch) {
@@ -282,7 +282,7 @@ function onSessionStart(input, base) {
   if (isNew) createSession(sessionPath, branch);
 
   // Save current branch
-  saveState({ branch });
+  saveState({ ...loadState(input.homeDir), branch }, input.homeDir);
 
   // Build status line
   let statusLine;
@@ -319,7 +319,7 @@ function onUserPromptSubmit(input, base) {
   }
 
   // Load state to detect branch switch
-  const state = loadState();
+  const state = loadState(input.homeDir);
   const previousBranch = state.branch;
   const branchChanged = previousBranch && previousBranch !== branch;
 
@@ -331,7 +331,7 @@ function onUserPromptSubmit(input, base) {
 
   if (branchChanged) {
     // Branch switch detected - update state
-    saveState({ branch });
+    saveState({ ...state, branch }, input.homeDir);
 
     // Check for misnamed session (references branch but wrong filename)
     const mismatch = sessionExists ? null : detectMismatch(gitRoot, branch, sessionPath);
@@ -390,14 +390,15 @@ function onUserPromptSubmit(input, base) {
 // Direct Processing (for testing)
 // ============================================================================
 
-function processHook(input) {
+function processHook(input, overrides = {}) {
   const config = {
     pluginName: 'Memento',
     pluginRoot: PLUGIN_ROOT,
     onSessionStart,
-    onUserPromptSubmit
+    onUserPromptSubmit,
+    ...overrides
   };
-  return shared.processHook(config, input);
+  return shared.processHook(config, { ...input, homeDir: overrides.homeDir });
 }
 
 // ============================================================================

@@ -1,6 +1,6 @@
 # Claude Domestique
 
-**Your strategic coding partner.**
+**Your strategic coding partner for Claude Code and Codex.**
 
 Like a cycling domestique, it carries the water, stays focused on your goals, and handles the unglamorous work you don't want to do.
 
@@ -43,6 +43,18 @@ Helps developers embody Flexion fundamentals while staying in flow:
 - **Lead by example** — Handles PM accountability work so it actually gets done
 - **Empower customers to adapt** — Keeps stakeholders informed via trackers without breaking developer focus
 
+### [agent-artifex](./agent-artifex) — AI-Service Design and Testing
+
+Evidence-based workflows for designing, assessing, implementing, and testing MCP servers, agents, chatbots, and tool-calling systems.
+
+### [comitatus](./comitatus) — herdr Orchestration
+
+Worktree, workspace, pane, and coding-agent orchestration through the herdr CLI. It remains dormant outside a herdr-managed pane.
+
+### [stilus](./stilus) — Writing and Review
+
+Remove AI slop and review prose for correctness, voice, human readability, and whether the intended point survives.
+
 ---
 
 ## How They Work Together
@@ -74,8 +86,9 @@ Each plugin works standalone but gains enhanced behavior when used together.
 
 | Tool | Version | Used By | Purpose |
 |------|---------|---------|---------|
-| [Claude Code](https://claude.ai/code) | 2.0.12+ | All | Plugin host (plugin system introduced in v2.0.12) |
-| [Node.js](https://nodejs.org/) | 18+ | All | Runtime for hooks and scripts |
+| [Claude Code](https://claude.ai/code) | 2.1.226+ | All | Deliberately tested plugin, skill-preloading, subagent, and parity floor |
+| Codex CLI | 0.147.0+ | All | Deliberately tested plugin, subagent, and parity floor |
+| [Node.js](https://nodejs.org/) | 24+ | All | Runtime for hooks and scripts |
 | [git](https://git-scm.com/) | 2.x | All | Branch detection, commits, session tracking |
 
 ### Platform-Specific (onus)
@@ -85,9 +98,9 @@ When using `/onus:fetch`, Claude will use these tools to retrieve work items:
 | Tool | Platform | Purpose |
 |------|----------|---------|
 | [GitHub CLI (gh)](https://cli.github.com/) | GitHub | Fetch issues, create PRs (recommended) |
-| Claude's WebFetch | JIRA, Azure DevOps | Built-in HTTP tool for API calls |
+| Host web/HTTP tools | JIRA, Azure DevOps | API requests when no dedicated CLI is configured |
 
-> **Note**: For JIRA/Azure DevOps, Claude uses its built-in WebFetch capability. No additional tools required.
+> **Note**: For JIRA/Azure DevOps, use the authenticated HTTP or web-fetch capability available in the current host.
 
 ### Environment Variables (for onus)
 
@@ -114,27 +127,31 @@ gh auth status         # Verify authentication
 
 ## Installation
 
-### Add the Marketplace
+### Claude Code
 
 ```bash
 /plugin marketplace add flexion/claude-domestique
-```
-
-### Install Plugins
-
-```bash
-# The core trio - work standalone, better together
 /plugin install memento@claude-domestique
 /plugin install mantra@claude-domestique
 /plugin install onus@claude-domestique
-
-# Additional standalone plugins
-/plugin install agent-artifex@claude-domestique   # design/test MCP servers, agents, tool-calling systems
-/plugin install comitatus@claude-domestique        # herdr agent-orchestration workflows (silent unless inside herdr)
-
-# Or just the ones you need
-/plugin install mantra@claude-domestique
+/plugin install agent-artifex@claude-domestique
+/plugin install comitatus@claude-domestique
+/plugin install stilus@claude-domestique
 ```
+
+### Codex
+
+```bash
+codex plugin marketplace add flexion/claude-domestique
+codex plugin add memento@claude-domestique
+codex plugin add mantra@claude-domestique
+codex plugin add onus@claude-domestique
+codex plugin add agent-artifex@claude-domestique
+codex plugin add comitatus@claude-domestique
+codex plugin add stilus@claude-domestique
+```
+
+Codex users must review and trust plugin hooks before hook-enabled plugins can run lifecycle automation. Skills remain available without trusting hooks.
 
 That's it. No initialization required—plugins load automatically once installed. See each plugin's README for specifics (comitatus, for instance, stays dormant unless you're inside a herdr pane).
 
@@ -142,7 +159,7 @@ That's it. No initialization required—plugins load automatically once installe
 
 ## How Context Injection Works
 
-All three plugins use Claude Code's hook system for zero-config context injection:
+Mantra, Memento, Onus, and Comitatus use the shared plugin hook convention for zero-config context injection in both hosts:
 
 | Hook | When | What Gets Injected |
 |------|------|-------------------|
@@ -163,7 +180,9 @@ Each prompt shows plugin status:
 
 ---
 
-## Commands
+## Skills
+
+Claude Code invokes a plugin skill as `/plugin:skill`; Codex invokes it as `$plugin:skill`. The same `SKILL.md` implements both forms.
 
 | Plugin | Command | Description |
 |--------|---------|-------------|

@@ -30,6 +30,6 @@ When a tool fails, the error message IS the LLM's only information for deciding 
 
 ---
 
-**Related testing:** To test these design decisions → `agent-artifex:implement` (area: Server Correctness)
+**Related testing:** To test these design decisions → use the `implement` skill (area: Server Correctness)
 
 **Related design areas:** [Tool Description Design](tool-descriptions.md) (error recovery references tools by name), [Response Format Design](response-format.md) (error structure is a response format concern)

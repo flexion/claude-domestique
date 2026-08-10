@@ -28,6 +28,18 @@ describe('processSessionStart gating', () => {
     expect(r.hookSpecificOutput.additionalContext).toMatch(/comitatus:herdr/);
     expect(r.hookSpecificOutput.additionalContext).toContain(HERD_JS);
   });
+
+  test('direct Codex install uses the bundled helper without home provisioning', () => {
+    const codexHome = tmpdir();
+    const stableHomeDir = path.join(tmpdir(), 'stable');
+    const r = hook.processSessionStart({
+      env: { HERDR_ENV: '1' }, skillDir: SKILL_DIR, herdJsPath: HERD_JS,
+      codexHome, stableHome: stableHomeDir, directCodex: true,
+    });
+    expect(r.hookSpecificOutput.additionalContext).toContain(HERD_JS);
+    expect(fs.existsSync(path.join(codexHome, 'skills', 'herdr'))).toBe(false);
+    expect(fs.existsSync(stableHomeDir)).toBe(false);
+  });
 });
 
 describe('buildOrientation', () => {
@@ -72,6 +84,29 @@ describe('buildOrientation', () => {
     const c = hook.buildOrientation('/abs/herd.js');
     expect(c).not.toContain('CLAUDE_PLUGIN_ROOT');
   });
+
+  test('never points codex agents at a provisioned copy under $HOME/.codex', () => {
+    for (const codexPlugin of [true, false, undefined]) {
+      const c = hook.buildOrientation('/abs/herd.js', { codexPlugin });
+      expect(c).not.toContain('.codex/skills');
+    }
+  });
+
+  test('reports that codex peers can see the skill when the plugin is installed', () => {
+    const c = hook.buildOrientation('/abs/herd.js', { codexPlugin: true });
+    expect(c).toMatch(/installed as a Codex plugin/);
+    expect(c).not.toMatch(/codex plugin add/);
+  });
+
+  test('reports the gap and the install command when it is not installed', () => {
+    const c = hook.buildOrientation('/abs/herd.js', { codexPlugin: false });
+    expect(c).toMatch(/NOT installed as a Codex plugin/);
+    expect(c).toContain('codex plugin add comitatus@claude-domestique');
+  });
+
+  test('says status is unknown when detection could not run', () => {
+    expect(hook.buildOrientation('/abs/herd.js', {})).toMatch(/unknown/i);
+  });
 });
 
 const fs = require('fs');
@@ -94,38 +129,113 @@ function makeFixtureSkill() {
   return dir;
 }
 
-describe('provisionCodex', () => {
-  test('skips when codex home is absent', () => {
-    const skillDir = makeFixtureSkill();
-    const r = hook.provisionCodex({ skillDir, codexHome: path.join(tmpdir(), 'no-codex') });
-    expect(r).toEqual({ provisioned: false, reason: 'codex-absent' });
+describe('codexPluginInstalled (report only, never copies)', () => {
+  test('false when the codex home does not exist', () => {
+    expect(hook.codexPluginInstalled({ codexHome: path.join(tmpdir(), 'no-codex') })).toBe(false);
   });
 
-  test('provisions when missing, then no-ops when current', () => {
-    const skillDir = makeFixtureSkill();
-    const codexHome = tmpdir(); // exists
-    const first = hook.provisionCodex({ skillDir, codexHome });
-    expect(first).toEqual({ provisioned: true, reason: 'missing' });
-
-    const dest = path.join(codexHome, 'skills', 'herdr');
-    expect(fs.existsSync(path.join(dest, 'SKILL.md'))).toBe(true);
-    expect(fs.existsSync(path.join(dest, 'scripts', 'herd.js'))).toBe(true);
-    expect(fs.existsSync(path.join(dest, '.comitatus-hash'))).toBe(true);
-    expect(fs.existsSync(path.join(dest, '__tests__'))).toBe(false); // excluded
-    expect(fs.existsSync(path.join(codexHome, 'hooks.json'))).toBe(false); // never written
-
-    const second = hook.provisionCodex({ skillDir, codexHome });
-    expect(second).toEqual({ provisioned: false, reason: 'current' });
+  test('false when the codex home has no plugin cache', () => {
+    expect(hook.codexPluginInstalled({ codexHome: tmpdir() })).toBe(false);
   });
 
-  test('refreshes when source changed', () => {
-    const skillDir = makeFixtureSkill();
+  test('true when a comitatus plugin is present in any marketplace', () => {
     const codexHome = tmpdir();
-    hook.provisionCodex({ skillDir, codexHome });
-    fs.writeFileSync(path.join(skillDir, 'SKILL.md'), '# herdr v2\n');
-    const r = hook.provisionCodex({ skillDir, codexHome });
-    expect(r).toEqual({ provisioned: true, reason: 'stale' });
-    expect(fs.readFileSync(path.join(codexHome, 'skills', 'herdr', 'SKILL.md'), 'utf8')).toBe('# herdr v2\n');
+    fs.mkdirSync(path.join(codexHome, 'plugins', 'cache', 'claude-domestique', 'comitatus', '0.6.0'), { recursive: true });
+    expect(hook.codexPluginInstalled({ codexHome })).toBe(true);
+  });
+
+  test('false when the cache holds only other plugins', () => {
+    const codexHome = tmpdir();
+    fs.mkdirSync(path.join(codexHome, 'plugins', 'cache', 'claude-domestique', 'agent-artifex', '0.2.1'), { recursive: true });
+    expect(hook.codexPluginInstalled({ codexHome })).toBe(false);
+  });
+
+  test('never writes anything into the codex home', () => {
+    const codexHome = tmpdir();
+    hook.codexPluginInstalled({ codexHome });
+    expect(fs.readdirSync(codexHome)).toEqual([]);
+  });
+});
+
+describe('Codex-install detection', () => {
+  // Regression: directCodex was previously derived from process.env.PLUGIN_ROOT,
+  // a variable neither host sets, so the guard never fired and a Codex-installed
+  // comitatus still copied itself into $CODEX_HOME/skills. Detection is now
+  // path-based, and these tests exercise the real derivation rather than passing
+  // directCodex in directly.
+  test('isCodexInstall is true only for a plugin running from the Codex cache', () => {
+    const codexHome = tmpdir();
+    const inCache = path.join(codexHome, 'plugins', 'cache', 'claude-domestique', 'comitatus', '0.6.0');
+    expect(hook.isCodexInstall({ pluginRoot: inCache, codexHome })).toBe(true);
+  });
+
+  test('isCodexInstall is false for a Claude-cache install', () => {
+    const codexHome = tmpdir();
+    const claudeCache = path.join(tmpdir(), '.claude', 'plugins', 'cache', 'claude-domestique', 'comitatus', '0.6.0');
+    expect(hook.isCodexInstall({ pluginRoot: claudeCache, codexHome })).toBe(false);
+  });
+
+  test('isCodexInstall is false for a path that merely shares a prefix', () => {
+    const codexHome = tmpdir();
+    const sibling = path.join(codexHome, 'plugins', 'cache-other', 'comitatus');
+    expect(hook.isCodexInstall({ pluginRoot: sibling, codexHome })).toBe(false);
+  });
+
+  test('resolveCodexHome honours CODEX_HOME, else defaults to ~/.codex', () => {
+    expect(hook.resolveCodexHome({ CODEX_HOME: '/custom/codex' }, '/home/u'))
+      .toBe(path.resolve('/custom/codex'));
+    expect(hook.resolveCodexHome({}, '/home/u')).toBe(path.join('/home/u', '.codex'));
+  });
+
+  test('the real derivation disables provisioning for a Codex-cache install', () => {
+    const codexHome = tmpdir();
+    const skillDir = makeFixtureSkill();
+    const pluginRoot = path.join(codexHome, 'plugins', 'cache', 'claude-domestique', 'comitatus', '0.6.0');
+    const stableHomeDir = path.join(tmpdir(), 'stable');
+
+    const r = hook.processSessionStart({
+      env: { HERDR_ENV: '1' },
+      skillDir,
+      herdJsPath: '/abs/herd.js',
+      codexHome,
+      stableHome: stableHomeDir,
+      directCodex: hook.isCodexInstall({ pluginRoot, codexHome }),
+    });
+
+    expect(r).not.toBeNull();
+    expect(fs.existsSync(path.join(codexHome, 'skills', 'herdr'))).toBe(false);
+    expect(fs.existsSync(stableHomeDir)).toBe(false);
+  });
+});
+
+describe('processSessionStart never writes into the codex home', () => {
+  test('leaves an existing codex home untouched and reports "not installed"', () => {
+    const codexHome = tmpdir();
+    const r = hook.processSessionStart({
+      env: { HERDR_ENV: '1' },
+      skillDir: makeFixtureSkill(),
+      herdJsPath: '/abs/herd.js',
+      codexHome,
+      stableHome: path.join(tmpdir(), 'stable'),
+    });
+    expect(fs.readdirSync(codexHome)).toEqual([]);
+    expect(r.systemMessage).toContain('(codex: not installed)');
+    expect(r.hookSpecificOutput.additionalContext).toMatch(/NOT installed as a Codex plugin/);
+  });
+
+  test('reports "installed" without writing when the plugin is present', () => {
+    const codexHome = tmpdir();
+    fs.mkdirSync(path.join(codexHome, 'plugins', 'cache', 'claude-domestique', 'comitatus', '0.6.0'), { recursive: true });
+    const r = hook.processSessionStart({
+      env: { HERDR_ENV: '1' },
+      skillDir: makeFixtureSkill(),
+      herdJsPath: '/abs/herd.js',
+      codexHome,
+      stableHome: path.join(tmpdir(), 'stable'),
+    });
+    expect(fs.existsSync(path.join(codexHome, 'skills'))).toBe(false);
+    expect(r.systemMessage).toContain('(codex: installed)');
+    expect(r.hookSpecificOutput.additionalContext).toMatch(/installed as a Codex plugin/);
   });
 });
 
@@ -147,11 +257,11 @@ function tmpResidue(codexHome) {
     .filter((n) => n.startsWith('.herdr.tmp'));
 }
 
-describe('provisionCodex atomic swap hardening', () => {
+describe('provisionStable atomic swap hardening', () => {
   test('leaves no temp staging dir behind after provisioning', () => {
     const skillDir = makeFixtureSkill();
     const codexHome = tmpdir();
-    hook.provisionCodex({ skillDir, codexHome });
+    hook.provisionStable({ skillDir, home: codexHome });
     expect(tmpResidue(codexHome)).toEqual([]);
     expect(fs.readdirSync(path.join(codexHome, 'skills'))).toContain('herdr');
   });
@@ -159,14 +269,14 @@ describe('provisionCodex atomic swap hardening', () => {
   test('refresh swaps the whole dir in - stale files do not survive', () => {
     const skillDir = makeFixtureSkill();
     const codexHome = tmpdir();
-    hook.provisionCodex({ skillDir, codexHome });
+    hook.provisionStable({ skillDir, home: codexHome });
 
     const dest = path.join(codexHome, 'skills', 'herdr');
     // A file present in the provisioned copy but absent from the new source.
     fs.writeFileSync(path.join(dest, 'STALE.md'), 'old\n');
     fs.writeFileSync(path.join(skillDir, 'SKILL.md'), '# herdr v2\n');
 
-    const r = hook.provisionCodex({ skillDir, codexHome });
+    const r = hook.provisionStable({ skillDir, home: codexHome });
     expect(r).toEqual({ provisioned: true, reason: 'stale' });
     expect(fs.existsSync(path.join(dest, 'STALE.md'))).toBe(false);
     expect(fs.readFileSync(path.join(dest, 'SKILL.md'), 'utf8')).toBe('# herdr v2\n');
@@ -180,8 +290,8 @@ describe('provisionCodex atomic swap hardening', () => {
     const skillDir = makeFixtureSkill();
     const codexHome = tmpdir();
     const dest = path.join(codexHome, 'skills', 'herdr');
-    hook.provisionCodex({ skillDir, codexHome });          // first writer
-    const r = hook.provisionCodex({ skillDir, codexHome }); // identical content
+    hook.provisionStable({ skillDir, home: codexHome });          // first writer
+    const r = hook.provisionStable({ skillDir, home: codexHome }); // identical content
     expect(r).toEqual({ provisioned: false, reason: 'current' });
     expect(fs.existsSync(path.join(dest, '.comitatus-hash'))).toBe(true);
     expect(tmpResidue(codexHome)).toEqual([]);

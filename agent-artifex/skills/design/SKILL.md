@@ -1,22 +1,25 @@
 ---
-name: agent-artifex:design
-description: |
-  Use when the user wants to design an MCP server, agent, chatbot, or tool-calling system for quality. This includes: designing tool descriptions, structuring parameters and schemas, writing error messages for LLM consumers, designing system prompts, planning multi-turn conversations, architecting tool sets, or designing response formats. Also use when someone says "how should I design", "what makes a good tool description", "how should I structure my errors", "design my MCP server", "how do I organize my tools", or any task where they want to follow evidence-based design principles before or while building.
+name: design
+description: >-
+  Use when designing an MCP server, agent, chatbot, or tool-calling system,
+  especially its tools, schemas, prompts, errors, conversations, or response formats.
 ---
 
-# agent-artifex:design — AI Services Design Principles
+# Design — AI Services Design Principles
 
 ## When to Use
 
-Design principles for building quality AI services. For scaffolding new MCP servers, use `claude-api:mcp-builder`. For testing what you have built, use `agent-artifex:implement`. For diagnosing gaps, use `agent-artifex:assess`.
+Design principles for building quality AI services. When a compatible MCP scaffolding skill is installed, use it to create new server boilerplate. For testing what you have built, use the `implement` skill. For diagnosing gaps, use `assess`.
 
 ## Shared References
 
+Relative paths in this skill are resolved from this `SKILL.md`.
+
 | Reference | When to read |
 |-----------|-------------|
-| `agent-artifex/references/framework.md` | Causal chain, testing pyramid, two-tier model |
-| `agent-artifex/references/rubric.md` | Six-component rubric for tool description scoring |
-| `agent-artifex/references/evidence.md` | Key empirical numbers and source citations |
+| `../../references/framework.md` | Causal chain, testing pyramid, two-tier model |
+| `../../references/rubric.md` | Six-component rubric for tool description scoring |
+| `../../references/evidence.md` | Key empirical numbers and source citations |
 
 ## On Invocation
 
@@ -190,5 +193,5 @@ Multi-Turn Conversation Design → overlay across all links
 
 ## Recommended Next Step
 
-- After designing, use `agent-artifex:assess` to check for gaps.
-- Ready to apply improvements, use `agent-artifex:implement`.
+- After designing, use `assess` to check for gaps.
+- When ready to apply improvements, use `implement`.

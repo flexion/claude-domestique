@@ -39,6 +39,6 @@ Tool results are the raw material from which the LLM synthesizes the user's answ
 
 ---
 
-**Related testing:** To test these design decisions → `agent-artifex:implement` (area: Server Correctness + Response Accuracy)
+**Related testing:** To test these design decisions → use the `implement` skill (area: Server Correctness + Response Accuracy)
 
 **Related design areas:** [Parameter & Schema Design](parameter-schema.md) (output schemas bridge both areas), [Multi-Turn Conversation Design](multi-turn.md) (result verbosity drives context growth), [Error Message Design](error-messages.md) (error responses are a response format)

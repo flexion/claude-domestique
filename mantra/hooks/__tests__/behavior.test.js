@@ -13,8 +13,8 @@ describe('mantra behavior hook', () => {
     });
 
     it('references skills', () => {
-      expect(hook.BEHAVIOR).toContain('/mantra:assess');
-      expect(hook.BEHAVIOR).toContain('/mantra:troubleshoot');
+      expect(hook.BEHAVIOR).toContain('mantra:assess');
+      expect(hook.BEHAVIOR).toContain('mantra:troubleshoot');
     });
   });
 

@@ -1,0 +1,34 @@
+{
+  "name": "memento",
+  "version": "0.5.0",
+  "description": "Branch-based session persistence and work resumption",
+  "author": {
+    "name": "David Puglielli"
+  },
+  "repository": "https://github.com/flexion/claude-domestique",
+  "homepage": "https://github.com/flexion/claude-domestique/tree/main/memento",
+  "license": "MIT",
+  "keywords": [
+    "session",
+    "persistence",
+    "context",
+    "branch-tracking"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Memento",
+    "shortDescription": "Persist work context across sessions",
+    "longDescription": "Tracks branch-based session state, restores context, and keeps implementation progress available across conversations.",
+    "developerName": "Flexion",
+    "category": "Productivity",
+    "capabilities": [
+      "Track sessions",
+      "Resume work"
+    ],
+    "websiteURL": "https://github.com/flexion/claude-domestique/tree/main/memento",
+    "defaultPrompt": [
+      "Resume work from the current branch session.",
+      "Start a new branch-based work session."
+    ]
+  }
+}
