@@ -13,7 +13,7 @@ Claude Domestique is a Claude Code plugin marketplace. It contains six independe
 - `comitatus`: herdr orchestration workflows
 - `stilus`: prose drafting, editing, and review tools
 
-The repository is an npm workspace using CommonJS. Runtime code targets Node.js 18 or newer; CI tests Node.js 22 and 24.
+The repository is an npm workspace using CommonJS. Runtime code targets Node.js 18 or newer; CI tests Node.js 24 only, so the declared floor is a compatibility intent rather than a tested one.
 
 ## Repository map
 
