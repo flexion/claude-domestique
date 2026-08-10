@@ -24,12 +24,22 @@ test('deterministic mode validates scenarios, hooks, and exact-path handoffs wit
   expect(report.message).toContain('model-level parity was not evaluated');
 });
 
-test('release mode requires explicit opt-in, both credentials, a TTY, and a temp root', () => {
+// Authentication is deliberately NOT asserted here any more. A subscription login
+// carries no API-key variable, so requiring one made the gate unrunnable for
+// CLI-subscription operators. Authentication is proved at preflight by probing
+// each host's own status command inside a seeded isolated home.
+test('release mode requires explicit opt-in, a TTY, and a temp root', () => {
   expect(validateReleaseEnvironment({ env: {}, isTTY: true, tempRoot: '/tmp/parity' })).toContain('PARITY_RELEASE=1');
-  expect(validateReleaseEnvironment({ env: { PARITY_RELEASE: '1' }, isTTY: true, tempRoot: '/tmp/parity' })).toContain('CLAUDE_API_KEY');
-  expect(validateReleaseEnvironment({ env: { PARITY_RELEASE: '1', CLAUDE_API_KEY: 'x', OPENAI_API_KEY: 'y' }, isTTY: false, tempRoot: '/tmp/parity' })).toContain('interactive TTY');
-  expect(validateReleaseEnvironment({ env: { PARITY_RELEASE: '1', CLAUDE_API_KEY: 'x', OPENAI_API_KEY: 'y' }, isTTY: true })).toContain('temporary root');
-  expect(validateReleaseEnvironment({ env: { PARITY_RELEASE: '1', CLAUDE_API_KEY: 'x', OPENAI_API_KEY: 'y' }, isTTY: true, tempRoot: '/tmp/parity' })).toEqual([]);
+  expect(validateReleaseEnvironment({ env: { PARITY_RELEASE: '1' }, isTTY: false, tempRoot: '/tmp/parity' })).toContain('interactive TTY');
+  expect(validateReleaseEnvironment({ env: { PARITY_RELEASE: '1' }, isTTY: true })).toContain('temporary root');
+  expect(validateReleaseEnvironment({ env: { PARITY_RELEASE: '1' }, isTTY: true, tempRoot: '/tmp/parity' })).toEqual([]);
+});
+
+test('an API key is neither required nor rejected', () => {
+  expect(validateReleaseEnvironment({
+    env: { PARITY_RELEASE: '1', CLAUDE_API_KEY: 'x', OPENAI_API_KEY: 'y' },
+    isTTY: true, tempRoot: '/tmp/parity',
+  })).toEqual([]);
 });
 
 test('the CLI cannot enter release mode from credential-free CI', async () => {
@@ -131,7 +141,7 @@ test('release mode refuses to run under any GitHub Actions event', () => {
 
 test('the CLI refuses release mode from a fully provisioned pull_request job', async () => {
   await expect(main(['--mode', 'release', '--release', 'r', '--temp-root', '/tmp/p'], {
-    PARITY_RELEASE: '1', CLAUDE_API_KEY: 'x', OPENAI_API_KEY: 'y', GITHUB_EVENT_NAME: 'pull_request',
+    PARITY_RELEASE: '1', GITHUB_EVENT_NAME: 'pull_request',
   })).rejects.toThrow('no GitHub Actions event');
 });
 

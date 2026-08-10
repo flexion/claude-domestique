@@ -155,8 +155,9 @@ function runDeterministic({ root, scenario: requested }) {
 function validateReleaseEnvironment({ env, isTTY, tempRoot }) {
   const errors = [];
   if (!env || env.PARITY_RELEASE !== '1') errors.push('PARITY_RELEASE=1');
-  if (!env || !env.CLAUDE_API_KEY) errors.push('CLAUDE_API_KEY');
-  if (!env || !env.OPENAI_API_KEY) errors.push('OPENAI_API_KEY');
+  // Host authentication is no longer asserted from API-key environment variables.
+  // Subscription logins carry no such variable, so authentication is proved by
+  // probing each host's own status command during preflight instead.
   if (!isTTY) errors.push('interactive TTY');
   if (typeof tempRoot !== 'string' || tempRoot.trim() === '') errors.push('temporary root');
   // The credential, TTY, and opt-in checks are all satisfiable by a workflow that

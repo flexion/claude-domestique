@@ -9,12 +9,47 @@ host and does not establish model-level parity.
 Run from an interactive terminal with an explicit disposable root:
 
 ```bash
-PARITY_RELEASE=1 CLAUDE_API_KEY=... OPENAI_API_KEY=... \
+PARITY_RELEASE=1 \
   npm run parity:release -- \
   --release candidate-1 \
   --temp-root /absolute/disposable/parity-root \
   --claude-current 2.1.226 \
   --codex-current 0.147.0
+```
+
+No API key is required. Both hosts may be authenticated by CLI subscription
+login, and neither carries an API-key environment variable, so authentication is
+proved by probing each host's own status command rather than by inspecting the
+environment. Any `GITHUB_EVENT_NAME` disqualifies the run: the gate is
+operator-run, and the other prerequisites are all reachable from a workflow.
+
+### Subscription login inside an isolated host home
+
+Each trial runs in a fresh `CLAUDE_CONFIG_DIR` / `CODEX_HOME` so plugin caches,
+session state, and the candidate set cannot leak between the control and guided
+arms. Subscription logins are directory-scoped, so a fresh home starts
+unauthenticated:
+
+```bash
+CODEX_HOME=$(mktemp -d) codex login status         # Not logged in
+CLAUDE_CONFIG_DIR=$(mktemp -d) claude auth status  # {"loggedIn": false}
+```
+
+The runner therefore seeds only the login artifact into each fresh home and
+carries nothing else, because settings, plugin state, and history all influence
+the behavior under test. Discovery matches `credentials.json`, `auth.json`, and
+`token.json`, with or without a leading dot.
+
+Seeding is an allowlist and can be wrong, so preflight probes each host's status
+command inside a seeded home before any scenario runs. A host that is not
+authenticated there stops the run with a message naming what was seeded and from
+where. Override discovery when a host keeps its login elsewhere:
+
+```bash
+PARITY_CLAUDE_AUTH_FILES=".credentials.json,session.json"
+PARITY_CODEX_AUTH_FILES="auth.json"
+PARITY_CLAUDE_HOME=/absolute/path/to/real/claude/home
+PARITY_CODEX_HOME=/absolute/path/to/real/codex/home
 ```
 
 The minimum cells are fixed at Claude `2.1.226` and Codex `0.147.0`. When a

@@ -6,6 +6,7 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 const { createControlCopy } = require('./control-copy');
 const { evaluateInvariant, evaluateTrials } = require('./invariants');
+const { seedHostAuth } = require('./auth');
 
 const REPOSITORY_ROOT = path.resolve(__dirname, '..', '..');
 
@@ -127,11 +128,19 @@ function applyPostState(result, scenario, cwd, snapshots) {
   return observedSideEffects(scenario, { changes, gitBefore: snapshots.git, gitAfter });
 }
 
-function defaultPrepare({ root, scenario, host, version, arm, trial, attempt, requestId }) {
+function defaultPrepare({
+  root, scenario, host, version, arm, trial, attempt, requestId, authSources = {}, authArtifacts = {},
+}) {
   const base = path.join(root, safe(scenario.id), safe(host), safe(version), arm, `trial-${trial}-attempt-${attempt}-${requestId}`);
   const home = path.join(base, 'home');
   const cwd = path.join(base, 'workspace');
   fs.mkdirSync(home, { recursive: true });
+  // The home stays fresh for plugins, sessions, and caches; only the login is
+  // carried in, because a directory-scoped subscription login does not survive
+  // isolation on either host.
+  if (authSources[host]) {
+    seedHostAuth({ sourceHome: authSources[host], targetHome: home, artifacts: authArtifacts[host] });
+  }
   fs.mkdirSync(cwd, { recursive: true });
   const fixture = path.join(REPOSITORY_ROOT, 'scenarios', 'parity', 'fixtures', scenario.fixture);
   if (fs.existsSync(fixture)) fs.cpSync(fixture, cwd, { recursive: true });
@@ -291,6 +300,7 @@ async function runHandoff(options) {
     const writePrepared = await prepareTrial({
       root: tempRoot, scenario, host: writer, version: writerVersion,
       arm: 'guided', trial: 1, attempt: 1, requestId: `${requestId}-write`,
+      authSources: options.authSources, authArtifacts: options.authArtifacts,
     });
     const writeOptions = {
       scenarioId: scenario.id, host: writer, hostVersion: writerVersion, arm: 'guided', trial: 1,
@@ -419,6 +429,7 @@ async function runScenario(options) {
           const prepared = await prepareTrial({
             root: tempRoot, scenario, host: cell.host, version: cell.version,
             arm, trial, attempt, requestId,
+            authSources: options.authSources, authArtifacts: options.authArtifacts,
           });
           const runId = `${safe(scenario.id)}-${safe(cell.host)}-${safe(cell.version)}-${arm}-${trial}-${requestId}`;
           const runOptions = {

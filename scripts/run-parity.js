@@ -3,12 +3,14 @@
 
 const fs = require('fs');
 const crypto = require('crypto');
+const os = require('os');
 const path = require('path');
 const readline = require('readline/promises');
 const { createClaudeAdapter } = require('./parity/hosts/claude');
 const { createCodexAdapter } = require('./parity/hosts/codex');
 const { runDeterministic, validateReleaseEnvironment } = require('./parity/deterministic');
 const { execute } = require('./parity/process');
+const { authStatusArgs, homeVariable, parseAuthStatus, seedHostAuth } = require('./parity/auth');
 const { writeEvidence } = require('./parity/evidence');
 const { runMatrix } = require('./parity/run');
 const { loadScenarios } = require('./parity/scenarios');
@@ -102,6 +104,41 @@ function findInstalledHookConfig(codexHome, plugin, depth = 8) {
     }
   }
   return null;
+}
+
+const DEFAULT_AUTH_SOURCES = Object.freeze({
+  claude: process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude'),
+  codex: process.env.CODEX_HOME || path.join(os.homedir(), '.codex'),
+});
+
+// Seeding is an allowlist, so it can be wrong. Probing each host's own status
+// command inside a seeded home is what makes a wrong guess a single actionable
+// error at preflight instead of an authentication failure on every trial.
+async function verifyHostAuthentication({
+  host, version, sourceHome, artifacts, probeRoot, packageName, execute: run = execute,
+}) {
+  const home = path.join(probeRoot, `auth-probe-${safe(host)}`);
+  const copied = seedHostAuth({ sourceHome, targetHome: home, artifacts });
+  const variable = homeVariable(host);
+  const probe = await run(
+    'npx',
+    ['--yes', `${packageName}@${version}`, ...authStatusArgs(host)],
+    { env: { ...process.env, [variable]: home }, cwd: ROOT },
+  );
+  const status = parseAuthStatus(host, `${probe.stdout || ''}${probe.stderr || ''}`);
+  if (!status.authenticated) {
+    throw new Error(
+      `${host} is not authenticated inside an isolated ${variable}. ` +
+      `Seeded ${copied.length > 0 ? copied.join(', ') : 'nothing'} from ${sourceHome}. ` +
+      `Log in with the host CLI, then name the login file explicitly via ` +
+      `PARITY_${host.toUpperCase()}_AUTH_FILES if it is not one of credentials.json, auth.json, or token.json.`
+    );
+  }
+  return { host, home, seeded: copied, method: status.detail };
+}
+
+function safe(value) {
+  return String(value).replace(/[^0-9A-Za-z._-]/g, '-');
 }
 
 async function manualTrustCheckpoint({ tempRoot, codexVersion }) {
@@ -228,6 +265,30 @@ async function main(argv = process.argv.slice(2), env = process.env) {
     );
     cell.observed_version = assertObservedVersion(cell.host, cell.version, `${probe.stdout || ''}${probe.stderr || ''}`);
   }
+  const authArtifacts = {
+    claude: env.PARITY_CLAUDE_AUTH_FILES,
+    codex: env.PARITY_CODEX_AUTH_FILES,
+  };
+  const authSources = {
+    claude: env.PARITY_CLAUDE_HOME || DEFAULT_AUTH_SOURCES.claude,
+    codex: env.PARITY_CODEX_HOME || DEFAULT_AUTH_SOURCES.codex,
+  };
+  const authentication = [];
+  for (const cell of cells) {
+    authentication.push(await verifyHostAuthentication({
+      host: cell.host,
+      version: cell.version,
+      sourceHome: authSources[cell.host],
+      artifacts: authArtifacts[cell.host],
+      probeRoot: path.resolve(args['temp-root']),
+      packageName: cell.host === 'claude' ? '@anthropic-ai/claude-code' : '@openai/codex',
+    }));
+  }
+  console.log(JSON.stringify({
+    status: 'authenticated',
+    hosts: authentication.map(entry => ({ host: entry.host, method: entry.method, seeded: entry.seeded })),
+  }, null, 2));
+
   const trust = await manualTrustCheckpoint({
     tempRoot: path.resolve(args['temp-root']),
     codexVersion: versions.codex[0],
@@ -236,6 +297,8 @@ async function main(argv = process.argv.slice(2), env = process.env) {
     scenarios,
     hosts: hostFactories,
     versions,
+    authSources,
+    authArtifacts,
     tempRoot: path.resolve(args['temp-root']),
     release: true,
   });
@@ -278,6 +341,7 @@ if (require.main === module) {
 
 module.exports = {
   findInstalledHookConfig,
+  verifyHostAuthentication,
   KNOWN_OPTIONS,
   argumentsFrom,
   assertObservedVersion,
