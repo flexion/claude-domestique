@@ -412,10 +412,19 @@ test('reports an unserializable offending value without throwing', () => {
   expect(outcome.reason).toMatch(/received_fields/);
 });
 
-test('skips the leaked-canary sweep only when no canary was minted', () => {
-  const result = attestation({}, { summary: `note ${CURRENT_CANARY}` });
+// A result carrying the canary must never validate, and an absent canary is a
+// failed precondition rather than a licence to skip the sweep. This previously
+// returned ok for every falsy canary, which made an unminted canary look clean.
+test('never treats an absent canary as a clean sweep', () => {
+  const leaking = attestation({}, { summary: `note ${CURRENT_CANARY}` });
+  expect(validateIsolation(leaking, CURRENT_REQUEST_ID, CURRENT_CANARY)).toEqual({
+    ok: false,
+    reason: 'the current isolation canary appears in the returned result',
+  });
   for (const canary of [undefined, null, '', 7]) {
-    expect(validateIsolation(result, CURRENT_REQUEST_ID, canary)).toEqual({ ok: true });
+    const outcome = validateIsolation(leaking, CURRENT_REQUEST_ID, canary);
+    expect(outcome.ok).toBe(false);
+    expect(outcome.reason).toMatch(/canary must be a non-empty string/);
   }
 });
 
@@ -584,4 +593,33 @@ test('the isolation fixture is one short markdown prose target with nothing sens
   expect(prose.split(/\s+/).filter(Boolean).length).toBeLessThan(400);
   expect(prose).not.toContain(CURRENT_CANARY);
   expect(prose).not.toMatch(/intended point|voice profile|rubric|purpose of this piece/i);
+});
+
+// The canary sweep was skipped whenever the caller passed an empty or non-string
+// canary, so a run that failed to generate one validated as clean. The canary is
+// mandatory: without it there is nothing to sweep for.
+test('requires a current canary rather than skipping the leakage sweep', () => {
+  for (const canary of ['', '   ', null, undefined, 7, {}]) {
+    const outcome = validateIsolation(attestation(), CURRENT_REQUEST_ID, canary);
+    expect(outcome.ok).toBe(false);
+    expect(outcome.reason).toMatch(/canary must be a non-empty string/);
+  }
+});
+
+// Undeclared attestation content is not provably clean, so an unexpected key
+// fails closed the same way an unexpected forbidden_context key does.
+test('rejects undeclared fields on the isolation object', () => {
+  const contaminated = attestation();
+  contaminated.isolation.purpose = 'ship the migration';
+  const outcome = validateIsolation(contaminated, CURRENT_REQUEST_ID, CURRENT_CANARY);
+  expect(outcome.ok).toBe(false);
+  expect(outcome.reason).toBe('isolation declares unexpected fields: purpose');
+});
+
+test('names every undeclared isolation field it rejects', () => {
+  const contaminated = attestation();
+  contaminated.isolation.rubric = 'score 1-5';
+  contaminated.isolation.notes = 'extra';
+  const outcome = validateIsolation(contaminated, CURRENT_REQUEST_ID, CURRENT_CANARY);
+  expect(outcome.reason).toBe('isolation declares unexpected fields: notes, rubric');
 });

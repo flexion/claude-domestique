@@ -76,6 +76,34 @@ function adapterFactory(packageName, createAdapter) {
   });
 }
 
+// The installed layout is Codex's business, so search for the file rather than
+// hardcoding a path that a host upgrade could move. Returning null is a hard stop
+// upstream, never a fallback to the working tree.
+function findInstalledHookConfig(codexHome, plugin, depth = 8) {
+  const queue = [{ directory: codexHome, depth: 0 }];
+  while (queue.length > 0) {
+    const { directory, depth: level } = queue.shift();
+    if (level > depth) continue;
+    let entries;
+    try {
+      entries = fs.readdirSync(directory, { withFileTypes: true });
+    } catch (error) {
+      continue;
+    }
+    for (const entry of entries) {
+      const absolute = path.join(directory, entry.name);
+      if (entry.isDirectory()) {
+        queue.push({ directory: absolute, depth: level + 1 });
+        continue;
+      }
+      if (!entry.isFile() || entry.name !== 'hooks.json') continue;
+      const parts = absolute.split(path.sep);
+      if (parts[parts.length - 2] === 'hooks' && parts[parts.length - 3] === plugin) return absolute;
+    }
+  }
+  return null;
+}
+
 async function manualTrustCheckpoint({ tempRoot, codexVersion }) {
   const codexHome = path.join(tempRoot, 'manual-trust', 'codex-home');
   fs.mkdirSync(codexHome, { recursive: true });
@@ -88,7 +116,16 @@ async function manualTrustCheckpoint({ tempRoot, codexVersion }) {
     cwd: ROOT,
   });
   if (!installed.ok) throw new Error('manual trust fixture installation failed');
-  const hookPath = path.join(ROOT, 'memento', 'hooks', 'hooks.json');
+  // /hooks reviews the copy Codex installed, so the recorded hash has to come
+  // from that file. Hashing the working tree would let evidence claim approval of
+  // a hash the operator never saw.
+  const hookPath = findInstalledHookConfig(codexHome, 'memento');
+  if (!hookPath) {
+    throw new Error(
+      `could not locate the installed memento/hooks/hooks.json under ${codexHome}; ` +
+      'refusing to hash the repository copy because /hooks reviews the installed file'
+    );
+  }
   const reviewedHookHash = crypto.createHash('sha256').update(fs.readFileSync(hookPath)).digest('hex');
   const recordPath = path.join(tempRoot, 'manual-trust.json');
   console.log(JSON.stringify({
@@ -240,6 +277,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  findInstalledHookConfig,
   KNOWN_OPTIONS,
   argumentsFrom,
   assertObservedVersion,

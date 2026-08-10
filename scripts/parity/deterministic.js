@@ -159,6 +159,12 @@ function validateReleaseEnvironment({ env, isTTY, tempRoot }) {
   if (!env || !env.OPENAI_API_KEY) errors.push('OPENAI_API_KEY');
   if (!isTTY) errors.push('interactive TTY');
   if (typeof tempRoot !== 'string' || tempRoot.trim() === '') errors.push('temporary root');
+  // The credential, TTY, and opt-in checks are all satisfiable by a workflow that
+  // exposes secrets and allocates a pseudo-TTY. The release gate is operator-run
+  // by design, so refuse outright when a CI event is driving the run.
+  if (env && env.GITHUB_EVENT_NAME) {
+    errors.push(`no GitHub Actions event (observed ${env.GITHUB_EVENT_NAME})`);
+  }
   return errors;
 }
 

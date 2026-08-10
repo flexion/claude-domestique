@@ -1,9 +1,12 @@
 'use strict';
 
+const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const { runDeterministic, validateReleaseEnvironment } = require('../parity/deterministic');
 const {
   KNOWN_OPTIONS,
+  findInstalledHookConfig,
   assertObservedVersion,
   main,
   parseVersion,
@@ -112,4 +115,38 @@ test('trustRecord allowlists the operator-authored trust fields', () => {
   ]);
   expect(JSON.stringify(record)).not.toContain('sk-ant-secret');
   expect(JSON.stringify(record)).not.toContain('/Users/alice');
+});
+
+// Credentials, opt-in, and a pseudo-TTY are all reachable from a workflow, so the
+// GitHub event itself has to be disqualifying: the gate is operator-run by design.
+test('release mode refuses to run under any GitHub Actions event', () => {
+  const ready = { PARITY_RELEASE: '1', CLAUDE_API_KEY: 'x', OPENAI_API_KEY: 'y' };
+  expect(validateReleaseEnvironment({ env: ready, isTTY: true, tempRoot: '/tmp/p' })).toEqual([]);
+  for (const event of ['pull_request', 'push', 'workflow_dispatch']) {
+    expect(validateReleaseEnvironment({
+      env: { ...ready, GITHUB_EVENT_NAME: event }, isTTY: true, tempRoot: '/tmp/p',
+    })).toContain(`no GitHub Actions event (observed ${event})`);
+  }
+});
+
+test('the CLI refuses release mode from a fully provisioned pull_request job', async () => {
+  await expect(main(['--mode', 'release', '--release', 'r', '--temp-root', '/tmp/p'], {
+    PARITY_RELEASE: '1', CLAUDE_API_KEY: 'x', OPENAI_API_KEY: 'y', GITHUB_EVENT_NAME: 'pull_request',
+  })).rejects.toThrow('no GitHub Actions event');
+});
+
+// Never fall back to the working-tree copy: /hooks reviews what was installed.
+test('findInstalledHookConfig locates the installed hook config and never guesses', () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'parity-trust-'));
+  try {
+    expect(findInstalledHookConfig(home, 'memento')).toBe(null);
+    const installed = path.join(home, 'plugins', 'memento', 'hooks', 'hooks.json');
+    fs.mkdirSync(path.dirname(installed), { recursive: true });
+    fs.writeFileSync(installed, '{}');
+    expect(findInstalledHookConfig(home, 'memento')).toBe(installed);
+    // A hooks.json belonging to another plugin must not satisfy the lookup.
+    expect(findInstalledHookConfig(home, 'onus')).toBe(null);
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+  }
 });

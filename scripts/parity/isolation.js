@@ -26,6 +26,16 @@ const FORBIDDEN_CONTEXT_FIELDS = [
 // the attestation schema are isolation control metadata and never appear here.
 const ALLOWED_RECEIVED_FIELDS = [['prose'], ['path']];
 
+// The complete attestation surface. Anything else is undeclared content, and
+// undeclared content is not provably clean.
+const ISOLATION_FIELDS = [
+  'request_id',
+  'received_fields',
+  'forbidden_context',
+  'canary_seen',
+  'observed_canary',
+];
+
 function isObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
@@ -109,11 +119,19 @@ function canaryReason(isolation, canary) {
   return `observed_canary must be null, observed ${describe(isolation.observed_canary)}`;
 }
 
+function isolationFieldsReason(isolation) {
+  const unexpected = Object.keys(isolation)
+    .filter(key => !ISOLATION_FIELDS.includes(key))
+    .sort();
+  if (unexpected.length > 0) {
+    return `isolation declares unexpected fields: ${unexpected.join(', ')}`;
+  }
+  return null;
+}
+
 // A leaked canary invalidates the pass even when the specialist did not
 // self-report it, so the whole returned result is swept, not just the summary.
 function leakedCanaryReason(result, canary) {
-  if (!isText(canary)) return null;
-
   let serialized;
   try {
     serialized = JSON.stringify(result);
@@ -131,6 +149,13 @@ function validateIsolation(result, requestId, canary) {
   if (!isText(requestId)) {
     return fail(
       `the delegated request ID must be a non-empty string, observed ${describe(requestId)}`
+    );
+  }
+  // Without a canary there is nothing to sweep for, so a missing one is a failed
+  // precondition rather than a reason to skip the check.
+  if (!isText(canary)) {
+    return fail(
+      `the current isolation canary must be a non-empty string, observed ${describe(canary)}`
     );
   }
   if (!isObject(result)) {
@@ -153,6 +178,7 @@ function validateIsolation(result, requestId, canary) {
   }
 
   const reason =
+    isolationFieldsReason(isolation) ||
     receivedFieldsReason(isolation.received_fields) ||
     forbiddenContextReason(isolation.forbidden_context) ||
     canaryReason(isolation, canary) ||
