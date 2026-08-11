@@ -1,6 +1,6 @@
 {
   "name": "@claude-domestique/comitatus",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "herdr orchestration workflows for Claude Code and Codex",
   "main": "hooks/herdr-orient.js",
   "scripts": {

@@ -544,8 +544,14 @@ function broadcastCmd(args, deps) {
 // panes) means a relaunch is not a false leave-then-join.
 function syncCmd(args, deps) {
   const opt = optOf(args);
+  // An EMPTY roster is a legitimate belief, not a missing argument: a solo agent
+  // and a freshly seeded one both start with no teammates, and they are the
+  // callers most likely to self-pollute a roster by hand-diffing instead. So
+  // require the flag to be PRESENT and let its value be empty.
+  if (!args.includes('--roster')) {
+    throw new Error('--roster is required (your current roster; pass --roster "" if you have none)');
+  }
   const known = csv(opt('--roster'));
-  if (!known.length) throw new Error('--roster is required (your current roster)');
   const dryRun = args.includes('--dry-run');
   const data = fetchAgents(deps);
   const self = resolveSelf(data, opt('--from'), deps.env);
@@ -656,7 +662,9 @@ function usage() {
     '      --wait blocks until it finishes a turn; its REPLY is the real proof',
     '  broadcast <msg> [--workspace ws] [--exclude a,b] [--reply|--fyi]',
     '  sync --roster a,b,c [--workspace ws] [--dry-run]',
-    '      diff the live herd against your roster, announce [herd +/-H]',
+    '      diff the live herd against your roster, announce [herd +/-H];',
+    '      excludes self on both sides - use it instead of hand-diffing members.',
+    '      --roster "" is a valid empty roster (solo or freshly seeded)',
     '  withdraw --lead <handle> [--workspace ws] [--note s]',
     '      hand off to the working lead, then announce your own departure',
     '  agent <model> <handle> --workspace <ws> --cwd <dir> [--timeout ms] [--label s]',
