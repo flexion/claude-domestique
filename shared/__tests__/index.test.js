@@ -352,3 +352,92 @@ describe('shared module', () => {
     });
   });
 });
+
+// Codex validates hook stdout against a strict schema and rejects an unknown field
+// inside hookSpecificOutput, reporting only "hook returned invalid session start
+// JSON output". Memento and Onus both emitted plugin metadata there and both
+// failed on Codex while Mantra, which builds its own minimal envelope, passed.
+describe('serializeHookOutput', () => {
+  const { serializeHookOutput } = require('../index');
+
+  const SESSION_START = {
+    systemMessage: '📍 Memento: issue-feature-42-auth.md',
+    hookSpecificOutput: {
+      hookEventName: 'SessionStart',
+      additionalContext: 'context',
+      files: ['sessions'],
+      tokens: 42,
+      source: 'startup',
+      sessionPath: '/abs/.claude/sessions/x.md',
+      isNew: false,
+    },
+  };
+
+  const USER_PROMPT_SUBMIT = {
+    systemMessage: '📍 Onus: #42',
+    hookSpecificOutput: {
+      hookEventName: 'UserPromptSubmit',
+      additionalContext: 'context',
+      promptCount: 3,
+      refreshed: true,
+      currentIssue: '42',
+      platform: 'github',
+      branchChanged: true,
+    },
+  };
+
+  test('emits only hookEventName and additionalContext for SessionStart', () => {
+    const output = serializeHookOutput(SESSION_START);
+    expect(Object.keys(output.hookSpecificOutput).sort())
+      .toEqual(['additionalContext', 'hookEventName']);
+    expect(output.systemMessage).toBe('📍 Memento: issue-feature-42-auth.md');
+    expect(Object.keys(output).sort()).toEqual(['hookSpecificOutput', 'systemMessage']);
+  });
+
+  test('emits only hookEventName and additionalContext for UserPromptSubmit', () => {
+    const output = serializeHookOutput(USER_PROMPT_SUBMIT);
+    expect(Object.keys(output.hookSpecificOutput).sort())
+      .toEqual(['additionalContext', 'hookEventName']);
+    expect(Object.keys(output).sort()).toEqual(['hookSpecificOutput', 'systemMessage']);
+  });
+
+  // Named individually because each one was observed in a failing payload.
+  test.each([
+    'files', 'tokens', 'source', 'currentIssue', 'platform',
+    'promptCount', 'refreshed', 'sessionPath', 'branchChanged', 'isNew',
+  ])('strips the unsupported field %s', field => {
+    for (const result of [SESSION_START, USER_PROMPT_SUBMIT]) {
+      expect(serializeHookOutput(result).hookSpecificOutput).not.toHaveProperty(field);
+    }
+  });
+
+  test('a plugin extra cannot reintroduce an unknown field', () => {
+    const output = serializeHookOutput({
+      hookSpecificOutput: {
+        hookEventName: 'SessionStart',
+        additionalContext: 'c',
+        somethingNewAPluginAdds: 'x',
+      },
+    });
+    expect(Object.keys(output.hookSpecificOutput)).toEqual(['hookEventName', 'additionalContext']);
+  });
+
+  test('the returned object keeps its metadata for the hooks own tests', () => {
+    const before = JSON.stringify(SESSION_START);
+    serializeHookOutput(SESSION_START);
+    expect(JSON.stringify(SESSION_START)).toBe(before);
+  });
+
+  // checkpoint.js and herdr-orient.js already build minimal envelopes for these.
+  test('passes through events it does not constrain', () => {
+    const preToolUse = { hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: 'c' } };
+    expect(serializeHookOutput(preToolUse)).toEqual(preToolUse);
+  });
+
+  test('tolerates an empty or malformed result', () => {
+    expect(serializeHookOutput({})).toEqual({});
+    expect(serializeHookOutput(null)).toEqual({});
+    expect(serializeHookOutput([])).toEqual({});
+    expect(serializeHookOutput({ hookSpecificOutput: null })).toEqual({ hookSpecificOutput: null });
+  });
+});
