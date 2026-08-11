@@ -1,6 +1,6 @@
 {
   "name": "memento",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Branch-based session management for coding agents, auto-injected through hooks",
   "author": {
     "name": "David Puglielli"

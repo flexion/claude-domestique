@@ -324,6 +324,45 @@ function processHook(config, input) {
  * Main entry point - reads stdin, processes hook, outputs response
  * @param {object} config - Plugin config
  */
+// Codex validates hook stdout against a strict schema and rejects an unknown field
+// inside hookSpecificOutput, reporting only "hook returned invalid session start
+// JSON output". The plugin metadata the builders below attach — files, tokens,
+// source, promptCount, refreshed, and each plugin's `extra` — is informational and
+// has no runtime consumer, so it is stripped here at the point of emission rather
+// than removed from the returned object, which the hooks' own tests read to observe
+// behavior. Events not listed pass through untouched: checkpoint.js and
+// herdr-orient.js already emit only the two legal fields.
+const HOOK_OUTPUT_SCHEMA = {
+  SessionStart: {
+    top: ['systemMessage'],
+    hookSpecific: ['hookEventName', 'additionalContext'],
+  },
+  UserPromptSubmit: {
+    top: ['systemMessage'],
+    hookSpecific: ['hookEventName', 'additionalContext'],
+  },
+};
+
+function serializeHookOutput(result) {
+  if (!result || typeof result !== 'object' || Array.isArray(result)) return {};
+  const nested = result.hookSpecificOutput;
+  if (!nested || typeof nested !== 'object') return result;
+
+  const schema = HOOK_OUTPUT_SCHEMA[nested.hookEventName];
+  if (!schema) return result;
+
+  const output = {};
+  for (const field of schema.top) {
+    if (result[field] !== undefined) output[field] = result[field];
+  }
+  const hookSpecificOutput = {};
+  for (const field of schema.hookSpecific) {
+    if (nested[field] !== undefined) hookSpecificOutput[field] = nested[field];
+  }
+  output.hookSpecificOutput = hookSpecificOutput;
+  return output;
+}
+
 async function runHook(config) {
   let inputData = '';
   for await (const chunk of process.stdin) {
@@ -341,7 +380,7 @@ async function runHook(config) {
   config.cwd = input.cwd || process.cwd();
 
   const result = processHook(config, input);
-  console.log(JSON.stringify(result));
+  console.log(JSON.stringify(serializeHookOutput(result)));
 }
 
 // ============================================================================
@@ -349,6 +388,7 @@ async function runHook(config) {
 // ============================================================================
 
 module.exports = {
+  serializeHookOutput,
   // Main entry points
   runHook,
   processHook,
