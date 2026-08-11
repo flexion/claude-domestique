@@ -38,8 +38,12 @@ const SAFE_ALLOW = Object.freeze([
 
 // One rule per known-safe verb - never a blanket `herd.js:*`, so a verb added
 // later is not auto-allowed.
+// The herd-lifecycle verbs belong here for the same reason as `send`: an agent
+// that hits a permission prompt mid-protocol stalls the herd, and a lead that
+// stalls while seeding or withdrawing strands everyone downstream of it.
 const HELPER_VERBS = Object.freeze([
-  'status', 'members', 'wait', 'send', 'send-wait-read', 'agent', 'up',
+  'status', 'members', 'wait', 'send', 'send-wait-read',
+  'seed', 'broadcast', 'sync', 'withdraw', 'agent', 'up',
 ]);
 
 function bakedHerdRules(homedir) {

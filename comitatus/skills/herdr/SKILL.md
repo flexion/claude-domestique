@@ -16,9 +16,11 @@ herdr owns its own command surface: run `herdr <family> --help` (e.g. `herdr age
 ## two rules that avoid most friction
 
 1. **prefer native `herdr` verbs, addressed by handle.** `herdr agent prompt|read|get|wait <handle>` all resolve handles directly - no pane-id lookups, no JSON parsing. the helper exists only for what the natives don't cover.
-2. **call the herd.js helper by its absolute path from your orientation** (the `node /abs/.../herd.js ...` line). the path is stable across comitatus updates and `/herd-setup` allowlists it once; a path built any other way (variables, relative) fails the permission matcher and prompts. every helper verb is self-contained - it runs `herdr` itself; nothing is piped and stdin is never read. codex agents use the stable `$HOME/.codex/skills/herdr/scripts/herd.js`.
+2. **call the herd.js helper by the absolute path from your orientation** (the `node /abs/.../herd.js ...` line). the path is stable across comitatus updates and `/herd-setup` allowlists it once; a path built any other way (variables, relative, or a guessed Codex cache path) fails the permission matcher or targets the wrong install. every helper verb is self-contained - it runs `herdr` itself; nothing is piped and stdin is never read.
 
-helper verbs: `status | members | wait | send | send-wait-read | agent | up`.
+helper verbs: `status | members | wait | send | send-wait-read | seed | broadcast | sync | withdraw | agent | up`.
+
+The message and membership contract is in [reference/protocol.md](reference/protocol.md).
 
 ## quickstart - the 80% path
 
@@ -148,13 +150,13 @@ the handle is also the pane label. the decorated **tab** label does **not** auto
 
 ### 5. message another agent by handle
 
-one call - it types, confirms the recipient's composer ingested the text, submits with the model-correct keys (codex needs two Enters), and confirms the recipient's turn started:
+One call stamps the sender, serializes submissions to the same recipient, types and submits with model-correct keys, and reports delivery evidence:
 
 ```bash
 node HERD send jay "please rerun the failing test in src/api/" --reply
 ```
 
-the result reports `"submitted":true|false` - `false` means the recipient never started a turn (resend). add `--reply` or `--fyi` to stamp the protocol flag (below). the native primitive is `herdr agent prompt <handle> "..."`, which types **and** submits in one kind-aware call (it handles codex's double-Enter itself); the helper wraps it to also stamp the sender and confirm the turn started.
+Delivery separately reports `accepted`, `observed`, or `undeliverable`, with evidence/reason fields. An accepted-but-unobserved prompt may already have arrived, so do not blindly resend. Blocked recipients are a hard gate (`recipient_blocked`); idle, working, done, and unknown may be submitted, with unknown remaining observationally uncertain. The native primitive is `herdr agent prompt <handle> "..."`, which types **and** submits in one kind-aware call; the helper adds stamping and evidence.
 
 ### 6. close agents on a worktree
 
@@ -214,11 +216,11 @@ a stateless convention for agents to message each other and reply, without scrap
 **message format - one line, with a mandatory reply flag:**
 
 ```
-[from <self> reply] <body>     # a one-line reply IS required
-[from <self> fyi]   <body>     # no reply expected - do NOT reply
+[from <self> reply #<id>] <body> # a one-line reply IS required
+[from <self> fyi #<id>]   <body> # no reply expected - do NOT reply
 ```
 
-`<self>` is your handle; reply to `<self>` with `[from <you> ...] <answer>`. a newline submits the turn early, so keep every message to one line. `node HERD send` stamps the flag for you: `--reply` -> `[from <self> reply]`, `--fyi` -> `[from <self> fyi]`. it resolves `<self>` from the *executing* pane (`$HERDR_PANE_ID`, inherited by your subprocesses), so scripted sends stamp the right sender even when UI focus has drifted; pass `--from <self>` to override.
+`<self>` is your handle; reply to `<self>` with `[from <you> ...] <answer>`. a newline submits the turn early, so keep every message to one line. `node HERD send` stamps the flag and a unique delivery id: `--reply` -> `[from <self> reply #<id>]`, `--fyi` -> `[from <self> fyi #<id>]`. Ignore `#<id>` except to detect duplicate delivery. it resolves `<self>` from the *executing* pane (`$HERDR_PANE_ID`, inherited by your subprocesses), so scripted sends stamp the right sender even when UI focus has drifted; pass `--from <self>` to override.
 
 **send, and let the reply confirm:**
 
@@ -226,7 +228,7 @@ a stateless convention for agents to message each other and reply, without scrap
 node HERD send jay "<body>" --reply
 ```
 
-the helper verifies delivery mechanically (`"submitted":true`), and the `[from jay]` reply landing in your pane is the end-to-end confirmation; silence means resend. for a message that expects **no** reply (`[herd ...]`, a one-way note), send when the recipient is not `working`:
+the helper reports mechanical evidence, and the `[from jay]` reply landing in your pane is the end-to-end confirmation. Silence is not proof of loss. For a message that expects **no** reply (`[herd ...]`, a one-way note), the helper serializes the send; it does not make the message durable:
 
 ```bash
 node HERD wait jay --status idle,done --timeout 30000   # "free to receive" = idle OR done
@@ -234,13 +236,11 @@ node HERD wait jay --status idle,done --timeout 30000   # "free to receive" = id
 
 **receive / reply:** a message reaching you as `[from X] ...` is from teammate X. if it needs an answer, send X back a one-line `[from <self>] <answer>` the same way. if not, do nothing - there are no acks. reading the peer's pane is a diagnostic last resort, not the channel.
 
-**one sender at a time per recipient.** two agents sending to the same recipient concurrently can interleave keystrokes in its composer. coordinate through the operator or the reply cycle; don't blind-broadcast simultaneously.
-
-**don't message a `working` peer.** its in-flight turn is indistinguishable from your submit, so the helper's verification is optimistic there. wait for `idle,done` first (above).
+**one sender at a time per recipient.** the helper serializes concurrent sends with an ownership-checked lock; a live holder is never stolen. State is not a send gate except for blocked recipients, and unknown remains observationally uncertain.
 
 **cross-herd is the same call.** handles resolve from the global `agent list`, so `send` reaches *any* agent (verified). the only requirement is knowing the target handle - rosters are per-herd, so an operator or an introduction message supplies outside handles.
 
-**seeding (required):** a cold agent knows neither this protocol nor its own handle. before relying on it, message each agent once with its handle, the teammate handles, and this protocol. **promoting a solo agent into a herd counts as cold:** seed the incumbent too, then announce both with `[herd +<handle>]`. "it was already running" is not "it knows the protocol."
+**seeding (required):** a cold agent knows neither this protocol nor its own handle. use `node HERD seed <handle> ...` to deliver the canonical seed with its handle, roster, workspace, and lead status. `seed` always requests a reply; that reply landing in the sender's pane is the proof the seed was processed. `--wait` only reports that the recipient finished a turn. **Promoting a solo agent into a herd counts as cold:** seed the incumbent too, then announce both with `[herd +<handle>]`. "it was already running" is not "it knows the protocol."
 
 **membership / roster sync (join & leave):** directive form, distinct from `[from X]` so it is never relayed or replied to:
 
@@ -253,6 +253,8 @@ two complementary triggers:
 - **operator broadcast (immediate).** the operator that adds/removes an agent may broadcast the change right away.
 
 on receiving `[herd +H]`/`[herd -H]`: update your roster **idempotently**; do **not** reply and do **not** re-broadcast (every member detects independently; re-broadcasting causes O(N²) storms).
+
+**lead withdrawal:** the lead may seed the herd, announce the active coordinator, send the withdrawal directive with `withdraw`, and then leave. Remaining members continue without waiting for the lead; the lead is not a required approval or review hop.
 
 add sequence: seed the newcomer with the roster, then `[herd +new]`. remove sequence: `[herd -gone]`, then close the agent's tab (steps 6-7).
 
@@ -276,10 +278,10 @@ herdr agent wait w9:p1 --until done --timeout 120000      # or repeat --until fo
 ## gotchas
 
 - **fetch before `worktree create`** - `--base origin/main` is the local ref; it is stale until you `git fetch origin main`.
-- **`agent prompt` types AND submits** - `herdr agent prompt <handle> "..."` is the native one-call send (kind-aware: it handles codex's double-Enter). `node HERD send` wraps it to also stamp the sender, add `--wait --until working`, and report `"submitted"`.
+- **`agent prompt` types AND submits** - `herdr agent prompt <handle> "..."` is the native one-call send (kind-aware: it handles codex's double-Enter). `node HERD send` wraps it to stamp the sender, serialize the recipient, and report the three-valued `delivery` result.
 - **`--status` comma lists are helper-only** - `node HERD wait jay --status idle,done` accepts a set (it polls `agent list` itself); the native `herdr agent wait <handle> --until <state>` needs one `--until` per state (repeat the flag).
 - **`agent start` needs an existing shell pane** - it takes `--kind <kind> --pane <pane-at-a-shell-prompt>` and takes that pane over; it does **not** spawn its own. the helper/`up` hand it a fresh tab's root pane. `--timeout` waits only for interactive readiness, not for `idle` - wait on `idle` explicitly after.
-- **opencode status needs the fix plugin** - herdr 0.7.0's managed opencode integration is out of date with opencode 1.17.8; the sibling plugin `~/.config/opencode/plugins/herdr-opencode-status-fix.js` restores correct working/idle/blocked reporting. without it, status waits on opencode panes are unreliable.
+- **opencode status needs the fix plugin** - herdr 0.8.0's managed opencode integration is out of date with opencode 1.17.8; the sibling plugin `~/.config/opencode/plugins/herdr-opencode-status-fix.js` restores correct working/idle/blocked reporting. without it, status waits on opencode panes are unreliable.
 - **only the home repo's worktree tree nests; plain workspaces don't** - a `workspace create --cwd` workspace gets no repo association and floats ungrouped, even at a repo root. give each herd agent a *tab* in the herd's one workspace; make the herd a worktree to nest it under the repo.
 - **workspace label vs tab truncation** - rows render `<workspace> · <tab>`; the long worktree-name label can truncate the tab label in the collapsed sidebar; the handle reappears on focus/widen. that label is herdr's default - don't rename it.
 - **`worktree remove` keeps the branch** - it removes the worktree, directory, workspace, and all tabs/agents, but `git branch -D` is separate.

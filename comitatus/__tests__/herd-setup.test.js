@@ -31,6 +31,41 @@ describe('bakedHerdRules', () => {
     expect(rules).not.toContain(`Bash(node ${base} pane:*)`); // verb removed with stdin piping
     expect(rules).not.toContain(`Bash(node ${base} submit-keys:*)`); // internal to send now
   });
+
+  test('the herd-lifecycle verbs are allowed too', () => {
+    const rules = s.bakedHerdRules('/Users/x');
+    const base = '/Users/x/.claude/comitatus/skills/herdr/scripts/herd.js';
+    for (const verb of ['seed', 'broadcast', 'sync', 'withdraw']) {
+      expect(rules).toContain(`Bash(node ${base} ${verb}:*)`);
+    }
+  });
+
+  // An agent that hits a permission prompt mid-protocol stalls the herd, and a
+  // stalled lead strands everyone downstream. A verb the helper dispatches but
+  // /herd-setup never allows is exactly that trap, so the two lists must agree.
+  test('every dispatchable verb has an allow rule', () => {
+    const herd = require('../skills/herdr/scripts/herd.js');
+    const dispatchable = herd.usage()
+      .split('\n')
+      .map((line) => /^ {2}(\S+)/.exec(line))
+      .filter(Boolean)
+      .map((m) => m[1]);
+    expect(dispatchable.length).toBeGreaterThan(0);
+    expect([...s.HELPER_VERBS].sort()).toEqual(dispatchable.sort());
+  });
+
+  // The skill's verb line is what an agent reads to learn the surface exists.
+  // A verb missing there is invisible in practice however well it is allowed.
+  test('SKILL.md advertises exactly the verbs the helper dispatches', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const skill = fs.readFileSync(
+      path.join(__dirname, '..', 'skills', 'herdr', 'SKILL.md'), 'utf8');
+    const line = skill.split('\n').find((l) => l.startsWith('helper verbs:'));
+    expect(line).toBeDefined();
+    const advertised = /`([^`]+)`/.exec(line)[1].split('|').map((v) => v.trim());
+    expect(advertised.sort()).toEqual([...s.HELPER_VERBS].sort());
+  });
 });
 
 describe('mergeAllow', () => {
