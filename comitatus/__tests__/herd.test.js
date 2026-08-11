@@ -48,6 +48,12 @@ describe('members', () => {
   test('filtered by workspace_id', () => {
     expect(h.members(AGENTS, 'w1').sort()).toEqual(['jay', 'sly']);
   });
+  // Deliberately unfiltered: `agent` needs self present for its handle-collision
+  // preflight. That is why roster diffing belongs to `sync` (which excludes
+  // self) and NOT to a hand-rolled diff of this list, which self-adds.
+  test('includes the caller, so it is not a roster diff on its own', () => {
+    expect(h.members(AGENTS, 'w1')).toContain('sly'); // AGENTS' w1:p1 caller
+  });
 });
 
 describe('format', () => {
@@ -790,6 +796,28 @@ describe('sync (peer detection)', () => {
   test('--roster is required: without a belief there is no delta to compute', () => {
     const { deps } = runner();
     expect(() => h.syncCmd(['--workspace', 'w1'], deps)).toThrow(/--roster is required/);
+  });
+
+  // An empty roster is the state of a solo agent and of a freshly seeded one.
+  // Rejecting it forced exactly those callers back onto a hand-rolled `members`
+  // diff, which self-adds (see the `members` sibling test below).
+  test('an empty --roster is a valid belief, not a missing argument', () => {
+    const { deps } = runner();
+    expect(() => h.syncCmd(['--roster', '', '--workspace', 'w1'], deps)).not.toThrow();
+  });
+
+  test('a solo agent syncing from an empty roster never adds itself', () => {
+    const { calls, deps } = runner(['gus']);
+    expect(h.syncCmd(['--roster', '', '--workspace', 'w1'], deps))
+      .toMatchObject({ self: 'gus', live: ['gus'], added: [], removed: [], notified: [] });
+    expect(calls.filter((c) => c[2] === 'prompt')).toHaveLength(0);
+  });
+
+  test('an empty roster still detects real peers, and still excludes self', () => {
+    const { deps } = runner();
+    const out = h.syncCmd(['--roster', '', '--workspace', 'w1', '--dry-run'], deps);
+    expect(out.added).toEqual(['jay', 'pip']);
+    expect(out.added).not.toContain('tim');
   });
 });
 
