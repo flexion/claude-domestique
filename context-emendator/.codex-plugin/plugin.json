@@ -1,0 +1,31 @@
+{
+  "name": "context-emendator",
+  "version": "0.1.0",
+  "description": "Workflow-config auditor for Claude and Codex agent context",
+  "author": {
+    "name": "Flexion"
+  },
+  "repository": "https://github.com/flexion/claude-domestique",
+  "homepage": "https://github.com/flexion/claude-domestique/tree/main/context-emendator",
+  "license": "MIT",
+  "keywords": [
+    "context",
+    "audit",
+    "agents-md",
+    "rules",
+    "skills",
+    "token-efficiency"
+  ],
+  "interface": {
+    "displayName": "Context Emendator",
+    "shortDescription": "Audit before amendment",
+    "longDescription": "Analyzes a repository's Claude/Codex agent context - CLAUDE.md, AGENTS.md, rules, skills, and hooks - for inconsistency, duplication, and token waste, grounded in official host documentation, and recommends human-approved corrections, retirements of bespoke mechanisms in favor of native ones, and gated enhancements.",
+    "developerName": "Flexion",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Audit agent context",
+      "Recommend corrections"
+    ],
+    "websiteURL": "https://github.com/flexion/claude-domestique/tree/main/context-emendator"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "@claude-domestique/context-emendator",
+  "version": "0.1.0",
+  "description": "Context Emendator - audit and correct Claude/Codex agent context for a target repository",
+  "private": true,
+  "license": "MIT"
+}
