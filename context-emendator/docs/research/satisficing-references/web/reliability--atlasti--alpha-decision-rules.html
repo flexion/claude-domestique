@@ -1,0 +1,218 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Sample Size and Decision Rules - ATLAS.ti 9 Mac - User Manual</title>
+        <!-- Custom HTML head -->
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item affix "><a href="../Intro/IntroductionPreface.html">Preface</a></li><li class="chapter-item "><a href="../Intro/AboutThisManual.html">About this Manual</a></li><li class="chapter-item "><a href="../Intro/IntroductionLicenceActivation.html">ATLAS.ti Account and Licence Activation</a></li><li class="chapter-item "><a href="../Intro/Introduction.html">Introduction</a></li><li class="chapter-item "><a href="../Intro/IntroAtlasTiTheKnowledgeWorkbench.html">ATLAS.ti - The Knowledge Workbench</a></li><li class="chapter-item "><a href="../Intro/IntroductionMainConceptsAndFeatures.html">Main Concepts and Features</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../MainConcepts/EntityTypeDocumentDocumentGroup.html">Documents and Document Groups </a></li><li class="chapter-item "><a href="../MainConcepts/EntityTypeQuotation.html">Quotations</a></li><li class="chapter-item "><a href="../MainConcepts/EntityTypeCode.html">Codes</a></li><li class="chapter-item "><a href="../MainConcepts/EntityTypeMemo.html">Memos</a></li><li class="chapter-item "><a href="../MainConcepts/EntityTypeComment.html">Comments</a></li><li class="chapter-item "><a href="../MainConcepts/EntityTypeGroup.html">Groups </a></li><li class="chapter-item "><a href="../MainConcepts/EntityTypeNetworks.html">Networks</a></li><li class="chapter-item "><a href="../MainConcepts/MainConceptsExploringData.html">Data Exploration</a></li><li class="chapter-item "><a href="../MainConcepts/MainConceptsAnalysis.html">Analysis</a></li><li class="chapter-item "><a href="../MainConcepts/MainConceptsTeamTools.html">Team Tools</a></li><li class="chapter-item "><a href="../MainConcepts/MainConceptsExport.html">Data Export</a></li></ol></li><li class="chapter-item "><a href="../Intro/IntroductionMainStepsInWorkingWithAtlasTi.html">Main Steps in Working with ATLAS.ti</a></li><li class="chapter-item "><a href="../Intro/IntroductionStartingATLAS.tiWelcomeScreen.html">Starting ATLAS.ti - Welcome Screen</a></li><li class="chapter-item "><a href="../Project/ProjectCreatingNew.html">Creating a New Project</a></li><li class="chapter-item "><a href="../Project/ProjectImportingAnExistingProject.html">Importing an Existing Project</a></li><li class="chapter-item "><a href="../Intro/IntroductionInterface.html">The ATLAS.ti User Interface</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../Intro/IntroductionInterfaceSoftwareNavigation.html">Navigating through the Software</a></li></ol></li><li class="chapter-item "><a href="../MainConcepts/EntityTypesSixMain.html">The Six Main Entity Types</a></li><li class="chapter-item "><a href="../Managers/EntityManagers.html">Entity Managers</a></li><li class="chapter-item "><a href="../Documents/DocumentsSupportedFileFormats.html">Supported File Formats</a></li><li class="chapter-item "><a href="../Project/ProjectAddingDocuments.html">Adding Documents</a></li><li class="chapter-item "><a href="../Transcription/Transcription.html">Transcription</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../Transcription/PreparingOwnTranscripts.html">Preparing Transcripts</a></li><li class="chapter-item "><a href="../Transcription/ImportingTranscripts.html">Importing Transcripts in RTF or Word format</a></li><li class="chapter-item "><a href="../Transcription/ImportingAutoTranscripts.html">Importing Automated Transcripts in VTT and SRT format</a></li><li class="chapter-item "><a href="../Transcription/WorkingWithMultimediaTranscripts.html">Working with Multimedia Transcripts</a></li></ol></li><li class="chapter-item "><a href="../Documents/DocumentTypeGeoAdding.html">Adding a Geo Document</a></li><li class="chapter-item "><a href="../Documents/DocumentTypeGeoWorkingWith.html">Working With Geo Docs</a></li><li class="chapter-item "><a href="../Documents/DocumentTypeSurveyDataIntro.html">Adding Survey Data</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../Documents/DocumentTypeSurveyDataPreparingForImport.html">Preparing Survey Data For Import</a></li><li class="chapter-item "><a href="../Documents/DocumentTypeSurveyImport.html">Importing Survey Data</a></li><li class="chapter-item "><a href="../Documents/DocumentTypeSurveyAnalysis.html">Analysing Survey Data</a></li></ol></li><li class="chapter-item "><a href="../Documents/DocumentTypeReferenceManagerData.html">Importing Reference Manager Data</a></li><li class="chapter-item "><a href="../Documents/DocumentTypeTwitterDataImport.html">Importing Twitter Data</a></li><li class="chapter-item "><a href="../Documents/DocumentsManaging.html">Managing Documents</a></li><li class="chapter-item "><a href="../Project/ProjectManagement.html">Project Management</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../Project/ProjectManagementLibraries.html">About ATLAS.ti Libraries</a></li><li class="chapter-item "><a href="../Project/ProjectManagementBackup.html">Project Backup &amp; Export</a></li><li class="chapter-item "><a href="../Project/ProjectManagementTransfer.html">Project Transfer</a></li><li class="chapter-item "><a href="../Project/ProjectManagementCopy.html">Creating a Copy of the Project File</a></li><li class="chapter-item "><a href="../Project/ProjectManagementDataStorage.html">Where Does ATLAS.ti Store Project Data?</a></li></ol></li><li class="chapter-item "><a href="../Groups/GroupsWorkingWith.html">Working with Groups</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../Groups/GroupsCreatingAndRenaming.html">Creating and Renaming Groups</a></li><li class="chapter-item "><a href="../Groups/GroupsDeletingRemovingGroupMembers.html">Deleting Groups, Removing Group Members</a></li><li class="chapter-item "><a href="../Groups/GroupsExportingImportingDocGroups.html">Importing and Exporting Document Groups</a></li></ol></li><li class="chapter-item "><a href="../Quotations/QuotationLevel.html">The Quotation Level </a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../Quotations/QuotationsTextCreating.html">Creating (Text) Quotations </a></li><li class="chapter-item "><a href="../Quotations/QuotationsImageCreating.html">Creating Graphical Quotations</a></li><li class="chapter-item "><a href="../Quotations/QuotationsPDFCreating.html">Creating PDF Quotations </a></li><li class="chapter-item "><a href="../Multimedia/MultimediaWorkingWith.html">Creating and Working with Multimedia Quotations </a></li><li class="chapter-item "><a href="../Quotations/QuotationsWorkingWith.html">Working with Quotations </a></li></ol></li><li class="chapter-item "><a href="../Codes/CodingData.html">Coding Data</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../Codes/CodesWorkingWith.html">Working with Codes </a></li><li class="chapter-item "><a href="../Querying/QueryingRetrievingCodedData.html">Retrieving Coded Data </a></li><li class="chapter-item "><a href="../Codes/ExploringCodedData.html">Exploring Coded Date</a></li><li class="chapter-item "><a href="../Codes/CodesMerging.html">Merging Codes </a></li><li class="chapter-item "><a href="../Codes/CodesSplitting.html">Splitting Codes </a></li><li class="chapter-item "><a href="../Codes/CodeGroupsWorkingWith.html">Working with Code Groups </a></li><li class="chapter-item "><a href="../Codes/CodeImportExportCodeList.html">Importing and Exporting Code Lists</a></li><li class="chapter-item "><a href="../Codes/CodeSystem.html">Building a Code System</a></li><li class="chapter-item "><a href="../Codes/CodeSystemCodeTreeCodeForest.html">About Code Trees and the Code Forest</a></li></ol></li><li class="chapter-item "><a href="../Margin/MarginArea.html">The Margin Area</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../Margin/MarginDragDrop.html">Margin Drag &amp; Drop</a></li><li class="chapter-item "><a href="../Margin/MarginPrintWith.html">Print with Margin</a></li></ol></li><li class="chapter-item "><a href="../Exploring/ExploringTextData.html">Exploring Text Data</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../Exploring/ExploringWordListsWordClouds.html">Creating Word Lists and Clouds</a></li><li class="chapter-item "><a href="../Exploring/ExploringWordCloudsStopAndGoLists.html">Stop and Go Lists</a></li></ol></li><li class="chapter-item "><a href="../SearchAndCode/SearchAndCode.html">Search &amp; Code</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../SearchAndCode/SearchAndCodeTextSearch.html">Text Search</a></li><li class="chapter-item "><a href="../SearchAndCode/SearchAndCodeRegularExpressions.html">Expert Search with Regex</a></li><li class="chapter-item "><a href="../SearchAndCode/SearchAndCodeNER.html">Named Entity Recognition (NER)</a></li><li class="chapter-item "><a href="../SearchAndCode/SearchAndCodeSentimentAnalysis.html">Sentiment Analysis</a></li></ol></li><li class="chapter-item "><a href="../Quotations/QuotationReader.html">Quotation Reader</a></li><li class="chapter-item "><a href="../FocusGroups/FocusGroupData.html">Focus Group Coding</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../FocusGroups/FocusGroupDataGuidelines.html">Guidelines For Preparing Focus Group Data</a></li><li class="chapter-item "><a href="../FocusGroups/FocusGroupDataCoding.html">Auto Coding Focus Group Speakers</a></li></ol></li><li class="chapter-item "><a href="../Multimedia/MultimediaData.html">Multimedia Documents (Audio &amp; Video)</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../Multimedia/MultimediaDataHandling.html">Handling Multimedia Data</a></li><li class="chapter-item "><a href="../Multimedia/MultimediaWorkingWith.html">Working with Multimedia Data</a></li></ol></li><li class="chapter-item "><a href="../Memos/MemosAndComments.html">Memos and Comments</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../Memos/MemosWorkingWith.html">Working with Memos and Comments</a></li></ol></li><li class="chapter-item "><a href="../Hyperlinks/Hyperlinks.html">Hyperlinks</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../Hyperlinks/HyperlinksCreating.html">Creating Hyperlinks</a></li><li class="chapter-item "><a href="../Hyperlinks/HyperlinksWorkingWith.html">Working with Hyperlinks</a></li></ol></li><li class="chapter-item "><a href="../Querying/QueryingData.html">Querying Data</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../Querying/QueryingDataAvailableOperators.html">Available Operators For Querying Data </a></li><li class="chapter-item "><a href="../Querying/QueryingDataQuotationManager.html">Build Queries With Quotation Manager</a></li><li class="chapter-item "><a href="../CodeDocumentTable/CodeDocumentTable.html">Code-Document Table</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../CodeDocumentTable/CodeDocumentTableRelativeFrequencies.html">Code-Document Table: Relative Frequencies</a></li><li class="chapter-item "><a href="../CodeDocumentTable/CodeDocumentTableNormalization.html">Code-Document Table: Normalization</a></li><li class="chapter-item "><a href="../CodeDocumentTable/CodeDocumentTableBinarize.html">Code-Document Table: Binarize Results</a></li><li class="chapter-item "><a href="../CodeDocumentTable/CodeDocumentTableVisualization.html">Code-Document Table: Visualization (Sankey-Diagram)</a></li></ol></li><li class="chapter-item "><a href="../CodeCooccurrence/CodeCoOccurrenceTools.html">Code Co-Occurrence Tools</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../CodeCooccurrence/CodeCoOccurrenceExplorer.html">Code Co-Occurrence Explorer</a></li><li class="chapter-item "><a href="../CodeCooccurrence/CodeCoOccurrenceTable.html">Code Co-Occurrence Table</a></li><li class="chapter-item "><a href="../CodeCooccurrence/CodeCoOccurrenceTableVisualization.html">Code Co-Occurrence Table: Visualization (Sankey-Diagram)</a></li><li class="chapter-item "><a href="../CodeCooccurrence/CodeCoOccurrenceTableCcoefficient.html">Code Co-Occurrence Coefficient</a></li></ol></li><li class="chapter-item "><a href="../Querying/QueryTool.html">The Query Tool</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../Querying/QueryToolExampleBooleanQuery.html">How to create a query with Boolean Operators</a></li><li class="chapter-item "><a href="../Querying/QueryToolExampleProximityQuery.html">How to create a query with Proximity Operators</a></li><li class="chapter-item "><a href="../Querying/QueryToolExampleComplexQuery.html">How to create a query using a Mix of Operators</a></li><li class="chapter-item "><a href="../Querying/QueryToolRestrictingAQuery.html">Restricting a Query to Sub Groups in the Data</a></li><li class="chapter-item "><a href="../Querying/QueryToolStoringResultsOfQuery.html">Storing the Results of a Query</a></li><li class="chapter-item "><a href="../Querying/QueryToolCreatingDocGroupsFromResults.html">Creating Document Groups from Results</a></li><li class="chapter-item "><a href="../Querying/QueryToolReports.html">Query Tool Reports</a></li></ol></li><li class="chapter-item "><a href="../Analysis/AnalysisSmartAndSnapshotEntities.html">Smart and Snapshot Entities</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../Analysis/AnalysisWhatAreSmartCodes.html">What are Smart Codes?</a></li><li class="chapter-item "><a href="../Analysis/AnalysisSmartCodesWorkingWith.html">Working With Smart Codes </a></li><li class="chapter-item "><a href="../Analysis/AnalysisWhatAreSmartGroups.html">What are Smart Groups?</a></li><li class="chapter-item "><a href="../Analysis/AnalysisSmartGroupsWorkingWith.html">Working With Smart Groups</a></li><li class="chapter-item "><a href="../Analysis/AnalysisWhatAreSnapshotCodesAndGroups.html">Snapshot Codes and Groups</a></li><li class="chapter-item "><a href="../Analysis/AnalysisSnapshotEntitiesCreating.html">Creating Snapshot Codes and Groups</a></li></ol></li><li class="chapter-item "><a href="../Analysis/AnalysisApplyingGlobalFilters.html">Working with Global Filters in Data Analysis</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../Analysis/AnalysisGlobalFiltersCreating.html">Creating a Global Filter</a></li><li class="chapter-item "><a href="../Analysis/AnalysisRemovingAGlobalFilter.html">Removing / Activating / Deactivating Global Filters</a></li><li class="chapter-item "><a href="../Analysis/AnalysisGlobalFiltersInTheCodeCoOccurrenceTable.html">Global Filters in The Code Co-occurrence Table</a></li><li class="chapter-item "><a href="../Analysis/AnalysisGlobalFiltersInTheCodeDocumentTable.html">Global Filters in The Code Document Table</a></li></ol></li></ol></li><li class="chapter-item "><a href="../Networks/NetworksWorkingWith.html">ATLAS.ti Networks</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../Networks/NetworksAboutNodesAndLinks.html">About Nodes and Links</a></li><li class="chapter-item "><a href="../Networks/NetworksAboutRelations.html">About Relations</a></li><li class="chapter-item "><a href="../Managers/ManagerForRelations.html">Relation Manager</a></li><li class="chapter-item "><a href="../Networks/NetworksNetworkEditor.html">The Network Editor </a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../Networks/NetworksViewOptions.html">Network Editor - View Options </a></li><li class="chapter-item "><a href="../Networks/NetworksLayoutOptions.html">Network Editor - Layout and Routing Options</a></li><li class="chapter-item "><a href="../Networks/NetworksCreatingNetworksAddingNodes.html">Creating Networks &amp; Adding Nodes</a></li><li class="chapter-item "><a href="../Networks/NetworksOpeningAdHocNetworks.html">Opening Ad-hoc Networks</a></li><li class="chapter-item "><a href="../Networks/NetworksLinkingNodes.html">Linking Nodes</a></li><li class="chapter-item "><a href="../Networks/NetworksCreatingNewRelations.html">Creating &amp; Modifying Relations</a></li><li class="chapter-item "><a href="../Networks/NetworksAnalyticFunctions.html">Analytic Functions in Networks</a></li><li class="chapter-item "><a href="../Networks/NetworksExporting.html">Exporting Networks</a></li></ol></li></ol></li><li class="chapter-item "><a href="../Team/TeamWork.html">Team Work</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../Team/TeamUserAccounts.html">User Management</a></li><li class="chapter-item "><a href="../Team/TeamWorkSettingUpProject.html">Setting Up A Team Project: Tasks for the Project Administrator</a></li><li class="chapter-item "><a href="../Team/TeamWorkTeamMembers.html">Instructions for Team Members</a></li><li class="chapter-item "><a href="../Team/TeamWorkMergingProjects.html">Merging Projects</a></li></ol></li><li class="chapter-item expanded "><a href="../ICA/InterCoderAgreemenIntroduction.html">Inter-Coder Agreement (ICA)</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../ICA/ICARequirementsForCoding.html">Requirements For Coding</a></li><li class="chapter-item "><a href="../ICA/ICAMeasuring.html">Measuring Inter-Coder Agreement</a></li><li class="chapter-item "><a href="../ICA/ICAMethodsForTesting.html">Methods For Testing ICA</a></li><li class="chapter-item expanded "><a href="../ICA/ICASampleSizeAndDecisionRules.html" class="active">Sample Size and Decision Rules</a></li><li class="chapter-item "><a href="../ICA/ICAProjectSetup.html">Setting up a Project for ICA Analysis</a></li><li class="chapter-item "><a href="../ICA/ICAMergingProjects.html">Merging Projects for ICA Analysis</a></li><li class="chapter-item "><a href="../ICA/ICARunningAnalysis.html">Running an ICA analysis</a></li></ol></li><li class="chapter-item "><a href="../Tools/Tools.html">Tools</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../Tools/ToolsProjectSearch.html">Project Search</a></li><li class="chapter-item "><a href="../Tools/ToolsFindingRedundantCodings.html">Find Redundant Codings </a></li></ol></li><li class="chapter-item "><a href="../Reports/Reports.html">Reports</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../Reports/PredefinedReports.html">Predefined Reports</a></li><li class="chapter-item "><a href="../Reports/ReportsExample.html">Example Reports</a></li></ol></li><li class="chapter-item "><a href="../Export/ExportOptions.html">Export Options</a></li><li class="chapter-item "><a href="../Export/ExportingDocuments.html">Exporting Documents</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../Export/ExportForFurtherStatisticalAnalysis.html">Data Export for Further Statistical Analysis</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../Export/ExportSpssSyntax.html">SPSS Syntax Export</a></li><li class="chapter-item "><a href="../Export/ExportGenericForFurtherStatisticalAnalysis.html">Generic Export for Further Statistical Analysis</a></li></ol></li><li class="chapter-item "><a href="../Export/ExportQDPXUniversalDataExchange.html">QDPX - Universal Data &amp; Project Exchange</a></li><li class="chapter-item "><a href="../Export/ExportXML.html">Project Export in XML Format</a></li></ol></li><li class="chapter-item "><a href="../Appendix/Appendix.html">Appendix</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../Appendix/AppendixLanguageSettings.html">Language Settings</a></li><li class="chapter-item "><a href="../Appendix/AppendixSystemRequirements.html">System Requirements</a></li><li class="chapter-item "><a href="../Appendix/AppendixServicePacksPatchesLiveUpdate.html">Service Packs &amp; Patches - Live Updates</a></li><li class="chapter-item "><a href="../Appendix/AppendixUsefulResources.html">Useful Resources</a></li><li class="chapter-item "><a href="../Appendix/AppendixGetInTouch.html">Get In Touch</a></li></ol></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <div style="height: 46px;"><a target="_blank" rel="noopener noreferrer" href="https://atlasti.com/product/what-is-atlas-ti"><img src="../GotoATLAS.ti_green.svg" onmouseover="this.src='../GotoATLAS.ti_green_black.svg';" onmouseout="this.src='../GotoATLAS.ti_green.svg';" style="background-blend-mode: multiply; background-color: white; padding-top: 8px"/></a></div><h1 class="menu-title">ATLAS.ti 9 Mac - User Manual</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="sample-size-and-decision-rules"><a class="header" href="#sample-size-and-decision-rules">Sample Size and Decision Rules</a></h1>
+<p>A number of decisions have to be made when testing for inter-coder agreement. For instance, how much data material needs to be used, how many instances need to be coded with any given code for the calculation to be possible, and how to evaluate the obtained coefficient.</p>
+<h2 id="sample-size"><a class="header" href="#sample-size">Sample size</a></h2>
+<p>The data you use for the ICA analysis needs to be representative of the total amount of data you have collected, thus of those data whose reliability is in question. Furthermore, the number of codings per code needs to be sufficiently high. As a rule of thumb, the codings per code should at least yield five agreements by chance.</p>
+<p>Krippendorff (2019) uses Bloch and Kraemer's formula 3.7 (1989:276) to obtain the required sample size. The table below lists the sample size you need when working with two coders:</p>
+<p><img src="./Images/M_DeterminationSampleSize.png" alt="Determining Sample Size for Inter-coder Agreement" /></p>
+<ul>
+<li>
+<p>the three smallest acceptable reliabilities α min: 0.667 / 0.800 / 0.900</p>
+</li>
+<li>
+<p>for four levels of statistical significance: 0.100 / 0.050 / 0.010 / 0.005</p>
+</li>
+<li>
+<p>for semantic domains up to 10 codes (=probability pc):</p>
+</li>
+</ul>
+<p><strong>Example:</strong> If you have a semantic domain with 4 codes and each of the codes are equally distributed (pc = 1/4 = 0,25), and if the minimum alpha should be 0.800 at a 0.05 level of statistical significance, you need a minimum of 139 codings for this semantic domain. For a lower alpha of 0.667, you need a minimum of 81 codings at the same level of statistical significance.</p>
+<p><img src="./Images/M_KrippendorffSampleSize.png" alt="Equation for calculating the sample size" />
+It applies to 2 coders, and for semantic domains up to 10 sub-codes. If you have more than two coders, more than 10 sub-codes in a domain, or an unequal distribution within a domain, you need to adjust the equation and calculate the needed sample size yourself.</p>
+<ul>
+<li>
+<p><strong>More than two coders:</strong> You need to and multiply Z square by the number of coders.</p>
+</li>
+<li>
+<p><strong>More than 10 sub-codes per domain:</strong> You need to adjust the value for pc. The value for pc = 1/number of sub-codes.</p>
+</li>
+<li>
+<p><strong>Unequal distribution of codings within a domain</strong>: By 4 codes in a semantic domain, the estimated proportion pc of all values c in the population is 0.250 (¼); by 5 codes, it is 0,200 (1/5); by 6 codes 0,167 (1/6) and so on. If the distribution of your codes in a semantic domain is unequal, you need to make a new estimate for the sample size by using a pc in the formula that is correspondingly less than 1/4, 1/5, 1/6 and so on.</p>
+</li>
+</ul>
+<div class='ssd_tip'><p>You can see the corresponding z value from a standard normal distribution table. For a p-value of 0,05, z = 1,65.</p></div>
+<h2 id="acceptable-level-of-reliability"><a class="header" href="#acceptable-level-of-reliability">Acceptable Level of Reliability</a></h2>
+<p>The last question to consider is when to accept or reject coded data based on the ICA coefficient. Krippendorff (2019) recommends:</p>
+<ul>
+<li>Strive to reach α = 1,000, even if this is just an ideal.</li>
+<li>Do not accept data with reliability values below α = 0.667.</li>
+<li>In most cases, you can consider a semantic domain to be reliable if α ≥ 0.800.</li>
+<li>Select at least 0.05 as the statistical level of significance to minimize the risk of a Type 1 error, which is to accept data as reliable if this is not the case.</li>
+</ul>
+<p>Which cut-off point you choose always depends on the validity requirements that are placed on the research results. If the result of your analysis affects or even jeopardizes someone's life, you should use more stringent criteria. A cut-off point of α = 0.800 means that 80% of the data is coded to a degree better than chance. If you are satisfied with α = 0.500, this means 50% of your data is coded to a degree better than chance. The sounds a bit like tossing a coin and playing heads or tails.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../ICA/ICAMethodsForTesting.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                            <a rel="next" href="../ICA/ICAProjectSetup.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../ICA/ICAMethodsForTesting.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                    <a rel="next" href="../ICA/ICAProjectSetup.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        <script src="../elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+    </body>
+</html>
+

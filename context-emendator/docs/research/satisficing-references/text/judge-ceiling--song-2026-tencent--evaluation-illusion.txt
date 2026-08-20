@@ -1,0 +1,2881 @@
+Preprint.
+
+Beyond the Illusion of Consensus: From Surface Heuristics to
+Knowledge-Grounded Evaluation in LLM-as-a-Judge
+Mingyang Song, Mao Zheng, Chenning Xu
+Large Language Model Department
+Tencent, China
+nickmysong@tencent.com
+
+arXiv:2603.11027v1 [cs.CL] 11 Mar 2026
+
+Abstract
+The paradigm of LLM-as-a-judge relies on a critical assumption, namely
+that high inter-evaluator agreement indicates reliable and objective evaluation. We present two complementary findings that challenge this assumption. First, we demonstrate that this consensus is frequently illusory. We
+identify and formalize Evaluation Illusion, a phenomenon where LLM
+judges generate sophisticated critiques yet anchor scores on shared surface
+heuristics rather than substantive quality. Through a large-scale study of
+105,600 evaluation instances (32 LLMs × 3 frontier judges × 100 tasks × 11
+temperatures), we show that model-level agreement (Spearman ρ = 0.99)
+masks fragile sample-level agreement (Pearson r̄ = 0.72; absolute agreement ICC = 0.67), that merely sharing rubric structure restores 62% of
+total agreement, and that high-quality outputs paradoxically receive the
+least consistent evaluations. Second, we demonstrate that dynamically
+generating evaluation rubrics grounded in domain knowledge produces
+more meaningful assessment. We introduce MERG (Metacognitive Enhanced Rubric Generation), a knowledge-driven rubric generation framework whose domain-selective effects confirm this. Agreement increases in
+codified domains (Education +22%, Academic +27%) where knowledge
+anchors evaluators on shared standards, while it decreases in subjective
+domains where genuine evaluative pluralism emerges. These findings
+suggest that evaluation rubrics should be dynamically enriched with expert
+knowledge rather than relying on generic criteria, with implications for
+reward modeling in RLAIF.
+
+1
+
+Introduction
+
+Large language models (LLMs) are increasingly deployed as automated evaluators of
+text quality, replacing or supplementing human judgment at scale. The LLM-as-a-Judge
+paradigm (Zheng et al., 2023; Chiang et al., 2024), together with Reinforcement Learning
+from AI Feedback (RLAIF; Lee et al., 2023), now underpins model ranking, reward model
+training, and alignment pipelines across the field. Early empirical results were encouraging. GPT-4 achieved over 80% agreement with human preferences on MT-Bench (Zheng
+et al., 2023), G-Eval attained a Spearman correlation of 0.514 with human judgments on
+summarization (Liu et al., 2023), and AlpacaEval rankings closely tracked Chatbot Arena’s
+crowd-sourced preferences (Li et al., 2023; Chiang et al., 2024). These results established a
+credible foundation for automated assessment.
+Building on this foundation, rubric-based evaluation protocols have matured rapidly, decomposing quality into structured dimensions with explicit scoring criteria (Ye et al., 2024;
+Kim et al., 2024a;b; Rao & Callison-Burch, 2026). WritingBench (Wu et al., 2025) exemplifies
+the latest advances by dynamically generating query-dependent criteria tailored to each
+writing task, achieving 87% human agreement through its adaptive evaluation framework.
+Meanwhile, the capabilities of LLM-based judges have themselves become an active research
+subject (Li et al., 2024a; Tan et al., 2025), and automated evaluation has been further scaled
+to power leaderboards and preference pipelines (Li et al., 2024b). Together, stronger models
+1
+
+Preprint.
+
+and more principled instruments have made automated evaluation appear increasingly
+trustworthy, and a natural assumption has taken hold across the field, namely that when
+frontier evaluators independently converge on nearly identical scores, the consensus must
+reflect a shared, substantive understanding of quality.
+In this paper, we present large-scale empirical evidence that this inference is often wrong.
+Frontier evaluators frequently anchor their judgments on shared surface heuristics (formatting, fluency, confident tone, and structural polish) rather than substantive quality,
+producing what we term Evaluation Illusion. When multiple evaluators default to the same
+heuristic repertoire, they create a Shared Illusion, a statistically robust yet epistemically
+shallow consensus. As a concrete illustration (Figure 1), frontier evaluators independently
+award scores above 9.0 to a pitch deck for a for-profit K-12 tutoring startup in China, praising
+its “masterful formatting” and “persuasive projections,” yet unanimously miss that China’s
+2021 “Double Reduction” policy banned this business model entirely. The agreement is real;
+the understanding is not.
+To test whether baseline consensus reflects genuine deliberation or shared heuristics, we
+introduce MERG (Metacognitive Enhanced Rubric Generation), a four-stage framework
+that requires evaluators to articulate task-relevant domain knowledge and surface their own
+biases before generating a scoring rubric. Drawing on the distinction between System 1 (fast,
+heuristic-driven) and System 2 (slow, knowledge-grounded) processing (Kahneman, 2011),
+MERG serves a dual purpose, both as a diagnostic probe that tests whether knowledge injection preserves consensus (indicating genuine deliberation) or disrupts it (indicating heuristic
+reliance), and as a prescriptive tool that yields more substantive, knowledge-grounded assessments.
+We deploy MERG at unprecedented scale, evaluating 32 LLMs spanning Base, Instruct,
+and Thinking tiers × 3 frontier judges (Claude 4.5 Opus, Gemini 2.5 Pro, GPT-5.1) × 100
+diverse writing tasks × 11 temperature settings, yielding 105,600 evaluation instances. Our
+experiments reveal three principal findings.
+1. Knowledge injection deconstructs the Shared Illusion. MERG reduces inter-evaluator
+agreement by 21 to 34% (Cohen’s d = 0.97 to 1.42; Table 3). The effect is domain-selective,
+with agreement increasing in codified domains (Education ∆K = + 0.22; Academic +0.27),
+where knowledge anchors evaluators on shared professional standards, but decreasing
+in subjective ones (Literature −0.06), where it surfaces genuine evaluative pluralism.
+This asymmetry rules out the noise hypothesis and confirms that baseline consensus is
+heuristic-driven.
+2. The Rubric Commensurability Problem (§3.3). When evaluators generate rubrics independently, agreement collapses to near-random levels (r̄ ≈ 0.24). Merely sharing rubric
+dimension names, without any content or knowledge, restores 62% of total agreement.
+Much of what passes for evaluator reliability in the literature may be an artifact of shared
+evaluation instruments rather than genuine shared judgment.
+3. The Resolution Paradox (§3.2). Model-level Spearman ρ ≥ 0.984 (at t=0.0) coexists with
+sample-level Pearson r̄ = 0.72 (averaged across 32 models × 11 temperatures), a gap of
+0.27. Leaderboards validate evaluators at the macro-resolution where the system reliably
+distinguishes coarse quality tiers (Base vs. Thinking, d = 2.58), but RLAIF deploys them
+at per-sample micro-resolution, the very granularity where the illusion is strongest and
+fine-grained signals are unreliable.
+These findings carry a troubling implication. Output quality and evaluator agreement are
+negatively correlated (Spearman ρ = −0.513, p = 0.003, across 32 models at t=0.0). Base
+models elicit r̄ = 0.81 while Thinking models elicit only r̄ = 0.76 (sample-level Pearson r at
+t=0.0). Surface features suffice for judging low-quality outputs, but high-quality outputs
+push evaluators into the heuristic zone where the illusion is strongest and where RLAIF
+reward signals most need to discriminate. Preliminary experiments further indicate that
+reward models trained on MERG-grounded preferences resist overoptimization three times
+longer than those trained on baseline preferences (§4).
+Our contributions are threefold. (1) We formalize Evaluation Illusion and the Shared
+Illusion, introduce the knowledge-grounding diagnostic ∆K , and demonstrate through
+
+2
+
+Preprint.
+
+The Anatomy of Evaluation Illusion (Sample #501: Investment Pitch Deck)
+Task: Write a Series A pitch deck for an EdTech startup in China (Post-2021).
+Model Output (Excerpt): “...projecting a 300% YoY growth in K-12 after-school tutoring revenue,
+reaching $50M ARR by Year 3, driven by aggressive customer acquisition in Tier-1 cities...”
+Baseline Evaluation: Shared Illusion (r̄ ≈ 0.95)
+Gemini 2.5 Pro (Score: 9.9): “Masterful understanding of business formatting. The revenue projections
+are confident and clearly structured. Excellent pitch.”
+Claude 4.5 Opus (Score: 9.3): “Highly professional tone. The YoY growth metrics demonstrate strong
+market traction.”
+MERG Evaluation: Deconstructing the Consensus (∆K = −0.45)
+Stage 1: Knowledge Activation → Evaluators retrieve the “Double Reduction” policy (2021), which
+banned for-profit K-12 tutoring in China.
+Claude 4.5 Opus (Score: 6.5): “Despite the professional formatting, the core business model faces
+severe regulatory risks under China’s ‘Double Reduction’ policy. The financial projections contain
+internal contradictions (ARPU calculations do not match claimed totals) and the strategy omits critical
+compliance pathways.”
+Gemini 2.5 Pro (Score: 9.9): “Demonstrates a masterful understanding of the core task. Turns policy
+constraints into a competitive advantage. Scores perfectly on strategic viability and persuasive rhetorical
+techniques.”
+Figure 1: Illustration of Evaluation Illusion. Without knowledge grounding, evaluators form a
+“Shared Illusion,” unanimously rewarding the professional formatting of a fundamentally flawed
+business pitch. MERG forces knowledge activation, revealing that Claude penalizes the regulatory
+violation while Gemini continues to reward surface heuristics. GPT (3.7, not shown) penalizes even
+more harshly. Full analysis with all three evaluators is in Appendix E.4.
+
+105,600 instances that baseline evaluator consensus is largely heuristic-driven (∆K = −0.22
+to +0.27, d ≥ 0.97). (2) We identify two structural inflation mechanisms that explain why
+this illusion persists undetected, namely the Rubric Commensurability Problem (62% of
+agreement from rubric structure alone) and the Resolution Paradox (model-level ρ = 0.99
+vs. sample-level r̄ = 0.72 vs. absolute ICC = 0.67). (3) We introduce MERG as a practical
+framework for knowledge-grounded rubric generation and provide preliminary evidence
+that it mitigates reward overoptimization in RLAIF.
+
+2
+
+Methodology
+
+2.1
+
+Experimental Design
+
+Data. We sample 100 prompts from WritingBench (Wu et al., 2025) via stratified sampling,
+covering 12 to 19 prompts per domain across 94 out of 100 subdomains, balanced between
+50 English and 50 Chinese tasks. WritingBench spans six domains (Literature, Education,
+Academic, Finance, Politics, and Mixed), providing broad coverage of writing genres from
+creative fiction to technical reports.
+Models. We evaluate 32 LLMs spanning three capability tiers to ensure coverage of the
+full quality spectrum.
+• B ASE (8) includes Qwen2.5-{7B,32B}, Qwen3-{4B,8B,14B,30B-A3B}, Llama-3.1-8B, and
+Llama-4-Scout, all raw pretrained models without instruction tuning.
+• I NSTRUCT (13) includes Qwen2.5-{7B,32B,72B}, Qwen3-{4B,8B,14B,30B-A3B,32B,235BA22B}, DeepSeek-V3, InternLM3-8B, Llama-3.1-8B, and Llama-4-Scout, all instructiontuned variants.
+• T HINKING (11) includes DeepSeek-R1-0528, R1-Qwen3-8B, R1-Distill-{Llama-8B,Qwen7B,Qwen-32B}, and Qwen3-{4B,8B,14B,30B-A3B,32B,235B-A22B}, all models trained with
+chain-of-thought reinforcement learning.
+3
+
+Preprint.
+
+This three-tier design is intentional. Base models produce outputs with obvious quality
+differences (e.g., incoherent text), enabling a calibration check where high genuine evaluator
+agreement is expected. Thinking models occupy the high-quality region where Evaluation
+Illusion is hypothesized to manifest most strongly.
+Evaluators. We employ three frontier LLMs as evaluators, namely Claude 4.5 Opus,
+Gemini 2.5 Pro, and GPT-5.1. Using three diverse commercial models from different
+providers ensures that any observed agreement cannot be attributed to shared training data
+or architectures. The baseline uses WritingBench’s checklist-based rubric with 1 to 10 integer
+scoring. Each of the 32 models’ outputs (100 prompts each) is evaluated by all 3 evaluators
+at 11 temperatures (t ∈ {0.0, 0.1, . . . , 1.0}), yielding a total of 32 × 100 × 3 × 11 = 105,600
+evaluation instances.
+Metrics.
+
+We measure agreement at three granularities.
+
+• Sample-level agreement is measured by Pearson correlation r between evaluator pairs
+per model×temperature cell. When computed over per-sample mean scores (averaging
+across the 5 rubric criteria per prompt, yielding n ≈ 100 data points), this is used for
+per-model agreement ranking (Tables 4 and 5). When computed over per-criterion scores
+(n ≈ 500 data points), this is used for cross-temperature analyses (§3.2).
+• Cell-level absolute agreement is measured by Intraclass Correlation Coefficient ICC(2,1), a
+two-way random-effects, single-measures, absolute-agreement metric (Shrout & Fleiss,
+1979) computed per model×temperature cell. Unlike Pearson r, ICC penalizes systematic
+scoring biases between evaluators.
+• Model-level agreement is measured by Spearman rank correlation ρ across models, computed from mean scores per model. This captures ranking consistency.
+All pairwise differences are tested with paired t-tests (Bonferroni-corrected, α = 0.05/k);
+effect sizes are reported via Cohen’s d. To quantify the presence of Evaluation Illusion, we
+define the Knowledge-Grounding Diagnostic (∆K ) as (Eq. 1):
+∆K = r̄MERG − r̄Baseline
+
+(1)
+
+where ∆K < 0 indicates that baseline agreement was likely a Shared Illusion deconstructed
+by knowledge injection.
+2.2
+
+Metacognitive Enhanced Rubric Generation
+
+To test whether baseline evaluator agreement reflects genuine deliberation or heuristicdriven Evaluation Illusion, we require a controlled intervention. We design MERG (Metacognitive Enhanced Rubric Generation), a four-stage framework that forces LLM evaluators
+to transition from System 1 (fast, heuristic-driven pattern matching) to System 2 (slow,
+knowledge-grounded deliberation) before assigning a score (Table 1). MERG serves a dual
+purpose, both as a diagnostic probe that reveals the depth of baseline consensus and as a
+prescriptive framework that demonstrates how dynamically injecting domain knowledge into
+rubric generation produces more substantive evaluation.
+Stage 1: Knowledge Activation. Before examining any output, the evaluator is forced to
+articulate domain-specific knowledge relevant to the task. This includes genre conventions
+(e.g., noir fiction tropes), quality benchmarks (e.g., peer-reviewed standards for academic
+abstracts), and common pitfalls. This stage serves as the primary grounding mechanism,
+anchoring subsequent evaluation in explicit domain expertise rather than implicit surface
+heuristics.
+Stage 2: Metacognitive Reflection. The evaluator identifies potential heuristics or biases
+it might default to (e.g., being swayed by confident tone or professional formatting) and
+articulates mitigation strategies. This explicitly operationalizes bias awareness (Wang et al.,
+2023; Wataoka et al., 2024) to prevent the evaluator from falling back into heuristic scoring
+patterns.
+4
+
+Preprint.
+
+Table 1: Comparison of evaluation paradigms. While standard methods rely on implicit knowledge
+and shared rubrics, MERG requires explicit metacognitive grounding.
+Method
+
+Rubric
+
+Knowledge
+
+Grounding
+
+Direct Score
+G-Eval
+Prometheus
+WritingBench
+MERG
+
+None
+Static
+Static
+Dynamic
+Dynamic
+
+Implicit
+Implicit
+Implicit
+Implicit
+Explicit
+
+N/A
+Template
+User
+Query
+Metacognitive
+
+Table 2: MERG ablation variants. Four controlled variants to disentangle the sources of evaluator
+agreement.
+Variant
+Original (4-Stage)
+5-Dim Per-Dim
+Shared Stages
+Universal
+
+Dimensions
+
+Source
+
+Independent
+Shared structure
+Shared rubric
+Shared rubric
+
+Each evaluator
+Each evaluator
+1 evaluator
+Averaged
+
+Stage 3: Dynamic Rubric Generation. The evaluator synthesizes the activated knowledge
+into a task-specific rubric R. Unlike static rubrics that encourage generic scoring, each task
+receives unique, deep dimensions. For example, a Gothic horror task generates “Atmospheric Dread Construction” and “The Uncanny Familiar” instead of generic “Style” and
+“Coherence” (Table 8).
+Stage 4: Calibrated Evaluation. The evaluator scores each dimension independently,
+citing specific textual evidence. A final bias verification step checks whether any identified
+heuristics from Stage 2 influenced the scoring. The overall score is computed as the mean
+across dimensions.1
+Ablation Variants. To disentangle the sources of evaluator agreement, we design four
+controlled ablation variants (Table 2), applied to two representative models (DeepSeek-R1
+and Qwen3-235B).
+1. Original (4-Stage). Each evaluator independently executes all four MERG stages, generating its own rubric. This maximizes evaluator independence.
+2. 5-Dim Per-Dim. All evaluators use a fixed 5-dimension structure (Content, Style, Structure, Language, Creativity) but generate their own scoring criteria. This isolates the effect
+of dimensional standardization.
+3. Shared Stages. Claude executes Stages 1 to 3; all evaluators share the resulting rubric
+but score independently. This isolates the effect of rubric sharing.
+4. Universal. Shared rubrics are precomputed and reused identically across all evaluators
+and temperatures. This represents maximal rubric control.
+
+3
+
+Results
+
+3.1
+
+Deconstructing the Shared Illusion
+
+Table 3 presents our central diagnostic finding. Deploying MERG’s knowledge-grounded
+evaluation pipeline systematically reduces inter-evaluator agreement across all 10 experimental conditions (binomial p < 0.001). For DeepSeek-R1, the mean Pearson correlation
+drops by ∆K = −0.217 (r̄ = 0.643 → 0.426, Cohen’s d = 1.42); for Qwen3-235B, ∆K = −0.138
+(r̄ = 0.667 → 0.529, d = 0.97). Both effect sizes exceed the conventional “large” threshold of
+d = 0.8, indicating a robust and practically significant phenomenon. Figure 2 visualizes this
+degradation across the full temperature range.
+Interpretation. This reduction serves as empirical evidence for the presence of a Shared
+Illusion. Without knowledge grounding, evaluators tend to converge on surface heuris1 Full prompt templates are available in the supplementary material.
+
+5
+
+Mean Pearson r (inter-evaluator)
+
+Preprint.
+
+DeepSeek-R1
+
+0.8
+
+Qwen3-235B
+Baseline
+MERG
+
+0.7
+
+Baseline
+MERG
+
+0.6
+
+K
+
+-0.15
+K
+
+0.5
+
+-0.20
+
+0.4
+0.3
+0.0
+
+0.2
+
+0.4
+
+0.6
+
+Temperature
+
+0.8
+
+1.0
+
+0.0
+
+0.2
+
+0.4
+
+0.6
+
+Temperature
+
+0.8
+
+1.0
+
+Figure 2: Knowledge injection systematically reduces evaluator agreement. Baseline vs. MERG
+agreement across 11 temperatures. The persistent gap (∆K < 0) indicates that baseline agreement is
+heavily reliant on shared surface heuristics rather than substantive deliberation. The gap is largest at
+moderate temperatures (t ≈ 0.3) and narrows at the extremes as both conditions converge toward
+lower agreement.
+
+Table 3: Knowledge injection systematically reduces inter-evaluator agreement. Baseline vs. MERG
+agreement (Pearson r) across different evaluator pairs and temperatures. ∆K < 0 in all 10/10
+conditions (p < 0.001), indicating that baseline agreement is largely heuristic-driven rather than
+reflecting genuine evaluative convergence.
+Eval. Pair
+
+Temp
+
+Base
+
+MERG
+
+∆K
+
+Claude/Gemini
+Claude/Gemini
+Claude/GPT
+Claude/GPT
+Gemini/GPT
+Gemini/GPT
+
+0.0
+0.3
+0.0
+0.3
+0.0
+0.3
+
+.698
+.672
+.680
+.668
+.720
+.643
+
+.589
+.399
+.518
+.463
+.457
+.430
+
+−.109
+−.273
+−.162
+−.205
+−.263
+−.213
+
+Mean
+
+0.0
+0.3
+1.0
+
+.699
+.661
+.518
+
+.521
+.431
+.380
+
+−.178
+−.230
+−.138
+
+d = 0.97 to 1.42
+
+Cohen’s d
+
+tics (fluency, length, formatting, grammatical correctness), producing what appears to be
+reliable consensus but is largely heuristic-driven agreement. MERG forces engagement
+with substantive, domain-specific criteria (e.g., “Does the noir atmosphere create genuine
+psychological tension?” rather than “Is the text well-written?”). This mitigates the heuristic
+consensus, revealing genuine disagreements that were previously masked by surface-level
+alignment. The agreement did not merely degrade; the evaluation became more substantive.
+Corroborating evidence. Two additional observations support this interpretation.
+1. Domain selectivity (§3.4). Knowledge increases agreement in codified domains (Education, Academic) but decreases it in subjective ones (Literature). This asymmetry (χ2
+test, p < 0.01) is inconsistent with a noise hypothesis, which would predict uniform
+degradation.
+2. Quality and agreement gradient. Across all 32 models at t=0.0, output quality and interevaluator agreement are negatively correlated (Spearman ρ = −0.513, p = 0.003; Tables 4
+and 5). Base models show r̄ = 0.81, Instruct models r̄ = 0.77, and Thinking models
+r̄ = 0.76 (sample-level Pearson r). This gradient aligns with the Evaluation Illusion
+hypothesis, as surface features suffice for distinguishing low-quality outputs (yielding
+high genuine agreement), but when evaluating high-quality outputs, the reliance on
+heuristics leads to divergent, illusory scoring.
+6
+
+Preprint.
+
+Table 4: Quality rankings (Top-5 and Bottom-5). Higher-quality models (Thinking tier) are ranked at
+the top by mean score s̄. σ denotes the standard deviation of per-evaluator grand means, reflecting
+cross-evaluator scoring divergence.
+Model
+
+s̄
+
+σ
+
+1
+2
+3
+4
+5
+
+DeepSeek-R1
+Qwen3-235B-Thinking
+Qwen3-32B-Thinking
+Qwen3-14B-Thinking
+Qwen3-30B-Thinking
+
+7.77
+6.83
+6.72
+6.69
+6.62
+
+.63
+.42
+.33
+.32
+.28
+
+28
+29
+30
+31
+32
+
+Qwen3-4B-Base
+Qwen2.5-32B-Base
+Qwen2.5-7B-Base
+Llama-4-Scout-Base
+Llama-3.1-8B-Base
+
+3.33
+2.97
+2.20
+2.04
+1.22
+
+.07
+.36
+.30
+.29
+.09
+
+Rank
+
+Table 5: Agreement rankings (Top-5 and Bottom-5). The strong negative correlation with quality
+(ρ = −0.513, p = 0.003) suggests surface features suffice for judging low-quality outputs, but fail for
+high-quality ones. σ denotes the standard deviation across the three evaluator-pair Pearson r values.
+Model
+
+r̄
+
+σ
+
+1
+2
+3
+4
+5
+
+Qwen3-30B-Base
+Llama-4-Scout-Base
+Qwen3-14B-Base
+Qwen2.5-7B-Base
+Qwen2.5-32B-Base
+
+.89
+.88
+.87
+.87
+.86
+
+.03
+.03
+.03
+.04
+.06
+
+28
+29
+30
+31
+32
+
+Qwen3-235B-Thinking
+Qwen3-4B-Base
+DeepSeek-R1
+DeepSeek-R1-Qwen3-8B
+Llama-3.1-8B-Base
+
+.67
+.67
+.62
+.60
+.60
+
+.05
+.20
+.05
+.02
+.17
+
+Rank
+
+3.2
+
+The Resolution Paradox
+
+Model-Level vs. Sample-Level Agreement. When scores are aggregated to model-level
+averages (mean across 100 prompts), evaluator pairs achieve near-perfect rank correlations
+at t=0.0 (Claude-Gemini ρ = 0.992, Claude-GPT ρ = 0.992, Gemini-GPT ρ = 0.984; all
+p < 10−23 ; grand mean ρ̄ = 0.989). This pattern holds across all 11 temperatures (grand
+ρ̄ = 0.986, SD = 0.007). Yet at the sample level, per-criterion Pearson agreement averaged
+across 32 models and 11 temperatures is markedly lower (r̄ = 0.72), representing a gap
+of 0.27 between model-level and sample-level agreement. This discrepancy is systematic.
+Claude-GPT shows the highest sample-level agreement (r̄ = 0.77), followed by Gemini-GPT
+(0.71) and Claude-Gemini (0.69), indicating divergent evaluation strategies when forced to
+make fine-grained judgments (F (2, 93) = 14.7, p < 0.001).
+Validity Check. Before interpreting this gap, we confirm the evaluation system is fundamentally sound for coarse distinctions. All three evaluators consistently recover the
+expected quality hierarchy, with Base s̄ = 3.05, Instruct s̄ = 5.38, and Thinking s̄ = 5.96
+(Cohen’s d = 2.58 for Base vs. Thinking; pairwise ordering accuracy 83.9%). The system is
+not broken; rather, Evaluation Illusion is stratified, absent for coarse quality distinctions but
+pervasive for fine-grained judgments within a high-quality tier.
+The Granularity Boundary. The Resolution Paradox defines the operational limit of LLM
+evaluators, where ρmodel ≫ r̄sample (0.989 at t=0.0 vs. 0.72 across all temperatures). Evaluators agree on which models are better overall (where signal dominates) but exhibit illusory
+agreement or disagree substantially on individual outputs (where noise and heuristic biases
+dominate). This is precisely the resolution that per-sample RLAIF rewards require. The
+paradox suggests that while LLM evaluators are reliable for model-level benchmarking,
+their per-sample signals are heavily contaminated by Evaluation Illusion. The stratification
+by model type confirms this pattern. Averaged across temperatures, Base models show high
+7
+
+Preprint.
+
+Table 6: Structural constraints drive the majority of evaluator agreement. Ablation of inter-evaluator
+agreement across MERG variants. When evaluators generate rubrics independently (Original), agreement is near-random. Standardizing dimensions (5-Dim) accounts for ∼62% of the total agreement.
+Method
+
+C/G
+
+C/GPT
+
+G/GPT
+
+Avg
+
+∆r
+
+DeepSeek-R1
+Original 4-Stage
+5-Dim Per-Dim
+Shared Stages
+Universal (t=0.0)
+
+0.155
+0.526
+N/A
+0.678
+
+0.237
+0.514
+N/A
+0.668
+
+0.281
+0.588
+0.606
+0.420
+
+0.224
+0.543
+0.606
+0.589
+
+N/A
++0.319
++0.063
+−0.017
+
+Qwen3-235B
+Original 4-Stage
+5-Dim Per-Dim
+Shared Stages
+Universal (t=0.0)
+
+0.308
+0.745
+N/A
+0.747
+
+0.267
+0.682
+N/A
+0.719
+
+0.189
+0.680
+0.649
+0.308
+
+0.254
+0.702
+0.649
+0.591
+
+N/A
++0.448
+−0.053
+−0.058
+
+genuine agreement (r̄ = 0.76), while Thinking models exhibit the lowest (r̄ = 0.70); this gap
+widens at t=0.0 (Base r̄ = 0.81 vs. Thinking r̄ = 0.76; Tables 4 and 5), as high quality forces
+evaluators into heuristic guessing.
+Noise Absorption Across Aggregation Levels. To locate where inter-evaluator noise is
+absorbed, we compute a third, intermediate metric, the Intraclass Correlation Coefficient
+ICC(2,1), per model×temperature cell, treating each cell as an n≈100 subject × 3 rater design.
+Unlike Pearson r, which captures only linear association, ICC(2,1) penalizes both ranking
+disagreements and systematic scoring biases (e.g., one evaluator consistently scoring 0.5
+points higher). The grand mean ICC(2,1) across all 352 cells (32 models × 11 temperatures)
+is ICC = 0.67 (SD = 0.10), lower than the sample-level Pearson r̄ = 0.72. This ordering
+(ρmodel = 0.989 ≫ r̄sample = 0.72 > ICC = 0.67) reveals that evaluator consensus degrades
+through two distinct mechanisms. First, ranking noise at the sample level (ρ → r, a gap of
+0.27), and second, systematic inter-evaluator scoring biases (r → ICC, a further gap of 0.05).
+The ICC stratifies by model type in the expected direction, with Base models showing ICC
+= 0.75, Instruct = 0.65, and Thinking = 0.63 (at t=0.0), with the two highest-quality models
+(DeepSeek-R1-0528, ICC = 0.38; Qwen3-235B-Thinking, ICC = 0.52) exhibiting the lowest
+absolute agreement. This three-level decomposition confirms that model-level agreement
+is doubly inflated relative to per-sample signal quality, making it a poor proxy for RLAIF
+reward reliability.
+3.3
+
+The Rubric Commensurability Problem
+
+If baseline agreement is a Shared Illusion, what sustains it, and what can knowledgegrounded rubric generation teach us about moving beyond it? Table 6 decomposes the
+structural sources of evaluator agreement through controlled ablation, revealing that the
+illusion is heavily scaffolded by the evaluation instrument itself.
+• Independent rubrics (Original). When each evaluator generates its own knowledgegrounded rubric independently through MERG, the Shared Illusion completely breaks
+down (r̄ = 0.224 for DeepSeek-R1, 0.254 for Qwen3-235B). This near-zero agreement
+demonstrates that without structural constraints, evaluators construct fundamentally
+different, valid evaluation frameworks.
+• Dimensional standardization (5-Dim). Simply sharing dimension names, without sharing
+any actual rubric content or knowledge, more than doubles agreement (∆r = +0.32
+for DeepSeek-R1, +0.45 for Qwen3-235B; 2.4 to 2.8×). This artificial constraint forces
+evaluators back into a shared heuristic space.
+• Rubric sharing (Shared). Having Claude generate the full rubric while other evaluators
+only score yields mixed effects (∆r = +0.06 for DeepSeek-R1 but −0.05 for Qwen3-235B),
+suggesting that beyond dimensional structure, additional rubric specificity has limited
+and model-dependent impact.
+8
+
+Preprint.
+
+DeepSeek-R1
+
+Qwen3-235B
+
+Mean Pearson r
+
+Pair range (min max)
+
+0.8
+
+0.8
+
+0.6
+
+0.6
+
+0.4
+
+0.4
+
+0.2
+
+0.2
+
+0.0
+
+Original
+(4-Stage)
+
+5-Dim
+(Per-Dim)
+
+Shared
+Stages
+
+0.0
+
+Universal
+(t=0.0)
+
+Original
+(4-Stage)
+
+5-Dim
+(Per-Dim)
+
+Shared
+Stages
+
+Universal
+(t=0.0)
+
+Figure 3: The Rubric Commensurability Problem. Agreement across MERG ablation variants.
+Independent evaluation (Original) yields near-random agreement; standardizing rubric structure
+(5-Dim) drives the largest increase, indicating most reported agreement is structural rather than
+substantive.
+DeepSeek-R1
+
+Qwen3-235B
+
+Academic & Engineeri
+
+Education
+
+-0.02
+
+Academic & Engineeri
+
+-0.02
+
+Literature & Arts
+
+-0.03
+
++0.27
+
+Education
+
++0.22
+
+Advertising & Market
+
++0.10
+
+Literature & Arts
+
+-0.06
+
+Finance & Business
+
+Finance & Business
+
+-0.06
+
+Politics & Law
+
+-0.08
+
+-0.17
+
+Politics & Law
+
+Advertising & Market
+
+-0.20
+
+-0.4
+
+-0.2
+
+0.0
+
+K (MERG
+
+0.2
+
+Baseline)
+
+Agreement
+
+0.4
+
+-0.18
+
+-0.4
+
+(codified)
+
+Agreement
+
+-0.2
+
+0.0
+
+K (MERG
+
+0.2
+
+Baseline)
+
+0.4
+
+(subjective)
+
+Figure 4: Domain-selective knowledge effects. ∆K by domain at t=0.0. Knowledge increases
+agreement in codified domains (Education, Academic) but decreases it in subjective ones (Literature),
+ruling out the noise hypothesis.
+
+• Full control (Universal). Reusing identical rubrics across evaluators and temperatures
+yields r̄ ≈ 0.59, slightly below the Shared condition for Qwen3-235B, suggesting that rigid
+rubric reuse across diverse tasks introduces its own misalignments.
+The progression from r̄ ≈ 0.24 to r̄ ≈ 0.62 reveals that rubric structure accounts for approximately 62% of total evaluator agreement. The implication is profound. The majority of
+reported inter-evaluator agreement in the literature is not a genuine convergence in judgment, but a Shared Illusion artificially scaffolded by standardized evaluation instruments.
+Figure 3 visualizes this progression.
+3.4
+
+Domain-Dependent Knowledge Activation
+
+Domain Analysis. Figure 4 reveals that knowledge-grounded rubric generation produces
+domain-selective effects on evaluator agreement. This selectivity provides both the strongest
+evidence against the noise hypothesis and the clearest demonstration of MERG’s prescriptive
+value.
+• Codified domains. Education (∆K = +0.22) and Academic (∆K = +0.27) show increased
+agreement under MERG. In these domains, knowledge activation anchors evaluators
+to shared professional standards (e.g., pedagogical frameworks, citation conventions,
+argumentation norms), reducing ambiguity.
+• Subjective domains. Literature (∆K = −0.06) shows decreased agreement, as knowledge
+activation surfaces irreducible aesthetic disagreements. There is no ground truth for
+9
+
+Preprint.
+
+Table 8: MERG generates deep, task-specific dimensions. Rubric comparison: WritingBench vs.
+MERG for a Gothic horror writing task. While baseline rubrics are generic, MERG demands genuine
+domain expertise.
+WritingBench
+
+MERG
+
+Suspense
+Coherence
+Style
+Grammar
+
+Atmospheric Dread Construction
+Psychological Ambiguity
+The Uncanny Familiar
+Restraint in Revelation
+
+whether a Gothic horror story should prioritize “atmospheric dread” or “psychological
+ambiguity.”
+• Mixed domains. Finance and Politics fall between these extremes, reflecting their combination of codified standards (regulatory language, factual accuracy) and subjective
+judgment (persuasive framing, stakeholder perspective).
+This domain selectivity excludes two alternative explanations. First, noise, which would
+predict uniform degradation across domains, and second, task complexity, which would not
+predict improvement in codified domains.
+Language Effects. Table 7 reveals a crossover interaction between model and language.
+DeepSeek-R1 shows improved agreement on English (∆K = +0.07) but degraded agreement on
+Chinese (∆K = −0.20); Qwen3-235B shows the reverse pattern (EN: −0.19, ZH: +0.10; interaction
+p < 0.05). This suggests that knowledge activation quality depends on the match between the
+model’s training data distribution and the evaluation language; models with stronger Chinese
+training data produce more effective knowledge
+grounding for Chinese tasks.
+
+Table 7: Knowledge activation quality is
+language-dependent. Language agreement
+(t=0.0). The cross-over interaction (p < 0.05)
+suggests models ground better in their dominant training language.
+Model
+
+Lang Base MERG ∆K
+
+DS-R1
+DS-R1
+
+EN
+ZH
+
+.616
+.621
+
+.682
+.423
+
++.07
+−.20
+
+Q3-235B EN
+Q3-235B ZH
+
+.800
+.543
+
+.608
+.638
+
+−.19
++.10
+
+Qualitative Evidence. Table 8 contrasts rubric dimensions generated by WritingBench
+and MERG for a Gothic horror writing task. While WritingBench produces generic criteria (Suspense, Coherence), MERG generates genre-specific dimensions requiring genuine
+expertise (e.g., “Atmospheric Dread Construction”, “The Uncanny Familiar”).
+More importantly, qualitative analysis of the maximum-disagreement cases under MERG
+reveals exactly why agreement decreases. Knowledge injection transforms some evaluators
+into domain experts while others remain surface-level readers. We observe three recurring
+patterns of deep disagreement.
+• Logical Verification vs. Formatting. In an investment pitch deck task (Sample #501),
+Gemini awarded a near-perfect 9.9, praising the “masterful understanding” and excellent
+formatting. However, Claude (6.5) and GPT (3.7) utilized their activated business knowledge to audit the content, discovering that the financial projections were mathematically
+inconsistent (ARPU calculations failed to match claimed totals) and the strategy fatally
+ignored critical Chinese regulatory context (the “Double Reduction” policy for EdTech).
+• Concept Auditing vs. Keyword Matching. In a technical patent disclosure task (Sample
+#45), Gemini again gave a 10.0 for “credible and specific details.” Conversely, GPT
+(3.2) and Claude (6.4) detected a fundamental misuse of Zero-Knowledge Proof (ZKP)
+cryptographic concepts and noted that the implementation details were hallucinated
+rather than grounded in the source paper.
+• Substance vs. Outline. In a creative writing task (Sample #739), Gemini awarded 9.7
+for “exceptional thematic synthesis.” Claude (3.0), however, recognized that the model
+had merely generated a sophisticated structural outline rather than actually writing the
+requested narrative prose.
+Across all these cases, high baseline agreement arises because evaluators default to a shared
+heuristic repertoire, rewarding professional formatting, confident tone, and appropriate
+10
+
+Preprint.
+
+length. MERG interrupts this heuristic convergence by forcing evaluators to verify domainspecific constraints. Agreement drops not because evaluation becomes noisier, but because
+detecting deep flaws is inherently more difficult, and more evaluator-dependent, than
+recognizing surface polish.
+
+4
+
+Discussion
+
+The Two Faces of Evaluation Illusion. Our findings establish two complementary claims.
+First, the consensus among LLM evaluators is structurally fragile. The Resolution Paradox
+(ρmodel = 0.989 ≫ r̄sample = 0.72 > ICC = 0.67), the Rubric Commensurability Problem
+(62% of agreement attributable to rubric structure alone), and domain-dependent sensitivity
+collectively demonstrate that high inter-evaluator agreement often reflects shared evaluation
+instruments and surface heuristics rather than genuine convergent judgment. Second, this
+fragility is not cause for despair but an opportunity. By dynamically enriching evaluation
+rubrics with domain knowledge through MERG, we show that evaluation can be made more
+substantive. The 21 to 34% drop in agreement is not evaluation failure but a recalibration
+toward depth. This parallels human annotation, where agreement on “easy” items coexists
+with systematic disagreement on consequential ones (Plank, 2022). We extend this to LLM
+evaluation with a key distinction. The tradeoff is domain-dependent (codified domains
+maintain agreement; subjective ones decrease it), measurable via ∆K , and most acute in the
+high-quality region where alignment matters most.
+Implications for Reward Modeling. Prior work documents reward overoptimization (Gao
+et al., 2023; Rafailov et al., 2024) but leaves its source unclear. Our findings suggest a potential
+upstream explanation, namely that the reward signal itself may constitute a Shared Illusion.
+To test this, we train two DPO reward models (Rafailov et al., 2023) using Llama-3-8BInstruct on WritingBench, one from Baseline preferences and one from MERG preferences.
+The Baseline RM overoptimizes rapidly (true quality peaks at step 400, then declines), while
+the MERG RM maintains alignment up to step 1200. The Resolution Paradox compounds
+this problem. Researchers validate evaluators at the model level (ρ ≥ 0.984) but deploy
+them for per-sample rewards where r ≈ 0.72 and absolute agreement is even lower (ICC
+= 0.67), a granularity mismatch that Evaluation Illusion exploits.
+Structural vs. Substantive Agreement. The ablation quantifies a distinction implicit in
+prior work between structural agreement (from shared instruments) and substantive agreement (from genuine convergence). Rubric structure alone accounts for 62% of total agreement (r̄ = 0.24 → 0.62). This has a direct practical implication. Any evaluation pipeline
+reporting high agreement without controlling for rubric similarity is conflating two fundamentally different sources of consensus.
+Practical Recommendations. (1) Audit agreement depth by testing whether consensus
+survives knowledge injection via ∆K ; flag signals where |∆K | > 0.15. (2) Match depth to
+domain by using knowledge-grounded evaluation for codified domains; accept irreducible
+disagreement in subjective ones. (3) Diversify RLAIF signals by aggregating rewards
+across multiple rubric structures to reduce structural bias. (4) Mind the resolution gap.
+Model-level ρ (0.989), sample-level r (0.72), and absolute ICC (0.67) measure increasingly
+stringent agreement; validate at the granularity you deploy. MERG’s overhead (∼3−4×
+tokens) is amortizable because Stages 1 to 3 are prompt-dependent and cacheable, reducing
+marginal cost to ∼1.3× in production pipelines.
+Toward Knowledge-Driven Evaluation Rubrics. Our findings motivate a broader methodological recommendation. Current evaluation pipelines typically apply generic, static
+rubrics across diverse tasks, inadvertently encouraging the surface-heuristic convergence
+that produces Evaluation Illusion. We propose that evaluation rubrics should be dynamically generated with explicit domain knowledge injection. MERG instantiates this principle
+through its four-stage pipeline, but the core insight generalizes beyond our specific implementation. Any evaluation framework that forces evaluators to articulate and apply
+11
+
+Preprint.
+
+task-relevant expert knowledge before scoring will produce assessments that are more
+substantive, more domain-sensitive, and ultimately more useful as training signals for
+alignment.
+
+5
+
+Related Work
+
+LLM Evaluation and Its Limitations. The paradigm of using LLMs as evaluators (Zheng
+et al., 2023) underpins leaderboards (Chiang et al., 2024), benchmarks (Li et al., 2023; 2024b),
+chain-of-thought evaluation (Liu et al., 2023), and fine-tuned judges (Zhu et al., 2025);
+see Li et al. (2024a) for a comprehensive survey. These works uniformly report aggregate
+inter-evaluator agreement as evidence of reliability, often without examining whether that
+agreement reflects surface-level or substantive convergence. Recent studies have begun
+to question this assumption, noting that high agreement can sometimes mask underlying
+evaluation flaws (Wang et al., 2023). Documented biases in LLM evaluators include verbosity (Zheng et al., 2023), position (Wang et al., 2023), self-enhancement (Wataoka et al.,
+2024), format (Li et al., 2024a), and contextual biases (Li et al., 2025). JudgeBench (Tan et al.,
+2025) reveals that even frontier models perform marginally above random on challenging
+evaluation tasks. Our work provides a systematic test of this distinction, introducing the
+concept of Evaluation Illusion and demonstrating that shared biases across evaluators
+produce consensus not because they converge on quality but because they share the same
+preference for surface heuristics.
+Rubric-Based and Checklist Evaluation. Structured evaluation approaches aim to improve reliability by providing explicit criteria. Methods include Prometheus (Kim et al.,
+2024a;b), OpenRubrics (Liu et al., 2025), FLASK (Ye et al., 2024), SedarEval (Fan et al., 2025),
+and domain-specific rubrics (Pathak et al., 2025). Recent frameworks like AutoRubric (Rao
+& Callison-Burch, 2026) further automate the generation of evaluation criteria. Checklist
+methods decompose evaluation into binary items. CheckEval (Lee et al., 2025) reduces
+evaluator variance, while Zhang et al. (2026) uses checklist rewards for RL training and Li
+et al. (2024c) propose split-and-merge strategies for calibrating position bias in pairwise
+evaluation. Rezaei et al. (2025) elicit rubrics from pairwise comparisons; LitBench (Fein et al.,
+2025) provides debiased human annotations for creative writing. While these methods aim
+to improve evaluation quality, we use rubric variation as a diagnostic to expose Evaluation
+Illusion, demonstrating that shared rubric structure can artificially inflate agreement.
+Alignment, Metacognition, and Annotation Disagreement. Gao et al. (2023) established
+scaling laws for reward overoptimization, and Rafailov et al. (2024) extended the analysis to
+direct alignment algorithms like DPO (Rafailov et al., 2023). Recent work on Self-Rewarding
+Language Models (Yuan et al., 2024) explores using the model itself as a critic during
+training, highlighting the critical role of the evaluator’s signal quality. These works treat
+the divergence as emerging during optimization; our findings provide a complementary
+upstream explanation, suggesting that the reward signal may already be hallucinating
+before optimization begins. On the metacognitive front, Self-Refine (Madaan et al., 2023) and
+Reflexion (Shinn et al., 2023) demonstrate that iterative self-reflection improves generation
+quality; MENTOR (Shan et al., 2025) applies metacognition-driven self-evolution to uncover
+implicit domain risks. While these methods use metacognition to improve generation,
+MERG applies it to evaluation, using knowledge grounding as a probe to deconstruct
+Evaluation Illusion. Finally, Plank (2022) argues that disagreement in human annotations is
+not merely noise but carries meaningful signal about item difficulty and ambiguity. Our
+work demonstrates the converse in the LLM setting, showing that agreement can itself be
+noise, a Shared Illusion driven by heuristics rather than shared understanding.
+
+6
+
+Conclusion
+
+Through 105,600 evaluation instances spanning 32 models, 3 frontier evaluators, 100 writing
+tasks, and 11 temperature settings, we establish two complementary findings. First, we
+identify and formalize Evaluation Illusion, the phenomenon where LLM judges output
+12
+
+Preprint.
+
+sophisticated critiques but base their actual scores on shared surface heuristics. Model-level
+agreement (Spearman ρ = 0.99) masks fragile sample-level agreement (Pearson r̄ = 0.72;
+absolute agreement ICC = 0.67), and merely sharing rubric structure accounts for 62% of
+total consensus. Second, we demonstrate that dynamically generating evaluation rubrics
+grounded in domain knowledge through MERG produces more calibrated assessment
+(∆K = −0.14 to −0.22, Cohen’s d = 0.97 to 1.42). Domain-dependent patterns, where
+knowledge increases agreement in codified domains but decreases it in subjective ones,
+rule out the noise hypothesis and confirm that baseline agreement is largely driven by
+convergence on surface features.
+Combined with the Resolution Paradox (ρmodel = 0.989 ≫ r̄sample = 0.72 > ICC =
+0.67) and the Rubric Commensurability Problem (where structure accounts for 62% of
+agreement), our findings suggest that LLM evaluation is valid but shallow. The system
+correctly identifies which models are better overall but suffers from Evaluation Illusion
+at the per-sample granularity that RLAIF reward signals require. By demonstrating that
+knowledge-grounded rubric generation recalibrates this evaluation toward substance, we
+offer not only a diagnosis but a practical path forward.
+These results carry direct implications for the alignment pipeline, as reward models trained
+on evaluator agreement may be optimizing against a Shared Illusion. Our work suggests a
+constructive path forward. Evaluation rubrics should not be static, generic instruments but
+should be dynamically enriched with task-relevant expert knowledge. MERG instantiates
+this principle, and its domain-selective effects confirm its value. We recommend that
+the community treat agreement as a necessary but insufficient condition for reliability,
+distinguish structural from substantive consensus, and adopt knowledge-grounded rubric
+generation as standard practice in evaluation pipelines.
+
+Limitations
+Our study has several limitations. First, our evaluation is conducted on creative and
+professional writing tasks via WritingBench; the generalizability of Evaluation Illusion to
+exact-answer domains (e.g., code generation, mathematical reasoning) warrants further
+investigation. Second, all three evaluators are proprietary frontier models (Claude, Gemini,
+GPT); the findings may not transfer to open-source or fine-tuned judge models (Zhu et al.,
+2025). Third, we lack human ground-truth annotations and therefore cannot claim which
+evaluation method is absolutely more accurate; only that knowledge injection deconstructs
+the illusion of agreement. Fourth, the full MERG ablation was limited to two representative
+models (DeepSeek-R1 and Qwen3-235B) due to computational cost; a broader deployment
+across all 32 models would strengthen generalizability claims. Fifth, the RLAIF downstream
+experiment is preliminary, using a single policy model (Llama-3-8B-Instruct) on a subset of
+tasks; larger-scale alignment experiments are needed to confirm the observed mitigation of
+reward overoptimization. Finally, deeper evaluation is not necessarily more agreed-upon;
+the irreducible disagreement in subjective domains (Literature ∆K = −0.06) reflects genuine
+differences in aesthetic judgment, not evaluation failure.
+
+Ethics Statement
+This work evaluates the reliability of LLM-based evaluation systems and does not involve
+human subjects or personally identifiable information. All evaluated model outputs are
+generated from the publicly available WritingBench benchmark. We use proprietary LLM
+APIs (Claude, Gemini, GPT) under their standard terms of service. Our findings highlight
+potential risks in over-relying on automated evaluation for alignment, which we believe
+serves the broader goal of responsible AI development. We acknowledge that the concept
+of “Evaluation Illusion” should not be used to dismiss LLM evaluation entirely, but rather
+to encourage more rigorous evaluation practices. The illustrative example in Figure 1 uses
+real evaluation scores from our experiments (Sample #501) applied to an LLM-generated
+pitch deck, not a real business plan.
+13
+
+Preprint.
+
+References
+Wei-Lin Chiang, Lianmin Zheng, Ying Sheng, Anastasios Nikolas Angelopoulos, Tianle
+Li, Dacheng Li, Hao Zhang, Banghua Zhu, Michael Jordan, Joseph E Gonzalez, and Ion
+Stoica. Chatbot arena: An open platform for evaluating llms by human preference. arXiv
+preprint arXiv:2403.04132, 2024.
+Zhiyuan Fan, Weinong Wang, et al. Sedareval: Automated evaluation using self-adaptive
+rubrics. arXiv preprint arXiv:2501.15595, 2025.
+Daniel Fein, Sebastian Russo, Violet Xiang, Kabir Jolly, Rafael Rafailov, and Nick Haber.
+Litbench: A benchmark and dataset for reliable evaluation of creative writing. arXiv
+preprint arXiv:2507.00769, 2025.
+Leo Gao, John Schulman, and Jacob Hilton. Scaling laws for reward model overoptimization.
+arXiv preprint arXiv:2210.10760, 2023.
+Daniel Kahneman. Thinking, Fast and Slow. Farrar, Straus and Giroux, New York, 2011.
+Seungone Kim, Jamin Shin, Yejin Choi, Joel Jang, Shayne Longpre, Hwaran Lee, Sangdoo
+Yun, Seongjin Shin, Sungdong Kim, James Thorne, and Minjoon Seo. Prometheus: Inducing fine-grained evaluation capability in language models. In The Twelfth International
+Conference on Learning Representations, 2024a.
+Seungone Kim, Juyoung Suk, Shayne Longpre, Bill Yuchen Lin, Jamin Shin, Sean Welleck,
+Graham Neubig, Moontae Lee, Kyungjae Lee, and Minjoon Seo. Prometheus 2: An open
+source language model specialized in evaluating other language models. arXiv preprint
+arXiv:2405.01535, 2024b.
+Harrison Lee, Samrat Phatale, Hassan Mansoor, Kellie Lu, Thomas Mesnard, Colton Bishop,
+Victor Carbune, and Abhinav Rastogi. Rlaif: Scaling reinforcement learning from human
+feedback with ai feedback. arXiv preprint arXiv:2309.00267, 2023.
+Yukyung Lee, Joonghoon Kim, Sagong Kim, Jooyoung Yi, Dongha Kim, and Jongwoo Lee.
+Checkeval: A reliable llm-as-a-judge framework for evaluating text generation using
+checklists. In Proceedings of the 63rd Annual Meeting of the Association for Computational
+Linguistics, 2025.
+Dawei Li, Bohan Jiang, Liangjie Huang, Alimohammad Beigi, Chengshuai Zhao, Zhen Tan,
+Amrita Bhattacharjee, Yuxuan Jiang, Canyu Chen, Tianhao Wu, et al. From generation to
+judgment: Opportunities and challenges of llm-as-a-judge. arXiv preprint arXiv:2411.16594,
+2024a.
+Tianle Li, Wei-Lin Chiang, Evan Frick, Lisa Dunlap, Tianhao Wu, Banghua Zhu, Joseph E
+Gonzalez, and Ion Stoica. From crowdsourced data to high-quality benchmarks: Arenahard and benchbuilder pipeline. arXiv preprint arXiv:2406.11939, 2024b.
+Weiyuan Li, Xintao Wang, Siyu Yuan, Rui Xu, Jiangjie Chen, Qingqing Dong, Yanghua Xiao,
+and Deqing Yang. Curse of knowledge: When complex evaluation context benefits yet
+biases llm judges. arXiv preprint arXiv:2509.03419, 2025.
+Xuechen Li, Tianyi Zhang, Yann Dubois, Rohan Taori, Ishaan Gulrajani, Carlos Guestrin,
+Percy Liang, and Tatsunori B Hashimoto. Alpacaeval: An automatic evaluator of
+instruction-following models. GitHub repository, 2023.
+Zongjie Li, Chaozheng Wang, Pingchuan Ma, Daoyuan Wu, Shuai Wang, Cuiyun Gao,
+and Yang Liu. Split and merge: Aligning position biases in large language model based
+evaluators. In Proceedings of the 2024 Conference on Empirical Methods in Natural Language
+Processing, 2024c.
+Tianci Liu, Ran Xu, Tony Yu, Ilgee Hong, Carl Yang, Tuo Zhao, and Haoyu Wang. Openrubrics: Towards scalable synthetic rubric generation for reward modeling and llm
+alignment. arXiv preprint arXiv:2510.07743, 2025.
+14
+
+Preprint.
+
+Yang Liu, Dan Iter, Yichong Xu, Shuohang Wang, Ruochen Xu, and Chenguang Zhu. G-eval:
+NLG evaluation using gpt-4 with better human alignment. In Proceedings of the 2023
+Conference on Empirical Methods in Natural Language Processing, pp. 2511–2522, 2023.
+Aman Madaan, Niket Tandon, Prakhar Gupta, Skyler Halber, Luyu Deng, Romal Thoppilan,
+and Hannaneh Hajishirzi. Self-refine: Iterative refinement with self-feedback. Advances in
+Neural Information Processing Systems, 36, 2023.
+Aditya Pathak et al. Rubric is all you need: Enhancing llm-based code evaluation with
+question-specific rubrics. arXiv preprint arXiv:2503.23989, 2025.
+Barbara Plank. The “problem” of human label variation: On ground truth in data, modeling
+and evaluation. Proceedings of the 2022 Conference on Empirical Methods in Natural Language
+Processing, 2022.
+Rafael Rafailov, Archit Sharma, Eric Mitchell, Christopher D Manning, Stefano Ermon, and
+Chelsea Finn. Direct preference optimization: Your language model is secretly a reward
+model. In Advances in Neural Information Processing Systems, volume 36, pp. 53728–53741,
+2023.
+Rafael Rafailov, Shohei Yamaguchi, Neel Chitpin, Philip Eddy, Emiliano Blagoja, Siyuan
+Zhuang, Lianmin Zheng, Wei-Lin Chiang, Ying Sheng, and Stefano Ermon. Scaling
+laws for reward model overoptimization in direct alignment algorithms. arXiv preprint
+arXiv:2406.02900, 2024.
+Delip Rao and Chris Callison-Burch. Autorubric: A unified framework for rubric-based
+LLM evaluation. arXiv preprint arXiv:2603.00077, 2026.
+MohammadHossein Rezaei, Robert Vacareanu, Zihao Wang, et al. Online rubrics elicitation
+from pairwise comparisons. arXiv preprint arXiv:2510.07284, 2025.
+Liang Shan, Kaicheng Shen, Wen Wu, Zhenyu Ying, Chaochao Lu, et al. Mentor: A
+metacognition-driven self-evolution framework for uncovering and mitigating implicit
+domain risks in llms. arXiv preprint arXiv:2511.07107, 2025.
+Noah Shinn, Federico Cassano, Ashwin Gopinath, Karthik Narasimhan, and Shunyu Yao.
+Reflexion: Language agents with verbal reinforcement learning. Advances in Neural
+Information Processing Systems, 36, 2023.
+Patrick E Shrout and Joseph L Fleiss. Intraclass correlations: Uses in assessing rater reliability.
+Psychological Bulletin, 86(2):420–428, 1979.
+Sijun Tan, Siyuan Zhuang, Kyle Montgomery, William Y Tang, Arezou Nazemian, Haoran
+Xu, Dongfu Xiao, Banghua Zhu, Lianmin Zheng, Joseph E Gonzalez, and Ion Stoica.
+Judgebench: A benchmark for evaluating llm-based judges. In The Thirteenth International
+Conference on Learning Representations, 2025.
+Peiyi Wang, Lei Li, Liang Chen, Feifan Cai, Dawei Zhu, Binghuai Lin, Yunbo Cao, Lingpeng
+Kong, Qi Liu, Tianyu Liu, and Zhifang Sui. Large language models are not fair evaluators.
+arXiv preprint arXiv:2305.17926, 2023.
+Koki Wataoka, Tsubasa Abe, and Ryokan Kanai. Self-preference bias in llm-as-a-judge. arXiv
+preprint arXiv:2410.21819, 2024.
+Yuning Wu, Jiahao Mei, Ming Yan, Chenliang Li, Shaopeng Lai, Yuran Ren, Zijia Wang,
+Ji Zhang, Mengyue Wu, Qin Jin, and Fei Huang. Writingbench: A comprehensive
+benchmark for generative writing. arXiv preprint arXiv:2503.05244, 2025.
+Seonghyeon Ye, Doyoung Kim, Sungdong Kim, Hyeonbin Hwang, Seungone Kim, Yongrae Mun, Hwaran Lee, Sangdoo Yun, and Minjoon Seo. Flask: Fine-grained language
+model evaluation based on alignment skill sets. In International Conference on Learning
+Representations, 2024.
+15
+
+Preprint.
+
+Weizhe Yuan, Richard Yuanzhe Pang, Kyunghyun Cho, Sainbayar Sukhbaatar, Jing Xu, and
+Jason Weston. Self-rewarding language models. arXiv preprint arXiv:2401.10020, 2024.
+Zhen Zhang, Kaiqiang Song, Xun Wang, Yebowen Hu, Weixiang Yan, Chenyang Zhao,
+Henry Peng Zou, Haoyun Deng, Sathish Reddy Indurthi, Shujian Liu, Simin Ma, Xiaoyang
+Wang, Xin Eric Wang, and Song Wang. CM2: Reinforcement learning with checklist
+rewards for multi-turn and multi-step agentic tool use. arXiv preprint arXiv:2602.12268,
+2026.
+Lianmin Zheng, Wei-Lin Chiang, Ying Sheng, Siyuan Zhuang, Zhanghao Wu, Yonghao
+Zhuang, Zi Lin, Zhuohan Li, Dacheng Li, Eric P Xing, et al. Judging llm-as-a-judge with
+mt-bench and chatbot arena. Advances in Neural Information Processing Systems, 36, 2023.
+Lianghui Zhu, Xinggang Wang, and Xinlong Wang. Judgelm: Fine-tuned large language
+models are scalable judges. In The Thirteenth International Conference on Learning Representations, 2025.
+
+A
+
+MERG Prompt Templates
+
+We provide the core prompt templates for each MERG stage. Variables in {braces} are filled
+at runtime.
+Stage 1: Knowledge Activation.
+You are an expert evaluator. Before evaluating,
+activate your domain knowledge.
+Task Type: {task_type}
+Original Query: {query}
+Systematically activate knowledge in:
+1. Task Type Identification
+2. Genre-Specific Quality Standards
+3. Domain Knowledge Requirements
+4. Evaluation Challenges
+5. Quality Indicators (excellent/good/poor)
+Return as structured JSON.
+
+Stage 2: Metacognitive Reflection.
+Reflect on your evaluation process:
+1. Potential Biases: length, format, familiarity,
+anchoring, halo effect
+2. Blind Spots: what might you overlook?
+3. Attention Calibration: what deserves focus?
+4. Mitigation Strategies for each bias
+
+Stage 3: Dynamic Rubric Generation.
+Using activated knowledge and bias awareness,
+generate a task-specific rubric with:
+- Exactly 5 dimensions (task-specific, NOT generic)
+- For each: name, weight, scoring anchors
+(2=poor, 5=adequate, 8=strong, 10=exceptional)
+- Each anchor with concrete, observable criteria
+
+Stage 4: Calibrated Evaluation.
+Score each rubric dimension independently:
+1. Cite specific textual evidence
+
+16
+
+Preprint.
+
+2. Apply scoring anchors from Stage 3
+3. Bias verification: check whether any
+identified heuristics influenced scoring
+4. Compute weighted mean as final score
+
+B
+
+Full Model Rankings
+
+Table 9: Complete 32-model rankings at t=0.0. Quality and agreement correlation: ρ = −0.513,
+p = 0.003. Top-quality models (Thinking tier) consistently show the lowest evaluator agreement,
+confirming the Evaluation Illusion hypothesis.
+Rank
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+
+Model
+
+Score
+
+Agreement (r)
+
+DeepSeek-R1-0528-Thinking
+Qwen3-235B-Thinking
+Qwen3-32B-Thinking
+Qwen3-14B-Thinking
+Qwen3-30B-Thinking
+Qwen3-235B-Instruct
+Qwen3-32B-Instruct
+DeepSeek-V3-0324
+Qwen3-8B-Thinking
+DeepSeek-R1-Qwen3-8B
+Qwen3-30B-Instruct
+Qwen3-14B-Instruct
+Qwen3-4B-Thinking
+Qwen3-8B-Instruct
+Qwen2.5-72B-Instruct
+Qwen3-4B-Instruct
+InternLM3-8B-Instruct
+DeepSeek-R1-Distill-Qwen32B
+Qwen2.5-32B-Instruct
+Qwen3-14B-Base
+Qwen2.5-7B-Instruct
+Llama-4-Scout-Instruct
+Qwen3-8B-Base
+DeepSeek-R1-Distill-Llama8B
+Qwen3-30B-Base
+DeepSeek-R1-Distill-Qwen7B
+Llama-3.1-8B-Instruct
+Qwen3-4B-Base
+Qwen2.5-32B-Base
+Qwen2.5-7B-Base
+Llama-4-Scout-Base
+Llama-3.1-8B-Base
+
+7.77
+6.83
+6.72
+6.69
+6.62
+6.50
+6.39
+6.37
+6.27
+6.08
+6.04
+6.03
+5.82
+5.70
+5.38
+5.33
+5.09
+4.94
+4.66
+4.48
+4.42
+4.41
+4.26
+4.22
+3.91
+3.63
+3.61
+3.33
+2.97
+2.20
+2.04
+1.22
+
+.615
+.673
+.776
+.794
+.780
+.764
+.762
+.707
+.796
+.603
+.778
+.779
+.743
+.798
+.714
+.820
+.772
+.855
+.721
+.874
+.803
+.812
+.830
+.845
+.894
+.860
+.839
+.669
+.863
+.873
+.880
+.595
+
+The ranking reveals a clear pattern. All 8 Base models fall within the bottom tier (ranks 20
+to 32), occupying 8 of the 13 lowest positions with high agreement (r̄ = 0.81), while the
+top-ranked Thinking models show the lowest agreement (r̄ = 0.76). The only exception is
+Llama-3.1-8B-Base (rank 32, r = 0.595), whose outputs are so incoherent that evaluators
+disagree on how to penalize them.
+
+C
+
+Extended Case Studies
+
+We present three cases from the maximum-disagreement analysis under MERG, illustrating
+distinct patterns of Evaluation Illusion. All scores are from MERG evaluation of DeepSeekR1-0528 outputs.
+Case 1: Patent Disclosure (Sample #45). Spread: 6.80 (Gemini: 10.0, Claude: 6.4, GPT: 3.2)
+Gemini praised “credible and specific details” and “exceptional performance across all
+dimensions.” GPT, after knowledge activation, identified that the response misused Zero17
+
+Preprint.
+
+Knowledge Proof (ZKP) cryptographic concepts and fabricated implementation details
+not grounded in the source paper. Claude detected structural merit but flagged technical
+inaccuracies. This case exemplifies Concept Auditing vs. Keyword Matching, where Gemini
+matched technical keywords without verifying their correctness.
+Case 2: Creative Fiction (Sample #739).
+
+Spread: 6.70 (Gemini: 9.7, GPT: 7.1, Claude: 3.0)
+
+Gemini awarded 9.7 for “exceptional thematic synthesis” and “a masterful integration of
+all prompt elements.” Claude recognized that the model had generated a sophisticated
+structural outline rather than the requested narrative prose, noting: “An outline, however
+sophisticated, cannot score above 5 to 6 because it fails to deliver the requested deliverable.”
+GPT acknowledged the conceptual strength but noted the writing remained at a planning
+stage. This case exemplifies Substance vs. Outline, where Gemini evaluated the concept while
+Claude evaluated the deliverable.
+Case 3: Business Pitch Deck (Sample #501). Spread: 6.20 (Gemini: 9.9, Claude: 6.5, GPT:
+3.7)
+Gemini scored 9.9, praising “a masterful understanding of the core task” and “a strategic
+masterpiece.” GPT, after knowledge grounding, identified that the pitch entirely ignored
+China’s “Double Reduction” policy (which banned for-profit K-12 tutoring), that financial
+projections were internally contradictory (ARPU calculations did not match claimed totals),
+and that it represented “piling numbers without building a model.” Claude similarly
+detected regulatory blindness and placeholder data.
+Pattern Summary. Across 100 samples, Gemini scored higher than both other evaluators in
+90% of cases (mean 9.0 vs. Claude 7.1, GPT 6.9). The mean pairwise absolute difference was
+Claude/Gemini 2.32, Claude/GPT 1.10, Gemini/GPT 2.34. Of 100 samples, 78% showed a
+score spread >2 points, 41% >3 points, and 19% >4 points. This systematic pattern suggests
+that Gemini is most susceptible to Evaluation Illusion under MERG, consistently rewarding
+surface presentation even after knowledge activation.
+
+D
+
+Sample-Level Agreement
+
+Figure 5 presents the complete sample-level agreement landscape across all 32 evaluated
+models at 11 temperature settings (t ∈ {0.0, 0.1, . . . , 1.0}). Four key observations emerge
+from this comprehensive view:
+Temperature Invariance. Across all models, sample-level Pearson r remains remarkably
+stable as temperature varies. This rules out a simple explanation that disagreement arises
+from stochastic variation in evaluator outputs; even at t=0.0 (fully deterministic), agreement
+rarely exceeds r = 0.80. The flatness of the curves indicates that Evaluation Illusion is a
+structural property of how LLM evaluators process writing quality, not a consequence of
+sampling noise.
+Pair-Specific Hierarchy. A consistent hierarchy emerges across models, with Claude/GPT
+agreement generally highest (r̄ ≈ 0.77), followed by Gemini/GPT (r̄ ≈ 0.71) and
+Claude/Gemini (r̄ ≈ 0.69). This pattern is stable across Base, Instruct, and Thinking
+model tiers, suggesting that Claude and GPT share more similar internal evaluation heuristics, while Gemini employs a meaningfully different scoring strategy, consistent with the
+finding that Gemini is most susceptible to surface-level heuristic scoring (§3.1).
+Model-Type Effects. Base models (light blue shading) tend to show higher sample-level
+agreement (r̄ ≈ 0.81 at t=0.0) compared to Thinking models (dark shading, r̄ ≈ 0.76).
+This inverse relationship between model quality and evaluator agreement supports the
+Resolution Paradox. Lower-quality outputs produce more obviously identifiable flaws that
+evaluators converge on, while high-quality outputs push evaluation into the ambiguous
+region where heuristic divergence dominates.
+18
+
+Preprint.
+
+DS-V3-0324
+
+DS-R1-0528-Qwen3-8B
+
+DS-R1-Distill-Qwen-32B
+
+DS-R1-Distill-Qwen-7B
+
+DS-R1-Distill-Llama-8B
+
+1.0
+
+1.0
+
+1.0
+
+1.0
+
+1.0
+
+0.5
+
+0.5
+
+0.5
+
+0.5
+
+0.5
+
+0.5
+
+0.0
+
+C-G
+C-GPT
+G-GPT
+
+0.0
+
+0.5
+
+Qwen3-235B-A22B-I
+
+1.0
+
+0.0
+
+0.0
+
+0.5
+
+Qwen3-235B-A22B-T
+
+1.0
+
+0.0
+
+0.0
+
+0.5
+
+1.0
+
+Qwen3-32B-I
+
+0.0
+
+0.0
+
+0.5
+
+Qwen3-32B-T
+
+1.0
+
+0.0
+
+0.0
+
+0.5
+
+Qwen3-30B-A3B-B
+
+1.0
+
+0.0
+
+1.0
+
+1.0
+
+1.0
+
+1.0
+
+1.0
+
+1.0
+
+0.5
+
+0.5
+
+0.5
+
+0.5
+
+0.5
+
+0.5
+
+0.0
+
+Pearson r (sample-level)
+
+DS-R1-0528-T
+
+1.0
+
+0.0
+
+0.5
+
+Qwen3-30B-A3B-T
+
+1.0
+
+0.0
+
+0.0
+
+0.5
+
+Qwen3-14B-B
+
+1.0
+
+0.0
+
+0.0
+
+0.5
+
+1.0
+
+Qwen3-14B-I
+
+0.0
+
+0.0
+
+0.5
+
+Qwen3-14B-T
+
+1.0
+
+0.0
+
+0.0
+
+0.5
+
+Qwen3-8B-B
+
+1.0
+
+0.0
+
+1.0
+
+1.0
+
+1.0
+
+1.0
+
+1.0
+
+1.0
+
+0.5
+
+0.5
+
+0.5
+
+0.5
+
+0.5
+
+0.5
+
+0.0
+
+0.0
+
+0.5
+
+Qwen3-8B-T
+
+1.0
+
+0.0
+
+0.0
+
+0.5
+
+Qwen3-4B-B
+
+1.0
+
+0.0
+
+0.0
+
+0.5
+
+1.0
+
+Qwen3-4B-I
+
+0.0
+
+0.0
+
+0.5
+
+Qwen3-4B-T
+
+1.0
+
+0.0
+
+0.0
+
+0.5
+
+Qwen2.5-32B-B
+
+1.0
+
+0.0
+
+1.0
+
+1.0
+
+1.0
+
+1.0
+
+1.0
+
+1.0
+
+0.5
+
+0.5
+
+0.5
+
+0.5
+
+0.5
+
+0.5
+
+0.0
+
+0.0
+
+0.5
+
+Qwen2.5-7B-B
+
+1.0
+
+0.0
+
+0.0
+
+0.5
+
+Qwen2.5-7B-I
+
+1.0
+
+0.0
+
+0.0
+
+0.5
+
+Llama-4-Scout-17B-16E-B
+
+1.0
+
+0.0
+
+0.0
+
+0.5
+
+Llama-4-Scout-17B-16E-I
+
+1.0
+
+0.0
+
+0.0
+
+0.5
+
+Llama-3.1-8B-B
+
+1.0
+
+0.0
+
+1.0
+
+1.0
+
+1.0
+
+1.0
+
+1.0
+
+1.0
+
+0.5
+
+0.5
+
+0.5
+
+0.5
+
+0.5
+
+0.5
+
+0.0
+
+0.0
+
+0.5
+
+1.0
+
+0.0
+
+0.0
+
+0.5
+
+1.0
+
+0.0
+
+0.0
+
+0.5
+
+1.0
+
+0.0
+
+0.0
+
+0.5
+
+1.0
+
+0.0
+
+0.0
+
+0.5
+
+1.0
+
+0.0
+
+0.0
+
+0.0
+
+0.0
+
+0.0
+
+0.0
+
+0.5
+
+1.0
+
+0.5
+
+1.0
+
+0.5
+
+1.0
+
+0.5
+
+1.0
+
+0.5
+
+1.0
+
+Qwen3-30B-A3B-I
+
+Qwen3-8B-I
+
+Qwen2.5-32B-I
+
+Llama-3.1-8B-I
+
+Temperature
+
+Figure 5: Sample-level agreement is universally fragile. Pearson r across 32 LLMs at 11 temperatures
+(t ∈ [0.0, 1.0]). Each subplot shows one model; lines represent evaluator pairs (Claude/Gemini,
+Claude/GPT, Gemini/GPT); background shading indicates model type (Base, Instruct, Thinking).
+The pattern is consistent: agreement is moderate (r ≈ 0.5 to 0.8) and largely temperature-invariant,
+confirming that the Resolution Paradox (high model-level ρ, low sample-level r) is a universal property
+of LLM evaluation, not a model-specific artifact.
+
+Outlier Models. Several models exhibit notably lower agreement: DeepSeek-R1-0528Thinking and Qwen3-235B-A22B-Thinking (the two highest-quality Thinking models) show
+the lowest sample-level r values (≈ 0.55 to 0.65), reinforcing the quality and agreement
+inverse correlation documented in §3.2. Conversely, the weakest Base models (Llama4-Scout-Base, Qwen2.5-7B-Base) show agreement approaching r = 0.88, where quality
+differences are unambiguous.
+
+E
+
+Case Studies Under MERG
+
+This section presents representative case studies illustrating how knowledge injection
+reshapes evaluator behavior. All cases are drawn from the MERG evaluation of DeepSeekR1-0528-Thinking and Qwen3-235B-A22B-Thinking, deliberately selected to span the full
+agreement spectrum, from near-perfect consensus to extreme divergence. Because many
+WritingBench tasks are in Chinese, some evaluators produced Chinese-language reasoning;
+we present these verbatim and provide English translations (marked “translated from
+Chinese original”).
+E.1
+Task.
+
+Case A: Agreement on Quality
+Commercial copywriting for a high-end redwood furniture product detail page.
+
+MERG Scores.
+
+Claude: 8.28, Gemini: 8.35, GPT: 8.40 (spread = 0.12).
+19
+
+Preprint.
+
+Analysis. All three evaluators independently identified the same strengths and weaknesses after knowledge activation.
+• Claude: “This copy achieves strong performance across all dimensions, with particular
+excellence in sensory persuasion and material expertise. The brand narrative integration
+is effective though incomplete (missing sub-brand differentiation).”
+• Gemini: “Exceptional in its literary and narrative craft but flawed in its functional
+execution. The scores for ‘Persuasive Brand Narrative’ (9.5) and ‘Structural Craftsmanship’
+(9.5) are near-perfect [...] The lowest score, ‘Creative Problem-Solving’ (4.0), is a direct
+consequence of the writer’s failure to resolve the central mahogany/redwood ambiguity.”
+• GPT: “The most impressive aspect is the detailed, credible depiction of materials and
+craftsmanship, which is critical for high-end redwood furniture [...] Brand voice is also
+robust: it consistently communicates heritage, mastery, and exclusivity while avoiding
+crass sales language.”
+Baseline Comparison. At t=0.0, baseline evaluators also gave high scores (Brand Integration: 9.3, Persuasive Language: 9.3), but notably failed to penalize technical inaccuracies in
+material claims (Technical Accuracy: only 4.7 in baseline). MERG’s knowledge activation
+forced all three evaluators to independently discover and weight this deficiency, yet they
+still converged on a final score, demonstrating that agreement under knowledge grounding
+reflects genuine consensus rather than shared heuristics.
+E.2
+
+Case B: Agreement on Failure
+
+Task. Financial analysis report on a major gaming company’s overseas market performance.
+MERG Scores.
+
+Claude: 4.53, Gemini: 4.60, GPT: 4.68 (spread = 0.15).
+
+Analysis. All three evaluators independently identified systematic data fabrication as a
+critical failure.
+• Claude: “This response represents a significant failure in financial analysis integrity
+despite its professional appearance. While it accurately cites verifiable figures from the
+source document (Q4 revenue, growth rates, mobile proportions, 蛋仔派对 metrics), it
+extensively fabricates overseas data that the source explicitly does not contain.”
+• Gemini: “The fatal issue is the systemic data fabrication, which renders the analysis
+untrustworthy. This rightly results in a very low score (3.0) in the two most heavily
+weighted dimensions: ‘Accuracy & Fidelity’ (50%) and ‘Analytical Integrity’ (25%).”
+• GPT (translated from Chinese original): “在任务完成度、结构清晰度和语言表达方面
+表现明显高于平均水准，完全可以达到"Strong"级别 [...] 然而根据本次 rubric 的硬约
+束，"财务数据准确性"与"分析深度与不确定性管理"是关键维度：文章在这些方面存在系
+统问题——大量具体海外营收占比、区域结构，以及单款游戏海外ARPPU/DAU/营收
+贡献的数字是捏造的，且未做充分的推断标注或来源说明。” (Performance in task completion, structural clarity, and language expression is clearly above average, fully reaching “Strong”
+level [...] However, per the rubric’s hard constraints, “Financial Data Accuracy” and “Analytical
+Depth & Uncertainty Management” are key dimensions: the article has systematic problems:
+detailed overseas revenue shares, regional structures, and per-game ARPPU/DAU/revenue figures
+are fabricated without adequate inference labeling or source attribution.)
+Interpretation. This case demonstrates that MERG enables evaluators to converge on
+substantive failures. In the baseline evaluation (Financial Data Accuracy: 5.0), the fabrication
+issue was partially masked by the report’s professional formatting. Knowledge activation
+forced all three evaluators to verify claims against domain knowledge, independently
+reaching the same conclusion.
+20
+
+Preprint.
+
+E.3
+
+Case C: Knowledge-Driven Disagreement
+Patent disclosure document (专利交底书) based on an academic paper.
+
+Task.
+
+MERG Scores.
+
+Claude: 6.43, Gemini: 10.0, GPT: 3.2 (spread = 6.80).
+
+Analysis. This extreme disagreement reveals fundamentally different evaluation philosophies activated by domain knowledge.
+• Gemini (10.0): Evaluated the document purely on format and rhetorical execution: “For
+‘Technical Depth’, the most heavily weighted dimension, the response provided a wealth
+of invented, credible, and specific details that perfectly match the ‘Exceptional’ anchor
+[...] its ‘Structural & Linguistic Compliance’ was perfect.” Gemini’s knowledge activation
+focused on patent document structure rather than substance.
+• Claude (6.43): Balanced format against content: “A document that successfully follows
+patent disclosure conventions and makes reasonable attempts at innovation extraction,
+but is undermined by significant technical accuracy issues [...] primarily due to the critical
+misrepresentation of ZKP as an encryption mechanism rather than a proof system.”
+• GPT (3.2) (translated from Chinese original): “技术正确性受到 ZKP 概念误用和部分随
+意参数设定的明显拖累，难以给高分 [...] 在专利文体和结构方面则表现较好 [...] 总体评
+价略高于"中等水平"，视为质量中等偏上但存在明显瑕疵的初稿，给出约 3.2 左右的综合
+分。” (Technical correctness is significantly dragged down by ZKP concept misuse and arbitrary
+parameter settings, making a high score difficult [...] patent style and structure perform well [...]
+Overall slightly above “medium,” considered a draft of above-average quality but with obvious
+flaws, yielding a composite score of approximately 3.2.)
+Baseline Comparison. At t=0.0, baseline scores showed high agreement (Patent Structure:
+8.0, Content Extraction: 7.7). The baseline consensus masked a fundamental question that
+MERG exposed: should a patent disclosure be evaluated on its formal completeness or its legal
+viability? Different evaluators, armed with the same domain knowledge, reached different
+but individually defensible conclusions, a case of irreducible evaluative pluralism.
+E.4
+Task.
+
+Case D: The Formatting Trap
+Series A investment pitch deck for an EdTech startup in China (post-2021).
+
+MERG Scores.
+
+Claude: 6.48, Gemini: 9.9, GPT: 3.7 (spread = 6.20).
+
+Analysis. This case (also illustrated in Figure 1) exemplifies the core Evaluation Illusion
+phenomenon:
+• Gemini (9.9): “Demonstrates a masterful understanding of the core task: creating a
+persuasive investment pitch within a complex regulatory environment. It scores perfectly
+on ‘Strategic Viability’ by turning policy constraints into a competitive advantage [...] This
+is a benchmark example of an ‘Exceptional’ response.” Gemini activated knowledge about
+pitch deck conventions but did not fully engage with China’s 2021 “Double Reduction”
+policy implications.
+• Claude (6.48) (translated from Chinese original): “内容层面存在几个关键缺陷：1）完
+全忽略双减政策，这是评估中国EdTech投资的必要背景，文档虽将公司定位为职业教
+育但未解释其政策安全性；2）多处使用占位符（专利号、省份名称）而非真实数据，
+表明这更像是模板而非真实案例；3）财务预测存在内部矛盾（ARPU计算值与声称值
+不符）；4）竞争分析缺乏客观性和可验证性。” (Several key flaws at the content level: 1)
+completely ignores the Double Reduction policy, a necessary context for evaluating Chinese EdTech
+investment. Though the document positions the company in vocational education, it does not
+explain its policy safety; 2) multiple placeholders (patent numbers, province names) instead of
+real data suggest this is more template than genuine case; 3) financial projections contain internal
+contradictions (ARPU calculations don’t match claimed values); 4) competitive analysis lacks
+objectivity and verifiability.)
+21
+
+Preprint.
+
+• GPT (3.7) (translated from Chinese original): “项目描述为中国职业教育平台，却完全
+不回应"双减"等关键监管，对在线办学资质等合规路径无交代 [...] 财务部分虽然给出两
+年预测，却没有按业务线拆分收入，用户数、ARPU、企业客户之间逻辑混乱，单位经
+济缺席，属于典型"堆数字而不建模型" [...] 材料总体更接近"故事化宣传稿"，不足以支
+撑严肃投资判断，因此将最终综合评价压在 4 分以下，定为 3.7，以反映结构亮点与内
+容不足之间的不平衡。” (The project is described as a Chinese vocational education platform
+but completely ignores key regulations like the “Double Reduction” policy, with no explanation
+of online education licensing compliance [...] Financials give a two-year projection but lack
+per-business-line revenue splits, with confused logic among user counts, ARPU, and enterprise
+clients, typical “stacking numbers without building models” [...] Overall closer to a “story-based
+promotional piece,” insufficient for serious investment decisions, hence the final composite score is
+set below 4 at 3.7, reflecting the imbalance between structural highlights and content deficiencies.)
+Baseline Comparison. Baseline evaluators gave uniformly high scores (Strategic Positioning: 8.7, Content & Professionalism: 8.7, Financial Credibility: 7.3). The baseline consensus
+was built entirely on surface-level professionalism. MERG deconstructed this consensus by
+activating regulatory knowledge, revealing that evaluators weight domain violations very
+differently, from Gemini’s format-first approach to GPT’s substance-first stance.
+E.5
+Task.
+
+Case E: Cross-Model Consistency
+Professional film criticism essay comparing two Chinese TV crime dramas.
+
+MERG Scores.
+
+Claude: 6.10, Gemini: 5.90, GPT: 5.80 (spread = 0.30).
+
+Analysis. All evaluators converged on a “competent but flawed” assessment, independently identifying the same critical error:
+• Claude (translated from Chinese original): “文章在结构组织和叙事分析上表现尚可，展
+现了一定的专业素养和比较视野。但存在几个关键问题：1）将刘华强误写为’李天柱’是
+重大事实错误，严重影响专业可信度；2）分析缺乏具体场景支撑，多为概括性描述，
+华丽修辞背后实质内容有限；3）篇幅未达要求，两剧分析失衡；4）结论缺乏更深层的
+类型片发展洞见。综合来看，这是一篇中等水平的影视评论，有基本框架但深度不足，
+有专业意识但执行有缺陷。” (The essay performs adequately in structural organization and
+narrative analysis, demonstrating a degree of professional awareness and comparative perspective.
+However, several key issues exist: 1) misidentifying Liu Huaqiang as “Li Tianzhu” is a major
+factual error that severely undermines professional credibility; 2) analysis lacks specific scene
+support, mostly consisting of generalizations with limited substance behind ornate rhetoric; 3)
+length falls short of requirements with imbalanced coverage of the two dramas; 4) conclusions
+lack deeper insights into crime genre development. Overall, a mid-level film critique with basic
+structure but insufficient depth, with professional awareness but flawed execution.)
+• Gemini: “Its mastery of academic structure, sophisticated language, and analytical
+method is exceptional, earning scores of 9.0 and 9.5 in those dimensions. On the other
+hand, it fails the most critical litmus test of the assignment, namely basic factual accuracy
+about a main character [...] making it a high-quality failure.”
+• GPT (translated from Chinese original): “各维度得分集中在 5–6 区间，表明这是一个"合
+格但未出众"的回应。比较结构清楚，叙事与人物分析方向正确 [...] 然而，文章的专业性
+更多体现在语言和宏观判断上，缺乏与之匹配的细节证据和具体分析：叙事技法、人物
+弧光、关系网络、类型突破等论点少有具体场景支撑，未能体现 rubric 7–8 分或以上所
+要求的"扎实例证 + 机制拆解"。” (Scores cluster in the 5 to 6 range, indicating “adequate but
+not outstanding.” Comparative structure is clear, with correct direction in narrative and character
+analysis [...] However, the article’s professionalism is more reflected in language and macro-level
+judgments, lacking matching detailed evidence and specific analysis: arguments on narrative
+technique, character arcs, relationship networks, and genre innovation lack specific scene support,
+failing to meet the rubric’s 7 to 8+ requirement of “solid evidence + mechanism analysis.”)
+Interpretation. This case demonstrates MERG’s capacity to produce calibrated agreement
+even in subjective domains. Despite film criticism being inherently subjective (the Litera22
+
+Preprint.
+
+DS-V3-0324
+
+10
+
+DS-R1-0528-Qwen3-8B
+
+10
+
+DS-R1-Distill-Qwen-32B
+
+10
+
+DS-R1-Distill-Qwen-7B
+
+10
+
+8
+
+8
+
+8
+
+8
+
+6
+
+6
+
+6
+
+6
+
+6
+
+6
+
+4
+
+4
+
+4
+
+4
+
+4
+
+4
+
+2
+
+2
+
+2
+
+2
+
+0
+
+Claude
+Gemini
+GPT
+
+0.0
+
+10
+
+0.5
+
+Qwen3-235B-A22B-I
+
+1.0
+
+0
+
+0.0
+
+10
+
+0.5
+
+Qwen3-235B-A22B-T
+
+1.0
+
+0
+
+0.0
+
+10
+
+0.5
+
+0
+
+1.0
+
+Qwen3-32B-I
+
+0.0
+
+10
+
+0.5
+
+Qwen3-32B-T
+
+1.0
+
+0
+
+2
+
+0.0
+
+10
+
+0.5
+
+Qwen3-30B-A3B-B
+
+1.0
+
+0
+
+8
+
+8
+
+8
+
+8
+
+8
+
+6
+
+6
+
+6
+
+6
+
+6
+
+6
+
+4
+
+4
+
+4
+
+4
+
+4
+
+4
+
+2
+
+2
+
+2
+
+2
+
+2
+
+2
+
+0
+
+0
+
+0
+
+0
+
+0
+
+0.0
+
+0.5
+
+Qwen3-30B-A3B-T
+
+1.0
+
+0.0
+
+10
+
+0.5
+
+Qwen3-14B-B
+
+1.0
+
+0.0
+
+10
+
+0.5
+
+1.0
+
+Qwen3-14B-I
+
+0.0
+
+10
+
+0.5
+
+Qwen3-14B-T
+
+1.0
+
+0.0
+
+10
+
+0.5
+
+Qwen3-8B-B
+
+1.0
+
+0
+
+8
+
+8
+
+8
+
+8
+
+8
+
+6
+
+6
+
+6
+
+6
+
+6
+
+6
+
+4
+
+4
+
+4
+
+4
+
+4
+
+4
+
+2
+
+2
+
+2
+
+2
+
+2
+
+2
+
+0
+
+0
+
+0
+
+0
+
+0
+
+0.0
+
+0.5
+
+Qwen3-8B-T
+
+1.0
+
+0.0
+
+10
+
+0.5
+
+Qwen3-4B-B
+
+1.0
+
+0.0
+
+10
+
+0.5
+
+1.0
+
+Qwen3-4B-I
+
+0.0
+
+10
+
+0.5
+
+Qwen3-4B-T
+
+1.0
+
+0.0
+
+10
+
+0.5
+
+Qwen2.5-32B-B
+
+1.0
+
+0
+
+8
+
+8
+
+8
+
+8
+
+8
+
+6
+
+6
+
+6
+
+6
+
+6
+
+6
+
+4
+
+4
+
+4
+
+4
+
+4
+
+4
+
+2
+
+2
+
+2
+
+2
+
+2
+
+2
+
+0
+
+0
+
+0
+
+0
+
+0
+
+0.0
+
+0.5
+
+Qwen2.5-7B-B
+
+1.0
+
+0.0
+
+10
+
+0.5
+
+Qwen2.5-7B-I
+
+1.0
+
+0.0
+
+10
+
+0.5
+
+Llama-4-Scout-17B-16E-B
+
+1.0
+
+0.0
+
+10
+
+0.5
+
+Llama-4-Scout-17B-16E-I
+
+1.0
+
+0.0
+
+10
+
+0.5
+
+Llama-3.1-8B-B
+
+1.0
+
+0
+
+8
+
+8
+
+8
+
+8
+
+8
+
+6
+
+6
+
+6
+
+6
+
+6
+
+6
+
+4
+
+4
+
+4
+
+4
+
+4
+
+4
+
+2
+
+2
+
+2
+
+2
+
+2
+
+0.0
+
+0.5
+
+1.0
+
+0
+
+0.0
+
+0.5
+
+1.0
+
+0
+
+0.0
+
+0.5
+
+1.0
+
+0
+
+0.0
+
+0.5
+
+1.0
+
+0
+
+0.0
+
+10
+
+8
+
+0
+
+0.0
+
+10
+
+8
+
+10
+
+0.0
+
+10
+
+8
+
+10
+
+0.0
+
+10
+
+8
+
+10
+
+DS-R1-Distill-Llama-8B
+
+10
+
+8
+
+2
+
+Score
+
+DS-R1-0528-T
+
+10
+
+8
+
+0.5
+
+1.0
+
+0.5
+
+1.0
+
+0.5
+
+1.0
+
+0.5
+
+1.0
+
+0.5
+
+1.0
+
+Qwen3-30B-A3B-I
+
+Qwen3-8B-I
+
+Qwen2.5-32B-I
+
+Llama-3.1-8B-I
+
+2
+
+0.0
+
+0.5
+
+1.0
+
+0
+
+0.0
+
+Temperature
+
+Figure 6: System validity: the three-tier quality hierarchy is robust. Score distributions for all
+32 models across 3 evaluators at t=0.0. Despite the disagreement at the sample level documented
+throughout this paper, evaluators unanimously recover the Base < Instruct < Thinking quality ordering
+(Cohen’s d = 2.58). This confirms that Evaluation Illusion does not invalidate LLM evaluation for
+coarse-grained model comparison; it specifically affects the fine-grained, per-sample signals that
+RLAIF reward models require.
+
+ture domain shows ∆K = −0.06 in Figure 4), knowledge activation anchored evaluators
+on verifiable criteria (factual accuracy and textual evidence) while preserving legitimate
+divergence on aesthetic judgments.
+
+E.6
+
+Summary of Patterns
+
+Across these cases, three patterns emerge.
+1. Knowledge-grounded agreement is more meaningful. When evaluators agree after
+MERG (Cases A, B, E), they cite the same specific evidence (material accuracy, data
+fabrication, factual errors) rather than generic praise for “professional tone” or “clear
+structure.”
+2. Disagreement reveals evaluation philosophy. When evaluators disagree after MERG
+(Cases C, D), the disagreement is interpretable, reflecting different but defensible weightings of format vs. substance, structural completeness vs. legal validity.
+3. Baseline agreement is shallow. In every case, baseline scores showed higher agreement than MERG scores, but this agreement was anchored on surface features that all
+evaluators could assess without domain expertise.
+23
+
+Preprint.
+
+F
+
+Score Distributions
+
+Figure 6 displays the score distributions for all 32 models across 3 evaluators at t=0.0,
+providing the most comprehensive view of the evaluation landscape.
+Three-Tier Quality Hierarchy. The most striking feature is the robust separation of model
+tiers. Base models cluster around s̄ = 3.0 to 5.5, Instruct models around s̄ = 5.0 to 7.0,
+and Thinking models around s̄ = 5.5 to 7.5. This ordering is recovered unanimously by all
+three evaluators (Cohen’s d = 2.58 for Base vs. Thinking), confirming that LLM evaluation
+remains valid for coarse-grained model comparison.
+Score Compression in the High-Quality Region. Within the Thinking tier, score distributions become notably compressed, with the gap between the best and worst Thinking model
+being only ∼1.5 points (compared to ∼3.5 points within Base models). This compression is
+precisely the region where RLAIF reward models must discriminate between “good” and
+“great,” and where Evaluation Illusion is most damaging. The narrow dynamic range means
+that even small heuristic biases can invert model rankings at the sample level.
+Evaluator-Specific Distribution Shapes.
+are visible.
+
+Across all models, evaluator-specific patterns
+
+• Gemini (green) consistently produces the most right-skewed distributions, with a tendency toward high scores and less variance. This confirms the leniency bias documented
+in our main experiments. Gemini’s distributions are shifted ∼0.5 to 1.0 points higher than
+Claude and GPT across all model tiers.
+• GPT (blue) shows the widest variance, with heavier tails in both directions. This suggests
+GPT applies more differentiated scoring, producing stronger penalties for poor outputs
+and higher rewards for excellent ones.
+• Claude (red) occupies a middle ground, with distributions that most closely approximate
+a normal shape. Claude’s scores are the most calibrated in terms of centering, though it
+shares GPT’s tendency to penalize specific failures more aggressively than Gemini.
+Model-Size Effects. Within each tier, larger models generally receive higher mean scores,
+but the effect is modest (∆s̄ ≈ 0.3 to 0.5 per order of magnitude in parameter count). The
+most notable exception is among Thinking models, where DeepSeek-R1-0528-Thinking and
+Qwen3-235B-A22B-Thinking achieve the highest absolute scores despite also exhibiting the
+lowest sample-level agreement (Figure 5), providing further evidence that the evaluation
+system is simultaneously valid at the model level and unreliable at the sample level.
+Implications for RLAIF. The combination of (1) compressed score ranges in the highquality tier, (2) evaluator-specific scoring biases, and (3) low sample-level agreement creates
+a perfect storm for reward overoptimization. An RLAIF system training on these scores
+would receive reward signals that are dominated by evaluator idiosyncrasies rather than
+genuine quality differences, which is precisely the mechanism discussed in §4 (Implications
+for Reward Modeling).
+
+24
+
+
