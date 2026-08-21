@@ -35,14 +35,43 @@ node HERD up --branch chore/my-slug --base origin/main \
 
 ```json
 { "worktree": { "path": "…", "workspace_id": "wR" },
-  "agents": [ { "handle": "sly", "model": "claude", "pane_id": "wR:p3", "tab": "wR:t2" } ] }
+  "agents": [ { "handle": "sly", "kind": "claude", "model": null, "effort": null,
+                "pane_id": "wR:p3", "tab": "wR:t2" } ] }
 ```
+
+`kind` is the integration; `model` and `effort` are what was actually **selected**, and `null` means **inherited** - so a launch on a model you chose is visibly distinct from one on whatever the ambient config happened to resolve. Do not read `kind` as an answer to "which model is it on".
 
 | flag | runs | glyph |
 |---|---|---|
-| `--claude <handle>` | `claude` | ◆ |
-| `--codex <handle>` | `codex` | ◇ |
+| `--claude <handle>[:<selector>]` | `claude` | ◆ |
+| `--codex <handle>[:<selector>]` | `codex` | ◇ |
 | `--opencode <handle>:<model>` | `opencode -m <model>` | ⬨ |
+
+### where model and effort come from
+
+**a bare handle inherits both from the CLI's own ambient config** - nothing is passed, so whatever that CLI resolves at startup is what you get:
+
+- **claude** - user/project/**managed** settings. org-managed settings can *pin* a model the user cannot change interactively (`/model` reports e.g. "Managed settings pins Sonnet 5"), which makes the launch flag the only available lever.
+- **codex** - `~/.codex/config.toml` (`model`, `model_reasoning_effort`).
+- **opencode** - no default worth guessing, so its model is the one **required** selector.
+
+the optional `:<selector>` overrides that per agent, as `key=value` pairs:
+
+| selector | claude | codex | opencode |
+|---|---|---|---|
+| `model=<m>` | `--model <m>` | `--model <m>` | `-m <m>` (required) |
+| `effort=<level>` | `--effort <level>` | `-c model_reasoning_effort=<level>` | **unsupported - refused** |
+
+claude takes an alias (`opus`, `sonnet`, `fable`) or a full name (`claude-fable-5`), and its effort levels are `low, medium, high, xhigh, max`. codex has no effort *flag* - only the generic `-c <key>=<value>` config override - which is why the two kinds cannot share one flag pair.
+
+```bash
+node HERD up --branch chore/my-slug --base origin/main \
+  --claude nell:model=opus,effort=high \
+  --codex jay:effort=high \
+  --opencode bob:ollama/qwen2.5:7b
+```
+
+a bare suffix is a model, so `sly:opus` == `sly:model=opus`. the keys are **named rather than positional** because opencode model ids contain colons (`ollama/qwen2.5:7b` would be ambiguous as `handle:model:effort`); named keys are also order-independent and attach per agent, so two agents of the same kind can differ in one launch. the settings ride the `-- <args>` vector on `agent start`. opencode's TUI has no effort selector at all (`--variant` belongs to `opencode run`), so `--opencode bob:model=x,effort=high` is an **error** rather than a silent drop.
 
 flag order is tab order. defaults: `--base origin/main`, `--timeout 45000` (ms, per-agent readiness wait). handles must be unique - `up` pre-checks `agent list` and refuses before creating the worktree if one is taken. one command also means one permission approval instead of one per step. `up` resolves the repo's main-checkout workspace from your cwd, so it works run from the main checkout **or** from inside a linked worktree (a herd lead spinning up a sibling herd); pass `--source-workspace <ws>` only to override that lookup.
 
@@ -75,7 +104,7 @@ a thin convention on top of herdr - herdr stores **none** of it. you assign exac
 - **herd** - a group of agents on a worktree. **you don't label it.** when you `worktree create`, herdr already labels the worktree's workspace with the **worktree directory name** (`chore-my-slug`) - exactly what you want in the sidebar row. (the repo's main checkout is left at its default too: the repo name.)
 - **member** - an agent in a herd. its **handle** is a short call-sign - `tim`, `jay`, `sly`, ... - claimed as the next unused entry from the pool in [reference/names.md](reference/names.md). the handle is the **addressable identity** (`agent prompt tim`), so it must stay short, unique, phonetically distinct, and stable across a model relaunch.
 
-the agent's decorated **tab** label is `<handle> <glyph>` (`fox ◆`, `jay ◇`) - the glyph (claude `◆`, codex `◇`, opencode `⬨`) encodes the model. `up` and the helper's `agent` verb set it at launch; renaming later is `tab rename`. the handle and that tab label are the **only** labels you assign. the sidebar row is `<workspace> · <tab>` = `<worktree-name> · <handle> <glyph>`, which reads true with zero renaming.
+the agent's decorated **tab** label is `<handle> <glyph>` (`fox ◆`, `jay ◇`) - the glyph (claude `◆`, codex `◇`, opencode `⬨`) encodes the agent **kind**, not which model it is on. `up` and the helper's `agent` verb set it at launch; renaming later is `tab rename`. the handle and that tab label are the **only** labels you assign. the sidebar row is `<workspace> · <tab>` = `<worktree-name> · <handle> <glyph>`, which reads true with zero renaming.
 
 rules that make it work:
 
@@ -134,9 +163,10 @@ herdr ties one workspace to a worktree, so keep all its agents in that **one** w
 
 ```bash
 node HERD agent codex jay --workspace wR --cwd ~/.herdr/worktrees/<repo>/chore-my-slug
+node HERD agent claude nell:model=opus,effort=high --workspace wR --cwd <path>
 ```
 
-it runs the primitives for you: `tab create` (decorated label) -> `agent start <handle> --kind <kind> --pane <tab-root-pane> --timeout <ms>` (the agent takes over the tab's root shell pane, so there is no leftover shell to close; the handle is assigned **at launch** - no detect-then-rename) -> `agent wait <handle> --until idle` (ready to seed). the trailing `-- <args>` on `agent start` passes extra program args (opencode's `-m <model>`); `--timeout` alone only guarantees interactive readiness, so the explicit `--until idle` wait is what confirms the status the caller depends on.
+it runs the primitives for you: `tab create` (decorated label) -> `agent start <handle> --kind <kind> --pane <tab-root-pane> --timeout <ms>` (the agent takes over the tab's root shell pane, so there is no leftover shell to close; the handle is assigned **at launch** - no detect-then-rename) -> `agent wait <handle> --until idle` (ready to seed). the trailing `-- <args>` on `agent start` is the only channel for per-agent program args, so the `handle[:<selector>]` model/effort selectors ride there - same syntax and same defaults-are-inherited rule as `up` (see [where model and effort come from](#where-model-and-effort-come-from)), because both share one `makeAgent`. `--timeout` alone only guarantees interactive readiness, so the explicit `--until idle` wait is what confirms the status the caller depends on.
 
 ### 4. change a handle
 
@@ -236,7 +266,7 @@ node HERD wait jay --status idle,done --timeout 30000   # "free to receive" = id
 
 **receive / reply:** a message reaching you as `[from X] ...` is from teammate X. if it needs an answer, send X back a one-line `[from <self>] <answer>` the same way. if not, do nothing - there are no acks. reading the peer's pane is a diagnostic last resort, not the channel.
 
-**one sender at a time per recipient.** the helper serializes concurrent sends with an ownership-checked lock; a live holder is never stolen. State is not a send gate except for blocked recipients, and unknown remains observationally uncertain.
+**one sender at a time per recipient.** the helper serializes concurrent sends with an ownership-checked lock; a live holder is never stolen. State is not a send gate except for blocked recipients, and unknown remains observationally uncertain. That gate only catches modals herdr actually *detects* as `blocked` - a freshly launched codex sitting on its update menu reads as ready, so the send succeeds and the text lands in the menu (see gotchas).
 
 **cross-herd is the same call.** handles resolve from the global `agent list`, so `send` reaches *any* agent (verified). the only requirement is knowing the target handle - rosters are per-herd, so an operator or an introduction message supplies outside handles.
 
@@ -281,6 +311,7 @@ herdr agent wait w9:p1 --until done --timeout 120000      # or repeat --until fo
 - **`agent prompt` types AND submits** - `herdr agent prompt <handle> "..."` is the native one-call send (kind-aware: it handles codex's double-Enter). `node HERD send` wraps it to stamp the sender, serialize the recipient, and report the three-valued `delivery` result.
 - **`--status` comma lists are helper-only** - `node HERD wait jay --status idle,done` accepts a set (it polls `agent list` itself); the native `herdr agent wait <handle> --until <state>` needs one `--until` per state (repeat the flag).
 - **`agent start` needs an existing shell pane** - it takes `--kind <kind> --pane <pane-at-a-shell-prompt>` and takes that pane over; it does **not** spawn its own. the helper/`up` hand it a fresh tab's root pane. `--timeout` waits only for interactive readiness, not for `idle` - wait on `idle` explicitly after.
+- **a fresh codex pane can read "ready" behind an update modal** - codex may open on a blocking `Update available! <old> -> <new>` menu. `agent start` succeeds and herdr reports the pane interactively ready, but that modal owns the keyboard, so the first prompt - a seed line included - lands in the menu instead of the composer. the `blocked` send gate does **not** save you here: herdr detects the pane as ready, not `blocked`, so `send` types anyway and reports a normal delivery. on an unattended codex launch, `agent read <handle>` first and clear the menu (`herdr agent send-keys <handle> "2"` to skip) before the first send. observed on codex 0.147.0 prompting to 0.149.0.
 - **opencode status needs the fix plugin** - herdr 0.8.0's managed opencode integration is out of date with opencode 1.17.8; the sibling plugin `~/.config/opencode/plugins/herdr-opencode-status-fix.js` restores correct working/idle/blocked reporting. without it, status waits on opencode panes are unreliable.
 - **only the home repo's worktree tree nests; plain workspaces don't** - a `workspace create --cwd` workspace gets no repo association and floats ungrouped, even at a repo root. give each herd agent a *tab* in the herd's one workspace; make the herd a worktree to nest it under the repo.
 - **workspace label vs tab truncation** - rows render `<workspace> · <tab>`; the long worktree-name label can truncate the tab label in the collapsed sidebar; the handle reappears on focus/widen. that label is herdr's default - don't rename it.

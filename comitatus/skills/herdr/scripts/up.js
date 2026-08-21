@@ -3,37 +3,121 @@
 
 const { execFileSync } = require('child_process');
 
-// herdr 0.7.5 `agent start` takes `--kind <KIND>` and an existing shell pane,
-// not a `-- <argv>` program vector. Each model maps to a kind; opencode's
-// `-m <model>` selector is the only extra agent arg, appended after `--`.
-const MODELS = {
-  claude: { glyph: '◆', kind: 'claude', extraArgs: () => [] },
-  codex: { glyph: '◇', kind: 'codex', extraArgs: () => [] },
-  opencode: { glyph: '⬨', kind: 'opencode', extraArgs: (model) => ['-m', model] },
+// `agent start` takes an existing shell pane plus an optional trailing program
+// vector: `herdr agent start <NAME> --kind <KIND> --pane <ID> [OPTIONS]
+// [-- [AGENT_ARG]...]`. That vector is the only channel for per-agent CLI
+// flags, so model and effort selectors ride there.
+//
+// Each kind translates {model, effort} itself, because the CLIs differ in
+// SHAPE and not merely in flag naming: claude has a first-class --effort, codex
+// expresses the same idea only as a generic config override, and the opencode
+// TUI cannot express it at all. A single shared flag pair could not spell that,
+// so each kind is free to ignore what it has no way to say. Every flag below is
+// verified against the installed CLI's own --help, not assumed.
+// Keyed by agent KIND, deliberately not "model": conflating the two is what
+// made the old report claim `"model":"claude"`.
+const KINDS = {
+  claude: {
+    glyph: '◆',
+    kind: 'claude',
+    extraArgs: ({ model, effort }) => [
+      ...(model ? ['--model', model] : []),
+      ...(effort ? ['--effort', effort] : []),
+    ],
+  },
+  codex: {
+    glyph: '◇',
+    kind: 'codex',
+    // No effort flag exists; `-c <key>=<value>` overrides one
+    // ~/.codex/config.toml value. The value is parsed as TOML, and a bare word
+    // that fails to parse is used as a literal string - which is what a level
+    // like `high` relies on.
+    extraArgs: ({ model, effort }) => [
+      ...(model ? ['--model', model] : []),
+      ...(effort ? ['-c', `model_reasoning_effort=${effort}`] : []),
+    ],
+  },
+  opencode: {
+    glyph: '⬨',
+    kind: 'opencode',
+    // `-m <provider/model>`, and no effort equivalent on the interactive TUI
+    // that herdr launches: `--variant` is a flag of `opencode run` only.
+    extraArgs: ({ model }) => ['-m', model],
+  },
 };
 
-function makeAgent(model, value) {
-  if (model === 'opencode') {
-    const i = value.indexOf(':');
-    const handle = i >= 0 ? value.slice(0, i) : '';
-    const ocModel = i >= 0 ? value.slice(i + 1) : '';
-    if (!handle || !ocModel) {
-      throw new Error(`--opencode needs <handle>:<model> (got "${value}")`);
+// The args go through execFile (no shell), but keep a conservative charset
+// anyway so a selector token can never smuggle metacharacters into any surface
+// that later renders or re-quotes it. Model ids carry dots, slashes and colons
+// (`ollama/qwen2.5:7b`); an effort level is a bare word.
+const SELECTORS = {
+  model: /^[\w./:-]+$/,
+  effort: /^[\w-]+$/,
+};
+
+// `<handle>`, `<handle>:<model>`, or `<handle>:key=value[,key=value]`.
+//
+// Split on the FIRST colon only. opencode model ids legitimately contain colons
+// (`ollama/qwen2.5:7b`), which is also why a second setting is a NAMED key and
+// not a positional third field: `bob:ollama/qwen2.5:7b` would be ambiguous as
+// handle:model:effort. Named keys are order-independent and extensible, and
+// they attach per agent, so two agents of one kind can differ in one launch.
+//
+// A bare handle means "inherit whatever the CLI's ambient config resolves" and
+// reports both settings as null - never as the kind name.
+function parseSelector(kind, spec) {
+  const text = String(spec);
+  const colon = text.indexOf(':');
+  const out = { handle: colon >= 0 ? text.slice(0, colon) : text, model: null, effort: null };
+  if (colon < 0) return out;
+
+  const rest = text.slice(colon + 1);
+  if (!rest) throw new Error(`--${kind} selector needs a value (or drop the trailing ":")`);
+  if (!/^\w+=/.test(rest)) {
+    out.model = rest; // the common case: a bare model needs no key=
+  } else {
+    for (const pair of rest.split(',')) {
+      const eq = pair.indexOf('=');
+      const key = eq >= 0 ? pair.slice(0, eq) : pair;
+      if (!Object.prototype.hasOwnProperty.call(SELECTORS, key)) {
+        const want = Object.keys(SELECTORS).map((k) => `${k}=`).join(' or ');
+        throw new Error(`--${kind} has an unknown selector key "${key}" (want ${want})`);
+      }
+      const value = pair.slice(eq + 1);
+      if (!value) throw new Error(`--${kind} selector "${key}" needs a value`);
+      out[key] = value;
     }
-    // The args go through execFile (no shell), but keep a conservative charset
-    // anyway so a model token can never smuggle metacharacters into any surface
-    // that later renders or re-quotes it.
-    if (!/^[\w./:-]+$/.test(ocModel)) {
-      throw new Error(`--opencode model has unsafe characters: "${ocModel}"`);
+  }
+  for (const [key, charset] of Object.entries(SELECTORS)) {
+    if (out[key] && !charset.test(out[key])) {
+      throw new Error(`--${kind} ${key} has unsafe characters: "${out[key]}"`);
     }
-    return {
-      model, handle, kind: MODELS.opencode.kind,
-      extraArgs: MODELS.opencode.extraArgs(ocModel), glyph: MODELS.opencode.glyph,
-    };
+  }
+  return out;
+}
+
+function makeAgent(kind, spec) {
+  const def = KINDS[kind];
+  if (!def) throw new Error(`unknown agent kind: ${kind} (want ${Object.keys(KINDS).join('/')})`);
+  const sel = parseSelector(kind, spec);
+  if (!sel.handle) throw new Error(`--${kind} needs a <handle> (got "${spec}")`);
+  if (kind === 'opencode') {
+    // opencode alone requires a model: it has no ambient default to inherit.
+    if (!sel.model) throw new Error(`--opencode needs <handle>:<model> (got "${spec}")`);
+    // Refuse a setting this CLI cannot express instead of dropping it quietly.
+    // A selector that silently vanishes is precisely the false report that
+    // reporting resolved values exists to prevent.
+    if (sel.effort) {
+      throw new Error('--opencode cannot set effort: the opencode TUI has no effort selector (--variant belongs to `opencode run`)');
+    }
   }
   return {
-    model, handle: value, kind: MODELS[model].kind,
-    extraArgs: MODELS[model].extraArgs(), glyph: MODELS[model].glyph,
+    handle: sel.handle,
+    kind: def.kind,
+    glyph: def.glyph,
+    model: sel.model,
+    effort: sel.effort,
+    extraArgs: def.extraArgs(sel),
   };
 }
 
@@ -133,7 +217,19 @@ function launchAgent(a, opts, deps) {
   const rootPane = tc.result.root_pane.pane_id;
   const st = startAgent(a, rootPane, timeout, deps);
   run('herdr', ['agent', 'wait', a.handle, '--until', 'idle', '--timeout', timeout]);
-  return { handle: a.handle, model: a.model, pane_id: st.result.agent.pane_id, tab };
+  // `kind` is the integration name; `model`/`effort` are what was actually
+  // selected, and null means inherited from the CLI's ambient config. Reporting
+  // the kind AS the model (the old `"model":"claude"`) read like an answer while
+  // saying nothing about Opus vs Sonnet, so a launch on an unintended model was
+  // indistinguishable from a chosen one.
+  return {
+    handle: a.handle,
+    kind: a.kind,
+    model: a.model,
+    effort: a.effort,
+    pane_id: st.result.agent.pane_id,
+    tab,
+  };
 }
 
 function up(argv, deps) {
