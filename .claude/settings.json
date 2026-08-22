@@ -1,11 +1,24 @@
 {
-  "statusLine": {
-    "type": "command",
-    "command": ".claude/statusline.js"
-  },
   "enabledPlugins": {
     "mantra@claude-domestique": false,
     "memento@claude-domestique": false,
     "onus@claude-domestique": false
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "bd prime --hook-json",
+            "type": "command"
+          }
+        ],
+        "matcher": ""
+      }
+    ]
+  },
+  "statusLine": {
+    "command": ".claude/statusline.js",
+    "type": "command"
   }
 }
