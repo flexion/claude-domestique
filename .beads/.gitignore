@@ -73,8 +73,16 @@ db.sqlite
 bd.db
 # NOTE: Do NOT add negation patterns here.
 # They would override fork protection in .git/info/exclude.
-# Config files (metadata.json, config.yaml) are tracked by git by default
-# since no pattern above ignores them.
+# metadata.json is tracked by git; config.yaml is deliberately not (see below).
 
 # Interaction log (runtime, per-machine)
 interactions.jsonl
+
+# Local bd configuration (deliberately untracked)
+# bd rewrites this file during normal operation, which would leave a dirty
+# worktree in every clone, and it is bd's storage location for secret keys
+# (jira.api_token, linear.api_key, github.token). Keeping it out of git means
+# a stray `bd config set` cannot commit a credential.
+# A fresh clone does not need it: `bd bootstrap` detects refs/dolt/data on the
+# git remote and wires origin for push/pull without sync.remote being set.
+config.yaml

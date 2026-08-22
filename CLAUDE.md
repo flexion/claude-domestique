@@ -71,3 +71,20 @@ This protocol applies when ending a Beads implementation workflow. It is subordi
 - Do not commit or push without clear authority from the active profile or the current user request.
 - If a required sync or push is blocked, stop and report the exact command and error.
 <!-- END BEADS INTEGRATION -->
+
+## Correction to the managed session-close steps
+
+The team-maintainer branch of the block above omits `bd dolt push`. Taken literally it pushes code and leaves every issue, dependency, and memory on the local machine, where the next person to clone sees none of it. The `AGENTS.md` copy of the same block has the step; this one does not.
+
+When the active profile authorizes a push, the order is:
+
+```bash
+git pull --rebase
+bd dolt push
+git push
+git status
+```
+
+`bd dolt push` writes the issue database to `refs/dolt/data` on the git remote. It is a separate operation from `git push` — git's default refspec moves branches and tags only, so no amount of pushing code carries issue data with it.
+
+This section sits outside the managed markers deliberately. Editing the block above would be reverted the next time anything regenerates it.
