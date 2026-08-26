@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "chore_beads_integration",
+  "project_id": "327ab215-9d6c-4cdf-a9ce-c322146a62c4"
+}
