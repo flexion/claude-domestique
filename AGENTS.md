@@ -147,6 +147,10 @@ Before handing off a change:
 
 Issue data does not travel with a normal clone. The Dolt database lives in `.beads/embeddeddolt/`, which is gitignored; its contents are pushed into this repository as git objects under `refs/dolt/data`. Git's default refspec fetches only branches and tags, so `git clone` and `git pull` move no issue data. Only `bd dolt push` and `bd dolt pull` do.
 
+Syncing therefore needs push access to two refs on the remote: `refs/dolt/data`, and a branch named `__dolt_remote_info__` that `bd` creates for its own bookkeeping. **That branch is load-bearing — it is not stray and must not be deleted.** Branch protection scoped to `main` does not reach either ref, but a repository or organization ruleset matching every branch would block `__dolt_remote_info__` and break sync for everyone. The resulting error names Dolt internals rather than the rule that caused it, so whoever administers branch protection needs to know this branch exists before they tidy it away.
+
+Note also that `bd` maintains its own `main` branch *inside* the Dolt database, which `bd branch` lists. Push and pull errors mentioning `origin/main` refer to that branch, not to this repository's `main`.
+
 What is tracked: `.beads/metadata.json` (backend and project id), `.beads/.gitignore`, and the hook shims under `.beads/hooks/`. Everything else under `.beads/` is per-machine, including `.beads/config.yaml` — `bd` rewrites that file on its own, and it is where `bd config set` stores secret keys such as `github.token`, so it stays out of git.
 
 Run these once per clone:
