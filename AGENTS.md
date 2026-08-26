@@ -175,7 +175,9 @@ Three settings are per-machine and cannot be shipped here: `core.hooksPath`, whi
 
 Sync in both directions, and sync explicitly. Run `bd dolt pull` at the start of a session, before `bd ready`, or two people will claim the same issue from stale local state. Run `bd dolt push` when you are done, or the issues you created and closed stay on your machine.
 
-Do not assume the hooks cover the outbound half. A `git push` from a clone with hooks installed, an unpushed local bead, and `sync.remote` pointing at the receiving remote produced no `refs/dolt/data` on that remote — and `bd dolt push` itself reported `Push complete.` while `bd dolt show` listed no configured remote. Whatever the shim does, treat `bd dolt push` as a step you run, not one that happens for you. Tracked as `domestique-t49`.
+The hooks do not cover the outbound half, and nothing else does either. With `core.hooksPath` set, `pre-push` present and executable, and unpushed issue data waiting, a `git push` left `refs/dolt/data` unchanged; `bd hooks run pre-push` exits 0 and produces no output. Writes do not auto-push either. **`bd dolt push` is a step you run.** Forget it and your work stays on this machine, with nothing reporting that it did.
+
+When diagnosing sync, use `bd dolt remote list`. Do not use `bd dolt show` — it reports `Remotes: (none)` even where the remote provably works.
 
 ## What belongs in beads
 
