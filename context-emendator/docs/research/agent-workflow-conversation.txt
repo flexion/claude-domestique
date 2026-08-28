@@ -1,0 +1,458 @@
+In my development agentic workflow the agents have trouble with goal drift and knowing when a feature is good enough to ship.
+
+Adversarial review and revision has two problems
+
+single pass reviews are not thorough enough to find all the truly problematic issues with the code
+multi turn reviews are more likely to find truly problematic issues but waste turns on trivial unimportant ones.
+The latter does not just cause waste and time, but causes fixation on tasks that do not create value and the greater goal drifts to the unimportant.
+
+The root cause
+Your reviewer is answering a search question ("what is wrong with this code?") when you need it to answer a decision question ("would you block this release?"). Search prompts have a near-zero "nothing found" base rate, so the reviewer manufactures findings to justify its existence. Then the implementer treats every finding as an obligation, because nothing in the loop distinguishes a finding from a work item.
+
+Goal drift follows mechanically: the goal lives in the context window, findings accumulate in the context window, and by round three the most recent 40% of context is trivia about naming conventions. The model is faithfully serving what's in front of it.
+
+Three approaches
+A. Deepen the single pass (better reviewer prompt, checklists, more thinking budget). Cheap, no orchestration change. But one reviewer has one attention pattern; checklists produce checklist-shaped findings and you still get shallow coverage on the axes the checklist didn't name.
+
+B. Sequential multi-turn with a severity gate. Keep your loop, add triage. Fixes the trivia problem but not the drift problem: context still accumulates across rounds, and later rounds review a codebase the earlier rounds already perturbed.
+
+C. Parallel orthogonal review + separate adjudication. Fan out N reviewers with disjoint mandates, each in a fresh context, each capped on findings. A separate cheap adjudicator triages against an immutable acceptance artifact. Implementer only ever sees the blocking set. More orchestration, more tokens per round, but far fewer rounds.
+
+Recommendation: C, with these specific mechanics
+Pin the goal outside the conversation. Write acceptance criteria to a file before implementation starts. Every finding must cite the criterion it threatens or the invariant it violates. A finding that cites nothing is non-blocking by construction. This is the part that kills trivia without requiring anyone to make a judgment call about importance.
+
+Cap findings per reviewer. "Report at most 5 issues, ranked" forces the model to spend its ranking capacity internally instead of dumping everything. A reviewer allowed unlimited findings will never rank; a reviewer allowed 5 must decide what matters.
+
+Split roles hard. Reviewers produce findings and never fix. The adjudicator classifies and never reviews. The implementer sees only the blocking set, never the raw review. Findings that survive triage as non-blocking go to a backlog file, not to the implementer. Fixation is a context problem, so solve it by controlling what enters context.
+
+Define the ship gate as zero blocking findings, not zero findings. Two consecutive rounds with no new blocking findings ships. Hard cap on rounds; hitting the cap escalates to a human rather than continuing.
+
+Every accepted blocking finding becomes a test before it's fixed. This gives you a monotonic, non-drifting definition of done and stops re-litigation across rounds.
+
+Model allocation: reviewers on your strongest model in fresh contexts, since finding real concurrency and transactional bugs is where capability actually pays. Adjudication on the cheapest model, because rubric classification against a fixed severity table is nearly deterministic and you want it boring. Implementation in the middle tier.
+
+The counterintuitive part is that reviewer capability and reviewer authority should be inversely related. Give the strong model freedom to find anything, then strip its authority to schedule work.
+
+Currently I have a Claude implementer and a codex reviewer. They message each other using herdr messaging
+
+
+Searched the web
+Searched the web
+Herdr's primitives change what's cheap here. agent start / prompt / read / list plus idle/working/blocked detection means you already have an orchestration API — you just aren't using it as one. Right now Codex and Claude are peers messaging directly, which is the topology that produces both of your symptoms.
+
+Four changes, in order of payoff:
+
+1. Kill the reviewer pane between rounds. A herdr pane is a persistent session, so your Codex reviewer's context accumulates every round of findings it has already made. That's why round 3 is trivia: it has exhausted the real issues and is pattern-matching against its own history. Fresh agent start per review round. The reviewer should never know it has reviewed this code before. Diff-scoped review is a separate cheap round; whole-artifact review always starts clean.
+
+2. Insert a gate between the panes. Stop codex → claude direct. The orchestrator script reads the reviewer's output, filters it, and prompts the implementer with only the blocking set. This is the single highest-leverage change and it needs no third LLM — severity classification against a fixed rubric is a deterministic filter on structured output. Only add an adjudicator pane if you want judgment calls on borderline findings.
+
+3. Messages carry pointers, not prose. Terminal message-passing invites pasting the whole review into the implementer's prompt. Don't. Reviewer writes reviews/round-N.json; implementer gets Fix blocking findings in reviews/round-3.json. Acceptance criteria: specs/accept-<feature>.md. Do not address non-blocking items. Findings that enter context as prose become obligations. Findings that stay in a file stay optional.
+
+4. Fan out mandates across panes. Herdr runs N panes natively — that's the whole point of it. Three Codex panes with disjoint mandates (correctness/concurrency, security/data integrity, contract & interface stability), each capped at 5 findings, each in a fresh session. Three narrow reviewers beat one reviewer run three times, and they run concurrently rather than serially.
+
+bash
+# orchestrator.sh — one round
+for mandate in correctness security contracts; do
+  herdr agent start codex --name "rev-$mandate" --timeout 60000
+  herdr agent prompt "rev-$mandate" \
+    "Read prompts/review-$mandate.md. Target: $DIFF_REF.
+     Acceptance criteria: specs/accept-$FEATURE.md.
+     Emit at most 5 findings to reviews/$ROUND-$mandate.json.
+     Every finding MUST cite a criterion id or a named invariant.
+     Findings without a citation are invalid — omit them entirely."
+done
+
+wait_idle rev-correctness rev-security rev-contracts   # poll herdr agent list
+
+python triage.py --round "$ROUND" \
+  --in "reviews/$ROUND-*.json" \
+  --blocking "reviews/$ROUND-blocking.json" \
+  --backlog "backlog/deferred.json"       # non-blocking never reaches the implementer
+
+for m in correctness security contracts; do herdr agent kill "rev-$m"; done
+
+if [ "$(jq length reviews/$ROUND-blocking.json)" -eq 0 ]; then
+  CLEAN=$((CLEAN+1)); [ "$CLEAN" -ge 2 ] && ship
+else
+  CLEAN=0
+  herdr agent prompt implementer \
+    "Blocking findings: reviews/$ROUND-blocking.json.
+     Write a failing test for each before fixing. Address nothing else."
+fi
+triage.py drops any finding lacking a criterion citation, drops below-severity, dedupes against backlog/deferred.json so the same nit can't be re-raised in a later round, and caps the blocking set. Re-raise suppression matters more than you'd expect — independent fresh reviewers will rediscover the same deferred nit every round otherwise.
+
+Model allocation: keep the cross-model split, it's doing real work — Codex reviewing Claude's output avoids the shared-blind-spot problem you'd get from Claude reviewing Claude. Reviewers get your strongest available tier. Implementer mid-tier. Triage should be a script, not a model, until you find findings that genuinely need judgment to classify.
+
+The behavioral shift you're buying: the reviewer keeps full freedom to find anything, and loses all ability to schedule work.
+
+What does satisficing complete look like in this fan out?
+
+Satisficing needs an aspiration level fixed before the search starts, and a stopping rule that doesn't depend on the reviewers running out of things to say. Your current loop has neither, which is why it optimizes by default — "no more findings" is an asymptote, not a threshold.
+
+Flip the reviewer's output from findings to verdicts. This is the load-bearing change. A reviewer asked to find issues and capped at 5 will return 5. A reviewer asked to render a verdict per criterion can legitimately return all-pass, and findings become merely the justification attached to a fail:
+
+json
+{
+  "mandate": "concurrency",
+  "verdicts": [
+    {"criterion": "INV-3", "verdict": "pass"},
+    {"criterion": "INV-7", "verdict": "fail", "severity": "blocking",
+     "evidence": "src/ledger.rs:88 read-modify-write outside tx"},
+    {"criterion": "AC-2", "verdict": "unable_to_verify",
+     "reason": "no observable behavior distinguishes pass from fail"}
+  ]
+}
+Empty findings is now a normal outcome rather than a reviewer that failed at its job.
+
+Two tiers, not one severity scale. A hard floor of non-negotiable invariants — data loss, silent corruption, auth bypass, unbounded resource growth — that never ship regardless of budget. Then aspiration criteria, which are what you satisfice against. Ship = floor clean AND aspiration met AND budget not exceeded. Without the floor, budget pressure eventually ships something catastrophic; without the aspiration tier, everything is a floor issue and you're back to optimizing.
+
+unable_to_verify is the drift detector. It means the criterion was written vaguely enough that no reviewer can adjudicate it. That's a spec defect, not a code defect, and it routes to you rather than to the implementer. In practice this is where most of your goal drift originates — a fuzzy criterion gives every reviewer license to substitute its own taste.
+
+The stop rule:
+
+ship   if floor_clean and aspiration_all_pass and unable_to_verify == 0
+escalate if round == MAX_ROUNDS            # budget is part of "done"
+escalate if same criterion fails 3 rounds  # implementer can't close it
+else   continue
+Rounds are capped and the cap is a real stop, not a suggestion to keep going. Hitting it produces a decision request to a human, not another round. That's the difference between satisficing and optimizing with extra steps.
+
+Marginal yield as a tuning signal, not a stop condition. Track blocking findings per round across features. If round 3 reliably yields zero, your budget is too generous. If features routinely escalate at the cap, either the criteria are too tight or the implementer tier is too weak. Don't put this in the loop as a dynamic stop — it invites the orchestrator to rationalize stopping early. Use it offline to set MAX_ROUNDS.
+
+The deferred backlog has to be real. Satisficing only holds if non-blocking findings visibly go somewhere. If backlog/deferred.json is write-only and never read, the reviewers' output feels discarded and you'll be tempted to widen the gate. Review the backlog on its own cadence, separately from any feature loop.
+
+Emit a ship record. Criteria passed, findings deferred with reasons, rounds consumed, residual risk. The point of satisficing is that you accepted known imperfection deliberately — if that acceptance isn't written down, the next agent picking up the code re-discovers the deferred items and starts fixing them, and you've reintroduced drift through the back door.
+
+For this to be truly agentic autonomous development, the agents would need to be able to refine an issue/feature/bug into acceptance criteria that can meet the satisficing complete threshold.
+
+What’s the acceptance criteria for autonomous ready acceptance criteria?
+
+The regress terminates because the meta-level criteria are structural and domain-independent, while object-level criteria are semantic. "Does this criterion name a measurement procedure?" is checkable by a linter. "Is the ledger balanced?" is not. So the meta-gate can be mostly mechanical, and where it isn't, it's settled empirically rather than by a third layer of criteria.
+
+The single property everything derives from: a criterion is autonomous-ready if a fresh reviewer, who did not write it and cannot ask a clarifying question, reaches the same verdict as any other fresh reviewer. That's it. Your unable_to_verify rate and inter-reviewer disagreement rate are the direct measurements of it.
+
+Structural gate — mechanical, runs as a linter on the criteria file:
+
+Every criterion states an observation procedure and a decision rule. Banned predicate lint: clean, robust, performant, appropriate, properly, reasonable, user-friendly, well-structured. If a reviewer must import taste to render a verdict, it isn't a criterion.
+Quantities carry units and measurement conditions. "p99 ≤ 200ms at 500rps on staging, warm cache" — not "fast."
+Every criterion tagged floor or aspiration at authoring time. Severity is never negotiated at review time.
+Every criterion traces to a span of the issue text or to an inherited invariant id. Untraceable criteria are invented scope and escalate.
+Every criterion maps to ≥1 reviewer mandate; every mandate has ≥1 criterion. Orphan criteria go unreviewed; unanchored mandates invent their own anchor, which is drift.
+Explicit non-goals section, non-empty. Unstated scope boundaries get filled by reviewer priors.
+Behavioral, not structural. "Concurrent transfers never produce a negative balance" passes; "use a mutex in transfer()" fails — that's an implementation smuggled in as a requirement, and it forecloses the review.
+Floor criteria are inherited, not authored. This is the part most setups get wrong. The refiner selects applicable invariants from a standing registry — it does not invent them per issue. An autonomous refiner authoring its own floor will eventually author a thin one, and nothing downstream will notice. Selection is auditable; invention isn't.
+
+Observability is a refinement output, not a review discovery. If a criterion can't be checked against the system as it exists, the refiner emits the required seam — metric, log, test hook, injectable clock — as part of the work. unable_to_verify appearing during review means refinement failed, and the fix belongs upstream.
+
+Semantic gate — the adversarial falsification test. This is what terminates the regress, because it's an experiment rather than another criteria layer. Before implementation, hand the criteria set (not the issue) to a red-team agent with one instruction: produce an artifact that satisfies every criterion literally while failing the issue's evident intent. If it succeeds, the criteria are underspecified, and its output tells you exactly where. Run it against fresh reviewers — if they pass the gamed artifact, the criteria set is not autonomous-ready.
+
+Cheap complement: seed a known-good and a known-bad artifact, run three fresh reviewers, require unanimous verdicts on both. Disagreement localizes the ambiguous criterion.
+
+Refinement must be blind to implementation. Separate session, criteria frozen and committed before the implementer pane starts. A refiner that can see the code — or that is the implementer — writes criteria shaped to what's already easy, and every downstream review is then rigged.
+
+The escape hatch is mandatory. The refiner needs a first-class cannot_make_autonomous_ready output with a reason class: requires product tradeoff, requires stakeholder preference, requires aesthetic judgment, underdetermined by the issue, would require unavailable observability. Forcing refinement on these produces criteria that are precise and wrong, which is strictly worse than escalation — precise-and-wrong passes every structural check and drags the whole loop toward a target nobody chose. A refiner that never escalates is broken, not excellent.
+
+Closing the loop: log per-feature unable_to_verify count, inter-reviewer disagreement rate, red-team success rate, and criteria amended after implementation started. Amendments-after-start is the sharpest signal — it means the goal moved mid-flight, which is the drift you started with, just relocated one level up.
+
+Concretely, what does this acceptance criteria refinement look like? Use a hypothetical bug report with a brief, non-fluent bullet point workflow naming participants and actions only.
+
+Input: the raw issue
+BUG-4471
+"exports keep failing for big accounts. sarah in ops says it worked
+last month. sometimes it just hangs and the file is empty. also the
+retry button doesn't seem to do anything"
+Three symptoms, no reproduction, one unverified causal claim, one possibly-unrelated UI complaint.
+
+Refinement workflow
+Refiner — reads issue, no repo access yet
+
+extracts claims: C1 export fails >N accounts, C2 regression since ~July, C3 empty file on hang, C4 retry no-op
+flags C2 unverified-secondhand, C4 possibly separate issue
+emits questions.json before touching code
+Refiner → Investigator (fresh pane, read-only repo + logs)
+
+resolves: is C4 same root cause or separate?
+resolves: what is "big"? — reads export logs, finds failures cluster >50k rows
+resolves: is C2 real? — checks deploy history for July
+returns findings, no criteria, no fix
+Investigator → Refiner
+
+C4 separate — retry button posts to deprecated endpoint, unrelated call path
+C1/C3 same cause — streaming writer times out, partial file committed
+Refiner — scope decision
+
+splits C4 → BUG-4488, marked non-goal
+narrows scope to C1/C3
+Refiner → Registry (standing invariant set, selection not authoring)
+
+selects INV-2 no partial artifact visible to user as complete
+selects INV-9 no unbounded memory growth per request
+rejects INV-4 auth — no auth surface touched
+Refiner — observability seam check
+
+"hangs" not measurable: no export duration metric exists
+emits work item: instrument export.duration_ms, export.row_count, terminal status enum
+seam is a deliverable, not a review discovery
+Refiner — drafts criteria
+
+writes specs/accept-BUG-4471.md, tags each floor | aspiration, traces each to C* or INV-*, maps each to a mandate
+Refiner → Linter (mechanical, no model)
+
+rejects AC-3 — contains "reasonable time"
+rejects AC-5 — prescribes implementation ("use chunked writes")
+rejects AC-6 — orphan, maps to no mandate
+non-goals section present, passes
+Refiner — revises
+
+AC-3 → measured threshold + conditions
+AC-5 → restated behaviorally
+AC-6 → deleted, was invented scope
+Refiner → Linter — passes
+
+Refiner → Red-team (fresh pane, sees criteria only, never the issue)
+
+instruction: satisfy every criterion, fail evident intent
+returns: writes to temp path, renames on success, but on timeout leaves zero-byte file at final path — satisfies INV-2 as written, still ships an empty file to Sarah
+Refiner — patches gap
+
+amends INV-2 binding: no file at destination path unless row count matches manifest
+Refiner → Red-team (fresh) — no successful gaming
+
+Refiner → 3× Reviewer (fresh panes, seeded known-good + known-bad artifacts)
+
+known-bad: 3/3 fail — agree
+known-good: 2/3 pass, 1 unable_to_verify on AC-4
+disagreement localizes AC-4: "retries exhausted" undefined, no retry count observable
+Refiner — resolves AC-4
+
+defines terminal status enum values explicitly
+adds enum to the observability work item
+Refiner → 3× Reviewer (fresh) — unanimous both artifacts
+
+Refiner — escalation check
+
+no cannot_make_autonomous_ready triggered
+had C2 mattered to scope, would have escalated: requires stakeholder confirmation
+Refiner → Orchestrator
+
+commits specs/accept-BUG-4471.md, freezes
+emits mandate map, floor/aspiration split, non-goals, observability work item
+Orchestrator → Implementer (first time code is written)
+
+Resulting criteria
+BUG-4471 — export completion integrity
+
+NON-GOALS
+  retry button behavior — see BUG-4488
+  export performance below 50k rows — no evidence of defect
+
+FLOOR
+  INV-2  destination path contains a file only if its row count
+         equals the manifest row count. partial writes leave no
+         file at destination.
+         mandate: data-integrity | traces: C3, INV-2
+  INV-9  peak RSS during export of 500k rows ≤ 1.5× peak during
+         50k rows, staging, single concurrent export.
+         mandate: resource | traces: INV-9
+
+ASPIRATION
+  AC-1   export of 500k rows completes with terminal status
+         SUCCEEDED, staging, warm cache, ≤ 10 min.
+         mandate: correctness | traces: C1
+  AC-2   every export terminates in exactly one of
+         {SUCCEEDED, FAILED_TIMEOUT, FAILED_UPSTREAM, CANCELLED}
+         and emits export.duration_ms and export.row_count.
+         mandate: correctness, observability | traces: C1, C3
+  AC-4   on FAILED_TIMEOUT, export.attempt_count is present and
+         ≥ 1; no attempt leaves a file at destination.
+         mandate: data-integrity | traces: C3, INV-2
+
+DEFERRED
+  C2 regression-since-July — unverified, does not affect scope
+What each gate caught
+Investigator — C4 was a different bug; would have dragged the loop through an unrelated call path
+Linter — vague predicate, smuggled implementation, invented scope
+Red-team — the zero-byte-at-destination hole; a reviewer would have passed the gamed artifact
+Seeded reviewers — AC-4 ambiguity, before it became an unable_to_verify mid-flight
+Registry — floor inherited, not authored under scope pressure
+Only after all of it does the implementer see the issue.
+
+Now that we have the AC refined, what does the planning and implementation look like?
+
+Planning
+Orchestrator → Planner (fresh pane, repo read-only, criteria frozen)
+
+receives specs/accept-BUG-4471.md, mandate map, observability work item
+never sees the raw issue text — criteria are the only source of truth now
+Planner — reads call path
+
+locates export entry, streaming writer, destination commit, status emission
+notes: no manifest exists yet — INV-2 requires one that isn't there
+Planner — dependency ordering
+
+AC-2 status enum blocks AC-4 (attempt_count rides the enum)
+INV-2 manifest blocks AC-4 (row count comparison needs it)
+observability seam blocks AC-1 verification, not AC-1 itself
+Planner — slices to independently verifiable units
+
+each slice closes ≥1 criterion completely, or explicitly closes none
+slices that close none are marked enabling, reviewed only against floor
+rejects own first slicing: "instrument + fix writer" closes nothing verifiable, splits it
+Planner → Orchestrator — emits plans/BUG-4471.md
+
+S1  enabling   manifest emission alongside export      closes: —
+S2  terminal   status enum + duration/row metrics       closes: AC-2
+S3  terminal   destination commit gated on manifest     closes: INV-2, AC-4
+S4  terminal   streaming writer memory bound            closes: INV-9
+S5  terminal   timeout raised + verified at 500k        closes: AC-1
+
+order: S1 → S2 → S3 → (S4 ∥ S5)
+Planner — feasibility escalation check
+
+would emit cannot_plan if a criterion needed a change outside the touched subsystem, or if two criteria conflicted
+neither triggers; proceeds
+Orchestrator — freezes plan, opens reviews/, backlog/deferred.json
+
+Implementation
+Per slice, not per feature. This is the part that most directly kills drift — the reviewer never sees a diff large enough to have opinions about.
+
+Orchestrator → Implementer (fresh pane per slice)
+
+Slice S3 from plans/BUG-4471.md.
+Criteria in scope: INV-2, AC-4 (specs/accept-BUG-4471.md).
+Write failing tests first, one per criterion, committed before implementation.
+Touch only what S3 names. Out-of-scope defects → backlog/deferred.json.
+Implementer — test-first
+
+writes test per criterion, runs, confirms red
+commits red tests separately — the red commit is the evidence the test discriminates
+Implementer — implements to green
+
+finds an unrelated null-deref in the writer
+does not fix it — appends to backlog/deferred.json, continues
+Implementer → Orchestrator — slice complete, diff ref, test refs
+
+Orchestrator — pre-review mechanical gate (no model)
+
+criteria tests green
+full suite green
+red-commit exists for each criterion test
+diff touches only paths S3 names — else reject before spending reviewer tokens
+Orchestrator → 3× Reviewer (fresh panes, disjoint mandates, diff-scoped)
+
+mandate map from criteria: data-integrity, correctness, resource
+each returns verdicts per in-scope criterion, ≤5 findings, citation required
+Reviewers → triage.py
+
+INV-2 fail, blocking: commit gate checks row count but not on the cancellation path
+AC-4 pass
+2 findings dropped — no criterion citation
+1 finding deduped against deferred backlog
+Orchestrator → Implementer (same pane, slice still in context)
+
+blocking set only, pointer not prose
+implementer writes failing test for the cancellation path first, then fixes
+Orchestrator → 3× Reviewer (fresh) — floor clean, all in-scope criteria pass, zero unable_to_verify
+
+Orchestrator — slice stop rule
+
+second consecutive clean round required only at feature level; slice ships on one clean round plus green gate
+kills reviewer panes, advances to next slice
+Orchestrator — after S5, feature-level round
+
+fresh reviewers, whole-diff scope, all criteria
+floor clean, aspiration all pass, unable_to_verify = 0
+two consecutive clean → ship
+Orchestrator — ship record
+
+BUG-4471 shipped
+criteria passed: INV-2, INV-9, AC-1, AC-2, AC-4
+deferred: 4 findings (backlog/deferred.json)
+  incl. writer null-deref — pre-existing, no criterion
+rounds: S1 1, S2 1, S3 2, S4 1, S5 2, feature 2
+amendments after freeze: 0
+residual risk: AC-1 verified staging only; prod cache
+  behavior differs, unmeasured
+non-goals honored: retry button untouched (BUG-4488)
+The three mechanisms doing the work
+Slice-scoped review. A reviewer handed a 40-line diff and three criteria has nowhere to wander. Most of your trivia problem dissolves at the diff-size level, before triage ever runs.
+
+Red-commit requirement. A test committed green proves nothing — it may pass against any implementation. The red commit is what makes "criterion closed" a fact rather than a claim, and it's mechanically checkable.
+
+amendments after freeze: 0. If that number is ever nonzero, the loop drifted and the ship record says so. It's the one metric that can't be gamed from inside the loop, because the criteria file is frozen and committed before the implementer pane exists.
+
+I have a complicated system, when does the analysis come in to understand the upstream and downstream knock on effects?
+
+Three passes, and the reason it's three is that each has information the previous one lacked. But there's a trap in the architecture as described that you should see first.
+
+The citation rule will suppress your blast-radius findings. A reviewer that notices "this breaks the nightly reconciliation job" has no criterion to cite, because every criterion so far describes the changed thing's own behavior. triage.py drops it as uncited. In a complicated system that's the single most expensive class of finding you can drop.
+
+The fix is that impact analysis has to produce criteria, not findings. Preservation criteria — things that must not change — are a different type from achievement criteria and they're floor-tier by default. Achievement says "export completes." Preservation says "everything currently reading that directory still works."
+
+Pass 1 — refinement (primary)
+The Investigator step expands. This is where most of the value is, because it's before anything is frozen.
+
+Mechanically enumerable coupling — script, not model:
+
+callers of touched symbols (call graph)
+readers/writers of touched tables and columns
+subscribers to emitted events
+alerts and dashboards referencing touched metric names
+consumers of touched wire formats and file layouts
+Implicit coupling — needs a standing registry plus judgment:
+
+someone parses your log lines
+someone depends on your latency staying under an upstream timeout
+someone depends on ordering you never promised
+someone depends on your error taxonomy
+someone depends on a file's existence as a readiness signal
+The second list is where complicated systems bite, and it's not derivable from source. It needs a registry of known implicit contracts that grows every time one bites you. A blast-radius pass that only walks the call graph will feel thorough and miss all of it.
+
+Output is PRES-* criteria appended to the frozen set, each mapped to a blast-radius reviewer mandate.
+
+Pass 2 — planning (additive only)
+The plan reveals mechanism, which has its own blast radius the refiner couldn't see. "Gate the commit on a manifest" means a new write path, new files in a watched directory, changed failure timing.
+
+The planner may add PRES-* criteria. It may never modify or remove achievement criteria. Log the two channels separately:
+
+amendments after freeze: 0        # goal moved — drift
+preservation additions: 3         # blast radius discovered — expected
+Conflating these makes your only un-gameable drift metric useless. A planner discovering coupling is the system working; a planner relaxing AC-1 is not.
+
+Pass 3 — review and post-ship
+At review, blast-radius is a standing mandate on every slice, scoped to PRES-*. Its reviewer gets the coupling map as context and now has citations available.
+
+Post-ship, some knock-on effects are only observable in production. The ship record carries a watch window: which PRES-* are verified only in staging, what signal would indicate breakage, how long before the change is considered settled.
+
+BUG-4471, concretely
+Coupling map turns up:
+
+Downstream: nightly reconciliation globs the destination directory and treats file-existence as ready. INV-2 now writes no file on failure where it previously wrote an empty one — reconciliation goes from processing garbage to crashing on a missing input. The fix improves correctness and breaks a consumer.
+Downstream: the new manifest file lands in the same globbed directory. Reconciliation will try to parse it as an export.
+Downstream: three alerts key on the old free-text status string. AC-2's enum silently breaks all three — alerts that stop firing, which nothing notices.
+Upstream: AC-1 allows 10 minutes. The API gateway times out at 5. The criterion is satisfiable and the feature still fails in production.
+Lateral: INV-9's memory bound changes per-export footprint, which changes how many exports run concurrently, which is an unstated capacity contract.
+The gateway one is the important example: it's an upstream constraint that makes a passing criterion insufficient. No amount of reviewing the diff finds it. Only a pass that looks outward before criteria freeze does.
+
+Resulting additions:
+
+PRES-1  floor   reconciliation job completes against all
+                terminal export states, including no-file.
+                mandate: blast-radius | traces: coupling-map#recon
+PRES-2  floor   manifest files are not visible to consumers
+                globbing the export destination.
+                mandate: blast-radius | traces: coupling-map#recon
+PRES-3  floor   alerts EXP-{1,2,3} fire on the same conditions
+                before and after the status enum change.
+                mandate: blast-radius | traces: coupling-map#alerts
+PRES-4  floor   concurrent export capacity ≥ current, staging.
+                mandate: resource | traces: coupling-map#capacity
+
+AC-1 amended at refinement (pre-freeze): ≤ 4 min, bounded by
+     gateway timeout of 5 min. Not an amendment-after-freeze.
+PRES-1 forces a decision the raw issue never raised: reconciliation needs updating, or the export needs a sentinel. That's scope the refiner cannot resolve alone.
+
+Blast radius as the autonomy governor
+This is where autonomy should actually stop, and it's a cleaner boundary than task difficulty. Escalate when the coupling map crosses a service or team boundary, when a PRES-* can't be verified without a consumer you don't control, or when preservation criteria outnumber achievement criteria — that last one means you're not building a feature, you're doing a migration, and migrations need sequencing decisions no refiner should make unilaterally.
+
+PRES-1 trips the first condition. The refiner emits cannot_make_autonomous_ready: requires consumer coordination, and BUG-4471 goes to a human before a single line is planned — which is the correct outcome, and much cheaper than discovering it in review round three.
+

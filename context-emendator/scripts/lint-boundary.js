@@ -65,10 +65,12 @@ function lint(doc) {
   }
 
   // resolvable trace targets: claim ids, entry ids, registry INV-*, coupling edge ids
+  const claimIds = new Set(claims.map((c) => c && c.id).filter(Boolean));
+  const couplingIds = new Set(coupling.map((c) => c && c.id).filter(Boolean));
   const traceable = new Set([
-    ...claims.map((c) => c && c.id).filter(Boolean),
+    ...claimIds,
     ...entries.map((e) => e && e.id).filter(Boolean),
-    ...coupling.map((c) => c && c.id).filter(Boolean),
+    ...couplingIds,
   ]);
 
   const mandatesUsed = new Set();
@@ -179,18 +181,34 @@ function lint(doc) {
       }
     });
 
-    // traces must resolve
+    // traces must resolve, and must anchor upstream rather than to this entry
     const tr = Array.isArray(e.traces) ? e.traces : [];
     if (tr.length === 0) {
       add('E_NO_TRACE', at, 'entry has no traces');
     }
+    let upstream = 0;
     tr.forEach((t) => {
-      const isRegistryInv = /^INV-\d+$/.test(String(t));
+      const key = String(t);
+      const isRegistryInv = /^INV-\d+$/.test(key);
       if (!traceable.has(t) && !isRegistryInv) {
         add('E_TRACE_UNRESOLVED', at,
           `trace ${t} resolves to no claim, entry, coupling edge, or registry invariant`);
+        return;
       }
+      // A selected registry invariant legitimately anchors to its own registry id;
+      // any other self-reference anchors nothing and trivially satisfies the rule.
+      if (key === String(e.id) && !isRegistryInv) {
+        add('E_SELF_TRACE', at,
+          `trace ${t} is the entry's own id, which anchors nothing`);
+        return;
+      }
+      if (claimIds.has(t) || couplingIds.has(t) || isRegistryInv) upstream += 1;
     });
+    if (tr.length > 0 && upstream === 0) {
+      add('E_NO_UPSTREAM_TRACE', at,
+        'at least one trace must resolve to a claim, a coupling edge, or a registry invariant; '
+        + 'tracing only other obligations anchors the entry to nothing outside the boundary');
+    }
   });
 
   // one test case may carry several edges only if every baseline agrees

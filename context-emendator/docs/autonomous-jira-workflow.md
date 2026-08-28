@@ -61,6 +61,14 @@ reference linter could not be written without them:
 id, or a registry invariant id matching `INV-<n>`. The last case is separate because a selected
 invariant is both a registry id and an entry id, and an earlier draft left that ambiguous.
 
+Two constraints on top of resolution, because resolvability alone is trivially satisfiable:
+
+- An entry may not trace **its own id**, unless that id is a registry invariant, where tracing the
+  registry is the anchor. Any other self-reference resolves and anchors nothing.
+- At least one trace must reach a **claim, a coupling edge, or a registry invariant**. Tracing only
+  other obligations anchors the entry to nothing outside the boundary, so the whole set could be
+  internally consistent and connected to no stated requirement.
+
 Every entry carries three closed fields. The **cross-product is exhaustive** — partial rules were how
 the previous draft left `observation` + `must` and `post_merge` + `must` undefined.
 
@@ -314,8 +322,17 @@ data-loss report stays legible to anyone reading the run.
 
 ## Reference implementation
 
-`scripts/lint-boundary.js` implements every rule this document calls mechanical, and
-`schemas/fixtures/` carries one valid boundary plus one negative fixture per rule.
+`scripts/lint-boundary.js` implements every rule this document calls mechanical.
+`schemas/fixtures/` carries one valid boundary, one negative fixture per rule, and
+`realcase-BUG-4471.yaml` — an instance transcribed from the source design conversation's worked
+example, authored under the earlier `INV`/`AC`/`PRES` vocabulary before this schema existed. It is
+there because a fixture written by the schema's author to fit the schema's rules is weak evidence;
+one written before the rules is better.
+
+That transcription produced a finding about the pilot rather than about the schema. `PRES-4`,
+concurrent export capacity, is only verifiable in production, so it carries a handoff and caps the
+run. **The first worked example terminates at `Handoff Pending`, not `Ready for Merge`** — a test
+asserts this, so it is a recorded property rather than a surprise.
 `scripts/__tests__/lint-boundary.test.js` asserts the exact finding set for each, so a rule that
 stops firing fails a test rather than passing silently.
 

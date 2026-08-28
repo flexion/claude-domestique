@@ -1,0 +1,166 @@
+# Transcribed from the worked example in the source design conversation, which
+# predates the linter. Criteria were authored under the old tier vocabulary
+# (INV / AC / PRES) and are mapped here to verifier/verification_stage/obligation.
+schema_version: 1
+issue: BUG-4471
+registry_revision: "9f2c1ab"
+mandates: [data-integrity, correctness, resource, observability, blast-radius]
+non_goals:
+  - "retry button behaviour — split to BUG-4488"
+  - "export performance below 50k rows — no evidence of defect"
+claims:
+  - id: C1
+    text: "export fails above 50k rows"
+  - id: C2
+    text: "regression since ~July — unverified secondhand"
+  - id: C3
+    text: "empty file left at destination on hang"
+coupling:
+  - id: CPL-recon
+    kind: consumer
+    target: "jobs/reconcile.py"
+  - id: CPL-manifest-glob
+    kind: directory-convention
+    target: "exports/"
+  - id: CPL-alerts
+    kind: alert
+    target: "alerts/EXP-1,EXP-2,EXP-3"
+  - id: CPL-capacity
+    kind: capacity
+    target: "worker pool concurrency"
+entails:
+  CPL-recon: PRES-1
+  CPL-manifest-glob: PRES-2
+  CPL-alerts: PRES-3
+  CPL-capacity: PRES-4
+entries:
+  - id: INV-2
+    statement: "destination holds a file only if its row count equals the manifest"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [data-integrity]
+    traces: [C3, INV-2]
+    observation: "force a timeout mid-export, list the destination"
+    decision: "no file present, or row count equals manifest"
+    test_role: change
+    baseline: assertion_fail
+    evidence:
+      - case_id: "tests/export/test_commit.py::test_no_file_on_timeout"
+      - case_id: "tests/export/test_commit.py::test_no_file_on_cancel"
+  - id: INV-9
+    statement: "peak RSS exporting 500k rows is within 1.5x of the 50k peak"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [resource]
+    traces: [INV-9]
+    observation: "measure peak RSS at 50k and 500k, single concurrent export"
+    decision: "ratio <= 1.5"
+    test_role: change
+    baseline: assertion_fail
+    evidence:
+      - case_id: "tests/export/test_memory.py::test_rss_ratio_bounded"
+  - id: AC-1
+    statement: "export of 500k rows reaches SUCCEEDED within 4 minutes, bounded by the 5 minute gateway timeout"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1]
+    observation: "run a 500k export against staging, warm cache"
+    decision: "terminal status SUCCEEDED and elapsed <= 240s"
+    test_role: change
+    baseline: assertion_fail
+    evidence:
+      - case_id: "tests/export/test_e2e.py::test_500k_succeeds_within_budget"
+  - id: AC-2
+    statement: "every export terminates in exactly one of SUCCEEDED, FAILED_TIMEOUT, FAILED_UPSTREAM, CANCELLED and emits duration_ms and row_count"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness, observability]
+    traces: [C1, C3]
+    observation: "drive each terminal path, read emitted metrics"
+    decision: "one status from the enum, both metrics present"
+    test_role: change
+    baseline: expected_error
+    error_code: "ImportError"
+    error_pattern: "cannot import name 'TerminalStatus'"
+    evidence:
+      - case_id: "tests/export/test_status.py::test_terminal_enum_exhaustive"
+  - id: AC-4
+    statement: "on FAILED_TIMEOUT attempt_count is present and >= 1, and no attempt leaves a file at destination"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [data-integrity, observability]
+    traces: [C3, INV-2]
+    observation: "force repeated timeouts, inspect status payload and destination"
+    decision: "attempt_count >= 1 and destination empty"
+    test_role: change
+    baseline: assertion_fail
+    evidence:
+      - case_id: "tests/export/test_status.py::test_attempt_count_on_timeout"
+  - id: PRES-1
+    statement: "the reconcile job completes against every terminal export state, including no-file"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [blast-radius]
+    traces: [CPL-recon]
+    observation: "run reconcile against a destination with no file"
+    decision: "exit code 0"
+    test_role: preservation
+    baseline: pass
+    evidence:
+      - case_id: "tests/recon/test_inputs.py::test_recon_tolerates_missing_file"
+        probe:
+          kind: negative_control
+          ref: "fixtures/recon_pre_guard_clause"
+  - id: PRES-2
+    statement: "manifest files are not visible to consumers globbing the export destination"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [blast-radius]
+    traces: [CPL-manifest-glob]
+    observation: "glob the destination after a successful export"
+    decision: "no manifest path in the result set"
+    test_role: change
+    baseline: assertion_fail
+    evidence:
+      - case_id: "tests/recon/test_inputs.py::test_glob_excludes_manifest"
+  - id: PRES-3
+    statement: "alerts EXP-1, EXP-2 and EXP-3 fire on the same conditions before and after the status change"
+    verifier: independent_review
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [blast-radius, observability]
+    traces: [CPL-alerts]
+    observation: "reviewer diffs each alert expression against the new status enum"
+    decision: "reviewer verdict per alert"
+  - id: PRES-4
+    statement: "concurrent export capacity is at least the current level"
+    verifier: mechanical
+    verification_stage: production
+    obligation: must
+    mandate: [resource, blast-radius]
+    traces: [CPL-capacity]
+    observation: "worker pool saturation metric over 24h"
+    decision: "sustained concurrency >= pre-change baseline"
+    handoff:
+      owner: "platform-oncall"
+      trigger: "24h after deploy"
+      verification_method: "grafana panel export.concurrency.sustained"
+      evidence_destination: "runs/BUG-4471/handoff/"
+      failure_transition: "reopen BUG-4471 and revert the writer bound"
+  - id: W-C2
+    statement: "July regression claim remains unverified"
+    verifier: observation
+    verification_stage: production
+    obligation: watch
+    mandate: [correctness]
+    traces: [C2]
+    observation: "export failure rate by week, back to June"
+    decision: "recorded, not gated"
