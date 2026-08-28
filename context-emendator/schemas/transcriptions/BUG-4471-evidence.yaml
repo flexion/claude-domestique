@@ -1,0 +1,21 @@
+schema_version: 1
+issue: BUG-4471
+boundary_digest: "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+edges:
+  - entry: INV-2
+    case_id: "tests/export/test_commit.py::test_no_file_on_timeout"
+  - entry: INV-2
+    case_id: "tests/export/test_commit.py::test_no_file_on_cancel"
+  - entry: AC-1
+    case_id: "tests/export/test_e2e.py::test_500k_succeeds_within_budget"
+  - entry: AC-2
+    case_id: "tests/export/test_status.py::test_terminal_enum_exhaustive"
+  - entry: AC-4
+    case_id: "tests/export/test_status.py::test_attempt_count_on_timeout"
+  - entry: PRES-1
+    case_id: "tests/recon/test_inputs.py::test_recon_tolerates_missing_file"
+    probe:
+      kind: negative_control
+      ref: "fixtures/recon_pre_guard_clause"
+  - entry: PRES-2
+    case_id: "tests/recon/test_inputs.py::test_glob_excludes_manifest"

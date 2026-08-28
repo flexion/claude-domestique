@@ -19,7 +19,7 @@ coupling:
     target: "dashboards/export.json"
 entails:
   CPL-1: PRES-1
-  CPL-2: uncovered
+  CPL-2: PRES-2
 entries:
   - id: INV-2
     statement: "destination holds a file only if its row count equals the manifest"
@@ -81,6 +81,34 @@ entries:
       verification_method: "grafana panel export.rss.p99"
       evidence_destination: "runs/JIRA-1234/handoff/"
       failure_transition: "reopen JIRA-1234"
+  - id: PRES-2
+    statement: "alert EXP-1 fires on the same conditions after the status change"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [CPL-2]
+    observation: "replay the alert expression against both status vocabularies"
+    decision: "same firing set"
+    quantitative: false
+    test_role: preservation
+    baseline: pass
+  - id: AC-7
+    statement: "the reconcile job's first post-merge run consumes every terminal state"
+    verifier: independent_review
+    verification_stage: post_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [CPL-1]
+    observation: "read the first nightly reconcile log after merge"
+    decision: "no unhandled terminal state"
+    quantitative: false
+    handoff:
+      owner: "data-platform"
+      trigger: "first nightly reconcile after merge"
+      verification_method: "reconcile job exit status and unhandled-state counter"
+      evidence_destination: "runs/JIRA-1234/handoff/"
+      failure_transition: "reopen JIRA-1234 and revert the status enum"
   - id: W-1
     statement: "export duration trend does not regress"
     verifier: observation

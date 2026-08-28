@@ -57,9 +57,49 @@ const isGating = (e) => e.verifier === 'mechanical'
   && e.verification_stage === 'pre_merge'
   && e.obligation === 'must';
 
+/**
+ * Every code this linter can emit. The suite asserts that each one fires on some
+ * fixture, which is what stops a check from being deletable — an earlier version
+ * emitted 45 codes and asserted 24, and eight check sites could be removed with
+ * no test failing.
+ */
+const CODES = [
+  'E_NOT_A_MAPPING', 'E_MISSING_TOP_FIELD', 'E_UNSUPPORTED_SCHEMA', 'E_NONGOALS_EMPTY',
+  'E_NO_ENTRIES', 'E_NO_ID', 'E_DUPLICATE_ID', 'E_SELECTION_NOT_AN_ENTRY',
+  'E_ENTRY_NOT_A_MAPPING', 'E_ENTRY_MISSING_FIELD', 'E_ENUM_VERIFIER', 'E_ENUM_STAGE',
+  'E_ENUM_OBLIGATION', 'E_OBSERVATION_MUST', 'E_HANDOFF_MISSING', 'E_HANDOFF_INCOMPLETE',
+  'E_QUANTITATIVE_UNDECLARED', 'E_QUANTITATIVE_NOT_BOOLEAN', 'E_QUANTITY_MISSING',
+  'E_QUANTITY_INCOMPLETE', 'E_UNQUOTED_QUANTITY', 'E_TESTROLE_REQUIRED',
+  'E_BASELINE_REQUIRED', 'E_BASELINE_ROLE_MISMATCH', 'E_EXPECTED_ERROR_UNTYPED',
+  'E_TESTROLE_FORBIDDEN', 'E_EVIDENCE_IN_MANIFEST', 'E_ORPHAN_ENTRY', 'E_UNKNOWN_MANDATE',
+  'E_NO_TRACE', 'E_TRACE_UNRESOLVED', 'E_SELF_TRACE', 'E_NO_UPSTREAM_TRACE',
+  'E_UNANCHORED_MANDATE', 'E_ENTAILS_UNDECLARED', 'E_ENTAILS_UNRESOLVED',
+  'E_ENTAILS_ALIEN_KEY',
+  // evidence pass
+  'E_NO_BOUNDARY_DIGEST', 'E_EDGE_NO_ENTRY', 'E_EDGE_UNKNOWN_ENTRY', 'E_EDGE_ON_NONGATING',
+  'E_EDGE_NO_CASE_ID', 'E_NO_EVIDENCE_EDGE', 'E_NO_SENSITIVITY_PROBE',
+  'E_EDGE_BASELINE_CONFLICT',
+];
+
+/** Records outcomes, not just failures. A check that ran and passed is visible. */
+function recorder() {
+  const r = [];
+  return {
+    all: r,
+    // outcome is 'fail' | 'pass' | 'exempt'
+    add: (code, at, message) => r.push({ code, at, outcome: 'fail', message }),
+    ok: (code, at) => r.push({ code, at, outcome: 'pass' }),
+    exempt: (code, at, message) => r.push({ code, at, outcome: 'exempt', message }),
+  };
+}
+
+const failures = (records) => records.filter((x) => x.outcome === 'fail');
+
 function lintBoundary(doc) {
-  const f = [];
-  const add = (code, at, message) => f.push({ code, at, message });
+  const R = recorder();
+  const f = R.all;
+  const add = R.add;
+  const ok = R.ok;
 
   if (!doc || typeof doc !== 'object' || Array.isArray(doc)) {
     add('E_NOT_A_MAPPING', '/', 'boundary did not parse to a mapping');
@@ -87,7 +127,7 @@ function lintBoundary(doc) {
 
   if (!Array.isArray(doc.non_goals) || doc.non_goals.length === 0) {
     add('E_NONGOALS_EMPTY', '/non_goals', 'non-goals must be present and non-empty');
-  }
+  } else ok('E_NONGOALS_EMPTY', '/non_goals');
   if (entries.length === 0) add('E_NO_ENTRIES', '/entries', 'boundary has no entries');
 
   // ids live in one namespace because traces resolve across all three
@@ -129,15 +169,20 @@ function lintBoundary(doc) {
       add('E_ENTRY_NOT_A_MAPPING', at, 'entry is not a mapping');
       return;
     }
-    ['statement', 'observation', 'decision'].forEach((k) => {
-      if (!e[k]) add('E_ENTRY_MISSING_FIELD', at, `entry has no ${k}`);
+['statement', 'observation', 'decision'].forEach((k) => {
+      if (e[k]) ok('E_ENTRY_MISSING_FIELD', `${at}/${k}`);
+      else add('E_ENTRY_MISSING_FIELD', at, `entry has no ${k}`);
     });
 
-    if (!VERIFIER.includes(e.verifier)) add('E_ENUM_VERIFIER', at, `verifier must be one of ${VERIFIER.join(' | ')}`);
-    if (!STAGE.includes(e.verification_stage)) add('E_ENUM_STAGE', at, `verification_stage must be one of ${STAGE.join(' | ')}`);
-    if (!OBLIGATION.includes(e.obligation)) add('E_ENUM_OBLIGATION', at, `obligation must be one of ${OBLIGATION.join(' | ')}`);
+if (VERIFIER.includes(e.verifier)) ok('E_ENUM_VERIFIER', at);
+    else add('E_ENUM_VERIFIER', at, `verifier must be one of ${VERIFIER.join(' | ')}`);
+    if (STAGE.includes(e.verification_stage)) ok('E_ENUM_STAGE', at);
+    else add('E_ENUM_STAGE', at, `verification_stage must be one of ${STAGE.join(' | ')}`);
+    if (OBLIGATION.includes(e.obligation)) ok('E_ENUM_OBLIGATION', at);
+    else add('E_ENUM_OBLIGATION', at, `obligation must be one of ${OBLIGATION.join(' | ')}`);
 
-    if (e.verifier === 'observation' && e.obligation === 'must') {
+    if (!(e.verifier === 'observation' && e.obligation === 'must')) ok('E_OBSERVATION_MUST', at);
+    else {
       add('E_OBSERVATION_MUST', at,
         'observation + must cannot gate; author it as watch or supply a mechanical / independent_review proxy');
     }
@@ -147,8 +192,9 @@ function lintBoundary(doc) {
       if (!e.handoff || typeof e.handoff !== 'object') {
         add('E_HANDOFF_MISSING', at, `${e.verification_stage} + must requires a handoff object`);
       } else {
-        const missing = HANDOFF_FIELDS.filter((k) => !e.handoff[k]);
+const missing = HANDOFF_FIELDS.filter((k) => !e.handoff[k]);
         if (missing.length) add('E_HANDOFF_INCOMPLETE', at, `handoff missing: ${missing.join(', ')}`);
+        else ok('E_HANDOFF_INCOMPLETE', at);
       }
     }
 
@@ -162,6 +208,7 @@ function lintBoundary(doc) {
       if (!q || typeof q !== 'object') {
         add('E_QUANTITY_MISSING', at, 'quantitative entry requires a quantity object');
       } else {
+        ok('E_QUANTITY_MISSING', at);
         ['value', 'unit', 'conditions'].forEach((k) => {
           if (q[k] === undefined || q[k] === '') {
             add('E_QUANTITY_INCOMPLETE', at, `quantity missing ${k}`);
@@ -180,12 +227,10 @@ function lintBoundary(doc) {
     }
 
     if (isGating(e)) {
-      if (!TEST_ROLE.includes(e.test_role)) {
-        add('E_TESTROLE_REQUIRED', at, `mechanical + pre_merge + must requires test_role of ${TEST_ROLE.join(' | ')}`);
-      }
-      if (!BASELINE.includes(e.baseline)) {
-        add('E_BASELINE_REQUIRED', at, `mechanical + pre_merge + must requires baseline of ${BASELINE.join(' | ')}`);
-      }
+      if (TEST_ROLE.includes(e.test_role)) ok('E_TESTROLE_REQUIRED', at);
+      else add('E_TESTROLE_REQUIRED', at, `mechanical + pre_merge + must requires test_role of ${TEST_ROLE.join(' | ')}`);
+      if (BASELINE.includes(e.baseline)) ok('E_BASELINE_REQUIRED', at);
+      else add('E_BASELINE_REQUIRED', at, `mechanical + pre_merge + must requires baseline of ${BASELINE.join(' | ')}`);
       if (BASELINE.includes(e.baseline) && TEST_ROLE.includes(e.test_role)
           && BASELINE_ROLE[e.baseline] !== e.test_role) {
         add('E_BASELINE_ROLE_MISMATCH', at,
@@ -208,11 +253,12 @@ function lintBoundary(doc) {
     m.forEach((name) => {
       mandatesUsed.add(name);
       if (!mandates.includes(name)) add('E_UNKNOWN_MANDATE', at, `mandate ${name} is not declared in /mandates`);
+      else ok('E_UNKNOWN_MANDATE', at);
     });
 
     // traces anchor an obligation to a requirement stated outside the boundary
     const tr = Array.isArray(e.traces) ? e.traces : [];
-    if (tr.length === 0) add('E_NO_TRACE', at, 'entry has no traces');
+    if (tr.length === 0) add('E_NO_TRACE', at, 'entry has no traces'); else ok('E_NO_TRACE', at);
     let upstream = 0;
     tr.forEach((t) => {
       const self = t === e.id;
@@ -225,6 +271,15 @@ function lintBoundary(doc) {
         add('E_SELF_TRACE', at,
           `trace ${t} is the entry's own id and the entry is not declared registry-selected, so it anchors nothing`);
         return;
+      }
+      if (self && isSelection) {
+        // Visible on purpose. When this exemption was silent it read exactly like
+        // approval, which is how a per-issue entry wearing a registry-shaped id
+        // passed two rules unnoticed.
+        R.exempt('E_SELF_TRACE', at,
+          `self-trace exempted because ${t} is declared in registry_selections`);
+      } else {
+        ok('E_SELF_TRACE', at);
       }
       if (claimIds.has(t) || couplingIds.has(t) || (self && isSelection)) upstream += 1;
     });
@@ -250,7 +305,7 @@ function lintBoundary(doc) {
     const target = entails[c.id];
     if (target !== 'uncovered' && !entryIds.has(target)) {
       add('E_ENTAILS_UNRESOLVED', at, `/entails/${c.id} points at ${target}, which is not an entry id`);
-    }
+    } else ok('E_ENTAILS_UNRESOLVED', at);
   });
   Object.keys(entails).forEach((k) => {
     if (!couplingIds.has(k)) {
@@ -264,8 +319,10 @@ function lintBoundary(doc) {
 
 /** Stage 5. Runs once tests exist, against the frozen boundary. */
 function lintEvidence(boundary, ev) {
-  const f = [];
-  const add = (code, at, message) => f.push({ code, at, message });
+  const R = recorder();
+  const f = R.all;
+  const add = R.add;
+  const ok = R.ok;
   if (!ev || typeof ev !== 'object') {
     add('E_NOT_A_MAPPING', '/', 'evidence did not parse to a mapping');
     return f;
@@ -278,7 +335,7 @@ function lintEvidence(boundary, ev) {
   if (!ev.boundary_digest) {
     add('E_NO_BOUNDARY_DIGEST', '/boundary_digest',
       'evidence must name the frozen bundle digest it was written against');
-  }
+  } else ok('E_NO_BOUNDARY_DIGEST', '/boundary_digest');
 
   const covered = new Set();
   const caseBaselines = new Map();
@@ -299,6 +356,7 @@ function lintEvidence(boundary, ev) {
       add('E_EDGE_NO_CASE_ID', at, 'edge must name a collected test case id, not a file');
       return;
     }
+    ok('E_EDGE_NO_CASE_ID', at);
     covered.add(edge.entry);
     if (!caseBaselines.has(edge.case_id)) caseBaselines.set(edge.case_id, []);
     caseBaselines.get(edge.case_id).push({ at, baseline: e.baseline });
@@ -308,6 +366,8 @@ function lintEvidence(boundary, ev) {
       add('E_NO_SENSITIVITY_PROBE', at,
         `${edge.entry} is preservation, so the edge requires probe.kind of ${PROBE_KIND.join(' | ')} with a ref, `
         + 'or the entry must be reclassified as independent_review');
+    } else if (e.test_role === 'preservation') {
+      ok('E_NO_SENSITIVITY_PROBE', at);
     }
   });
 
@@ -342,8 +402,8 @@ function main(argv) {
     let doc = null;
     try {
       doc = load(file);
-      findings = lintBoundary(doc);
-      if (evFile && files.length === 1) findings = findings.concat(lintEvidence(doc, load(evFile)));
+      findings = failures(lintBoundary(doc));
+      if (evFile && files.length === 1) findings = findings.concat(failures(lintEvidence(doc, load(evFile))));
     } catch (err) {
       findings = [{ code: 'E_PARSE', at: '/', message: err.message }];
     }
@@ -358,6 +418,6 @@ function main(argv) {
   return bad === 0 ? 0 : 1;
 }
 
-module.exports = { lintBoundary, lintEvidence, load, isGating };
+module.exports = { lintBoundary, lintEvidence, load, isGating, failures, CODES };
 
 if (require.main === module) process.exit(main(process.argv));

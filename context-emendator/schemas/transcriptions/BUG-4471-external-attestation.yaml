@@ -1,0 +1,36 @@
+# DELIBERATELY UNREPRESENTABLE — see index.yaml. Retained as the shape of the
+# obligation, not as a valid boundary. The stage below is the least-wrong of the
+# three available and is still wrong.
+schema_version: 1
+issue: BUG-4471-EXT
+registry_revision: "9f2c1ab"
+registry_selections: []
+mandates: [contract]
+non_goals:
+  - "everything in BUG-4471 proper"
+claims:
+  - id: C4
+    text: "the downstream vendor parses our export header and must confirm the manifest addition is accepted"
+coupling:
+  - id: CPL-vendor
+    kind: external-consumer
+    target: "vendor ingest contract v3"
+entails:
+  CPL-vendor: EXT-1
+entries:
+  - id: EXT-1
+    statement: "the vendor confirms the manifest addition does not break their ingest"
+    verifier: independent_review
+    verification_stage: production
+    obligation: must
+    mandate: [contract]
+    traces: [C4, CPL-vendor]
+    observation: "vendor returns a written attestation against a sample export"
+    decision: "attestation received and affirmative"
+    quantitative: false
+    handoff:
+      owner: "partner-engineering"
+      trigger: "vendor responds — NOT an interval, which is what production implies"
+      verification_method: "signed attestation in the partner ticket"
+      evidence_destination: "runs/BUG-4471-EXT/handoff/"
+      failure_transition: "cannot revert; the export format is already published"

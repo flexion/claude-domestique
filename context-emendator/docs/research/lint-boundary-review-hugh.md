@@ -488,3 +488,141 @@ Schema probes, not fixtures: unquoted `1.10` → `1.1` under `CORE_SCHEMA`; `NO`
 under `CORE_SCHEMA` and `DEFAULT_SCHEMA` in js-yaml 5.2.3; `load()` with the schema option removed
 produces byte-identical findings on all twelve fixtures; `registry_revision` unquoted coerces as shown
 in §6.
+
+---
+---
+
+# Addendum — structural guards, at `review-target-2` (`0bdc14c`)
+
+Answering one question only: is there a class of guard missing — a property the fixtures should
+satisfy that no single fixture can express?
+
+Yes, four classes. One of them fails badly right now, one has regressed since `7364b2c`, and two pass
+but are unasserted. First the good news, because it changes what the answer is.
+
+## What already holds — your rename guard generalizes further than you tested it
+
+I wrote the general form of your test and ran it across the whole corpus: five distinct renames
+(`INV-2`, `C1`, `CPL-1`, `PRES-1`, `AC-1`) applied to `valid.yaml` **and to all nineteen negative
+fixtures**, asserting the finding *set* is preserved rather than just that clean stays clean.
+
+**No verdict changed anywhere.** The `registry_selections[]` fix is not a patch over one symptom; it
+removed the spelling dependency from the whole linter. I also reversed every top-level list
+(`entries`, `mandates`, `claims`, `coupling`, `non_goals`, `registry_selections`) on all twenty
+fixtures — no finding set changed, so nothing depends on document order either.
+
+Two things follow. Your guard is sound, and it is currently one instance of a universal property.
+Promote it: loop the rename over every id space and every fixture, and assert set preservation rather
+than emptiness. That upgrade matters because **your version only tests the clean direction on a clean
+fixture** — `[]` before and `[]` after cannot detect a check that stops firing under rename, only one
+that starts. On a negative fixture the same test has teeth.
+
+So the classes you are missing are not more metamorphic relations of the kind you built. They are
+these:
+
+## 1. Necessity — is each check load-bearing? This one fails, hard
+
+Your suite proves each of 24 codes *fires* on some input. It proves of no check that it is *needed*.
+The linter emits **45** codes; the tests assert **24**. So I disabled eight checks — replaced
+`add(...)` with `false && add(...)`, nothing else touched:
+
+```
+E_NONGOALS_EMPTY  E_ENUM_VERIFIER  E_HANDOFF_INCOMPLETE  E_QUANTITY_MISSING
+E_TESTROLE_REQUIRED  E_UNKNOWN_MANDATE  E_NO_TRACE  E_ENTAILS_UNRESOLVED
+```
+
+**Tests: 31 passed, 31 total.** (Restored; `git diff --stat` clean.)
+
+`E_HANDOFF_INCOMPLETE` is in that list, and the document says handoff "presence **and field
+completeness** are mechanical". Field completeness can be deleted and the suite certifies the linter
+as working. So can enum validation on `verifier`. So can the check that a declared mandate exists.
+
+This is the property no fixture can express, because it is a property of the *suite* against the
+*implementation*: **every check must have at least one test that fails when the check is removed.**
+Mechanize it — a script that neuters one `add(` site at a time and requires a red suite, failing the
+build on any check that survives. That is the mechanical form of the defect you have now found twice
+by hand: a rule that resolves, fires nothing, and enforces nothing. The decorative trace rule and the
+registry exemption were both instances. Mutation testing finds the rest without needing you to
+suspect them first.
+
+Cheap first cut if you don't want the harness: 21 unasserted codes, one negative fixture each. The
+harness is better, because it also catches a check that has a fixture and is still redundant.
+
+## 2. Evaluated versus fired — the mechanism that actually hid §2.6
+
+`expect(bCodes('valid.yaml')).toEqual([])` is satisfied by two different worlds: every check ran and
+passed, or some check never ran at all. A clean fixture cannot distinguish them. **That gap is exactly
+what hid the registry exemption** — the self-trace check *was* evaluated on `INV-9` and *was* exempted,
+and the assertion `[]` reads identically to a check that considered the entry and approved it.
+
+Your new rename test inherits the shape: `[]` → `[]` proves the verdict is spelling-independent, not
+that the self-trace check was evaluated on either version.
+
+The fix needs a change to the linter, not the fixtures: have it report **evaluated-and-passed**
+observations alongside findings. Then a positive fixture asserts a positive set — "these eleven checks
+were exercised on this manifest and all passed" — and an exemption, a skip, or an unreachable branch
+becomes visible as an absence in an asserted list rather than invisible in an empty one. It also gives
+you the coverage denominator for guard 1 for free.
+
+This is the single change I would make if I made only one. It converts every clean fixture from an
+assertion about *output* into an assertion about *work done*, which is the thing you cannot currently
+see and the thing that burned you.
+
+## 3. Totality over the closed enums — passes, asserted nowhere
+
+The document calls the cross-product exhaustive: 3 `verifier` × 3 `verification_stage` × 2
+`obligation` = 18 cells. Your fixtures instantiate a sample. I generated all 18 as minimal entries and
+printed the verdict for each: **all 18 are decided, and every one matches the document's table** —
+nine `watch` cells accepted, three `observation` + `must` cells rejected with `E_OBSERVATION_MUST`, six
+gating/handoff cells accepted with their required fields supplied.
+
+That is a real result and nothing in your suite asserts it. `post_merge` still has **zero** instances
+anywhere in the fixture corpus, so half of table row 3 is currently proven only by my probe. Same for
+the `mutation` probe kind — the sensitivity-probe union has two members and one is uninstantiated.
+
+The guard: generate the closed product rather than hand-instantiate samples of it, and assert every
+cell is *decided* — never falling through to "no rule applied". Do the same for `baseline` ×
+`test_role` (6 cells, 3 legal) and for `probe.kind`. Exhaustiveness over a closed enum is a property of
+the enum space; no fixture can express it, and a generated one cannot rot as the enums grow.
+
+## 4. Provenance — and you deleted your only instance in the same commit that took my advice
+
+`0bdc14c` removed `realcase-BUG-4471.yaml`. That was the only fixture in the corpus whose content
+originated outside your rule-writing, and it is the one that found the trace hole. Every one of the 22
+fixtures that replaced it is something you authored to a rule you also authored.
+
+No structural guard fixes this, because you author the guards too. What breaks the circle is
+provenance, and it is a property of the *corpus*: **it must contain instances not authored by the rule
+author.** Transcription was the right instrument and deleting the artifact was a real loss even though
+its defect count was zero after the fix — its value was never its assertions, it was where it came
+from.
+
+The sharper version, and the reason this is class 4 rather than a footnote. Every fixture you can write
+is one of two kinds: "I made this pass" or "I made this fail". Neither can express the third and most
+valuable outcome — **a real case the schema cannot express at all.** By construction you will never
+author one, because you would fix the schema instead of recording the failure. So:
+
+- Keep a growing transcription corpus. Restore `realcase-BUG-4471.yaml` and add cases as you meet
+  them, not as you need coverage.
+- Admit `unrepresentable` as a legal expected outcome for a fixture, with the reason recorded. A
+  transcription that cannot be expressed is a schema finding, and right now your fixture format has
+  nowhere to put one — the only two verdicts are a code set and `[]`.
+- When a transcribed case needs a schema change to express, that is the strongest evidence the pilot
+  can produce, and it is the evidence the current corpus is structurally unable to generate.
+
+## Ranked
+
+1. **Guard 2** (evaluated-versus-fired) — a linter change, unlocks guard 1's denominator, and closes
+   the exact hole that produced §2.6.
+2. **Guard 1** (mutation / necessity) — demonstrated failure, eight checks deletable today.
+3. **Guard 4** (provenance) — restore the transcription, add `unrepresentable` as a verdict.
+4. **Guard 3** (generated totality) — currently passing; generate it so it stays that way, and get
+   `post_merge` and `mutation` off zero.
+
+And promote the rename test to the universal form: all id spaces, all fixtures, set preservation.
+
+One thing not to do. Do not add more hand-written negative fixtures as the primary answer to "my
+fixtures are suspect". Twenty-two hand-authored instances have the same blind spot as nine did; that
+is what §2.6 demonstrated. Guards 1 through 4 are each machine-checkable and none of them requires you
+to guess in advance what you got wrong — which is the only property that actually addresses the
+circularity you opened with.

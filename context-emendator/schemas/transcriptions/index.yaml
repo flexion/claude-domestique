@@ -1,0 +1,35 @@
+# Transcription register.
+#
+# A fixture written by whoever wrote the rules can only say "I made this pass" or
+# "I made this fail". Neither can express a real case the schema CANNOT represent,
+# so the fixture format had nowhere to put a schema finding. `unrepresentable` is
+# that place: a declared verdict, with a reason, asserted by the suite.
+transcriptions:
+  - file: BUG-4471.yaml
+    evidence: BUG-4471-evidence.yaml
+    source: "worked example from the source design conversation, pre-dating this schema"
+    verdict: representable
+    notes: >
+      Terminates at handoff_pending, not ready_for_merge: PRES-4 is production-verified.
+      PRES-3 is representable but lossy — "same firing set before and after" is a
+      preservation property over an external monitoring config, and independent_review
+      keeps the obligation while discarding the base/head comparison structure that
+      test_role would have given it.
+
+  - file: BUG-4471-external-attestation.yaml
+    source: "same issue, with the vendor-attestation obligation the conversation implied and never wrote down"
+    verdict: unrepresentable
+    reason: >
+      No verification_stage admits an obligation that only a party outside this
+      repository can discharge. The enum is pre_merge | post_merge | production, all
+      of which name a point in THIS pipeline. An earlier draft of the schema had
+      verifiable_in with an `external` member; the rewrite to three closed fields
+      dropped it, so the case now has no home. Encoding it as production + handoff
+      misstates it — the trigger is not a time after deploy, it is another
+      organisation acting, and failure_transition cannot revert something we do not
+      control.
+    consequence: >
+      Either verification_stage gains `external`, with a handoff whose trigger is an
+      event rather than an interval, or the autonomy gate must reject such an issue
+      as ineligible at stage 1 and say so. Currently it does neither and the
+      obligation would be silently mis-encoded.

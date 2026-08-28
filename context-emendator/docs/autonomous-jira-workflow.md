@@ -367,6 +367,41 @@ npx jest context-emendator/scripts/__tests__/lint-boundary.test.js
 It is not wired into the root `npm test`; `context-emendator` has no package manifest, and adding one
 is a separate decision.
 
+The linter records **outcomes, not only failures** — `fail`, `pass`, and `exempt`. That shape exists
+because of a specific defect: asserting an empty finding list cannot distinguish "every check ran and
+passed" from "a check never ran", and an exemption reads identically to approval. A per-issue entry
+wearing a registry-shaped id was exempted from the self-trace rule and looked approved for two
+commits. Positive fixtures now assert which checks evaluated, and the one exemption in the valid
+fixture is asserted as an exemption.
+
+Two guards matter more than the fixture count, because hand-written fixtures inherit the blind spots
+of whoever wrote the rules — 22 of them shared the defect 9 of them shared:
+
+- **Necessity.** Every code the linter can emit must fire on some input, asserted as a set. Before
+  this, 45 codes were emitted and 24 asserted, and eight check sites — including handoff field
+  completeness, which this document calls mechanical — could be deleted with no test failing.
+- **Totality.** The closed enums and all eighteen cells of the cross-product are generated rather
+  than sampled, so a combination cannot be silently undecided.
+
+## Unrepresentable is a legal verdict
+
+`schemas/transcriptions/` holds cases transcribed from sources that predate the schema, each with a
+declared verdict in `index.yaml`. This exists because a fixture written by the rules' author can only
+say *I made this pass* or *I made this fail*; neither can express **a real case the schema cannot
+represent**, so schema findings had nowhere to live.
+
+One is on record. An obligation that only a party outside this repository can discharge — a vendor
+attesting that a format change does not break their ingest — has no home in `verification_stage`,
+whose members all name a point in *this* pipeline. An earlier draft had `verifiable_in` with an
+`external` member and the rewrite to three closed fields dropped it. Encoding it as
+`production` + handoff misstates it: the trigger is another organisation acting rather than an
+interval, and `failure_transition` cannot revert something we do not control.
+
+**It lints clean, and that is the finding.** The obligation is mis-encoded rather than malformed, so
+no mechanical check can see it. A test asserts the clean result precisely so the gap cannot be lost.
+Either `verification_stage` gains `external` with an event-triggered handoff, or the autonomy gate
+must reject such an issue at stage 1 and say so. It currently does neither.
+
 **One stated requirement is unmet, and an earlier version of this section overstated what the tests
 show.** It claimed the tests "prove `NO`, `on`, `off`, and `1.10` all survive as strings". That was
 false twice: `js-yaml` 5.2.3 resolves identically with and without the core-schema option, so those
