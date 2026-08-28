@@ -34,7 +34,7 @@ decision in the run evidence. Do not create a document to hold the process for i
 
 `boundary/JIRA-1234.yaml` is a **manifest**, not a lone criteria list. It carries the obligation
 entries inline and digest-references every other normative asset — the mechanism sketch, the coupling
-analysis, the selected registry revision. Freezing computes and records a **bundle digest** over the
+analysis, the `entails` map, the selected registry revision. Freezing computes and records a **bundle digest** over the
 manifest plus every referenced asset. "The frozen bundle is the only input" is then true; "the
 boundary file is the only input" was not, because stages 4 through 6 legitimately read the sketch and
 the coupling analysis.
@@ -174,6 +174,8 @@ IMPACT: high -- (RubricBench :151 -- the boundary is what "correct" means for th
 - Author (Opus 5 max or gpt-5.6-sol max): resolves each claim against read-only repo, logs, and deploy history; quantifies vague terms from data
 - Author (Opus 5 max or gpt-5.6-sol max): writes a **bounded mechanism sketch** — the chosen change surface, affected interfaces and subsystems, data and control-flow edges, external dependencies; not code and not a plan
 - Orchestrator (no model): runs coupling extractors against the sketch's named surface
+- Author (Opus 5 max or gpt-5.6-sol max): writes the `entails` map — one edge per coupling edge or consumer id to the obligation id that covers it, and an explicit `uncovered` marker where none does
+- Linter (no model): rejects the bundle if any coupling edge is neither mapped nor marked `uncovered`, so coverage is declared rather than assumed
 - Author (Opus 5 max or gpt-5.6-sol max): selects applicable `INV-*` from the registry; emits `escalate: floor_gap` if one is missing
 - Author (Opus 5 max or gpt-5.6-sol max): writes `boundary/JIRA-1234.yaml` with the three closed fields per entry, a handoff object for every `post_merge` **and** `production` must, `test_role` plus `baseline` on every `mechanical` + `pre_merge` + `must`, and a non-empty non-goals list
 - Linter (no model): loads under the YAML 1.2 core schema with a comment-preserving round-trip loader, canonicalizes, validates the schema, resolves every trace
@@ -194,7 +196,8 @@ JUSTIFICATION: A boundary reviewed only by its author trades an unbounded failur
 IMPACT: high -- (Wall :435 -- an aspiration level adapted from recent outcomes "could also become negative", making a performance decline acceptable; the freeze stops that, and the independent review stops the freeze from locking in a wrong target)
 
 - Orchestrator (no model): starts Boundary-reviewer in a fresh session, cross-family from the Author
-- Boundary-reviewer (Opus 5 max or gpt-5.6-sol max): receives the boundary, the sketch, the coupling analysis, the issue text, and read-only repo access; receives neither the Author's reasoning nor any candidate change
+- Boundary-reviewer (Opus 5 max or gpt-5.6-sol max): receives the boundary, the sketch, the coupling analysis, the `entails` map, the issue text, and read-only repo access; receives neither the Author's reasoning nor any candidate change
+- Boundary-reviewer (Opus 5 max or gpt-5.6-sol max): checks every `entails` edge, because that map is what later permits work to continue without a refreeze; an edge it rejects becomes `uncovered`
 - Boundary-reviewer (Opus 5 max or gpt-5.6-sol max): judges handoff **feasibility** first — the semantic half of eligibility, which the Linter cannot do; an infeasible handoff exits `ineligible` here, before the adversarial exercise and without a second top-model call
 - Boundary-reviewer (Opus 5 max or gpt-5.6-sol max): describes a change that satisfies every entry literally while failing the issue's evident intent, or returns `no_gap_found`; a described gap counts and no artifact is owed
 - Author (Opus 5 max or gpt-5.6-sol max): on a gap — amends the exploited entry
