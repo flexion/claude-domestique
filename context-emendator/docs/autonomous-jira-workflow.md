@@ -49,9 +49,11 @@ sidecar field.
 **YAML's implicit typing is a hazard for exactly this use.** A criterion id of `NO`, a threshold
 written `1.10`, a value of `on` or `off` — YAML 1.1 coerces all of them. For a file whose purpose is
 to be decided the same way twice, that is a real risk, so the Linter (phase 10) owes two checks:
-parse under the **YAML 1.2 core schema**, and run a **canonicalizing formatter** so committed bytes
-are stable. Without the second one, a reformat changes the frozen file's SHA and the phase 13 freeze
-is weaker than it looks.
+load under the **YAML 1.2 core schema with a comment-preserving round-trip loader**, and run a
+**canonicalizing formatter** so committed bytes are stable. Without the second one, a reformat
+changes the frozen file's SHA and the phase 13 freeze is weaker than it looks. The loader must be
+round-trip rather than safe: a safe loader drops the comments this table relies on to carry the why,
+so "comments are the rationale" and "load safely" are only compatible at `typ="rt"`.
 
 ## Model selection
 
@@ -72,8 +74,9 @@ prices.
 | Sonnet 5 | `claude-sonnet-5` | 1M | $2 / $10 | low · medium · high · xhigh · max |
 | Haiku 4.5 | `claude-haiku-4-5` | 200K | $1 / $5 | **none — `effort` errors on this model** |
 
-Default effort is `high`. `xhigh` is the recommended setting for most coding and agentic work on
-Fable 5, Opus 5, and Sonnet 5, and is Claude Code's own default. Use `high` as the floor for
+The API default is `high`. Claude Code raises it to `xhigh`, which is also the vendor's recommended
+setting for most coding and agentic work on Fable 5, Opus 5, and Sonnet 5 — two different defaults
+at two layers, not a contradiction. Use `high` as the floor for
 intelligence-sensitive work, `max` when correctness matters more than cost, `low` for subagents and
 simple tasks.
 
@@ -89,6 +92,11 @@ All three: 1.05M context, 128K max output, higher rates above 272K input tokens.
 low · medium (default) · high · xhigh · max · **ultra**. The doc's guidance is "use the lowest
 reasoning effort that produces the result you need"; `ultra` is for "complex work divisible into
 meaningful parts" — it fans out to subagents.
+
+**`ultra` is a Codex CLI value, not an API one.** It appears in the Codex model docs as a reasoning
+effort, but the Responses API reasoning-effort enum does not include it. An implementation that calls
+the API rather than driving the CLI cannot set it, and should read `ultra` in this document as
+"`max`, plus fan-out handled by the orchestrator".
 
 Two things to watch. `gpt-5.5`, `gpt-5.4`, and `gpt-5.4-mini` retire **2026-08-31**, so any config
 naming them breaks this week. And the bare `gpt-5.6` alias routes to Sol, not Terra — pinning the
@@ -138,7 +146,7 @@ Applied to phase headings, and to individual bullets whose status differs from t
 | `[JDG]` | Local judgment. The corpus gives no evidence either way. Not wrong — unexamined. |
 | untagged | Mechanical bookkeeping. Makes no evidential claim. |
 
-Phase counts across 24 phases: 3 wholly `[S]`, 2 wholly `[HYP]`, 15 wholly `[JDG]`, 3 mixed, 1
+Phase counts across 24 phases: 2 wholly `[S]`, 4 wholly `[HYP]`, 15 wholly `[JDG]`, 2 mixed, 1
 untagged. The `[JDG]` majority is the honest summary of this design — see
 `research/satisficing-boundary-briefing.md` §4, "application evidence is nearly absent." Anything
 `[JDG]` is a candidate for deletion if it is not carrying weight, because nothing outside this
@@ -155,7 +163,7 @@ IMPACT: high -- (RubricBench :151 -- the floor is what "correct" means, and sele
 
 - Registry (no model): holds numbered invariants `INV-*`, one per line, behavioral, tier `floor` — `[S]`
 - Registry (no model): holds implicit-contract entries — log formats parsed downstream, upstream timeouts, file-existence readiness signals, error taxonomies, ordering guarantees, capacity assumptions
-- Config (no model): holds mandate list, `MAX_SLICE_ROUNDS`, `MAX_FEATURE_ROUNDS`, severity table
+- Config (no model): holds mandate list, severity table, and every cap — `MAX_SLICE_ROUNDS`, `MAX_FEATURE_ROUNDS`, `MAX_LINT_ROUNDS`, `MAX_CALIBRATION_ROUNDS`, `MAX_GATE_RETURNS`, `red_team_rounds`
 - Config (no model): holds per-language coupling extractors and the escalation reason enum
 - Repo (no model): holds `registry/`, `specs/`, `plans/`, `reviews/`, `backlog/`, `ship-records/` — formats per the one rule above
 
@@ -166,7 +174,7 @@ HOW: Poll Jira for the eligibility label and fetch every field, including commen
 JUSTIFICATION: Writing the issue to a fixed file is what lets every later step be handed exactly the inputs it should see and nothing else. -- (no source -- mechanical bookkeeping, makes no evidential claim)
 IMPACT: low -- (no source -- nothing in the corpus turns on how an issue is fetched)
 
-- Orchestrator (no model): polls Jira for `status = To Do AND label = agent-eligible`
+- Orchestrator (no model): polls Jira for `status = "To Do" AND labels = agent-eligible`
 - Orchestrator (no model): fetches JIRA-1234 — summary, description, comments, attachments, linked issues, reporter
 - Orchestrator (no model): writes `intake/JIRA-1234.json`
 - Orchestrator (no model): transitions JIRA-1234 to `In Refinement`
@@ -326,7 +334,7 @@ IMPACT: medium -- (Jacobs & Wallach :512 -- validity is a matter of degree, so a
 - Linter (no model): **warns** on a criterion that appears to name an implementation — approximate, not decidable; see "Three checks that cannot be mechanical"
 - Linter (no model): **warns** on a vague-predicate wordlist — advisory only; the required-fields check is the gate
 - Refiner (Opus 5 max or gpt-5.6-sol max): revises; deletes invented scope rather than rewording it
-- Linter (no model): re-runs until pass
+- Linter (no model): re-runs up to `MAX_LINT_ROUNDS`, then escalates `criteria_not_lintable` — "until pass" is not a bounded loop
 
 ## 11. Adversarial falsification — `[JDG]`
 
@@ -336,8 +344,8 @@ JUSTIFICATION: Criteria can be satisfied literally while failing the issue, and 
 IMPACT: medium -- (TICK :1961 measures the failure this targets, but no source tests red-teaming as the remedy; no_gap_found from one model is not evidence)
 
 - Orchestrator (no model): starts Red-team in a fresh session
-- Red-team (Opus 5 max or gpt-5.6-sol ultra): receives the criteria **and** the issue text; receives neither the refiner's reasoning nor any code
-- Red-team (Opus 5 max or gpt-5.6-sol ultra): attempts an artifact that satisfies every criterion literally while failing the issue's evident intent
+- Red-team (Opus 5 max or gpt-5.6-sol ultra): receives the criteria, the issue text, and read-only repo access; receives neither the refiner's reasoning nor any proposed change
+- Red-team (Opus 5 max or gpt-5.6-sol ultra): describes — or builds, if the repo makes it cheap — a change that satisfies every criterion literally while failing the issue's evident intent; a described gap counts, the artifact is not the deliverable
 - Red-team (Opus 5 max or gpt-5.6-sol ultra): returns the gap and the criterion it exploited, or `no_gap_found`
 - Refiner (Opus 5 max or gpt-5.6-sol max): on gap — amends the exploited criterion, re-runs Linter
 - Orchestrator (no model): repeats with a fresh Red-team until `no_gap_found` or `red_team_rounds` cap
@@ -350,17 +358,17 @@ IMPACT: medium -- (TICK :1961 measures the failure this targets, but no source t
 ## 12. Verdict calibration — `[HYP]`
 
 GOAL: Find criteria that two reviewers would read differently.
-HOW: Run three fresh reviewers against one known-bad artifact and one known-good artifact and compare their verdicts. Disagreement identifies the ambiguous criterion; send that criterion back and repeat.
+HOW: Run three fresh reviewers against one known-bad artifact and compare their verdicts. Disagreement identifies the ambiguous criterion; send that criterion back and repeat, up to a cap.
 JUSTIFICATION: Disagreement between fresh reviewers on a known artifact localizes the ambiguous criterion before it costs a mid-flight round. -- (Song :894 -- sharing rubric structure lifts agreement from r-bar 0.24 to 0.62 with no knowledge added, so agreement here is partly manufactured; Rao :31 -- protocol choice alone moves reported accuracy from 0.551 to 0.899 without altering a verdict)
 IMPACT: low -- (Song :1152 -- the source has no accuracy oracle at all, so this step measures concurrence rather than correctness)
 
-- Orchestrator (no model): assembles two probe artifacts
-  - known-bad: the Red-team's gaming output from step 11
-  - known-good: current-system behavior on a case the issue states already works
+- Orchestrator (no model): takes the Red-team's gaming output from phase 11 as the single known-bad probe
+- Orchestrator (no model): uses **no known-good probe** — the criteria describe behavior that does not exist yet, so current behavior fails them by construction and cannot test for false negatives
 - Orchestrator (no model): starts three Reviewers in fresh sessions, disjoint mandates
 - Reviewer-* (Opus 5 xhigh and gpt-5.6-sol xhigh — three reviewers, not one family): returns a verdict per in-scope criterion — `pass` | `fail` | `unable_to_verify`
-- Orchestrator (no model): requires unanimous `fail` on known-bad and unanimous `pass` on known-good
-- Orchestrator (no model): on disagreement — identifies the criterion carrying it, returns that criterion to Refiner, repeats
+- Orchestrator (no model): requires unanimous `fail` on the known-bad probe; this is a one-way test and a unanimous pass is not available to run
+- Orchestrator (no model): on disagreement — identifies the criterion carrying it, returns that criterion to Refiner, repeats up to `MAX_CALIBRATION_ROUNDS`
+- Orchestrator (no model): on cap — escalates `criteria_ambiguous_after_cap`; does not proceed on the assumption that the disagreement was noise
 - Orchestrator (no model): reads disagreement as localized ambiguity; does not read agreement as evidence the criteria are correct
 
 > Targets a measured failure — ambiguous criteria produce `unable_to_verify` mid-flight — but Song
@@ -399,8 +407,9 @@ IMPACT: medium -- (Lightman :76 supports per-criterion verification; slice sizin
 - Planner (Sonnet 5 xhigh or gpt-5.6-terra xhigh): orders criteria by dependency
 - Planner (Sonnet 5 xhigh or gpt-5.6-terra xhigh): slices work so each slice closes at least one criterion completely, or is marked `enabling` and closes none
 - Planner (Sonnet 5 xhigh or gpt-5.6-terra xhigh): rejects its own slicing if a slice closes nothing verifiable and is not marked `enabling`
-- Planner (Sonnet 5 xhigh or gpt-5.6-terra xhigh): may add `PRES-*` discovered from the chosen mechanism
-- Planner (Sonnet 5 xhigh or gpt-5.6-terra xhigh): may not modify or remove any `AC-*` or `INV-*`
+- Planner (Sonnet 5 xhigh or gpt-5.6-terra xhigh): may not add, modify, or remove any criterion — the frozen set is frozen, and logging an addition does not preserve the obligation set it grew past
+- Planner (Sonnet 5 xhigh or gpt-5.6-terra xhigh): emits `escalate: coupling_found_after_freeze` when the chosen mechanism reveals a consumer the coupling map missed
+- Orchestrator (no model): on that escalation, returns to phase 6 and re-runs authoring, lint, red-team, and freeze — a new preservation criterion is a scope change, not an amendment
 - Planner (Sonnet 5 xhigh or gpt-5.6-terra xhigh): emits `cannot_plan` if a criterion requires change outside the touched subsystem, or if two criteria conflict
 - Planner (Sonnet 5 xhigh or gpt-5.6-terra xhigh): writes `plans/JIRA-1234.yaml` — per slice: `id`, `kind` (`terminal` | `enabling`), `closes[]` criterion ids, `paths[]` globs, `after[]` slice ids
 - Planner (Sonnet 5 xhigh or gpt-5.6-terra xhigh): declares `paths[]` explicitly per slice — this is what the phase 16 gate scopes the diff against, so an omitted glob is a gate failure, not a formality
@@ -418,7 +427,7 @@ IMPACT: high -- (Huang :721 -- an executable check is the only verdict in the de
 
 - Orchestrator (no model): starts Implementer, one fresh session per slice
 - Implementer (Sonnet 5 xhigh or gpt-5.6-terra xhigh): receives slice id, its criteria ids, the spec path, the plan path
-- Implementer (Sonnet 5 xhigh or gpt-5.6-terra xhigh): writes one failing test per in-scope criterion
+- Implementer (Sonnet 5 xhigh or gpt-5.6-terra xhigh): writes one failing test per in-scope **gating** criterion — `verifiable_in` of `unit` or `integration`
 - Implementer (Sonnet 5 xhigh or gpt-5.6-terra xhigh): runs the tests, confirms red
 - Implementer (Sonnet 5 xhigh or gpt-5.6-terra xhigh): commits the red tests as their own commit
 - Implementer (Sonnet 5 xhigh or gpt-5.6-terra xhigh): implements to green
@@ -438,19 +447,19 @@ HOW: Check that a test exists per criterion, that the test failed before the cha
 JUSTIFICATION: A test committed green proves nothing, so the gate has to prove the test fails against the old tree before a reviewer is paid. -- (Huang :721 -- the verifier is "perfect" only given a behavioral oracle that actually discriminates, which a green suite does not establish)
 IMPACT: high -- (Huang :721 -- without the discrimination check every executable criterion can be discharged by a test that would pass against anything)
 
-- Gate (no model): fails if a criterion test is absent
+- Gate (no model): fails if a **gating** criterion has no test; a criterion with `verifiable_in` of `staging`, `production`, or `external` is non-gating by construction and carries a watch-window entry instead
 - Gate (no model): fails if no red commit exists for a criterion test
 - Gate (no model): fails if a criterion test passes against the pre-change tree — the test does not discriminate
 - Gate (no model): fails if the full suite is not green
 - Gate (no model): fails if the diff touches a path the slice does not name
-- Orchestrator (no model): on gate fail — returns to Implementer; spends no reviewer tokens
+- Orchestrator (no model): on gate fail — returns to Implementer, up to `MAX_GATE_RETURNS`, then escalates `slice_not_gateable`; spends no reviewer tokens either way
 
 > Targets a stated scope limit rather than a guess. Huang's "the code executor serves as the perfect
 > verifier" is conditional on a behavioral oracle that actually discriminates; a green suite proves
 > nothing about a test that would pass against any implementation. The discrimination check is the
 > direct response. No source tests red-commit gating as a mechanism.
 
-## 17. Review — per slice — `[S]` for cross-model, `[HYP]` for the rest
+## 17. Review — per slice — `[HYP]`
 
 GOAL: Get a verdict per criterion from reviewers that cannot wander off it.
 HOW: Start one fresh reviewer per mandate, at least one on a different model family, each seeing only the diff, its own criteria, and the coupling map. Every fail carries a pointer to a test, a line, or a trace.
@@ -459,13 +468,13 @@ IMPACT: high -- (Zheng :60 -- judge-human agreement tops out near 80%, "the same
 
 - Orchestrator (no model): selects mandates as the union of the slice's criteria mandates — a lookup, not an inference
 - Orchestrator (no model): starts one Reviewer per mandate, each in a fresh session
-- Orchestrator (no model): routes at least one mandate to a different model family — `[S]`
+- Orchestrator (no model): routes at least one mandate to a different model family — `[HYP]`
 - Reviewer-* (Opus 5 xhigh and gpt-5.6-sol xhigh — one per mandate, families mixed): receives the diff, the frozen criteria for its mandate, and the coupling map
 - Reviewer-* (Opus 5 xhigh and gpt-5.6-sol xhigh — one per mandate, families mixed): does not receive the other reviewers' criteria, the implementer's session, or any prior review round — `[HYP]`
 - Reviewer-* (Opus 5 xhigh and gpt-5.6-sol xhigh — one per mandate, families mixed): returns a verdict per in-scope criterion
 - Reviewer-* (Opus 5 xhigh and gpt-5.6-sol xhigh — one per mandate, families mixed): attaches an evidence pointer to every `fail` — `test_id` | `file:line` | `trace_id` — `[HYP]`
 - Reviewer-* (Opus 5 xhigh and gpt-5.6-sol xhigh — one per mandate, families mixed): returns uncited observations in a separate `observations` array
-- Reviewer-* (Opus 5 xhigh and gpt-5.6-sol xhigh — one per mandate, families mixed): applies no cap to criterion-cited verdicts; the cap applies to `observations` only — `[S]`
+- Reviewer-* (Opus 5 xhigh and gpt-5.6-sol xhigh — one per mandate, families mixed): applies no cap to criterion-cited verdicts; the cap applies to `observations` only — `[HYP]`
 - Orchestrator (no model): writes `reviews/JIRA-1234/<slice>-<round>-<mandate>.json`
 - Orchestrator (no model): closes reviewer sessions after collecting output
 
@@ -511,7 +520,7 @@ IMPACT: high -- (Huang :286 -- models changed correct answers to incorrect more 
 - Implementer (Sonnet 5 xhigh or gpt-5.6-terra xhigh): writes a failing test per blocking finding, confirms red, then fixes
 - Orchestrator (no model): caps slice review rounds at `MAX_SLICE_ROUNDS`, default 2
 - Orchestrator (no model): escalates `slice_not_converging` on cap; transitions the slice sub-task to `Blocked`
-- Orchestrator (no model): escalates if the same criterion fails three rounds
+- Orchestrator (no model): escalates at feature level if the same criterion fails in `MAX_FEATURE_ROUNDS` consecutive rounds — the slice-level cap of 2 fires first, so a three-round slice rule would be unreachable
 - Orchestrator (no model): transitions the slice sub-task to `Done`, advances to the next slice
 
 > TICK sets the direction: structured self-critique improves at a single iteration and degrades
@@ -564,10 +573,10 @@ IMPACT: high -- (SWE-bench Verified -- 38.3% underspecified, 61.1% invalid tests
 - Orchestrator (no model): comments the reason class and the specific blocker
 - Orchestrator (no model): assigns to the reporter or a named owner
 - Orchestrator (no model): stops; does not proceed under an assumption
-- Reason classes: `floor_gap`, `spec_density`, `requires_product_tradeoff`, `requires_stakeholder_preference`, `requires_aesthetic_judgment`, `underdetermined_by_issue`, `requires_unavailable_observability`, `requires_consumer_coordination`, `crosses_team_boundary`, `criteria_ungameable_unproven`, `cannot_plan`, `slice_not_converging`, `feature_not_converging`
+- Reason classes: `floor_gap`, `spec_density`, `requires_product_tradeoff`, `requires_stakeholder_preference`, `requires_aesthetic_judgment`, `underdetermined_by_issue`, `requires_unavailable_observability`, `requires_consumer_coordination`, `crosses_team_boundary`, `criteria_ungameable_unproven`, `criteria_not_lintable`, `criteria_ambiguous_after_cap`, `coupling_found_after_freeze`, `cannot_plan`, `slice_not_gateable`, `slice_not_converging`, `feature_not_converging`
 - Note: a refiner that never escalates is misconfigured, not excellent
 
-## 23. Offline — not in the per-issue loop — `[S]`
+## 23. Offline — not in the per-issue loop — `[HYP]`
 
 GOAL: Find out whether the reviewers and the round caps are any good.
 HOW: Hand-grade a few completed reviews and measure reviewer precision and recall against those labels, then run a single-pass implementation at the same cost for comparison. Set the round caps from findings-per-round data collected across issues, outside any running loop.
@@ -650,7 +659,7 @@ text matching — which needs a model, which defeats the point.
 
 - Per criterion, required: `id`, `tier`, `mandate[]`, `traces[]`, `observation`, `decision`.
 - For any quantity: `value`, `unit`, `conditions`.
-- For preservation criteria: `verifiable_in` — one of `unit` | `integration` | `staging` | `production` | `external`.
+- Every criterion: `verifiable_in` — one of `unit` | `integration` | `staging` | `production` | `external`. The first two are **gating**: they get a test and the pre-review gate enforces it. The rest are **non-gating**: they cannot be discharged before merge, so they carry a watch-window entry and never block the slice. A criterion that would be gating but has no oracle is a spec defect, not a passing criterion.
 
 **Plan** — `plans/JIRA-1234.yaml`:
 
@@ -673,10 +682,11 @@ Effort: three schema files and a renderer. Everything below is then small.
 
 ### Linter (phase 10) — JSON Schema plus three set operations
 
-- **Load under the YAML 1.2 core schema**, not the parser default. On PyYAML that means
-  `yaml.safe_load` is not enough — 1.1 resolvers turn `NO` into `False` and `1.10` into `1.1`. Use a
-  1.2-conformant loader (`ruamel.yaml` with `typ="safe"`, `pure=True`), or require every `id`, enum,
-  and threshold to be quoted and reject unquoted scalars in those positions.
+- **Load under the YAML 1.2 core schema with a round-trip loader**, not the parser default and not
+  a safe loader. PyYAML's `safe_load` applies 1.1 resolvers — `NO` becomes `False`, `1.10` becomes
+  `1.1` — and `ruamel.yaml` at `typ="safe"` discards comments, which this design relies on to carry
+  a criterion's rationale. Use `ruamel.yaml.YAML()` at its default `typ="rt"`, which is 1.2 and
+  comment-preserving, and additionally require every `id`, enum, and threshold to be quoted.
 - **Canonicalize and compare.** Round-trip the file through the formatter; if the output differs from
   the input, reject. This keeps the phase 13 freeze SHA stable against later reformatting, and it is
   four lines of code.
@@ -706,8 +716,10 @@ Effort: three schema files and a renderer. Everything below is then small.
   runner's collect-only mode and assert presence.
 - Red commit exists: walk the slice branch for the commit that introduced the test file.
 - Discrimination check, the load-bearing one: `git worktree add` a temp tree at the pre-change SHA,
-  apply the test commit only, run that criterion's test, assert non-zero exit. Cache the result by
-  `(test_id, base_sha)` so it runs once per criterion rather than once per round.
+  apply the test commit only, run that criterion's test, and require the runner's machine-readable
+  outcome to be **`failed`, not `error`**. A non-zero exit is not enough — an import error, a missing
+  fixture, or a collection failure also exits non-zero and would let a test that never ran count as
+  discriminating. Cache by `(test_id, base_sha)` so it runs once per criterion, not once per round.
 - Suite green: exit code.
 - Diff scope: `git diff --name-only base..head`, minus the slice's `paths[]` globs from
   `plans/JIRA-1234.yaml`; non-empty means fail. This is the check that forced the plan to be
@@ -767,12 +779,18 @@ that is possible.
 ## Evidence status summary
 
 - **Supported.** Floor selected from a registry rather than authored (5). Binary criteria derived
-  without access to the candidate change (9). Ex-ante freeze (13). Cross-model review and no cap on
-  cited findings (17). A low round cap (19). Offline accuracy calibration and a same-budget baseline
-  (23).
-- **Hypothesis, targets a measured failure.** Three-tier criteria split (9). Seeded-probe
-  calibration (12). Red-commit and discrimination gating (16). Scaffold-free reviewer input and
-  evidence pointers (17).
+  without access to the candidate change (9). Ex-ante freeze (13). A low round cap (19).
+- **Hypothesis, targets a measured failure.** Three-tier criteria split (9). Known-bad probe
+  calibration (12). Red-commit and discrimination gating (16). The whole of review (17) — cross-model
+  routing, scaffold-free input, evidence pointers, and no cap on cited findings. Offline accuracy
+  calibration and the same-budget baseline (23).
+
+  Phases 17 and 23 were tagged `[S]` until an adversarial review pointed out the overclaim.
+  Panickssery establishes that self-preference tracks self-recognition — evidence that an author
+  reviewing itself is biased, not that *this* review configuration is validated. JudgeEval is an
+  existence proof of a scoring pattern, not evidence that five hand-graded reviews estimate
+  per-mandate precision and recall usefully; split across three mandates that is one or two samples
+  each, which supports a direction and not a number.
 - **Local judgment, corpus silent.** Claim provenance tagging (2). Investigation separation (3).
   Scope splitting (4). Coupling map and preservation criteria (6). Autonomy thresholds (7).
   Observability seams (8). The linter's field schema (10). Red-team as regress terminator (11).
