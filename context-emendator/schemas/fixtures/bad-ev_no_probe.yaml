@@ -1,0 +1,18 @@
+schema_version: 1
+tracker: jira
+item: WI-1234
+boundary_digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+edges:
+  - entry: INV-2
+    case_id: "tests/export/test_commit.py::test_no_file_on_timeout"
+  - entry: INV-2
+    case_id: "tests/export/test_commit.py::test_no_file_on_cancel"
+  - entry: PRES-1
+    case_id: "tests/recon/test_inputs.py::test_recon_tolerates_missing_file"
+  - entry: AC-1
+    case_id: "tests/export/test_e2e.py::test_500k_succeeds_within_budget"
+  - entry: PRES-2
+    case_id: "tests/alerts/test_exp1.py::test_firing_set_unchanged"
+    probe:
+      kind: mutation
+      ref: "mutants/status_enum_drop_cancelled"

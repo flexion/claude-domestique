@@ -1,0 +1,23 @@
+# The test case ids the runner actually collected, as `--collect-only` would
+# report them. Supplied so an evidence edge can be checked for naming a case that
+# EXISTS rather than merely naming something.
+#
+# Same shape as valid-item-parts.yaml and for the same reason: a phantom case id
+# is catchable today, and the runner replaces the fixture without the check
+# changing.
+#
+# HAND-MAINTAINED, not generated: the five edge ids below were transcribed from
+# valid-evidence.yaml and drift is not detected automatically. Drift is safe in
+# both directions — an id here with no edge is legal, and an edge naming an id
+# absent here is exactly what E_EDGE_CASE_NOT_COLLECTED reports.
+#
+# The sixth entry is deliberate. A collected case with no evidence edge proves the
+# check is ONE-DIRECTIONAL: every edge must name a collected case, and a
+# repository is free to have tests that discharge no obligation.
+cases:
+  - "tests/export/test_commit.py::test_no_file_on_timeout"
+  - "tests/export/test_commit.py::test_no_file_on_cancel"
+  - "tests/recon/test_inputs.py::test_recon_tolerates_missing_file"
+  - "tests/export/test_e2e.py::test_500k_succeeds_within_budget"
+  - "tests/alerts/test_exp1.py::test_firing_set_unchanged"
+  - "tests/export/test_unrelated.py::test_header_encoding"

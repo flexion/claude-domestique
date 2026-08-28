@@ -1,0 +1,1376 @@
+Modeling Managerial Search Behavior based on
+Simon’s Concept of Satisficing
+
+arXiv:2104.14002v2 [econ.GN] 12 May 2021
+
+Friederike Wall
+
+Received: date / Accepted: date
+
+Abstract Computational models of managerial search often build on backward-looking search based on hill-climbing algorithms. Regardless of its prevalence, there is some evidence that this family of algorithms does not universally
+represent managers’ search behavior. Against this background, the paper proposes an alternative algorithm that captures key elements of Simon’s concept
+of satisficing which received considerable support in behavioral experiments.
+The paper contrasts the satisficing-based algorithm to two variants of hillclimbing search in an agent-based model of a simple decision-making organization. The model builds on the framework of NK fitness landscapes which
+allows controlling for the complexity of the decision problem to be solved. The
+results suggest that the model’s behavior may remarkably differ depending
+on whether satisficing or hill-climbing serves as an algorithmic representation
+for decision-makers’ search. Moreover, with the satisficing algorithm, results
+indicate oscillating aspiration levels, even to the negative, and intense – and
+potentially destabilizing – search activities when intra-organizational complexity increases. Findings may shed some new light on prior computational models
+of decision-making in organizations and point to avenues for future research.
+Keywords Agent-based simulation · Complexity · Hill-climbing algorithms ·
+NK fitness landscapes · Satisficing · Search
+
+1 Introduction
+Computational models of managerial search often comprise adaptive processes
+based on experiential learning and backward-looking search behavior (e.g.,
+Friederike Wall
+University of Klagenfurt, Department for Management Control and Strategic Management,
+Universitätsstrasse 65-67, 9200 Klagenfurt, Austria
+Tel.: +43-463-27004031
+E-mail: friederike.wall@aau.at
+
+2
+
+Friederike Wall
+
+Gavetti and Levinthal 2000; Kollman et al. 2000; Dosi et al. 2003; Ethiraj and Levinthal
+2004; Siggelkow and Rivkin 2005; Wall 2017). In computational models of
+managerial search, for capturing experiential learning and backward-looking
+search behavior, hill-climbing algorithms prevail (for overviews see Ganco and Hoetker
+2009; Baumann et al. 2019). Based on local search, a particular feature of
+these algorithms is that a decision-maker would never accept or preserve
+performance-decreasing changes (e.g., Altenberg 1997; Russell and Norvig 2016).
+This feature of hill-climbing algorithms has been criticized regarding cognitive
+biases such as escalation of commitment, overconfidence, and confirmation
+bias (e.g., Staw 1981; Astebro et al. 2014; Mercier 2017). Tracy et al. (2017)
+recently question that hill-climbing algorithms are appropriate representations
+of managerial search behavior. Based on experimental findings, they suggest
+studying alternative algorithmic representations of managerial search and their
+effects on model behavior with respect to findings of prior research.
+The research presented here follows this line of argumentation. The paper seeks to contribute to computational management science by proposing
+and exemplarily applying an alternative algorithm for representing managerial
+search behavior. In particular, the paper introduces an algorithm for experiential learning and backward-looking search for managers based on Herbert A.
+Simon’s concept of satisficing1 (Simon 1955) which has turned out being a relevant representation of search behavior (e.g., Güth 2010; Caplin et al. 2011).
+According to Simon, satisficing means searching sequentially for options until
+the decision-maker regards the level of utility achieved as satisfactory. The
+aspiration level shapes what is regarded as satisfactory. The aspiration level
+and the maximum number of options searched – depending on the difficulty
+of the decision problem to be solved – may be subject to adaptation.
+Against this background, the paper has a twofold research objective:
+1. introduction of an algorithm for managerial search behavior according to
+Simon’s satisficing concept;
+2. exemplary application of the satisficing algorithm in contrast to hill-climbing
+algorithms in an agent-based simulation to figure out potential differences
+and commonalities regarding model behavior.
+For this, the paper proceeds as follows: The next section provides an
+overview of the theoretical background with particular focus on Simon’s idea
+of satisficing, before, in Section 3, the algorithm capturing core elements of
+satisficing is introduced in the context of searching for superior solutions of
+combinatorial decision problems.
+Next, the proposed satisficing algorithm is contrasted to hill-climbing algorithms. This is done via the example of an agent-based simulation model of
+organizations operating on rugged performance landscapes. The performance
+landscapes are modeled according to the NK framework as initially introduced
+1 The term satisficing results from a merger of the two words: satisfying and sufficing
+in the sense that in the process a solution is found which is both satisfying and sufficing
+(Hoffrage and Reimer 2004).
+
+Modeling Managerial Search Behavior based on Simon’s Concept of Satisficing
+
+3
+
+in evolutionary biology (Kauffman and Levin 1987; Kauffman 1993). The rationale for this choice is that many models dealing with search in organizations
+build on the NK framework (for overviews, e.g., Baumann et al. 2019; Wall
+2016). Hence, the NK model serves as a kind of “quasi-standard” in research
+on managerial search. This makes the NK model a functional basis for the second research objective mentioned above. A particular feature of the NK model
+is that it allows to systematically vary the complexity of a search problem in
+terms of the interdependencies among its sub-problems (Li et al. 2006; Csaszar
+2018) which makes it appropriate to study the search behavior for varying
+levels of difficulty to locate the global maximum. Hence, the illustrative agentbased simulation model presented controls for the level of intra-organizational
+complexity among subordinate managerial decision-makers. This is particularly relevant in view of the satisficing concept since the difficulty of finding
+satisfactory solutions drives adjustments, for example, of the aspiration level.
+The model is outlined in Section 4.
+Section 5 introduces the experimental settings for the simulations. The
+simulations are conducted for purposes of explanation and prediction (Za et al.
+2018; Burton and Obel 2011) with particular focus on the differences that
+satisficing vs. hill-climbing search entail for the model behavior. The results
+are presented and discussed in Section 6 followed by concluding remarks.
+
+2 Search and saticficing: Foundations and related work
+2.1 Preliminary remarks on the theoretical background
+In traditional schools of economic thinking, economic actors know, at least in
+principle, the entire space of solutions for their decision problems. Knowing
+the whole search space allows them to behave as utility maximizers, i.e., detecting and choosing that option out of the solution space which maximizes the
+respective utility function (von Neumann et al. 2007). Simon (1955) claimed
+that there is an “absence of evidence that the classical concepts describe the
+decision-making process” (p. 104). Among Simon’s arguments is that information gathering on options and their outcomes may not be costless.
+However, the cost of search and information has been introduced taking a
+“classical economic perspective”. Stigler (1961) claimed that information on
+options often is not known in advance but has to be searched, and this may
+reasonably bring about search costs. Accordingly, in making the concept of
+utility maximizing more realistic, a decision-maker has to solve a sophisticated problem of economic choice: whether or not, to incur the search cost
+for better information which requires to forecast the information’s benefits
+(i.e., better choices) in terms of all its future consequences including subsequent choices. Yet, it has been argued that this extended “version” of the
+utility maximizing model, though economically stringent, does not capture
+real situations of decision-making for several reasons – among them principal
+problems of mathematical tractability or cognitive limitations (e.g., Conlisk
+
+4
+
+Friederike Wall
+
+1996; Gigerenzer 2002, 2004). Gigerenzer (2002) argues that the rule to stop
+searching for information when the cost exceeds benefits (Stigler 1961) may
+paradoxically require more time, knowledge, and computational abilities of
+decision-makers (“sophisticated econometricians”) than in models with unbounded rationality.
+
+2.2 Search in computational management science and its algorithmic
+representation
+Against this background, a large body of research in computational management science, particularly in the vein of agent-based computational economics
+(Tesfatsion 2003; Chang and Harrington 2006; Chen 2012), is based on the
+concept of bounded rationality (Simon 1955, 1959). In particular, it is often
+assumed that economic agents do not dispose of a “theoretical” understanding
+of their problems, including knowledge of the solution space (an exception is
+Gavetti and Levinthal 2000); instead, agents have to search stepwise for superior solutions, e.g., solutions that provide better outcome with respect to the
+objective than the status quo (Safarzyńska and van den Bergh 2010). Hence,
+in computational models of search, instead of global optimization – with or
+without constraints imposed by the cost of information – agents often conduct experiental learning and backward-looking search. This is represented by
+local search, meaning that only one or some attributes of the current state
+(or policy) are changed; should this change be productive compared to the
+status quo, the modified policy serves as basis for a new local search. This
+results in adaptive processes. However, there is evidence that adaptive processes based on experiential learning are biased against new alternatives (e.g.,
+Levinthal and March 1981; Levinthal 1997), especially since adaptation does
+not correct early sampling errors (hot-stove effect) (Denrell and March 2001).
+With the shift from “instantaneous” global optimization to stepwise and
+local search also the processual perspective – including questions of speed of
+performance enhancements and of contingent factors – comes into play. In
+particular, the complexity of decision problems and environmental turbulence
+are among the predominant contingent factors in the respective stream of research. Computational studies on search behavior have been carried out in various domains like, for example, organizational design, innovation, psychology,
+and, accordingly, the related approaches in prior research are rather manifold.
+Overviews are, for example, given in Ganco and Hoetker (2009), Wall (2016),
+or Baumann et al. (2019).
+In computational studies capturing backward-looking search behavior, greedy
+algorithms and, in particular, hill-climbing algorithms predominate. According to Cormen et al. (2009, p. 414), a “greedy algorithm always makes the
+choice that looks best at the moment” in terms of “a locally optimal choice
+in the hope that this choice will lead to a globally optimal solution”. A hillclimbing algorithm – employing the metaphor of seeking the highest summit
+– for a move in the landscape requires that the outcome (“altitude”) will in-
+
+Modeling Managerial Search Behavior based on Simon’s Concept of Satisficing
+
+5
+
+crease. In other words: the aspiration level is a performance improvement of
+greater than zero. For example, with a steepest ascent hill-climbing algorithm,
+that option out of more than one alternatives to the status quo is selected
+which provides the highest improvement in outcome; if none of the alternatives
+promises an incline in outcome, the status quo is kept. With this, hill-climbing
+algorithms are particularly prone to get stuck in local maxima, ridges, or
+plateaus in a landscape (for overviews, e.g., Cormen et al. 2009; Macken et al.
+1991; Selman and Gomes 2006). This is mainly because with these algorithms
+a short-term decline in favor of a long-term increase would not happen since no
+choice in favor of an option that provides an inferior outcome than the status
+quo would ever be made. Hence, hill-climbing algorithms may lead to rather
+myopic search processes. Moreover, as mentioned in the Introduction, it was
+argued that this is also be in conflict with some cognitive biases which indicate that decision-makers eventually behave in favor of performance declines.
+These considerations gave rise to questions whether hill-climbing algorithms
+appropriately capture managerial search behavior (e.g., Tracy et al. 2017).
+While hill-climbing algorithms are customary in computational studies capturing managerial search processes, it is worth mentioning that they often
+serve just as the nucleus: in many models, managerial search is embedded in a
+broader context. This context is, for example, defined by the incentive schemes
+shaping managers’ objective functions and, thus, the particular “landscapes”
+managers are searching in (e.g., Siggelkow and Rivkin 2005; Wall 2017). Another contingency factor is the imprecision of managers’ information, which
+may, accidentally, lead to short-term declines but long-term inclines of performance choices (Knudsen and Levinthal 2007; Wall 2016). Furthermore, prior
+research studied the decomposition of the organizational decision problem
+(Dosi et al. 2003) or the coordination among managers searching on partitions
+of the overall decision problem (Siggelkow and Levinthal 2003). Moreover, the
+learning-based adaptation of the structure of search comes into play. For example, based on experience, the organization of search processes (e.g., who
+searches on which particular decision problem) could be subject to coevolution (e.g., Wall 2018).
+However, as mentioned before, the potential of hill-climbing algorithms to
+represent managerial search behavior has been questioned, and the very core of
+the research endeavor presented in this paper is to introduce and illustrate an
+algorithm for backward-looking search based on Simon’s concept of satisficing.
+
+2.3 Outline of Simon’s concept of satisficing
+This section intends to provide an overview of the “satisficing” concept with
+particular focus on an algorithmic representation for backward-looking search.2
+The following quote captures the core idea (Simon 1955, p. 110):
+2 An in-depth analysis of the concept’s origin in Simon’s work is given by Brown (2004);
+Radner (1975) introduced a general formulation for purposes of mathematical optimization.
+
+6
+
+Friederike Wall
+“In most global models of rational choice, all alternatives are evaluated before a
+choice is made. In actual human decision-making, alternatives are often examined
+sequentially. We may, or may not, know the mechanism that determines the order
+of procedure. When alternatives are examined sequentially, we may regard the first
+satisfactory alternative that is evaluated as such as the one actually selected.”
+
+The satisficing concept is explained and justified extensively in Simon’s 1955
+paper and subsequent works (e.g., Simon 1959, 1979; for a reconstruction of
+satisficing from Simon’s early works see Brown 2004). One of Simon’s arguments is that decision-makers endowed with limited information-processing
+capabilities may strive for decisions which are good enough with reasonable
+costs of computation (Simon 1955, pp. 106; Simon 1979, p. 498). The quote
+above indicates on three building blocks which are particularly relevant for an
+algorithmic representation of satificing. These are:3
+1. sequential procedure, i.e., options are discovered and evaluated sequentially;
+2. aspiration level, i.e., options are evaluated with respect to a level of outcome
+that is regarded satisfactory;
+3. stopping rule, i.e., search is stopped when the first satisfactory option is
+found.
+Regarding the stopping rule, Simon introduces further considerations to assure, first, that – at least in the long run – a satisfactory alternative can be
+found while, second, in the short-term, search can provisionally stop if no
+satisfactory alternative is identified. For this, in particular, he introduces a
+dynamic perspective by considering a sequence of situations with choices to
+be made (Simon 1955, p. 111):
+“The aspiration level, which defines a satisfactory alternative, may change from
+point to point in this sequence of trials. A vague principle would be that as the
+individual, in his exploration of alternatives, finds it easy to discover satisfactory
+alternatives, his aspiration level rises; as he finds it difficult to discover satisfactory
+alternatives, his aspiration level falls. Perhaps it would be possible to express the ease
+or difficulty of exploration in terms of the cost of obtaining better information about
+the mapping of A on S, or the combinatorial magnitude of the task of refining this
+mapping. There are a number of ways in which this process could be defined formally.
+Such changes in aspiration level would tend to bring about a ‘near-uniqueness’ of the
+satisfactory solutions and would also tend to guarantee the existence of satisfactory
+solutions. For the failure to discover a solution would depress the aspiration level
+and bring satisfactory solutions into existence.” [emphasis in original]
+
+As Simon points out, such a mechanism of adjusting aspiration levels assures
+that, satisfactory solutions exist in the long run. However, as mentioned before, a second aspect is the number of alternatives a decision-maker is willing
+to explore. In short-term such an upper bound assures that the search, in principle, may stop even if no satisfactory option is found; however, in a sequence
+of situations, the maximum number of alternatives searched may be subject
+to adjustment too (Simon 1955, p. 111):
+3 These three elements, in principle, correspond to building blocks proposed by
+Gigerenzer and Todd (1999) for heuristics, which are search rules, stopping rules and decision rules (see also Gigerenzer and Gaissmaier 2011).
+
+Modeling Managerial Search Behavior based on Simon’s Concept of Satisficing
+
+7
+
+“Up to this point little use has been made of the distinction between A, the set
+of behavior alternatives, and Ȧ, the set of behavior alternatives that the organism
+considers. Suppose now that the latter is a proper subset of the former. Then, the
+failure to find a satisfactory alternative in Ȧ may lead to a search for additional
+alternatives in A that can be adjoined to Ȧ.”
+
+Simon mentions these two types of adjustment – i.e., regarding aspiration levels and maximum number of options searched – as examples of how decisionmaking behavior could be adjusted to the perceived difficulty of finding satisfactory alternatives. Moreover, the two types of adjustments may substitute
+or complement each other (Simon 1955, p. 112):
+“In one organism, dynamic adjustment over a sequence of choices may depend primarily upon adjustments of the aspiration level. In another organism, the adjustments may be primarily in the set Ȧ: if satisfactory alternatives are discovered easily,
+Ȧ narrows; if it becomes difficult to find satisfactory alternatives, Ȧ broadens... The
+more persistent the organism, the greater the role played by the adjustment of Ȧ,
+relative to the role played by the adjustment of the aspiration level.”
+
+Hence, for an algorithmic representation, the above “list” of building blocks
+of satisficing could be extended by
+4. adjustment of aspiration level, with downward (upward) adjustment when
+the decision-maker finds it difficult (easy) to identify a satisfactory alternative;
+5. adjustment of maximum number of options explored, with broadening (narrowing) adjustment when the decision-maker finds it difficult (easy) to
+identify a satisfactory alternative.
+The concept of satisficing stimulated a large body of further research in various domains reaching from psychology and economics to multi-agent systems
+(e.g., Bianchi 1990; Gigerenzer 2002; Todd and Gigerenzer 2003; Parker et al.
+2007; Schwartz 2008; Rosenfeld and Kraus 2012). For example, key elements
+of satisficing are among the foundations of “the adpative toolbox” comprising
+“fast and frugal heuristics” introduced by Gigerenzer (2002). Moreover, Simon’s satisficing provides a basis for Selten’s prominent “aspiration adaption
+theory” (Selten 1998, 2002). However, particularly the idea of aspiration levels has given rise to questions on how they are initially set and how they are
+updated (e.g., Bianchi 1990; Güth 2007; Schwartz 2008). A further body of research seeks to test how far satisficing captures real human decision-making behavior empirically. For example, in an experimental study Caplin et al. (2011)
+find considerable support for key elements of satisficing behavior, namely sequential search and stopping a search process when a decision-maker regards
+the level of outcome satisfactory. Another stream of research refers to the conditions when decision-makers seek to behave as maximizers or satisficers, i.e.,
+to styles of decision-making (e.g., Schwartz et al. 2002; Parker et al. 2007).
+
+8
+
+Friederike Wall
+
+3 Algorithmic representation of satisficing managerial search
+behavior
+3.1 Preliminary remarks
+This section introduces a computational model of organizations with decisionmaking agents that employ satisficing in backward-looking search behavior
+following Simon’s concept as introduced in Section 2.3. The model is presented
+for decision-making agents facing a multidimensional binary decision problem.
+This modeling choice builds on two arguments:
+First and most important, as it was outlined above, a considerable body
+of research in computational management science employs the prominent NK
+framework. In its standard form, the NK framework comprises N -dimensional
+binary bit strings as the vector of choices or features adapted throughout adaptive processes based on some kinds of learning or evolution. Hence, modeling
+the satisficing concept for binary decision problems eases the integration into
+prior research.4
+Second, a fixed dimensionality binary decision problem facilitates to model
+satisficing search behavior. For example, the maximum number of alternatives
+(see Section 2.3) and the term neighborhood can be figured out easily. However, the author believes that the simplifying assumption of binary decision
+problems does not limit, in principle, transferring the proposed algorithm of
+satisficing search behavior to other types of decision problems.
+
+3.2 Process structure of satisficing search
+Subsequently, satisficing search behavior of a manager r is described where
+manager r may be one out of M managers in an organization (i.e., r =
+(1, . . . , M )). Manager r faces an N r -dimensional binary decision problem.
+According to the behavioral assumptions of Simon (1955), manager r is not
+able to survey the entire search space and, hence, cannot “locate” the optimal
+solution of its decision problem “at once”. Instead, manager r employs a timeconsuming search process to identify solutions with superior performance, or
+even the optimal solution, regarding manager r’s objective.
+As outlined in Section 2.3, a particular feature of satisficing search behavior
+is that, when searching for superior performance, an agent may adapt the
+aspiration level and the maximum number of alternatives discovered before
+the agent decides to stop searching. Hence, the proposed model comprises
+three adaptive processes which are related to each other: In each period t of
+time,
+4 In Section 4, this paper presents simulation experiments for managerial decision-makers
+within organizations. The organizations face a binary decision problem according to the NKframework. The subsequent description of satisficing search behavior follows some notational
+conventions of the NK framework.
+
+Modeling Managerial Search Behavior based on Simon’s Concept of Satisficing
+
+9
+
+1. manager r sequentially searches for novel options to its particular decision problem within the institutional framework given which includes, for
+example, division of labor or rewards provided (Section 3.3);
+2. manager r adjusts the aspiration level ar that a newly found option will
+have to meet to be selected in the next period based on the performance improvements resulting from the solutions implemented in the past (Section
+3.4);
+3. manager r adjusts the maximum number smax,r of options to be discovered
+before search is stopped depending on the number of options that manager
+r had to search for before a satisficing alternative was found in the past
+(Section 3.5).
+Figure 1 shows the principle process of satisficing search behavior of a manager
+r. Subsequently, the model is described in more detail.
+
+3.3 Sequential Search for New Options
+A key feature of satisficing search is that new options are discovered and evalr
+uated sequentially: the agent discovers one novel option d~st and evaluates (i.e.,
+searches for “cues” in the terminology of Simon (1955) whether it promises
+a performance improvement compared to the status quo d~rt−1 that, at least,
+meets the aspiration level ar (t), i.e., when
+∆Ptr ≥ ar (t)
+with
+
+r
+
+∆Ptr = P (d~st ) − P (d~rt−1 )
+
+(1)
+(2)
+
+If so, this option is implemented, and search is stopped for this time step
+t; otherwise, the next option is searched and evaluated as far as the maximum
+number of options smax,r (t) is not reached yet (see Figure 1).
+With manager r facing an N r -dimensional binary decision problem, at
+r
+maximum, 2N − 1 alternative configurations d~r compared to the status quo
+could be implemented. Hence, the upper bound for he maximum number of
+options is
+r
+smax,r ≤ 2N − 1
+(3)
+For an algorithmic representation of satisficing, defining a sequence of the
+agent’s discoveries of new options is necessary. For the sequence of options’
+discovery, various possibilities could are feasible. For example, one obvious
+r
+way is to let the agent randomly discover one out of the 2N − 1 alternatives
+(if an option has been discovered before in that time step t, the random draw
+is repeated).
+However, the simulation experiments presented subsequently employ a
+“closest-first” search policy which reflects the idea of neighborhood search:
+a manager r starts searching in the immediate “neighborhood” of the status quo. Should this not lead to a satisficing option, manager r extends the
+
+10
+
+Friederike Wall
+
+Fig. 1 Process structure of satisficing search behavior
+
+“circle” of search around the status quo. Hence, the sequence follows increasing Hamming distances of discovered alternatives to the status quo where the
+r
+Hamming distances of an alternative option d~st to the status quo is given by
+
+r
+h(d~st ) =
+
+r
+N
+X
+
+r
+d~rt−1 − d~st
+
+(4)
+
+i=1
+
+r
+
+Hence, the search starts with alternatives with a Hamming distance h(d~st ) =
+1, then followed by options with a Hamming distance of two and so forth, as
+long as neither the aspiration level is met nor the maximum number of options
+
+Modeling Managerial Search Behavior based on Simon’s Concept of Satisficing
+
+11
+
+smax,r to be considered is reached. Among the options with equal Hamming
+distance the sequence is given at random.5
+The rationale for a sequence given by increasing Hamming distances is as
+follows: This sequence appears particularly appropriate to capture the idea
+of stepwise improvement of a given configuration. With respect to the cost
+of search and change, small steps (i.e. Hamming distance equal to 1) could
+be assumed to show lower cost than more distant options which require more
+changes. Hence, the “closest-first” search policy may be based on considerations of cost of search and change.
+However, it is worth mentioning that other forms of the sequence of searching are arguable too: For example, a manager may be rewarded based on
+the particular novelty of the options chosen, which could give reason to start
+searching with the most distant alternatives possible.
+3.4 Adaptation of the aspiration level
+As mentioned in Sections 2.3 and 3.2, a core element in satisficing is the aspiration level. Newly found options are evaluated according to whether or not
+they promise to meet the aspiration level, and the aspiration level is subject
+to adaptation based on experience (Simon 1955): The aspiration level may increase (decrease) depending on how easy (difficult) it was to find a satisfactory
+alternative in the past.
+In the proposed model of satisficing search behavior, the aspiration level
+is adjusted according to the performance experience, i.e., an improvement or
+deterioration of performance (see Eq. 2) achieved over time. In particular,
+the aspiration level ar (t) is captured as an exponentially weighted moving
+average of past performance changes where αr denotes the speed of adjustment
+for manager r (Levinthal and March 1981; Böergers and Sarin 2000; Levinthal
+2016), i.e.,
+ar (t + 1) = αr · ∆P r t + (1 − αr ) · ar (t).
+(5)
+It is worth emphasizing that the aspiration level could also become negative
+– i.e., a performance decline becoming acceptable – if declines happened in the
+past. This establishes a contrast to hill-climbing algorithms where decisionmakers would not accept performance declines (see Introduction). Section 6.1
+comes back to this aspect.
+3.5 Adaptation of the maximum number of options searched
+In a similar vein, the space of options in which a manager searches for satisfactory alternatives may be dynamically adjusted. When it turns out to be
+5 For example, with a decision problem of N r = 3, three alternatives to the status quo
+r
+r
+with a Hamming distance h(d~st ) = 1, three alternatives with h(d~st ) = 2 and one with
+r
+r
+s
+~
+h(dt ) = 3 exist. A manager first discovers nearest neighbors; next, options with h(d~st ) = 2
+are found etc. where the sequence among equal-distanced options is randomly given.
+
+12
+
+Friederike Wall
+
+difficult to find satisfactory options, the search space for alternatives is broadened; when finding satisfactory options is easy, search space is narrowed (Simon
+1955).
+In the modeling effort presented here, this is captured as adjustment of
+the maximum number smax,r of options that the decision-making agent r may
+consider in the next time step. In particular, if in period t a maximum number
+of options, i.e., sr (t) = smax,r , was searched and evaluated without that a
+satisfactory alternative to the status quo was identified, then for t + 1 the
+(potential) search space increases. For this, again, an exponentially weighted
+moving average of past search spaces is employed where β r denotes the speed
+of adjustment for manager r. Hence, the search space results from
+
+smax,r (t + 1) =
+
+ r
+β · (sr (t) + 1) + (1 − β r ) · smax,r (t)
+
+
+
+
+if sr (t) = smax,r (t) and ∆P r t < ar (t)
+
+
+(6)
+
+
+
+β r · (sr (t)) + (1 − β r ) · smax,r (t)
+
+
+
+else
+
+However, since the maximum search space smax,r has to be an integer, the
+moving average according to the upper case of Eq. 6 is to be rounded up or
+down which is done according to
+smax,r (t + 1) = ⌊smax,r (t + 1) + 0.5⌋
+
+(7)
+
+Hence, with Eq. 7, the “adjusting” procedure in Eq. 6 does not necessarily
+result in an adjusted space smax,r (t + 1) of options for the next period.
+
+4 Example: An agent-based model of search in collaborative
+organizations based on satisficing vs. hill-climbing
+4.1 Overview
+The model of satisficing agents as outlined in the preceding section is studied
+for artificial organizations that seek superior solutions of binary decision problems according to the NK-framework (Kauffman and Levin 1987; Kauffman
+1993). A particular purpose is to contrast the adaptive walks of organizations
+resided by satisficing managers to organizations with managers employing a
+hill-climbing algorithm as familiar in the domain of agent-based computational
+organization science.
+First, the overall organizational decision problem, its decomposition, and
+delegation to managers are introduced (Section 4.2). Next, a description of
+managers’ objective functions and information basis (Section 4.3) follows.
+Third, search and decision-making via hill-climbing are briefly outlined in contrast to satisficing (Section 4.4).
+
+Modeling Managerial Search Behavior based on Simon’s Concept of Satisficing
+
+13
+
+4.2 Decision Problem and Structure of the Organizations
+In the simulation model, artificial organizations are observed while searching
+for superior solutions for a decision problem according to the framework of
+NK-fitness landscapes. In particular, at each time step t the organizations
+face an N -dimensional binary decision problem, i.e., d~t = (d1t , ..., dN t ) with
+dit ∈ {0, 1}, i = 1, ..., N , out of 2N different binary vectors possible. Each of
+the two states dit ∈ {0, 1} provides a distinct contribution Cit to the overall
+performance V (d~t ). The contributions Cit are randomly drawn from a uniform
+distribution with 0 ≤ Cit ≤ 1. Parameter K (with 0 ≤ K ≤ N − 1) reflects
+the number of those choices djt , j 6= i which also affect the performance contribution Cit of choice dit . Hence, K captures the complexity of the decision
+problem in terms of the interactions among decisions: this means that contribution Cit may not only depend on the single choice dit (being 0 or 1) but
+also on K other choices:
+Cit = fi (dit ; di1 t , ...diK t ),
+
+(8)
+
+with {i1 , ..., iK } ⊂ {1, ..., i − 1, i + 1, ..., N }. In case of no interactions among
+choices, K equals 0, and K is N − 1 for the maximum level of complexity
+where each single choice i affects the performance contribution of each other
+binary choice j 6= i. The overall performance Vt achieved in period t results as
+normalized sum of contributions Cit from
+N
+
+Vt = V (d~t ) =
+
+1 X
+Cit .
+N i=1
+
+(9)
+
+The organizations have a hierarchical structure and comprise two types of
+agents: (1) one headquarter and (2) M managers. The organizations make use
+of division of labor. In particular, the N -dimensional overall decision problem is
+decomposed into M disjoint partial problems, and each of these sub-problems
+is exclusively delegated to one manager r = (1, . . . , M ). For the sake of simplicity, the sub-problems are of equal size N r .6 Each manager r is endowed
+with decision-making authority on its “own” partition of the organization’s
+decision problem.
+The headquarter seeks to maximize the overall performance Vt according
+to Eq. 9. However, its role is restricted to – at the end of each time step t –
+observing the overall performance Vt , observing each manager’s performance
+contribution and rewarding managers accordingly.
+Depending on the complexity K of the N -dimensional decision problem
+and the particular structure of interactions among the M sub-problems, indirect interactions among the managers’ choices may result. Let K ex denote
+the level of interdependencies across managers’ sub-problems. In case that
+interdependencies across sub-problems exist, i.e., if K ex > 0, then the performance contribution of manager r’s choices to overall performance V is affected
+6
+
+With N ∈ N this requires that N is divisible by M without remainder.
+
+14
+
+Friederike Wall
+
+by choices made by other managers q 6= r and vice versa (see, for example,
+Figure 2.b).
+
+4.3 Managers’ Objective Functions and Information
+The managers seek to maximize compensation which is merit-based and depends on the performance contribution Ptr (d~t ) of manager r to overall performance V (d~t ) according to Eq. 9. Hence, we have
+Vt = V (d~t ) =
+
+M
+X
+
+Ptr (d~t )
+
+(10)
+
+r=1
+
+with
+
+r
+
+Ptr (d~rt ) =
+
+N
+1 X
+Cit
+N i=1+w
+
+(11)
+
+Pr−1
+and with w = m=1 N m for r > 1 and w = 0 for r = 1.
+For the sake of simplicity, compensation of manager r depends linearly on
+the value base Ptr (d~t ) for all levels of Ptr . Hence, by increasing the performance
+contribution Ptr of the partial solution for the N r -dimensional sub-problem
+to the overall organization’s decision-problem, manager r also increases its
+compensation.
+However, when making their choices on their respective partial configurations d~rt , the managers show some further cognitive limitations (apart from not
+knowing the entire space of solutions and, thus, having to search for options):
+First, manager r cannot anticipate the other departments’ q 6= r choices;
+rather manager r assumes that the fellow managers will stay with the status
+quo, i.e., opt for d~q∗
+t−1 .
+Second, manager r is not able to perfectly ex-ante evaluate the effects of
+r
+r
+any newly discovered option d~st on the value base for compensation Ptr (s~d t )
+(see Eq. 11). Rather, ex ante evaluations are afflicted with noise which is,
+for the sake of simplicity, an relative error imputed to the actual performance (Wall 2010; for further types of errors see Levitan and Kauffman 1995;
+for further models of managerial search capturing imperfect evaluations see
+Carley and Zhiang 1997; Chang and Harrington 1998; Knudsen and Levinthal
+r
+2007). The error terms er (d~st ) follow a Gaussian distribution N (0; σ) with
+expected value 0 and standard deviations σ r ; errors are assumed to be inder
+pendent from each other. Hence, the value base of compensation P̃tr (d~st ) of a
+r
+newly discovered d~s option as ex ante perceived by manager r is
+r
+r
+r
+P̃tr (d~st ) = Ptr (d~st ) + er (d~st )
+
+(12)
+
+Thereby, when making decisions, each manager r has a different “view” of
+the actual fitness landscape which results from (1) the decomposition of the
+overall decision problem and the delegation of sub-problems and (2) from
+
+Modeling Managerial Search Behavior based on Simon’s Concept of Satisficing
+
+15
+
+the managers’ individual “perceptions” due to the individualized error terms
+σ r . However, for the status quo option d~r∗
+t−1 , it is assumed that manager r
+remembers the compensation from the last period. From this, manager r also
+knows the actual performance Ptr of the status quo, should the manager choose
+to stay with it in time step t and if, in case of interactions across sub-problems,
+also the fellow managers stay with the status quo.
+4.4 Search strategies
+In every time step t, each manager r seeks to identify a superior configuration
+for its partial decision problem d~rt with respect to the value base of compensation. The search strategy shapes the options a manager can choose. The
+simulation model contrasts adaptive walks of organizations with satisficing
+managers to those organizations with managers employing a steepest ascent
+hill-climbing algorithm as frequently employed in computational management
+science. In Section 3, the model of satisficing search was introduced. Hence, at
+this point, a short outline of hill-climbing in the context of the model follows.
+In particular, as already mentioned, in the model the managers cannot
+survey the entire search space and, hence, they have to search stepwise for
+superior solutions. Following a hill-climbing algorithm, a manager searches in
+the neighborhood for a fixed number smax,r of alternatives and opts for an
+alternative only if it promises a higher performance (“fitness”) than the status
+quo. The distance to the status quo defines the term neighborhood and, in the
+r
+context of the NK-model, is measured by the Hamming distance h(d~st ) of an
+alternative option to the status quo d~rt−1 according to Eq. 4.
+r
+In the most simple case, the neighborhood is set to h(d~st ) = 1 and the
+r
+max,r
+number of alternatives is s = s
+= 1, too. This means that only one alternative to d~rt−1 is discovered where – usually at random – one bit is flipped.
+However, the “allowed” neighborhood of search could be broader than one,
+and also the number of alternatives the manager identifies could be higher
+than one. Both is often employed in models of organizational search (e.g.,
+Siggelkow and Rivkin 2005; Wall 2017; for overviews Chang and Harrington
+2006; Baumann et al. 2019). If the number of alternatives smax,r identified
+providing a performance incline is higher than one, that option with the highest incline is selected (steepest ascent hill-climbing). Hence, three aspects of
+this hill-climbing algorithm (HCA) appear noteworthy in comparison to the
+satisficing algorithm (see Section 3):
+1. In the HCA, the number sr of newly discovered alternatives per period
+equals the maximum number of alternatives allowed, i.e., sr = smax,r .
+Moreover, the maximum number of alternatives is not subject to adaptation based on experience over time like in satisficing.7
+2. The HCA employs an aspiration level of zero: alternatives with a performance incline compared to the status quo are worth being selected by a
+7
+
+In this sense, the HCA could be regarded as a special case according to Eq. 6 with β = 0.
+
+16
+
+Friederike Wall
+
+manager (i.e., ar > 0). Additionally, unlike in satisficing, the aspiration
+level is not adapted according to experience.8
+3. In the HCA, options are not searched and evaluated in sequence with a
+stop of searching when an alternative meets the aspiration level like in
+satisficing. Instead, in case that the HCA is parametrized to two or more
+alternatives to be searched (i.e., if smax,r > 1), the search stops when
+smax,r alternatives are identified. Then these smax,r options are evaluated
+against the status quo and against each other to figure out the steepest
+ascent.
+The paper presents the results of simulations for organizations with managers employing satisficing versus hill-climbing search. For this, the next section introduces the particular parameter settings of the simulation experiments.
+5 Simulation experiments and parameter settings
+The simulation study seeks to provide insights into how satisficing managerial
+search behavior compared to hill-climbing behavior affects the organizations’
+resulting adaptive walks. Table 1 displays the parameter settings which are
+explained in the remainder of this section.
+The parameter settings in the upper part of Table 1) apply to experiments
+with both satisficing and hill-climbing types of managers. As such, organizations are observed for 250 periods9 when searching for superior solutions
+to an N = 12-dimensional decision problem. The overall decision problem is
+decomposed into M = 4 equal-sized sub-problems of which each is delegated
+exclusively to a subordinate manager.
+The experiments are conducted for different levels of complexity of the
+organizations’ decision problems: In particular, the organizations may have a
+perfectly decomposable interaction structure of decisions which captures situations where, for example, the task of an organization is perfectly decomposable
+along geographical regions or products without any interdependencies across
+regions or products, respectively (Galbraith 1974; Rivkin and Siggelkow 2007;
+Simon 1962). Figure 2.a gives an example of a situation with no interactions
+across managers’ sub-problems (i.e., K ex = 0). Alternatively, the interaction
+structures captured in the experiments may exhibit a low, medium, or high
+level of interactions across sub-problems. For example, Figure 2.b shows a case
+of a high level of cross-problem interactions (i.e., K ex = 5). This interaction
+structure may represent situations caused by certain constraints of resources
+(budgets or capacities), by market interactions (prices of one product may
+affect the price of another) or functional interrelations (e.g., the product design sets requirements for procurement processes) (Thompson 1967; Galbraith
+1973; Rivkin and Siggelkow 2007).
+8
+
+With this, the HCA may be regarded as a special case according to Eq. 5 with α = 0.
+The observation period T was fixed based on pretests which indicate that the results do
+not principally change for longer observation periods.
+9
+
+Modeling Managerial Search Behavior based on Simon’s Concept of Satisficing
+
+17
+
+Table 1 Parameter settings
+Parameter
+
+Values / Types
+
+Applying to all scenarios / types of managers
+Observation period
+T = 250
+Simulation runs
+per scenario 2,500 runs with 25 runs on 100 distinct
+fitness landscapes
+Number of choices
+N = 12
+Interaction structures
+
+Number of managers
+Managers’ precision of
+ex-ante evaluation
+
+decomposable: (K = 2; K ex = 0) (see Fig. 2.a)
+non-decomposable:
+- low: (K = 3; K ex = 1); (K = 4; K ex = 2);
+- medium: (K = 5; K ex = 3); (K = 6; K ex = 4);
+- high: (K = 7; K ex = 5) (see Fig. 2.b)
+M = 4 with d~1 = (d1 , d2 , d3 ), d~2 = (d4 , d5 , d6 ),
+d~3 = (d7 , d8 , d9 ), d~4 = d10 , d11 , d12 )
+σr = 0.05 for all managers r = (1, . . . , M )
+
+Satisficing type of managers
+Aspiration level
+- in the beginning
+- speed of adjustment
+
+ar (t = 0) = 0 for all managers r = (1, . . . , M )
+αr = 0.5 for all managers r = (1, . . . , M )
+
+Max. number of alternatives
+- in the beginning
+- speed of adjustment
+
+smax,r (t = 0) = 2 for all managers r = (1, . . . , M )
+β r = 0.5 for all managers r = (1, . . . , M )
+
+Hill-climbing type of managers
+HC2 -strategy
+sr = 2 alternatives per period
+with h(d~r,a1 ) = 1 and h(d~r,a2 ) = 1
+for all managers r = (1, . . . , M )
+HC6 -strategy
+
+sr = 6 alternatives per period
+with h(d~r,a1 ) = 1, h(d~r,a2 ) = 1, h(d~r,a3 ) = 1,
+and h(d~r,a4 ) = 2, h(d~r,a5 ) = 2, h(d~r,a6 ) = 2
+for all managers r = (1, . . . , M )
+
+When ex-ante evaluating newly discovered options, the managers suffer
+from some noise (see Eq. 12) following a Gaussian distribution with mean 0
+and a standard deviation of 0.05. This parametrization intends to reflect some
+empirical evidence according to which error levels around 10 percent could be
+a realistic estimation (Tee et al. 2007; Redman 1998).
+Regarding experiments for organizations resided by satisficing managers
+(see middle part of Table 1), the aspiration levels of performance enhancements
+start at a level of zero for two reasons: first, this corresponds to hill-climbing
+(see Section 4.4) and, hence, eliminates one source of potential differences between the two modes in the experiments. Second, this “conservative” setting
+captures the desire to avoid, at least, situations of not-sustaining an already
+achieved performance level. For satisficing search, the maximum search space
+starts at a moderate level of just two alternatives, which also relates to a
+
+18
+
+Friederike Wall
+
+Fig. 2 Examples of decomposable and nearly decomposable interaction structures
+
+search space often specified for hill-climbing search in computational management science. Regarding the speed of adjustment for both the aspiration level
+of performance enhancements and the maximum number of alternatives, the
+present observation and the past are weighted equally with αr (Eq. 5) and β r
+(Eq. 6), respectively, set to 0.5.
+The simulations experiments comprise two different steepest ascent hillclimbing strategies (see the lower part of Table 1). In particular, in the “HC2”strategy, in every time step, each manager discovers two alternatives to the
+respective status quo, each alternative with one bit flipped compared to the
+status quo and thus captures local search. With the “HC6”-strategy, in every
+time step, 6 alternatives to the current configuration are discovered, i.e., 3
+with Hamming distance 1 and 3 with Hamming distance of 2.10
+The HC2-strategy corresponds to agent-based models in prior research
+which study local search – often in comparison to other forms of search (e.g.,
+Levinthal 1997; Jain and Kogut 2014) – and, thus, serves as a basis for comparisons of simulation results obtained with satisficing agents. In contrast, the
+HC6-strategy serves another purpose in the experiments: it captures a kind of
+“upper bound” of feasible partial alterations given the overall decision-problem
+of the size N = 12 and its decomposition into four equal-sized sub-problems.
+Hence, the HC6-strategy provides a broad search space and an obvious question is whether search spaces in satisficing (see Eq. 6) may evolve to the same
+high level.
+10 Hence, in the HC6-strategy each manager r identifies 6 out of the 7 possible alternatives
+to the N r = 3-dimensional partial decision problem, see fn. 5. The only option that is not
+feasible is switching each bit of the 3-dimensional sub-problem of each manager. The space
+of alternatives considered, could also be regarded as indication on managers’ capabilities as
+in Rivkin and Siggelkow (2003).
+
+Modeling Managerial Search Behavior based on Simon’s Concept of Satisficing
+
+19
+
+6 Results and discussion
+In order to be clear and concise in exploring the parameter space, the results of the simulation experiments are presented in two steps. Following the
+idea of factorial design of simulation experiments (Lorscheid et al. 2012), Section 6.1 introduces results of two baseline scenarios to analyze the principal
+effects of satisficing vs. hill-climbing managerial search behavior. In particular, organizations facing a decomposable decision-problem (i.e., K ex = 0)
+and organizations which have to deal with a medium level of complexity (i.e.,
+K ex = 3) are studied. Section 6.2 provides an analysis of the sensitivity to
+intra-organizational interactions for a broader range of complexity levels of
+the organization’s decision-problem.
+
+6.1 Baseline scenarios
+Table 2 reports condensed results obtained from the simulation experiments
+for the baseline scenarios. For each scenario (i.e., combination of interaction
+structure and search strategy), the respective 2500 simulation runs were analyzed with respect to several metrics.11
+The performance change achieved on average in the first ten periods informs about the speed of performance enhancement at the beginning of the
+adaptive walks, which may be particularly relevant in turbulent environments
+(Siggelkow and Rivkin 2005). However, with respect to satisficing, the usually
+high performance inclines at the beginning of search are particularly interesting for the adjustments of aspiration levels and search spaces. The final
+performance, i.e., performance Vt=250 achieved in the last period of the observation time on average in the 2500 simulation runs per scenario, informs
+about the effectiveness of the search processes. This also applies to the relative
+frequency of how often the global maxima in the respective performance landscapes have been found in the 2500 simulation runs per scenario. The ratio
+of periods in which a new configuration d~t is implemented characterizes the
+adaptive walks more into detail.
+Figure 3 plots the performance levels obtained in the course of adaptive
+walks over time for each scenario. Figure 4 displays the adaptation of aspiration
+levels over time for the two satisficing scenarios. Please, recall, in the hillclimbing scenarios, aspiration levels are zero (see Section 4.4), which is why
+they are not plotted. Figure 5 reports on the adjustment of the search spaces in
+satisficing search for the decomposable and the non-decomposable structure;
+the search spaces of the scenarios employing hill-climbing are fixed, as is also
+indicated in the figure.
+11 In the analysis of simulation experiments, the metrics related to performance V are
+t
+given relative to the global maxima of the respective performance landscapes: otherwise,
+the results were not comparable across different performance landscapes.
+
+20
+
+Friederike Wall
+
+Table 2 Condensed results of baseline scenarios
+Search type
+
+Performance
+change in
+first periods
+(Vt=10 − Vt=0 )
+
+Final
+performance
+Vt=250
+(±CI*)
+
+Frequ. of
+glob. max.
+found in
+t = 250
+
+Ratio of
+periods
+with altered
+config. d~
+
+60.0%
+15.3%
+66.6%
+
+22.4%
+12.3%
+20.6%
+
+Non-decomposable interaction structure: medium, K ex = 3
+Satisficing
++0.1119
+0.8551 ±0.0082
+9.8%
+HC2 hill-climbing
++0.1749
+0.8900 ±0.0046
+6.8%
+HC6 hill-climbing
++0.0781
+0.7516 ±0.0091
+4.9%
+
+59.8%
+10.9%
+83.5%
+
+Decomposable interaction structure, K ex = 0
+Satisficing
++0.3110
+0.9928 ±0.0010
+HC2 hill-climbing
++0.2609
+0.9507 ±0.0031
+HC6 hill-climbing
++0.3207
+0.9960 ±0.0007
+
+* Confidence intervals at a level of 0.999. For parameter settings see Table 1.
+
+Fig. 3 Adaptive walks of the baseline scenarios. Each line represents the average of 2500
+simulations. For parameter settings see Table 1.
+
+Modeling Managerial Search Behavior based on Simon’s Concept of Satisficing
+
+21
+
+Fig. 4 Adaptation of aspiration levels in the baseline scenarios. Each line represents the
+average of 2500 simulations. For parameter settings see Table 1.
+
+Fig. 5 Adaptation of maximum search space per manager in the baseline scenarios. Each
+line represents the average of 2500 simulations. For parameter settings see Table 1.
+
+The following discussion of results mainly focuses on satisficing search behavior in contrast to the hill-climbing strategies (and less on comparing the
+hill-climbing modes against each other).
+The plots in Figure 3 indicate that the performance enhancements obtained
+via satisficing search behavior are at medium levels compared to the two hillclimbing modes (which, however, perform differently well in the two interaction
+structures) for both interactions structures under investigation. The results
+reported in Table 2 also suggest that satisficing search is at medium levels
+regarding initial performance enhancements and final performances. For the
+frequency of global maximum found, satisficing search outperforms both hillclimbing models in the non-decomposable structure. With satisficing, the ratio
+
+22
+
+Friederike Wall
+
+of periods with altered configurations is at a notably high level compared to
+the HC2 strategy. In the case of a decomposable structure, it even exceeds the
+level of the HC6 strategy. For a closer analysis of results, it appears helpful
+also to consider the adjustment processes of the aspiration levels and maximum
+search spaces as plotted in Figures 4 and 5, respectively.
+Decomposable interaction structure. Each manager faces a partial binary problem in the decomposable interaction structure without any interactions among
+the managers’ problems existing. Hence, the organization’s overall performance
+maximum could be found by identifying the sub-problems’ optimal solutions.
+Therefore, with a broad search space enabled at the managers’ site as with the
+HC6-strategy, it is not surprising that the adaptive walks quickly reach performance levels close to the maximum of 1. With managers employing satisficing
+behavior, the performance levels achieved are close to that of the HC6-strategy.
+Moreover, the maximum number of alternatives per manager increases rather
+quickly to nearly the high level of 6 as fixed for the HC6 strategy and remains
+at this high level (see Figure 5).
+The explanation for this is as follows: in the decomposable structure, managers likely find configurations with high or even the maximum performance
+level for their partial problem. However, from a very high (or maximal) performance level, it becomes more difficult (or impossible) to further increase
+performance. However, according to the behavioral assumptions underlying
+the idea of bounded rationality (Simon 1955), the managers are not aware
+of whether they already have identified the optimal solution. In consequence,
+since managers experience it difficult to further increase performance, according to the satisficing concept, the search space is increased. It remains at a
+high level in the – potentially futile – attempt to increase performance further.
+The adaption of aspiration levels follows an inverse adjustment: After a
+high incline in the first periods – due to high inclines of performance at the
+beginning – the aspiration levels decline quickly to a level of zero: with being
+close to the best configuration (or having it found already), further performance enhancements are unlikely (or even impossible) and, hence, the aspiration levels of decision-making managers, persistently, remain at a level of zero.
+However, a closer analysis reveals that the aspiration levels oscillate closely
+around zero. This is because the managers in the model are not capable of
+evaluating options perfectly. Hence, false-positive choices may occur, which
+then affect the aspiration levels and may turn them to the negative (see Eq.
+5).12
+Non-decomposable interaction structure. In the non-decomposable structure,
+the link between managers’ sub-problems and the overall decision-problem is
+more complicated than in the decomposable case for two reasons. First, when
+searching for superior solutions to their partial decision problems, managers
+12 In other words: When decision-makers can evaluate options perfectly, in the decomposable structure, the aspiration levels do not oscillate around zero. Instead, after an initial
+incline, they decline to equal zero.
+
+Modeling Managerial Search Behavior based on Simon’s Concept of Satisficing
+
+23
+
+do not necessarily increase overall performance. Hence, maximizing parochial
+performance and the overall performance of the organization may conflict with
+each other. The second reason refers to managers’ cognitive limitations regarding their fellow managers’ choices. Due to interactions among sub-problems,
+manager r’s choice for the partial problem d~r may affect the performance
+Ptq (d~qt ) (Eq. 11) of another manager q 6= r and vice versa. Since, in the model,
+the managers notice their fellow managers’ choices with one period of delay, this may lead to frequent, time-delayed mutual adjustments in order to
+keep up with the fellow managers’ choices, which again induces mutual adjustments and so forth. These considerations reflect the lower performance
+levels achieved, the lower frequencies of the global maximum found, and the
+higher ratios of altered configurations compared to the decomposable structure reported in Table 2. These results, in principle, correspond to prior research employing computational models of organizations (e.g., Carley 1992;
+Rivkin and Siggelkow 2007; Siggelkow and Rivkin 2005). However, the differences across search strategies are remarkable, which is analyzed in more detail
+in Section 6.2.
+In the satisficing strategy, the adjustments of maximum search spaces
+and aspiration levels deserve closer inspection. Regarding the adjustment of
+maximum search spaces in the satisficing strategy (Figure 5), for the nondecomposable structure, we again notice an increase over time – though up
+to a lower level of about 5 per manager and with a lower gradient compared
+to the decomposable structure. This may result from the following effects: as
+argued above, in non-decomposable structures, it is rather difficult to identify solutions that induce performance enhancements. However, when finding
+promising options becomes more difficult, with satisficing the maximum search
+space is increased. At the same time, this may counteract the peril of sticking
+to local maxima, and the peril of inertia is the more pronounced, the higher
+the complexity K (or K ex ) of a decision-problem. 13
+The adjustment of aspiration levels plotted in Figure 4 shows the inverse development, and aspiration levels decline over time. Contrary to the decomposable case, now the aspiration levels oscillate remarkably around a level of zero.
+Hence, an interesting question what may cause these oscillations. Like in the
+decomposable structure, the imperfect evaluations contribute to oscillations of
+aspiration levels: imperfect ex-ante evaluations may lead to performance declines due to false-positive choices. Accordingly, these “negative” experiences
+are reflected in the adjustment of the aspiration levels. Additionally, in the
+non-decomposable structure, interactions among sub-problems combined with
+cognitive limitations regarding the choices of fellow managers further induce
+oscillating aspiration levels:
+1. When making their choices in time step t, decision-makers assume that
+their fellow managers stay with the status quo. This is particularly prob13 However, the search space is at a lower level than with satisficing in the decomposable
+structure. This is because, in the decomposable structure, high levels of performance are
+found very quickly. With this, further performance enhancements are difficult to achieve,
+which leads to an extension of the search space close to the upper bound.
+
+24
+
+Friederike Wall
+
+lematic in case of interactions among decision-problems and may cause
+“surprises” and, in consequence, frequent mutual adjustments (which happens in about 60 percent of periods, see Table 2);
+2. The actual choices of fellow managers are revealed only at the end of period
+t which causes a time-delay in the aforementioned mutual adjustments to
+the other managers’ choices;
+Hence, due to interactions combined with alterations by fellow managers, performance declines may happen which reduce aspiration levels even below zero.
+In sum, intra-organizational complexity in combination with imperfect information in decision-making reasonably causes frequent alterations of configurations d~ and oscillations of aspiration levels in the satisficing strategy.
+We return to this aspect in Section 6.2. Taking a more general perspective
+on the baseline scenarios, one may summarize the findings in the following
+hypotheses:
+(1) Organizations which are resided by decision-makers showing satisficing
+search behavior and which already have identified configurations providing high
+levels of performance are likely to employ extensive search and aspiration levels
+which enforce to (just) maintain the performance.
+(2) Intra-organizational complexity combined with cognitive limitations of decisionmakers showing satisficing search behavior induces high levels of search activity
+and oscillating aspiration levels.
+These hypotheses could be related to organizations’ maturity, and organizational learning in terms of both performance level achieved and organizations’
+focus on searching for novel solutions.
+6.2 Sensitivity to Intra-organizational Complexity
+The next step of analysis considers simulation results for all levels of intraorganizational complexity from K ex = (0, . . . 5). Thereby, we intend to provide more detailed insights into potential differences of satisficing behavior
+compared to hill-climbing search. For this, Figure 6.2 displays – for the three
+search strategies under investigation – (a) the performance level achieved on
+average of 2500 runs in the last period of observation, (b) the relative frequency of runs in which the global maximum was found in the last period,
+and (c) the average ratio of periods in which the organizations implement a
+new solution to their decision problem.
+The results reveal that, for all search strategies, the final level of performance decreases with increasing intra-organizational complexity, which is
+broadly in line with prior research (e.g., Rivkin and Siggelkow 2007; Levinthal
+1997). However, as shown in Figure 6.2.a, the search strategies are differently
+sensitive to an increase in intra-organizational complexity. The HC2-strategy
+– allowing only two alternatives and with just 1-bit changes each – is comparably robust with about 8.5 percentage points (p.p.) between highest and
+lowest final performance. In contrast, this difference is about 25 p.p. with satisficing and 34 p.p. with the HC6-strategy. Hence, these strategies – allowing
+
+Modeling Managerial Search Behavior based on Simon’s Concept of Satisficing
+
+25
+
+Fig. 6 Sensitivity of (a) final performance, (b) frequency of global maximum found and (c)
+ratio of alterations to intra-organizational complexity. Each mark represents the average of
+2500 simulations. For parameter settings see Table 1.
+
+26
+
+Friederike Wall
+
+for more alternatives considered and longer jumps – are notably sensitive to
+intra-organizational complexity in terms of performance declines.
+These results might be counter-intuitive since one may expect that search
+strategies allowing to consider more alternatives and making even longer jumps
+outperform the HC2-strategy since this strategy is much more “restrictive”
+regarding search space and extent of change. Moreover, concerning satisficing
+the result is particularly interesting: with this strategy, the decision-makers sequentially discover and ex-ante evaluate alternatives – and this with increasing
+Hamming distances starting with two options with 1-bit changed. Hence, intuition may suggest that satisficing should not perform worse but even more
+successfully than the HC2-strategy. Moreover, it is worth mentioning that the
+satisficing strategy tends to show higher ratios of locating the optimal solution
+as Figure 6.2.b suggests.
+The more extensive search spaces and longer jumps employed in satisficing
+– and likewise with the HC6-strategy – result in a remarkable increase in
+alterations as shown in Figure 6.2.c. For example, for high intra-organizational
+complexity (K ex = 5), with satisficing in about 83 percent of the periods and
+with HC6 hill-climbing in almost every period, another solution for the overall
+decision problem is implemented.
+An interesting question is what causes these effects. The explanation may
+lie in the destabilization of the search when the strategy allows for more alternatives and long jumps as is the case with satisficing and HC6 hill-climbing.
+In particular, interactions among managers’ sub-problems and imperfect information at the managers’ site subtly interfere. Each manager r = (1, . . . M )
+– when making its decision in t without knowing what the fellow managers
+intend to do – may not only have been surprised by the actual performance
+P r achieved in t − 1. Moreover, the fellow managers’ choices in t − 1 which –
+due to intra-organizational interactions – have affected r’s performance in t−1
+may be another source of surprise for manager r. This eventually lets manager
+r adapt configuration d~rt and so forth – resulting in frequent time-delayed mutual adjustments. Hence, search behavior that is more flexible in terms more
+options and longer jumps makes it more likely that a manager discovers alternatives that (eventually falsely) promise to increase r’s performance. In
+this sense, the flexibility of search may induce some harmful “hyperactivity”
+of searching when intra-organizational complexity increases. The ratios of alterations increasing in the intra-organizational complexity with satisficing, or
+HC6 provide support for this conjecture (Figure 6.2.c).
+These considerations may be summarized as follows: Search behavior that
+is more flexible in terms of considering a higher number of options and longer
+jumps as captured in satisficing is more prone to destabilizing (“hyperactive”)
+mutual adjustments than more restrictive forms of search behavior.
+As mentioned before, prior research often employs algorithms like our HC2strategy to represent local search for superior solutions to organizations’ overall
+decision problem. In doing so, prior research puts considerable emphasis on
+complexity, i.e., interactions within the overall decision problem. The sensitivity analysis presented here suggests that satisficing search is remarkably more
+
+Modeling Managerial Search Behavior based on Simon’s Concept of Satisficing
+
+27
+
+sensitive to intra-organizational complexity than local search via hill-climbing.
+This appears particularly relevant since satisficing has received considerable
+support in behavioral experiments (see Introduction and Section 2.3), thus,
+maybe a more realistic computational representation of managerial search behavior than hill-climbing algorithms.
+
+7 Conclusion
+At the center of this paper are the questions of representing managerial search
+behavior in computational models and how the representation may affect models’ results. Prior research questions that hill-climbing algorithms – predominating in computational organization science – represent managerial search
+behavior appropriately. At the same time, there is considerable evidence on
+the relevance of satisficing behavior in actual human behavior. Against this
+background, the paper makes two contributions.
+First, the paper introduces an algorithmic representation for backwardlooking search according to Simon’s concept of satisficing (Simon 1955). The
+satisficing algorithm may complement other models of managerial search in
+(agent-based) computational organization science and, in this sense, may contribute to the ongoing discussion on how to model human decision-makers
+(e.g., Gode and Sunder 1993; Chen 2012; Hommes 2006).
+Second, in an agent-based simulation model of decision-making organizations, the proposed algorithm of satisficing is applied and contrasted to the
+steepest ascent variant of hill-climbing. Apart from decision-makers’ incomplete knowledge of the solution space, the model captures further aspects of
+bounded rationality. The simulation experiments suggest that, first, with satisficing for organizations already operating at a high performance level, intense
+search activities may emerge. Second, oscillating aspiration levels (including
+accepting performance declines) and potentially destabilizing search activities
+may occur when intra-organizational complexity is high. Third, a sensitivity analysis reveals that satisficing is considerably more sensitive to intraorganizational complexity in terms of performance declines than hill-climbing
+algorithms.
+In sum, from a more general perspective, the results suggest that the type
+of search algorithm the decision-making agents employ (i.e., whether they
+follow the satisficing concept or a hill-climbing approach) may subtly shape the
+model’s behavior. These findings may shed some new light on prior modeling
+efforts building on hill-climbing algorithms, and may even suggest to revisit
+the respective computational studies in future research efforts(in a similar vein
+Tracy et al. 2017).
+The simulations presented in this paper require relativizing remarks, which
+also point to future research activities. First of all, it has to be emphasized that
+the satisficing concept captures some more modeling choices and parameter
+settings than typically showing up for hill-climbing. This applies particularly
+to the search sequence and the adjustments of aspiration levels and of the
+
+28
+
+Friederike Wall
+
+maximum number of options. For example, the simulations presented in this
+paper assume a “closest first” sequence of search and exponential weighting
+with equal focus on past and presence for the adjustments “built-in” in the
+satisficing concept. Of course, various other types of sequence and adjustments
+are feasible too. Hence, an obvious further step would be exploring the effects
+of satisficing on model behavior for a broader parameter space.
+Moreover, the simulation model introduced in this paper captures relatively simple – for not to say: simplistic – organizations. In particular, the
+organizational arrangements do not comprise much more than the division
+of labor (i.e., decomposition into sub-problems and delegation to subordinate
+managers) and a simple incentive scheme that rewards parochial performance.
+Hence, an interesting question is how satisficing search behavior shapes results for organizations with more sophisticated institutional arrangements. Of
+interest may be, for example, how different coordination mechanisms destabilizing effects of satisficing in the case of higher levels of intra-organizational
+complexity compared to hill-climbing. Studying the satisficing algorithm in
+models of more sophisticated organizational arrangements will also contribute
+to linking this representation of managerial search behavior to prior research
+in computational organization theory.
+
+References
+Altenberg, L. (1997). Section B2.7.2: NK fitness landscapes. In Back, T., Fogel,
+D., and Michalewicz, Z., editors, The handbook of evolutionary computation,
+pages B2.7:5–B2.7:10. Oxford University Press, Oxford.
+Astebro, T., Herz, H., Nanda, R., and Weber, R. A. (2014). Seeking the roots of
+entrepreneurship: Insights from behavioral economics. Journal of Economic
+Perspectives, 28(3):49–70.
+Baumann, O., Schmidt, J., and Stieglitz, N. (2019). Effective search in rugged
+performance landscapes: A review and outlook. Journal of Management,
+45(1):285–318.
+Bianchi, M. (1990). The unsatisfactoriness of satisficing: from bounded rationality to innovative rationality. Review of Political Economy, 2(2):149–167.
+Böergers, T. and Sarin, R. (2000). Naive reinforcement learning with endogenous aspirations. International Economic Review, 41(4):921–950.
+Brown, R. (2004). Consideration of the origin of Herbert Simon’s theory of
+“satisficing” (1933-1947). Management Decision, 42(10):1240–1256.
+Burton, R. M. and Obel, B. (2011). Computational modeling for what-is,
+what-might-be, and what-should-be studies and triangulation. Organization
+Science, 22(5):1195–1202.
+Caplin, A., Dean, M., and Martin, D. (2011). Search and satisficing. American
+Economic Review, 101(7):2899–2922.
+Carley, K. (1992). Organizational learning and personnel turnover. Organization science, 3(1):20–46.
+
+Modeling Managerial Search Behavior based on Simon’s Concept of Satisficing
+
+29
+
+Carley, K. M. and Zhiang, L. (1997). A theoretical study of organizational performance under information distortion. Management Science, 43(July):976–
+997.
+Chang, M.-H. and Harrington, J. E. (1998). Organizational structure and firm
+innovation in a retail chain. Computational & Mathematical Organization
+Theory, 3(4):267–288.
+Chang, M.-H. and Harrington, J. E. (2006). Agent-based models of organizations. In Tesfatsion, L. and Judd, K. L., editors, Handbook of computational
+economics: Agent-based computational economics, volume 2, book section 26,
+pages 1273–1337. Elsevier, Amsterdam.
+Chen, S.-H. (2012). Varieties of agents in agent-based computational economics: A historical and an interdisciplinary perspective. Journal of Economic Dynamics and Control, 36(1):1–25.
+Conlisk, J. (1996). Why bounded rationality? Journal of Economic Literature,
+34(2):669–700.
+Cormen, T. H., Leiserson, C. E., Rivest, R. L., and Stein, C. (2009). Introduction to algorithms. MIT press, Cambridge (Mass.), 3 edition.
+Csaszar, F. A. (2018). A note on how NK landscapes work. Journal of Organization Design, 7(1):15.
+Denrell, J. and March, J. G. (2001). Adaptation as information restriction:
+The hot stove effect. Organization Science, 12(5):523–538.
+Dosi, G., Levinthal, D., and Marengo, L. (2003). Bridging contested terrain:
+Linking incentive-based and learning perspectives on organizational evolution. Industrial and Corporate Change, 12(2):413–436.
+Ethiraj, S. K. and Levinthal, D. (2004). Modularity and innovation in complex
+systems. Management Science, 50(2):159–173.
+Galbraith, J. R. (1973). Designing Complex Organizations. Addison-Wesley,
+Reading (MA).
+Galbraith, J. R. (1974). Organization design: An information processing view.
+Interfaces, 4(3 (May)):28–36.
+Ganco, M. and Hoetker, G. (2009). NK modeling methodology in the strategy
+literature: Bounded search on a rugged landscape. In Bergh, D. D. and
+Ketchen, D. J., editors, Research Methodology in Strategy and Management,
+pages 237–268. Emerald, Bingley (UK).
+Gavetti, G. and Levinthal, D. (2000). Looking forward and looking backward: Cognitive and experiential search. Administrative Science Quarterly,
+45:113–137.
+Gigerenzer, G. (2002). The adaptive toolbox. In Gigerenzer, G. and Selten,
+R., editors, Bounded rationality: The adaptive toolbox, pages 37–50. MIT
+press, Cambridge (Mass.).
+Gigerenzer, G. (2004). Striking a blow for sanity in theories of rationality. In
+Augier, M. and March, J. G., editors, Models of a man: Essays in memory
+of Herbert A. Simon, pages 389–409. MIT Press, Cambridge (Mass.).
+Gigerenzer, G. and Gaissmaier, W. (2011). Heuristic decision making. Annual
+Review of Psychology, 62(1):451–482.
+
+30
+
+Friederike Wall
+
+Gigerenzer, G. and Todd, P. M. (1999). Simple heuristics that make us smart.
+Oxford University Press, USA.
+Gode, D. K. and Sunder, S. (1993). Allocative efficiency of markets with zerointelligence traders: Market as a partial substitute for individual rationality.
+Journal of Political Economy, 101(1):119–137.
+Güth, W. (2007). Satisficing in portfolio selection—theoretical aspects and
+experimental tests. The Journal of Socio-Economics, 36(4):505–522.
+Güth, W. (2010). Satisficing and (un)bounded rationality: A formal definition
+and its experimental validity. Journal of Economic Behavior & Organization, 73(3):308–316.
+Hoffrage, U. and Reimer, T. (2004). Models of bounded rationality: The approach of fast and frugal heuristics. management revue, pages 437–459.
+Hommes, C. H. (2006). Heterogeneous agent models in economics and finance.
+In Tesfatsion, L. and Judd, K. L., editors, Handbook of computational economics: Agent-based computational economics, volume 2, book section 23,
+pages 1109–1186. Elsevier, Amsterdam.
+Jain, A. and Kogut, B. (2014). Memory and organizational evolvability in a
+neutral landscape. Organization Science, 25(2):479–493.
+Kauffman, S. A. (1993). The origins of order: Self-organization and selection
+in evolution. Oxford University Press, Oxford.
+Kauffman, S. A. and Levin, S. (1987). Towards a general theory of adaptive walks on rugged landscapes. Journal of Theoretical Biology, 128(1
+(September)):11–45.
+Knudsen, T. and Levinthal, D. A. (2007). Two faces of search: Alternative
+generation and alternative evaluation. Organization Science, 18(1):39–54.
+Kollman, K., Miller, J. H., and Page, S. E. (2000). Decentralization and the
+search for policy solutions. Journal of Law, Economics, and Organization,
+16(1):102–128.
+Levinthal, D. A. (1997). Adaptation on rugged landscapes. Management
+Science, 43(7):934–950.
+Levinthal, D. A. (2016). Learning and adaptation. In Augier, M. and Teece,
+D. J., editors, The Palgrave Encyclopedia of Strategic Management, pages
+1–5. Palgrave Macmillan UK, London.
+Levinthal, D. A. and March, J. G. (1981). A model of adaptive organizational
+search. Journal of Economic Behavior & Organization, 2:307–333.
+Levitan, B. and Kauffman, S. A. (1995). Adaptive walks with noisy fitness
+measurements. Molecular Diversity, 1(1 (September)):53–68.
+Li, R., Emmerich, M. T. M., Eggermont, J., Bovenkamp, E. G. P., Bäck, T.,
+Dijkstra, J., and Reiber, J. H. C. (2006). Mixed-integer nk landscapes.
+In Runarsson, T., Beyer, H.-G., Burke, E., Merelo-Guervós, J. J., Whitley,
+L. D., and Yao, X., editors, Parallel Problem Solving from Nature - PPSN
+IX, volume 4193 of Lecture Notes in Computer Science, book section 5,
+pages 42–51. Springer Berlin Heidelberg.
+Lorscheid, I., Heine, B.-O., and Meyer, M. (2012). Opening the “black box” of
+simulations: increased transparency and effective communication through
+the systematic design of experiments. Computational and Mathematical
+
+Modeling Managerial Search Behavior based on Simon’s Concept of Satisficing
+
+31
+
+Organization Theory, 18(1):22–62.
+Macken, C. A., Hagan, P. S., and Perelson, A. S. (1991). Evolutionary walks on
+rugged landscapes. SIAM Journal on Applied Mathematics, 51(3):799–827.
+Mercier, H. (2017). Confirmation bias—myside bias. In Pohl, R. F., editor,
+Cognitive Illusions, book section 5, pages 99–114. Routledge, New York, 2
+edition.
+Parker, A. M., De Bruin, W. B., and Fischhoff, B. (2007). Maximizers versus
+satisficers: Decision-making styles, competence, and outcomes. Judgment
+and Decision making, 2(6):342.
+Radner, R. (1975). Satisficing. In Optimization Techniques IFIP Technical
+Conference, pages 252–263. Springer, Berlin.
+Redman, T. C. (1998). The impact of poor data quality on the typical enterprise. Communications of the ACM, 41(2):79–82.
+Rivkin, J. W. and Siggelkow, N. (2003). Balancing search and stability: Interdependencies among elements of organizational design. Management Science, 49(3):290–311.
+Rivkin, J. W. and Siggelkow, N. (2007). Patterned interactions in complex
+systems: Implications for exploration. Management Science, 53(July):1068–
+1085.
+Rosenfeld, A. and Kraus, S. (2012). Modeling agents based on aspiration adaptation theory. Autonomous Agents and Multi-Agent Systems, 24(2):221–254.
+Russell, S. J. and Norvig, P. (2016). Artificial intelligence: a modern approach.
+Malaysia; Pearson Education Limited.
+Safarzyńska, K. and van den Bergh, J. (2010). Evolutionary models in economics: a survey of methods and building blocks. Journal of Evolutionary
+Economics, 20(3):329–373.
+Schwartz, B., Ward, A., Monterosso, J., Lyubomirsky, S., White, K., and
+Lehman, D. R. (2002). Maximizing versus satisficing: Happiness is a matter
+of choice. Journal of Personality and Social Psychology, 83(5):1178–1197.
+Schwartz, H. (2008). The role of aspirations and aspirations adaptation
+in explaining satisficing and bounded rationality. The Journal of SocioEconomics, 37(3):949–957.
+Selman, B. and Gomes, C. P. (2006). Hill-climbing search. Encyclopedia of
+cognitive science, pages 333–336.
+Selten, R. (1998). Aspiration adaptation theory. Journal of mathematical
+psychology, 42(2-3):191–214.
+Selten, R. (2002). What is bounded rationality? In Gigerenzer, G. and Selten,
+R., editors, Bounded rationality: The adaptive toolbox, book section 2, pages
+13–36. MIT press.
+Siggelkow, N. and Levinthal, D. A. (2003). Temporarily divide to conquer:
+Centralized, decentralized, and reintegrated organizational approaches to
+exploration and adaptation. Organization Science, 14(6):650–669.
+Siggelkow, N. and Rivkin, J. W. (2005). Speed and search: Designing organizations for turbulence and complexity. Organization Science, 16(2):101–122.
+Simon, H. A. (1955). A behavioral model of rational choice. Quarterly Journal
+of Economics, 69(September):99–118.
+
+32
+
+Friederike Wall
+
+Simon, H. A. (1959). Theories of decision-making in economics and behavioral
+science. The American economic review, 49(3):253–283.
+Simon, H. A. (1962). The architecture of complexity. Proceedings of the American Philosophical Society, 106(6):467–482.
+Simon, H. A. (1979). Rational decision making in business organizations. The
+American economic review, 69(4):493–513.
+Staw, B. M. (1981). The escalation of commitment to a course of action.
+Academy of Management Review, 6(4):577–587.
+Stigler, G. J. (1961). The economics of information. Journal of political economy, 69(3):213–225.
+Tee, S. W., Bowen, P. L., Doyle, P., and Rohde, F. H. (2007). Factors influencing organizations to improve data quality in their information systems.
+Accounting and Finance, 47(2):335–355.
+Tesfatsion, L. (2003). Agent-based computational economics: modeling
+economies as complex adaptive systems. Information Sciences, 149(4):262–
+268.
+Thompson, J. D. (1967). Organizations in action. Social science bases of
+administrative theory. McGraw-Hill, New York.
+Todd, P. M. and Gigerenzer, G. (2003). Bounding rationality to the world.
+Journal of Economic Psychology, 24(2):143–165.
+Tracy, W. M., Markovitch, D. G., Peters, L. S., Phani, B. V., and Philip, D.
+(2017). Algorithmic representations of managerial search behavior. Computational Economics, 49(3):343–361.
+von Neumann, J., Morgenstern, O., and Kuhn, H. W. (2007). Theory of games
+and economic behavior (commemorative edition). Princeton university press.
+Wall, F. (2010). The (beneficial) role of informational imperfections in enhancing organisational performance. In Li Calzi, M., Milone, L., and Pellizzari,
+P., editors, Progress in Artificial Economics, volume 645 of Lecture Notes
+in Economics and Mathematical Systems, book section 10, pages 115–126.
+Springer Berlin Heidelberg.
+Wall, F. (2016). Agent-based modeling in managerial science: an illustrative
+survey and study. Review of Managerial Science, 10(1):135–193.
+Wall, F. (2017). Learning to incentivize in different modes of coordination.
+Advances in Complex Systems, 20(2-3):1–29.
+Wall, F. (2018). Emergence of task formation in organizations: Balancing
+units’ competence and capacity. Journal of Artificial Societies and Social
+Simulation, 21(2):1–25.
+Za, S., Spagnoletti, P., Winter, R., and Mettler, T. (2018). Exploring foundations for using simulations in IS research. Communications of the Association for Information Systems, 42(Feb.):268–300.
+
+

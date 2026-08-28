@@ -1,0 +1,93 @@
+{{Short description|Theorem in computability theory}}
+In [[computability theory]], '''Rice's theorem''' states that all non-trivial semantic properties of programs are [[undecidable problem|undecidable]]. A ''semantic'' property is one about the program's behavior (for instance, "does the program [[halting problem|terminate]] for all inputs?"), unlike a syntactic property (for instance, "does the program contain an [[if-then-else]] statement?"). A ''non-trivial'' property is one that is neither true for every program, nor false for every program.
+
+The theorem generalizes the undecidability of the [[halting problem]]. It has far-reaching implications on the feasibility of [[static program analysis|static analysis]] of programs. It implies that it is impossible, for example, to implement a tool that checks whether any given program is [[correctness (computer science)|correct]], or even executes without error (it is possible to implement a tool that always overestimates or always underestimates, so in practice one has to decide what is less of a problem).
+
+The theorem is named after [[Henry Gordon Rice]], who proved it in his doctoral dissertation of 1951 at [[Syracuse University]].
+
+==Introduction==
+Rice's theorem puts a theoretical bound on which types of [[static program analysis|static analysis]] can be performed automatically. One can distinguish between the [[syntax (programming languages)|syntax]] of a program, and its [[semantics (computer science)|semantics]]. The syntax is the detail of how the program is written, or its "intension", and the semantics is how the program behaves when run, or its "extension". Rice's theorem asserts that it is impossible to decide a property of programs that depends only on the semantics and not on the syntax, unless the property is trivial (true of all programs, or false of all programs).
+
+By Rice's theorem, it is impossible to write a program that automatically verifies for the absence of [[software bug|bugs]] in other programs, taking a program and a [[formal specification|specification]] as input, and checking whether the program satisfies the specification.
+
+This does not imply an impossibility to prevent ''certain types'' of bugs. For example, Rice's theorem implies that in [[dynamic programming language|dynamically typed programming languages]] that are [[Turing completeness|Turing-complete]], it is impossible to verify the absence of type errors. On the other hand, [[static typing|statically typed programming languages]] feature a [[type system]] that statically prevents type errors. In essence, this should be understood as a feature of the ''syntax'' (taken in a broad sense) of those languages. In order to type check a program, its source code must be inspected; the operation does not depend merely on the hypothetical semantics of the program.
+
+In terms of general software verification, this means that although one cannot algorithmically check whether any given program satisfies a given specification, one can require programs to be annotated with extra information that proves the program is correct, or to be written in a particular restricted form that makes the verification possible, and only accept programs that are verified in this way. In the case of type safety, the former corresponds to type annotations, and the latter corresponds to [[type inference]]. Taken beyond type safety, this idea leads to correctness proofs of programs through proof annotations such as in [[Hoare logic]].
+
+Another way of working around Rice's theorem is to search for methods that catch ''many'' bugs, without being complete. This is the theory of [[abstract interpretation]].
+
+Yet another direction for verification is [[model checking]], which can only apply to finite-state programs, not to Turing-complete languages.
+
+==Formal statement==
+Let <math>\varphi</math> be an [[admissible numbering]] of the [[partial computable function]]s, and let <math>P</math> be a subset of <math>\mathbb{N}</math>. Suppose that:
+# <math>P</math> is ''non-trivial'': <math>P</math> is neither empty nor <math>\mathbb{N}</math> itself.
+# <math>P</math> is ''extensional'': for all integers <math>m</math> and <math>n</math>, if <math>\varphi_m=\varphi_n</math>, then <math>m\in P\iff n\in P</math>.
+Then <math>P</math> is [[undecidable problem|undecidable]].
+
+A more concise statement can be made in terms of [[index set (computability) | index sets]]: The only decidable index sets are <math>\varnothing</math> and <math>\mathbb{N}</math>.
+
+==Examples==
+Given a program ''P'' that takes a [[natural number]] ''n'' and returns a natural number ''P''(''n''), the following questions are undecidable:
+* Does ''P'' terminate on a given ''n''? (This is the [[halting problem]].)
+* Does ''P'' terminate on 0?
+* Does ''P'' terminate on ''all'' ''n'' (i.e., is ''P'' [[general recursive function|total]])?
+* Does ''P'' terminate and return 0 on every input?
+* Does ''P'' terminate and return 0 on some input?
+* Does ''P'' terminate and return the same value for all inputs?
+* Is ''P'' equivalent to a given program ''Q''?
+
+==Proof by Kleene's recursion theorem==
+Assume for contradiction that <math>P</math> is a non-trivial, [[#Formal_statement|extensional]] and computable set of natural numbers. Since <math>P</math> is non-trivial, there is a natural number <math>a \in P</math> and a natural number <math>b \notin P</math>. Define the total computable function <math>Q</math> of <math>e</math> and <math>x</math> by <math>Q_e(x) = \varphi_b(x)</math> when <math>e \in P</math> and <math>Q_e(x) = \varphi_a(x)</math> when <math>e \notin P</math>. By [[Kleene's recursion theorem]], there exists <math>e</math> such that <math>\varphi_e = Q_e</math>. Then, if <math>e \in P</math>, we have <math>\varphi_e = \varphi_b</math>, contradicting the extensionality of <math>P</math> since <math>b \notin P</math>, and conversely, if <math>e \notin P</math>, we have <math>\varphi_e = \varphi_a</math>, which again contradicts extensionality since <math>a \in P</math>.
+
+==Proof by reduction from the halting problem==
+
+===Proof sketch===
+Suppose, for concreteness, that we have an algorithm for examining a program ''p'' and determining infallibly whether ''p'' is an implementation of the squaring function, which takes an integer ''d'' and returns ''d''<sup>2</sup>.  The proof works just as well if we have an algorithm for deciding any other non-trivial property of program behavior (i.e. a semantic and non-trivial property), and is given in general below.
+
+The claim is that we can convert our algorithm for identifying squaring programs into one that identifies functions that halt.  We will describe an algorithm that takes inputs ''a'' and ''i'' and determines whether program ''a'' halts when given input ''i''.
+
+The algorithm for deciding this is conceptually simple: it constructs (the description of) a new program ''t'' taking an argument ''n'', which (1) first executes program ''a'' on input ''i'' (both ''a'' and ''i'' being hard-coded into the definition of ''t''), and (2) then returns the square of ''n''. If ''a''(''i'') runs forever, then ''t'' never gets to step (2), regardless of ''n''. Then clearly,  ''t'' is a function for computing squares if and only if step (1) terminates.  Since we have assumed that we can infallibly identify programs for computing squares, we can determine whether ''t'', which depends on ''a'' and ''i'', is such a program; thus we have obtained a program that decides whether program ''a'' halts on input ''i''.  Note that our halting-decision algorithm never executes ''t'', but only passes its description to the squaring-identification program, which by assumption always terminates; since the construction of the description of ''t'' can also be done in a way that always terminates, the halting-decision cannot fail to halt either.
+
+  halts (a,i) {
+    define t(n) {
+      a(i)
+      '''return''' n×n
+    }
+    '''return''' is_a_squaring_function(t)
+  }
+
+This method does not depend specifically on being able to recognize functions that compute squares; as long as ''some'' program can do what we are trying to recognize, we can add a call to ''a'' to obtain our ''t''. We could have had a method for recognizing programs for computing square roots, or programs for computing the monthly payroll, or programs that halt when given the input <code>"Abraxas"</code>; in each case, we would be able to solve the halting problem similarly.
+
+===Formal proof===
+[[Image:Rice reduction.svg|thumb|If we have an algorithm that decides a non-trivial property, we can construct a Turing machine that decides the halting problem.]]
+
+For the formal proof, algorithms are presumed to define partial functions over [[string (computer science)|strings]] and are themselves represented by strings. The partial function computed by the algorithm represented by a string ''a'' is denoted '''F'''<sub>''a''</sub>. This proof proceeds by [[reductio ad absurdum]]: we assume that there is a non-trivial property that is decided by an algorithm, and then show that it follows that we can decide the [[halting problem]], which is not possible, and therefore a contradiction.
+
+Let us now assume that ''P''(''a'') is an algorithm that decides some non-trivial property of '''F'''<sub>''a''</sub>. Without loss of generality we may assume that ''P''(''no-halt'') = "no", with ''no-halt'' being the representation of an algorithm that never halts. If this is not true, then this holds for the algorithm ''{{overline|P}}'' that computes the negation of the property ''P''. Now, since ''P'' decides a non-trivial property, it follows that there is a string ''b'' that represents an algorithm '''F'''<sub>''b''</sub> and ''P''(''b'') = "yes".  We can then define an algorithm ''H''(''a'', ''i'') as follows:
+
+:1. construct a string ''t'' that represents an algorithm ''T''(''j'') such that
+:* ''T'' first simulates the computation of '''F'''<sub>''a''</sub>(''i''),
+:* then ''T'' simulates the computation of '''F'''<sub>''b''</sub>(''j'') and returns its result.
+:2. return ''P''(''t'').
+
+We can now show that ''H'' decides the halting problem:
+* Assume that the algorithm represented by ''a'' halts on input ''i''. In this case '''F'''<sub>''t''</sub> = '''F'''<sub>''b''</sub> and, because ''P''(''b'') = "yes" and the output of ''P''(''x'') depends only on '''F'''<sub>''x''</sub>, it follows that ''P''(''t'') = "yes" and, therefore ''H''(''a'', ''i'') = "yes".
+* Assume that the algorithm represented by ''a'' does not halt on input ''i''. In this case '''F'''<sub>''t''</sub> = '''F'''<sub>''no-halt''</sub>, i.e., the partial function that is never defined. Since ''P''(''no-halt'') = "no" and the output of ''P''(''x'') depends only on '''F'''<sub>''x''</sub>, it follows that ''P''(''t'') = "no" and, therefore ''H''(''a'', ''i'') = "no".
+
+Since the halting problem is known to be undecidable, this is a contradiction and the assumption that there is an algorithm ''P''(''a'') that decides a non-trivial property for the function represented by ''a'' must be false.
+
+==See also==
+* [[Halting problem]]
+* [[Rice–Shapiro theorem]] and [[Rice-Shapiro theorem|Kreisel–Lacombe–Shoenfield–Tseitin theorem]], generalizations of Rice's theorem
+* [[Scott–Curry theorem]], an analogue to Rice's theorem in lambda calculus
+* [[Turing's proof]]
+
+==References==
+* {{Citation | last1=Hopcroft | first1=John E.| author1-link=John Hopcroft | last2=Ullman | first2=Jeffrey D.| author2-link=Jeffrey Ullman | title=[[Introduction to Automata Theory, Languages, and Computation]] | publisher=[[Addison-Wesley]] | year=1979 | pages=185–192 }}
+* {{Citation |last=Rice |first=H. G. |author-link=Henry Gordon Rice |jstor=1990888 |title=Classes of recursively enumerable sets and their decision problems |journal= [[Transactions of the American Mathematical Society]] |volume=74 |issue= 2|pages=358–366 |year=1953 |doi=10.1090/s0002-9947-1953-0053041-6|doi-access=free }}
+* {{Citation | last1=Rogers | first1=Hartley Jr. | author-link= Hartley Rogers Jr. | title=Theory of Recursive Functions and Effective Computability | publisher=[[McGraw-Hill]] | year=1987 | edition= 2nd| at= §14.8}}
+
+[[Category:Articles containing proofs]]
+[[Category:Theorems in theory of computation]]
+[[Category:Theorems in the foundations of mathematics]]
+[[Category:Undecidable problems]]

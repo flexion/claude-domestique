@@ -1,0 +1,125 @@
+1
+
+Rice’s Theorem
+
+1.1
+
+Properties
+
+Checking Properties
+Given M
+
+
+Does L(M ) contain hM i? 
+Is L(M ) non-empty?
+Undecidable
+
+Is L(M ) empty?
+
+Is L(M ) infinite?
+
+
+
+Is L(M ) finite?
+Undecidable
+Is L(M ) co-finite (i.e., is L(M ) finite)? 
+
+
+Is L(M ) = Σ∗ ?
+
+None of these properties can be decided. This is the content of Rice’s Theorem.
+Properties
+Definition 1. A property of languages is simply a set of languages. We say L satisfies the property
+P if L ∈ P.
+Definition 2. For any property P, define language LP to consist of Turing Machines which accept
+a language in P:
+LP = {hM i | L(M ) ∈ P}
+Deciding LP : deciding if a language represented as a TM satisfies the property P.
+• Example: {hM i | L(M ) is infinite}; Etm = {hM i | L(M ) = ∅}
+• Non-example: {hM i | M has 15 states} ←− This is a property of TMs, and not languages!
+
+Trivial Properties
+Definition 3. A property is trivial if either it is not satisfied by any r.e. language, or if it is
+satisfied by all r.e. languages. Otherwise it is non-trivial.
+Example 4. Some trivial properties:
+• Pall = set of all languages
+• Pr.e. = set of all r.e. languages
+• P where P is trivial
+• P = {L | L is recognized by a TM with an even number of states} = Pr.e.
+Observation. For any trivial property P, LP is decidable. (Why?) Then LP = Σ∗ or LP = ∅.
+
+1
+
+1.2
+
+Main Theorem
+
+Rice’s Theorem
+Proposition 5. If P is a non-trivial property, then LP is undecidable.
+• Thus {hM i | L(M ) ∈ P} is not decidable (unless P is trivial)
+We cannot algorithmically determine any interesting property of languages represented as Turing Machines!
+Properties of TMs
+Note. Properties of TMs, as opposed to those of languages they accept, may or may not be
+decidable.
+Example 6.
+
+{hM i | M has 193 states}
+Decidable
+{hM i | M uses at most 32 tape cells on blank input}
+
+{hM i | M halts on blank input}
+
+{hM i | on input 0011 M at some point writes the
+Undecidable
+
+symbol $ on its tape}
+Proof of Rice’s Theorem
+Rice’s Theorem
+If P is a non-trivial property, then LP is undecidable.
+Proof. Suppose P non-trivial and ∅ 6∈ P. If ∅ ∈ P, then in the following we will be showing LP is
+undecidable. Then LP = LP is also undecidable.
+Recall LP = {hM i | L(M ) satisfies P}. We’ll reduce Atm to LP . Then, since Atm is undecidable,
+LP is also undecidable. Broadly the idea behind the reduction is as follows. Since P is non-trivial,
+at least one r.e. language satisfies P. i.e., L(M0 ) ∈ P for some TM M0 . We will show a reduction
+f that maps an instance hM, wi for Atm , to N such that
+• If M accepts w then N accepts the same language as M0 . Then L(M ) = L(M0 ) ∈ P
+• If M does not accept w then N accepts ∅. Then L(N ) = ∅ 6∈ P
+Thus, hM, wi ∈ Atm iff N ∈ LP .
+We now describe the reduction precisely. The reduction f maps hM, wi to hN i, where N is a
+TM that behaves as follows:
+On input x
+Ignore the input and run M on w
+If M does not accept (or doesn’t halt)
+then do not accept x (or do not halt)
+If M does accept w
+then run M0 on x and accept x iff M0 does.
+2
+
+Notice that indeed if M accepts w then L(N ) = L(M0 ). Otherwise L(N ) = ∅.
+Rice’s Theorem
+Recap
+Every non-trivial property of r.e. languages is undecidable
+• Rice’s theorem says nothing about properties of Turing machines
+• Rice’s theorem says nothing about whether a property of languages is recurisvely enumerable
+or not.
+
+Big Picture . . . again
+
+“almost all” properties!
+Languages
+
+Ld , Atm , Etm
+
+Recursively Enumerable
+Atm , Etm , HALT
+Decidable
+CFL
+
+Lanbncn
+L0n1n
+
+Regular
+
+3
+
+

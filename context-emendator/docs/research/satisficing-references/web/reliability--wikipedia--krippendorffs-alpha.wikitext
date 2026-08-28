@@ -1,0 +1,373 @@
+{{Short description|Statistical measure of inter-rater agreement}}
+'''Krippendorff's alpha coefficient''',<ref>Krippendorff, K. (2013) pp. 221–250 describes the mathematics of ''alpha'' and its use in content analysis since 1969.</ref> named after academic [[Klaus Krippendorff]], is a statistical measure of the agreement achieved when coding a set of units of analysis. Since the 1970s, ''alpha'' has been used in [[content analysis]] where textual units are categorized by trained readers, in counseling and [[survey research]] where experts code open-ended interview data into analyzable terms, in [[psychological testing]] where alternative tests of the same phenomena need to be compared, or in [[observational studies]] where unstructured happenings are recorded for subsequent analysis.
+
+Krippendorff's alpha generalizes several known statistics, often called measures of inter-coder agreement, [[inter-rater reliability]], reliability of coding given sets of units (as distinct from unitizing) but it also distinguishes itself from statistics that are called reliability coefficients but are unsuitable to the particulars of coding data generated for subsequent analysis.
+
+Krippendorff's alpha is applicable to any number of coders, each assigning one value to one unit of analysis, to incomplete (missing) data, to any number of values available for coding a variable, to binary, nominal, ordinal, interval, ratio, polar, and circular metrics (note that this is not a metric in the mathematical sense, but often the square of a [[Distance#Mathematical formalization|mathematical metric]], see [[levels of measurement]]), and it adjusts itself to small sample sizes of the reliability data. The virtue of a single coefficient with these variations is that computed reliabilities are comparable across any numbers of coders, values, different metrics, and unequal sample sizes.
+
+Software for calculating Krippendorff's alpha is available.<ref>Hayes, A. F. & Krippendorff, K. (2007) describe and [http://www.comm.ohio-state.edu/ahayes/SPSS%20programs/kalpha.htm provide SPSS and SAS macros for computing ''alpha'', its confidence limits and the probability of failing to reach a chosen minimum.]</ref><ref>[https://cran.r-project.org/web/packages/irr/irr.pdf#page.16 Reference manual of the irr package containing the kripp.alpha() function] for the platform-independent statistics package [[R (programming language)|R]]</ref><ref>[http://cswww.essex.ac.uk/Research/nle/arrau/alpha.html The Alpha resources page.]</ref><ref>[http://www.mathworks.com/matlabcentral/fileexchange/36016-krippendorffs-alpha Matlab code to compute Krippendorff's alpha.]</ref><ref>[https://github.com/grrrr/krippendorff-alpha Python code to compute Krippendorff's alpha.]</ref><ref>[https://github.com/pln-fing-udelar/fast-krippendorff Python code for Krippendorff's alpha fast computation.]</ref><ref>[https://ideas.repec.org/cgi-bin/htsearch?ul=%25%2Fc%2F%25&q=krippendorff+%2B+stata&cmd=Search%21&wf=4BFF&s=R&dt=range&db=&de=&m=all&fmt=long&sy=1&ps=10 Several user-written additions to the commercial software Stata are available.]</ref><ref>[https://www.lighttag.io/blog/krippendorffs-alpha/ Open Source Python implementation supporting Dataframes]</ref>
+
+==Reliability data==
+Reliability data are generated in a situation in which ''m'' ≥ 2 jointly instructed (e.g., by a [[code book]]) but independently working coders assign any one of a set of values 1,...,''V'' to a common set of ''N'' units of analysis. In their canonical form, reliability data are tabulated in an ''m''-by-''N'' matrix containing ''N'' values ''v<sub>ij</sub>'' that coder ''c<sub>i</sub>'' has assigned to unit ''u<sub>j</sub>''. Define ''m<sub>j</sub>'' as the number of values assigned to unit ''j'' across all coders ''c''.  When data are incomplete,  ''m<sub>j</sub>'' may be less than ''m''. Reliability data require that values be pairable, i.e., ''m<sub>j</sub>'' ≥ 2. The total number of pairable values is <math>\sum_{j=1}^N m_j = </math> ''n'' ≤ ''mN''.
+
+To help clarify, here is what the canonical form looks like, in the abstract:
+
+{| class="wikitable" style="text-align:center; margin:1em auto 1em auto; "
+|- align=center
+!''' '''
+!width="25"|''u''<sub>1</sub>
+!width="25"|''u''<sub>2</sub>
+!width="25"|''u''<sub>3</sub>
+!width="25"|...
+!width="25"|''u<sub>N</sub>''
+|-
+| ''c''<sub>1</sub>
+| ''v''<sub>11</sub>
+| ''v''<sub>12</sub>
+| ''v''<sub>13</sub>
+| ⋯
+| ''v''<sub>1''N''</sub>
+|-
+|  ''c''<sub>2</sub>
+| ''v''<sub>21</sub>
+| ''v''<sub>22</sub>
+| ''v''<sub>23</sub>
+| ⋯
+| ''v''<sub>2''N''</sub>
+|-
+| ''c''<sub>3</sub>
+| ''v''<sub>31</sub>
+| ''v''<sub>32</sub>
+| ''v''<sub>33</sub>
+| ⋯
+| ''v''<sub>3''N''</sub>
+|-
+| ⋮
+| ⋮
+| ⋮
+| ⋮
+| ⋱
+| ⋮
+|-
+|  ''c''<sub>''m''</sub>
+| ''v''<sub>''m''1</sub>
+| ''v''<sub>''m''2</sub>
+| ''v''<sub>''m''3</sub>
+| ⋯
+| ''v''<sub>''mN''</sub>
+|}
+
+==General form of alpha==
+We denote by <math>R</math> the set of all possible responses an observer can give. The responses of all observers for an example is called a unit (it forms a multiset). We denote a multiset with these units as the items, <math>U</math>.
+
+Alpha is given by:
+:<math>\alpha = 1-\frac{D_o}{D_e}</math>
+where <math>D_o</math> is the disagreement observed and <math>D_e</math> is the disagreement expected by chance.
+
+:<math> D_o = \frac{1}{n}\sum_{c \in R}\sum_{k \in R} \delta(c, k) \sum_{u \in U} m_u \frac{n_{cku}}{P(m_u, 2)} </math>
+where <math>\delta</math> is a metric function (note that this is not a metric in the mathematical sense, but often the square of a mathematical metric, see below), <math>n</math> is the total number of pairable elements, <math>m_u</math> is the number of items in a unit, <math>n_{cku}</math> number of <math>(c,k)</math> pairs in unit <math>u</math>, and <math>P</math> is the [[Permutation#k-permutations of n|permutation function]]. Rearranging terms, the sum can be interpreted in a conceptual way as the weighted average of the disagreements of the individual units weighted by the number of coders assigned to unit j:
+
+<math> D_o = \frac{1}{n} \sum_{j=1}^N m_j \, \mathbb{E}(\delta_j) </math>
+
+where <math>\mathbb{E}(\delta_j)</math> is the mean of the <math>m_j \choose 2</math>  numbers <math>\delta(v_{ij}, v_{i'j})</math> (here <math>i > i'</math> and define pairable elements). Note that in the case <math>m_j = m</math> for all <math>j</math>, <math>D_o</math> is just the average all the numbers <math>\delta(v_{ij}, v_{i'j})</math> with <math>i > i'</math>. There is also an interpretation of <math>D_o</math>as the (weighted) average observed distance from the diagonal.
+:<math> D_e = \frac{1}{P(n, 2)}\sum_{c \in R}\sum_{k \in R} \delta(c, k) P_{ck} </math>
+where <math>P_{ck}</math> is the number of ways the pair <math>(c, k)</math> can be made. This can be seen to be the average distance from the diagonal of all possible pairs of responses that could be derived from the multiset of all observations.
+:<math> P_{ck} = \begin{cases}
+c \ne k & n_c n_k \\
+c = k & n_c (n_c - 1)
+\end{cases} </math>
+
+The above is equivalent to the usual form of <math>\alpha</math> once it has been simplified algebraically.<ref>{{cite web|last1=Honour|first1=David|title=Understanding Krippendorff's Alpha|url=https://github.com/foolswood/krippendorffs_alpha/raw/master/krippendorff.pdf}}</ref>
+{{Clear}}
+
+One interpretation of Krippendorff's ''alpha'' is:   <math>\alpha = 1 - \frac {D_{\text{within units} = \text{in error}}}{D_{\text{within and between units} = \text{in total}}}</math>{{Clear}}
+
+:<math>\alpha = 1</math> indicates perfect reliability{{Clear}}
+:<math>\alpha = 0</math> indicates the complete absence of reliability. Units and the values assigned to them are statistically unrelated.{{Clear}}
+:<math>\alpha < 0</math> when disagreements are systematic and exceed what can be expected by chance.{{Clear}}
+
+In this general form, disagreements ''D<sub>o</sub>'' and ''D<sub>e</sub>'' may be conceptually transparent but are computationally inefficient. They can be simplified algebraically, especially when expressed in terms of the visually more instructive coincidence matrix representation of the reliability data.
+
+==Coincidence matrices==
+A coincidence matrix cross tabulates the ''n'' pairable values from the canonical form of the reliability data into a ''v''-by-''v'' [[square matrix]], where ''v'' is the number of values available in a variable. Unlike contingency matrices, familiar in association and correlation statistics, which tabulate ''pairs'' of values ([[cross tabulation]]), a coincidence matrix tabulates all pairable ''values''. A coincidence matrix omits references to coders and is symmetrical around its diagonal, which contains all perfect matches, ''v<sub>iu</sub>'' = ''v<sub>i'u</sub>'' for two coders ''i'' and ''i' '', across all units ''u''. The matrix of observed coincidences contains frequencies:
+
+: <math>
+\begin{align}
+o_{vv'} & = \sum_{u=1}^N \frac{\sum_{i \ne i'}^m I(v_{iu}=v) \cdot I(v_{i'u}=v') }{m_u - 1} = o_{v'v}, \\[5pt]
+n_v & = \sum_{\ell=1}^V o_{v\ell} = \sum_{v_{ij}}^{m,N} I(v_{ij} = v) \text{ and } n = \sum_{\ell=1,p=1}^V o_{\ell p},
+\end{align}
+</math>
+
+omitting unpaired values, where ''I''(∘) = 1 if ''∘'' is true, and 0 otherwise.
+
+Because a coincidence matrix tabulates all pairable values and its contents sum to the total ''n'', when four or more coders are involved, ''o<sub>ck</sub>'' may be fractions.
+{{Clear}}{{Clear}}
+The matrix of expected coincidences contains frequencies:{{Clear}}{{Clear}}
+
+:<math>\ e_{vv'} = \frac{\sum_{i \ne i'}^m I(v_{iu}=v)\cdot I(v_{i'u}=v') }{n-1} = \frac{1}{n-1} \cdot
+\left.\begin{cases}
+  n_v(n_v-1)  & \text{if } v = v' \\
+  n_vn_{v'} & \text{if } v \ne v'
+\end{cases} \right\}
+=e_{kc}, </math>
+which sum to the same ''n<sub>c</sub>'', ''n<sub>k</sub>'', and ''n'' as does ''o<sub>ck</sub>''.  In terms of these coincidences, Krippendorff's ''alpha'' becomes:{{Clear}}{{Clear}}
+
+:<math>\alpha = 1- \frac{D_o}{D_e} = 1 - \frac{\sum_{v=1,v'=1}^{V} o_{vv'} \delta(v,v')}{ \sum_{v=1,v'=1}^{V} e_{vv'} \delta(v,v')}. </math>{{Clear}}{{Clear}}
+
+==Difference functions==
+Difference functions <math>\delta(v,v')</math><ref>Computing Krippendorff’s Alpha Reliability” http://repository.upenn.edu/asc_papers/43/</ref> between values ''v'' and ''v' '' reflect the metric properties ([[levels of measurement]]) of their variable.
+
+In general:
+
+:<math>
+\begin{align}
+\delta (v,v') & \ge 0 \\[4pt]
+\delta(v,v) & = 0 \\[4pt]
+\delta(v,v') & = \delta(v',v)
+\end{align}
+</math>
+
+In particular:
+:For '''nominal''' data <math> \delta_\text{nominal}(v,v') =
+\begin{cases}
+  0 & \text{if }v = v' \\
+  1 & \text{if }v \ne v'
+\end{cases}
+ </math>, where ''v'' and ''v' '' serve as names.{{Clear}}
+:For '''ordinal''' data <math> \delta_\text{ordinal}(v,v') = \left ( \left [ \sum_{g=v}^{g=v'} n_g \right ] - \frac{n_v + n_{v'}}{2} \right )^2</math>,  where ''v '' and ''v''&prime; are coded values interpreted as ranks, and ''n''<sub>''g''</sub>, ''n''<sub>''v''</sub>, ''n''<sub>''v''&prime;</sub> the respective frequencies of each rank.
+
+:For '''interval''' data <math> \delta_\text{interval}(v,v') = (v - v')^2</math>, where ''v'' and ''v''&prime; are interval scale values.{{Clear}}
+
+:For '''ratio''' data <math> \delta_\text{ratio}(v,v') = \left ( \frac{v-v'}{v+v'} \right )^2</math>, where ''v'' and ''v''&prime; are absolute values.{{Clear}}
+:For '''polar''' data <math> \delta_\text{polar}(v,v') =  \frac{(v-v')^2}{(v+v'-2v_{\min})(2v_{\max}-v-v')} </math>, where ''v''<sub>min</sub> and ''v''<sub>max</sub> define the end points of the polar scale.{{Clear}}
+:For '''circular''' data <math> \delta_\text{circular}(v,v') = \left ( \sin \left [180 \frac{v-v'}{U} \right ] \right )^2</math>, where the sine function is expressed in degrees and ''U'' is the circumference or the range of values in a circle or loop before they repeat. For equal interval circular metrics, the smallest and largest integer values of this metric are adjacent to each other and ''U''&nbsp;=&nbsp;''v''<sub>largest</sub>&nbsp;–&nbsp;''v''<sub>smallest</sub>&nbsp;+&nbsp;1.
+
+==Significance==
+Inasmuch as mathematical statements of the statistical distribution of ''alpha'' are always only approximations, it is preferable to obtain ''alpha’s'' distribution by [[bootstrapping (statistics)|bootstrapping]].<ref>Krippendorff, K. (2004) pp. 237–238</ref><ref>Hayes, A. F. & Krippendorff, K. (2007) Answering the Call for a Standard Reliability Measure for Coding Data [http://afhayes.com/public/cmm2007.pdf] {{Webarchive|url=https://web.archive.org/web/20151230173049/http://www.afhayes.com/public/cmm2007.pdf |date=2015-12-30 }}</ref> ''Alpha's'' distribution gives rise to two indices:
+
+*The [[confidence intervals]] of a computed ''alpha'' at various levels of [[statistical significance]]
+*The probability that ''alpha'' fails to achieve a chosen minimum, required for data to be considered sufficiently reliable (one-tailed test). This index acknowledges that the null-hypothesis (of chance agreement) is so far removed from the range of relevant ''alpha'' coefficients that its rejection would mean little regarding how reliable given data are. To be judged reliable, data must not significantly deviate from perfect agreement.
+
+The minimum acceptable ''alpha'' coefficient should be chosen according to the importance of the conclusions to be drawn from imperfect data. When the costs of mistaken conclusions are high, the minimum ''alpha'' needs to be set high as well. In the absence of knowledge of the risks of drawing false conclusions from unreliable data, social scientists commonly rely on data with reliabilities ''α''&nbsp;≥&nbsp;0.800, consider data with 0.800&nbsp;>&nbsp;''α''&nbsp;≥&nbsp;0.667 only to draw tentative conclusions, and discard data whose agreement measures α < 0.667.<ref>Krippendorff, K. (2004) pp. 241–243</ref>
+
+==A computational example==
+Let the canonical form of reliability data be a 3-coder-by-15 unit matrix with 45 cells:
+
+{| class="wikitable" style="text-align:center; margin:1em auto 1em auto; "
+|-align="center"|
+!'''Units u:'''
+!width="25"|1
+!width="25"|2
+!width="25"|3
+!width="25"|4
+!width="25"|5
+!width="25"|6
+!width="25"|7
+!width="25"|8
+!width="25"|9
+!width="25"|10
+!width="25"|11
+!width="25"|12
+!width="25"|13
+!width="25"|14
+!width="25"|15
+|-
+| '''Coder A'''
+| *
+| *
+| *
+| *
+| *
+| 3
+| 4
+| 1
+| 2
+| 1
+| 1
+| 3
+| 3
+| *
+| 3
+|-
+| '''Coder B'''
+| 1
+| *
+| 2
+| 1
+| 3
+| 3
+| 4
+| 3
+| *
+| *
+| *
+| *
+| *
+| *
+| *
+|-
+| '''Coder C'''
+| *
+| *
+| 2
+| 1
+| 3
+| 4
+| 4
+| *
+| 2
+| 1
+| 1
+| 3
+| 3
+| *
+| 4
+|}
+
+Suppose “*” indicates a default category like “cannot code,” “no answer,” or “lacking an observation.” Then, * provides no information about the reliability of data in the four values that matter. Note that unit 2 and 14 contains no information and unit 1 contains only one value, which is not pairable within that unit. Thus, these reliability data consist not of ''mN''&nbsp;=&nbsp;45 but of ''n''&nbsp;=&nbsp;26 pairable values, not in ''N''&nbsp;=&nbsp;15 but in 12 multiply coded units.
+
+The coincidence matrix for these data would be constructed as follows:
+
+:''o''<sub>11</sub> = {in ''u''=4}: <math display="inline">\frac {2}{2-1}+</math> {in ''u''=10}: <math display="inline">\frac {2}{2-1}+</math> {in ''u''=11}: <math display="inline">\frac {2}{2-1}=6</math>
+
+:''o''<sub>13</sub> = {in ''u''=8}: <math display="inline">\frac {1}{2-1}=1=</math> ''o''<sub>31</sub>
+
+:''o''<sub>22</sub> = {in ''u''=3}: <math display="inline">\frac {2}{2-1}+</math> {in ''u''=9}: <math display="inline">\frac {2}{2-1}=4</math>
+
+:''o''<sub>33</sub> = {in ''u''=5}: <math display="inline">\frac {2}{2-1}+</math> {in ''u''=6}: <math display="inline">\frac {2}{3-1}+</math> {in ''u''=12}:  <math display="inline">\frac {2}{2-1}+</math>  {in ''u''=13}: <math display="inline">\frac {2}{2-1}=7</math>
+
+:''o''<sub>34</sub> = {in ''u''=6}: <math display="inline">\frac {2}{3-1}+</math> {in ''u''=15}: <math display="inline">\frac {1}{2-1}=2=</math> ''o''<sub>43</sub>
+
+:''o''<sub>44</sub> = {in ''u''=7}: <math display="inline">\frac {6}{3-1}=3</math>
+
+{| class="wikitable" style="text-align:center; margin:1em auto 1em auto; "
+|- align=center
+!'''Values ''v'' or ''v''&prime;:'''
+!width="25"|1
+!width="25"|2
+!width="25"|3
+!width="25"|4
+!width="25"|''n''<sub>''v''</sub>
+|-
+| '''Value 1'''
+| 6
+|
+| 1
+|
+| 7
+|-
+| '''Value 2'''
+|
+| 4
+|
+|
+| 4
+|-
+| '''Value 3'''
+| 1
+|
+| 7
+| 2
+| 10
+|-
+| '''Value 4'''
+|
+|
+| 2
+| 3
+| 5
+|-
+| '''Frequency n<sub>v'</sub>'''
+| 7
+| 4
+| 10
+| 5
+| 26
+|}
+
+In terms of the entries in this coincidence matrix, Krippendorff's ''alpha'' may be calculated from:
+
+:<math>\alpha_\text{metric} = 1 - \frac{D_o}{D_e} = 1 - \frac{\sum_{v=1,v'=1}^V o_{vv'}  \delta_\text{metric}(v,v')}{\frac{1}{n-1} \sum_{v=1,v'=1}^V n_v n_{v'}~ \delta_\text{metric}(v,v')}.</math>
+
+For convenience, because products with <math>\delta(v,v) = 0</math> and <math>\delta(v,v') = \delta(v',v)</math>, only the entries in one of the off-diagonal triangles of the coincidence matrix are listed in the following:
+:<math>\alpha_\text{metric} = 1 - \frac{1 \delta_\text{metric}(1,3) + 2 \delta_\text{metric}(3,4)}{\frac{1}{26-1}(4\cdot7 \delta_\text{metric} (1,2) + 10\cdot7 \delta_\text{metric}(1,3) + 5\cdot7 \delta_\text{metric}(1,4) + 10\cdot4 \delta_\text{metric}(2,3) +5\cdot4 \delta_\text{metric}(2,4) + 5\cdot10 \delta_\text{metric}(3,4))}</math>
+
+Considering that all <math> \delta_\text{nominal}(v,v') = 1</math> when <math>v {\ne}v'</math> for nominal data the above expression yields:
+
+:<math>\alpha_\text{nominal} = 1 - \frac{1+2}{\frac{1}{26-1}(4\cdot7 + 10\cdot7 + 5\cdot7 + 10\cdot4 + 5\cdot4 + 5\cdot10)} =0.691</math>
+
+With <math> \delta_\text{interval}(1,2)= \delta_\text{interval}(2,3)=  \delta_\text{interval}(3,4) = 1^2, \qquad \delta_\text{interval}(1,3) = \delta_\text{interval}(2,4)=2^2, \text{ and } \delta_\text{interval}(1,4)=3^2,</math> for interval data the above expression yields:
+
+:<math>\alpha_\text{interval} = 1 - \frac{1\cdot2^2+2\cdot1^2}{\frac{1}{26-1}(4\cdot7\cdot1^2+10\cdot7\cdot2^2+5\cdot7\cdot3^2+10\cdot4\cdot1^2+5\cdot4\cdot2^2+5\cdot10\cdot1^2)} = 0.811</math>
+
+Here, <math>\alpha_\text{interval} > \alpha_\text{nominal}</math> because disagreements happens to occur largely among neighboring values, visualized by occurring closer to the diagonal of the coincidence matrix, a condition that <math>\alpha_\text{interval}</math> takes into account but <math>\alpha_\text{nominal}</math> does not. When the observed frequencies ''o''<sub>''v'' ≠ ''v''&prime;</sub> are on the average proportional to the expected frequencies e<sub>v ≠ v'</sub>, <math>\alpha_\text{interval} = \alpha_\text{nominal}</math>.
+
+Comparing ''alpha'' coefficients across different metrics can provide clues to how coders conceptualize the metric of a variable.
+
+==Alpha's embrace of other statistics==
+Krippendorff's ''alpha'' brings several known statistics under a common umbrella, each of them has its own limitations but no additional virtues.
+
+*[[Scott's Pi|Scott's ''pi'']]<ref>{{cite journal |last1=Scott |first1=William A. |author-link1=William A. Scott (psychologist) |title=Reliability of Content Analysis: The Case of Nominal Scale Coding |journal=Public Opinion Quarterly |date=1955 |volume=19 |issue=3 |pages=321–325 |doi=10.1086/266577 |issn=0033-362X}}<!--{{Cite Q|Q59508933}}--></ref> is an agreement coefficient for nominal data and two coders. <math display="block">\pi = \frac {P_o - P_e}{1-P_e}
+\text{ where }
+P_o = \sum_c \frac{o_{cc}}{n},
+\text{ and }
+P_e = \sum_c \frac{n_c^2}{n^2}.</math> When data are nominal, ''alpha'' reduces to a form resembling Scott's ''pi'': <math display="block">_\text{nominal}\alpha = 1 - \frac{D_o}{D_e}
+= \frac{\sum_c o_{cc} - \sum_c e_{cc}}{n - \sum_c e_{cc}}
+= \frac{\sum_c \frac {O_{cc}}{n} - \sum_c \frac{n_c(n_c-1)}{n(n-1)}}{1- \sum_c \frac {n_c(n_c-1)}{n(n-1)}}</math> Scott's observed proportion of agreement <math>\ P_o </math> appears in ''alpha’s'' numerator, exactly. Scott's expected proportion of agreement, <math display="inline">P_e = \sum_c \frac {n_c^2}{n^2}</math> is asymptotically approximated by <math display="inline">\sum_c \frac{n_c(n_c-1)}{n(n-1)}</math> when the sample size ''n'' is large, equal when infinite. It follows that Scott's ''pi'' is that special case of ''alpha'' in which two coders generate a very large sample of nominal data. For finite sample sizes: <math>{_\text{nominal}\alpha} = 1 - \tfrac{n-1}{n} (1-\pi) \ge \pi</math>. Evidently, <math display="inline">\lim_{n \to \infty} {_\text{nominal}\alpha} = \pi</math>.
+*[[Fleiss' kappa|Fleiss’ ''kappa'']]<ref>{{cite journal |last1=Fleiss |first1=Joseph L. |author-link1=Joseph L. Fleiss |title=Measuring nominal scale agreement among many raters. |journal=[[Psychological Bulletin]] |date=November 1971 |volume=76 |issue=5 |pages=378–382 |doi=10.1037/H0031619 |issn=0033-2909}}<!--{{Cite Q|Q56518939}}--></ref> is an agreement coefficient for nominal data with very large sample sizes where a set of coders have assigned exactly ''m'' labels to all of ''N'' units without exception (but note, there may be more than ''m'' coders, and only some subset label each instance). Fleiss claimed to have extended Cohen's ''kappa''<ref name="Cohen">{{cite journal |last1=Cohen |first1=Jacob |author-link1=Jacob Cohen (statistician) |title=A Coefficient of Agreement for Nominal Scales |journal=[[Educational and Psychological Measurement]] |date=April 1960 |volume=20 |issue=1 |pages=37–46 |doi=10.1177/001316446002000104 |issn=0013-1644}}<!--{{Cite Q|Q57167717}}--></ref> to three or more raters or coders, but generalized Scott's ''pi'' instead. This confusion is reflected in Fleiss’ choice of its name, which has been recognized by renaming it ''K'':<ref>Siegel, S. & Castellan, N. J. (1988), pp. 284–291.</ref> <math display="block">K = \frac{\bar P- \bar P_e}{1-\bar P_e}
+\text{ where }
+\bar P
+= \frac{1}{N} \sum_{u=1}^N \sum_c \frac {n_{cu}(n_{cu}-1)}{m(m-1)}
+= \sum_c \frac{o_{cc}}{mN},
+\text{ and }
+\bar P_e = \sum_c \frac{n_c^2}{(mN)^2}</math> When sample sizes are finite, ''K'' can be seen to perpetrate the inconsistency of obtaining the proportion of observed agreements <math style="vertical-align:0%;">\bar P</math> by counting matches within the ''m''(''m''&nbsp;−&nbsp;1) possible pairs of values within ''u'', properly ''excluding'' values paired with themselves, while the proportion <math>\bar P_e</math> is obtained by counting matches within all (''mN'')<sup>2</sup>&nbsp;=&nbsp;''n''<sup>2</sup>  possible pairs of values, effectively ''including'' values paired with themselves. It is the latter that introduces a bias into the coefficient. However, just as for ''pi'', when sample sizes become very large this bias disappears and the proportion <math display="inline">\sum_c \frac{n_c(n_c-1)}{n(n-1)}</math> in <sub>nominal</sub>''&alpha;'' above asymptotically approximates <math>\bar P_e</math> in ''K''. Nevertheless, Fleiss' ''kappa'', or rather ''K'', intersects with ''alpha'' in that special situation in which a fixed number of ''m'' coders code all of ''N'' units (no data are missing), using nominal categories, and the sample size ''n''&nbsp;=&nbsp;''mN'' is very large, theoretically infinite.
+*[[Spearman's rank correlation coefficient]] ''rho''<ref>{{cite journal |last1=Spearman |first1=C. |author-link1=Charles Spearman |title=The Proof and Measurement of Association between Two Things |journal=[[American Journal of Psychology]] |date=January 1904 |volume=15 |issue=1 |pages=72 |doi=10.2307/1412159 |url=https://archive.org/download/proofmeasurement00speauoft/proofmeasurement00speauoft_bw.pdf |issn=0002-9556 |jstor=1412159}}<!--{{Cite Q|Q50368932}}--></ref> measures the agreement between two coders’ ranking of the same set of ''N'' objects. In its original form: <math display="block">\rho = 1 - \frac {6 \sum D^2}{N(N^2-1)},</math> where <math display="inline">\sum D^2 = \sum_{u=1}^N{_\text{ordinal} \delta}_{c_u k_u}^2</math> is the sum of ''N'' differences between one coder's rank ''c'' and the other coder's rank ''k'' of the same object ''u''. Whereas ''alpha'' accounts for tied ranks in terms of their frequencies for all coders, ''rho'' averages them in each individual coder's instance. In the absence of ties, <math>\rho</math>'s numerator <math display="inline">\sum D^2=ND_o</math> and <math>\rho</math>'s denominator <math display="inline">\frac{N(N^2-1)}{6}= \frac{n}{n-1} ND_e</math>, where ''n''&nbsp;=&nbsp;2''N'', which becomes <math>\ ND_e</math> when sample sizes become large. So, Spearman's ''rho'' is that special case of ''alpha'' in which two coders rank a very large set of units. Again, <math>{_\text{ordinal}\alpha} \ge \rho</math> and <math display="inline">\lim_{n \to \infty}{_\text{ordinal}\alpha} = \rho</math>.
+*[[Intraclass correlation#Relationship to Pearson.27s correlation coefficient|Pearson's ''intraclass correlation'' coefficient]] ''r<sub>ii</sub>'' is an agreement coefficient for interval data, two coders, and very large sample sizes.  To obtain it, Pearson's original suggestion was to enter the observed pairs of values twice into a table, once as ''c''&nbsp;−&nbsp;''k'' and once as ''k''&nbsp;−&nbsp;''c'', to which the traditional [[Pearson product-moment correlation coefficient]] is then applied.<ref>Pearson, K. (1901), Tildesley, M. L. (1921)</ref>  By entering pairs of values twice, the resulting table becomes a coincidence matrix without reference to the two coders, contains ''n''&nbsp;=&nbsp;2''N'' values, and is symmetrical around the diagonal, i.e., the joint [[linear regression]] line is forced into a 45° line, and references to coders are eliminated. Hence, Pearson's ''intraclass correlation'' coefficient is that special case of interval ''alpha'' for two coders and large sample sizes, <math>{_\text{interval}\alpha} \ge r_{ii} </math>  and  <math display="inline"> \lim_{n \to \infty} {_\text{interval}\alpha} = r_{ii}</math>.
+*Finally, the disagreements in the interval ''alpha'', ''D<sub>u</sub>'', ''D<sub>o</sub>'' and ''D<sub>e</sub>'' are proper sample [[variance]]s.<ref>Krippendorff, K. (1970)</ref> It follows that the reliability the interval ''alpha'' assesses is consistent with all variance-based analytical techniques, such as the [[analysis of variance]]. Moreover, by incorporating difference functions not just for interval data but also for nominal, ordinal, ratio, polar, and circular data, ''alpha'' extends the notion of variance to [[level of measurement|metrics]] that classical analytical techniques rarely address.
+
+Krippendorff's ''alpha'' is more general than any of these special purpose coefficients. It adjusts to varying sample sizes and affords comparisons across a wide variety of reliability data, mostly ignored by the familiar measures.
+
+==Coefficients incompatible with alpha and the reliability of coding==
+Semantically, reliability is the ability to rely on something, here on coded data for subsequent analysis. When a sufficiently large number of coders agree perfectly on what they have read or observed, relying on their descriptions is a safe bet. Judgments of this kind hinge on the number of coders duplicating the process and how representative the coded units are of the population of interest. Problems of interpretation arise when agreement is less than perfect, especially when reliability is absent.
+
+*Correlation and association coefficients. [[Product-moment correlation coefficient|Pearson's product-moment correlation coefficient]] ''r<sub>ij</sub>'', for example, measures deviations from any linear regression line between the coordinates of ''i'' and ''j''. Unless that regression line happens to be exactly 45° or centered, ''r<sub>ij</sub>'' does not measure agreement. Similarly, while perfect agreement between coders also means perfect association, [[Association (statistics)|association statistics]] register any above chance pattern of relationships between variables. They do not distinguish agreement from other associations and are, hence, unsuitable as reliability measures.
+*Coefficients measuring the degree to which coders are statistically dependent on each other. When the reliability of coded data is at issue, the individuality of coders can have no place in it.  Coders need to be treated as interchangeable. ''Alpha'', Scott's ''pi'', and Pearson's original ''intraclass correlation'' accomplish this by being definable as a function of coincidences, not only of contingencies. Unlike the more familiar contingency matrices, which tabulate ''N pairs'' of values and maintain reference to the two coders, coincidence matrices tabulate the ''n'' pairable ''values'' used in coding, regardless of who contributed them, in effect treating coders as interchangeable. [[Cohen's kappa|Cohen's ''kappa'']],<ref name="Cohen"/> by contrast, defines expected agreement in terms of contingencies, as the agreement that would be expected if coders were statistically independent of each other.<ref>Krippendorff, K. (1978) raised this issue with Joseph Fleiss</ref> Cohen's conception of chance fails to include disagreements between coders’ individual predilections for particular categories, punishes coders who agree on their use of categories, and rewards those who do not agree with higher ''kappa''-values. This is the cause of other noted oddities of ''kappa''.<ref>Zwick, R. (1988), Brennan, R. L. & Prediger, D. J. (1981), Krippendorff (1978, 2004).</ref> The statistical independence of coders is only marginally related to the statistical independence of the units coded and the values assigned to them. Cohen's ''kappa'', by ignoring crucial disagreements, can become deceptively large when the reliability of coding data is to be assessed.
+*Coefficients measuring the consistency of coder judgments. In the psychometric literature,<ref>Nunnally, J. C. & Bernstein, I. H. (1994)</ref> reliability tends to be defined as the consistency with which several tests perform when applied to a common set of individual characteristics. [[Cronbach's alpha]],<ref>{{cite journal |last1=Cronbach |first1=Lee J. |author-link1=Lee Cronbach |title=Coefficient alpha and the internal structure of tests |journal=[[Psychometrika]] |date=September 1951 |volume=16 |issue=3 |pages=297–334 |doi=10.1007/BF02310555 |issn=0033-3123 |zbl=1367.62314|hdl=10983/2196 |hdl-access=free }}<!--{{Cite Q|Q29042519}}--></ref> for example, is designed to assess the degree to which multiple tests produce correlated results. Perfect agreement is the ideal, of course, but Cronbach's alpha is high also when test results vary systematically. Consistency of coders’ judgments does not provide the needed assurances of data reliability. Any deviation from identical judgments – systematic or random – needs to count as disagreement and reduce the measured reliability. Cronbach's alpha is not designed to respond to absolute differences.
+*Coefficients with baselines (conditions under which they measure 0) that cannot be interpreted in terms of reliability, i.e. have no dedicated value to indicate when the units and the values assigned to them are statistically unrelated. Simple %-agreement ranges from 0&nbsp;=&nbsp;extreme disagreement to 100&nbsp;=&nbsp;perfect agreement with chance having no definite value. As already noted, [[Cohen's kappa|Cohen's ''kappa'']] falls into this category by defining the absence of reliability as the statistical independence between two individual coders. The baseline of Bennett, Alpert, and Goldstein's ''S''<ref>Bennett, E. M., Alpert, R. & Goldstein, A. C. (1954)</ref> is defined in terms of the number of values available for coding, which has little to do with how values are actually used. [[Goodman and Kruskal's lambda|Goodman and Kruskal's lambda<sub>''r''</sub>]]<ref>Goodman, L. A. & Kruskal, W. H. (1954) p. 758</ref> is defined to vary between –1 and +1, leaving 0 without a particular reliability interpretation. Lin's reproducibility or [[Concordance correlation coefficient|concordance coefficient]] ''r<sub>c</sub>''<ref>Lin, L. I. (1989)</ref> takes [[Product-moment correlation coefficient|Pearson's ''product moment correlation'']] ''r<sub>ij</sub>'' as a measure of precision and adds to it a measure ''C<sub>b</sub>'' of accuracy, ostensively to correct for ''r<sub>ij</sub>'''s above mentioned inadequacy. It varies between –1 and +1 and the reliability interpretation of 0 is uncertain. There are more so-called reliability measures whose reliability interpretations become questionable as soon as they deviate from perfect agreement.
+
+Naming a statistic as one of agreement, reproducibility, or reliability does not make it a valid index of whether one can rely on coded data in subsequent decisions. Its mathematical structure must fit the process of coding units into a system of analyzable terms.
+
+==Notes==
+<!--- See [[Wikipedia:Footnotes]] on how to create references using<ref></ref> tags which will then appear here automatically -->
+<references/>
+* K. Krippendorff, 2013, Content Analysis: An Introduction to Its Methodology, 3rd ed. Thousand Oaks, CA, USA: Sage, PP. 221–250
+
+==References==
+*Bennett, Edward M., Alpert, R. & Goldstein, A. C. (1954). Communications through limited response questioning. ''Public Opinion Quarterly, 18'', 303–308.
+*{{cite journal |last1=Brennan |first1=Robert L. |last2=Prediger |first2=Dale J. |title=Coefficient Kappa: Some Uses, Misuses, and Alternatives |journal=[[Educational and Psychological Measurement]] |date=October 1981 |volume=41 |issue=3 |pages=687–699 |doi=10.1177/001316448104100307 |issn=0013-1644}}<!--{{Cite Q|Q59508936}}-->
+*[[Leo A. Goodman|Goodman, Leo A.]] & Kruskal, William H. (1954). Measures of association for cross classifications. ''Journal of the American Statistical Association, 49'', 732–764.
+*Hayes, Andrew F. & Krippendorff, Klaus (2007).  Answering the call for a standard reliability measure for coding data.  ''Communication Methods and Measures, 1'', 77–89.
+*Krippendorff, Klaus (2013). ''Content analysis: An introduction to its methodology, 3rd edition''. Thousand Oaks, CA: Sage.
+*Krippendorff, Klaus (1978). Reliability of binary attribute data. ''Biometrics,'' 34 (1), 142–144.
+*Krippendorff, Klaus (1970). Estimating the reliability, systematic error, and random error of interval data. ''Educational and Psychological Measurement, 30'' (1), 61–70.
+*Lin, Lawrence I. (1989). A concordance correlation coefficient to evaluate reproducibility. ''Biometrics, 45'', 255–268.
+*Marzi, G., Balzano, M., & Marchiori, D. (2024). K-Alpha Calculator–Krippendorff's Alpha Calculator: A user-friendly tool for computing Krippendorff's Alpha inter-rater reliability coefficient. ''MethodsX'', 12, 102545. <nowiki>https://doi.org/10.1016/j.mex.2023.102545</nowiki>
+*Jum C. & Bernstein, Ira H. (1994). ''Psychometric Theory, 3rd ed''. New York: McGraw-Hill.
+*Pearson, Karl, et al. (1901). Mathematical contributions to the theory of evolution. IX: On the principle of homotyposis and its relation to heredity, to variability of the individual, and to that of race. Part I: Homotyposis in the vegetable kingdom. ''Philosophical Transactions of the Royal Society (London), Series A, 197'', 285–379.
+*Siegel, Sydney & Castella, N. John (1988). ''Nonparametric Statistics for the Behavioral Sciences, 2nd ed''. Boston: McGraw-Hill.
+*Tildesley, M. L. (1921). A first study of the Burmes skull. ''Biometrica, 13'', 176–267.
+*Zwick, Rebecca (1988). Another look at interrater agreement. ''Psychological Bulletin, 103'' (3), 347–387.
+
+==External links==
+* [https://www.youtube.com/watch?v=NcC99TrynKQ Youtube video about Krippendorff’s alpha] using SPSS and a macro.
+* [http://dfreelon.org/utils/recalfront/ Reliability Calculator] calculates Krippendorff's alpha. 
+* [https://github.com/tanbt/krippendorff-alpha Krippendorff Alpha Javascript] implementation and library
+* [https://github.com/grrrr/krippendorff-alpha Python] implementation
+* [https://github.com/bfolkens/ruby-krippendorff-alpha Krippendorff Alpha Ruby Gem] implementation and library.
+* [https://www.lighttag.io/blog/krippendorffs-alpha/ Simpledorff] Python implementation that works with Dataframes
+
+<!--- Links to the same article in other languages - if the articles exist already -->
+<!--- see [[Help:Interlanguage links]] -->
+
+[[Category:Qualitative research]]
+[[Category:Inter-rater reliability]]

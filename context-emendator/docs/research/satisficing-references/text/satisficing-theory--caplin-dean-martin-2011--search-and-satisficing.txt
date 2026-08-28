@@ -1,0 +1,3080 @@
+Search and Satisficing
+By A NDREW C APLIN , M ARK D EAN , AND DANIEL M ARTIN∗
+
+Many everyday decisions are made without full examination of all available
+options, and as a result, the best available option may be missed. We develop a
+search-theoretic choice experiment to study the impact of incomplete consideration on the quality of choices. We find that many decisions can be understood
+using the satisficing model of Simon [1955]: most subjects search sequentially,
+stopping when a “satisficing” level of reservation utility is realized. We find
+that reservation utilities and search order respond systematically to changes in
+the decision making environment.
+JEL: D03, D83, C91
+Keywords: Revealed preference, search, incomplete information, bounded rationality, stochastic choice, decision time
+
+Many everyday decisions are made without full examination of all available options, and as a
+result, the best available option may be missed. However, little is known about how such incomplete consideration affects choice behavior. We develop a search-theoretic choice experiment that
+provides new insights into how information gathering interacts with decision making.
+Our central finding is that many decisions can be understood using the satisficing model of
+Simon [1955]. Simon posited a process of item-by-item search, and the existence of a “satisficing” level of utility, attainment of which would induce the decision maker to curtail further
+search. Our experiments cover various settings that differ in the number of options available and
+in the complexity of these objects, and in all cases, we find broad support for Simon’s hypothesis.
+Most subjects search sequentially, and stop search when an environmentally-determined level of
+reservation utility has been realized.
+One factor that has held back research on how incomplete search impacts choice is that there
+are no observable implications of a general model in which the set of objects that a subject
+considers may be smaller than the choice set as understood by an external observer.1 To identify
+such restrictions, we develop a new experimental technique that incentivizes subjects to reveal
+not only their final choices, but also how their provisional choices change with contemplation
+time.2 This “choice process” data provides a test bed for simple models of sequential search (see
+∗ Caplin: Center for Experimental Social Science and Department of Economics, New York University, 19 West 4th
+Street, New York, NY 10012, andrew.caplin@nyu.edu. Dean: Department of Economics, Brown University, Providence,
+RI 02912, mark_dean@brown.edu. Martin: Center for Experimental Social Science and Department of Economics,
+New York University, 19 West 4th Street, New York, NY 10012, daniel.martin@nyu.edu. We thank Douglas Bernheim,
+Isabelle Brocas, Juan Carrillo, Vince Crawford, Stefano DellaVigna, David Laibson, Alessandro Lizzeri, Ulrike Malmendier, Rosemarie Nagel, Efe Ok, Antonio Rangel, Ariel Rubinstein, Yuval Salant, Andy Schotter, seminar participants
+at SITE, USC, Michigan and the CEPR’s European Summer Symposium in Economic Theory, and three anonymous
+referees for insightful suggestions.
+1 The satisficing model itself only has testable implications for choice data if it is assumed that the search order never
+changes. See Manzini and Mariotti [2007] and Masatlioglu and Nakajima [2009] for examples of other decision theoretic
+models in which the decision maker’s consideration set is smaller than the externally observable choice set. See also
+Eliaz and Spiegler [Forthcoming]. Rubinstein and Salant [2006] present a model of choice from lists, in which a decision
+maker searches through the available options in a particular order. Ok [2002] considers the case of a decision maker who
+is unable to compare all the available alternatives in the choice set. These models make specific assumptions about the
+nature of search to gain empirical traction.
+2 Compared to other novel data used to understand information search, such as those based on eye tracking or Mouselab (Payne, Bettman and Johnson [1993], Gabaix et al. [2006], Reutskaja et al. [Forthcoming]), choice process data is
+more closely tied to standard choice data and revealed preference methodology.
+
+1
+
+2
+
+THE AMERICAN ECONOMIC REVIEW
+
+MONTH YEAR
+
+Campbell [1978] and Caplin and Dean [Forthcoming]).
+A second barrier to research in this area is that there is no general way to define, let alone measure, the quality of decisions.3 To overcome this conceptual problem, subjects in our experiment
+select among monetary prizes presented as sequences of addition and subtraction operations.4
+These calculations take time and effort to perform, making the choice problem nontrivial. As a
+result, we find that subjects regularly fail to find the best option when choosing from sets of such
+alternatives.
+We use choice process data to test the satisficing model. We find that its two identifying
+features are supported by our data. First, subjects typically switch from lower to higher value
+objects, in line with information being absorbed on an item-by-item basis, as in sequential search
+theory. Second, for each of our experimental treatments, we identify fixed reservation values
+such that most subjects curtail search early if, and only if, they identify an option of higher value
+than the reservation level. Taken together, these two findings characterize the satisficing model.
+The estimated levels of reservation utility increase with set size and with object complexity.
+Choice process data provides insight into search order. We find that some subjects search from
+the top of the screen to the bottom, while others do not. These search modes impact choice
+quality: those who search down from the top do poorly if good objects are at the bottom of the
+screen.
+Our method for eliciting choice process data impacts the incentive to search, since there is an
+increasing chance that later choices will not be actualized. In order to explore the impact of these
+incentives, we develop a simple model of optimal search with psychic costs that is rich enough
+to cover this case in addition to standard choice data. We find that, while a fixed reservation level
+is optimal in the standard case, a declining reservation level is optimal for the choice process
+environment. Moreover, the reservation level in a choice process environment is always below
+the fixed optimal level in the equivalent standard choice environment.
+We test the predictions of the optimizing model by comparing behavior in the choice process
+experiment with that in a standard choice environment. We exploit the fact that subjects were able
+to, and indeed chose to, change options prior to finalizing decisions even in our standard choice
+experiments, creating a sequence of choices that we can interpret as choice process data. We find
+that standard choice data is indeed well described by the fixed reservation model. However, we
+find no evidence of a declining reservation level in the choice process environment. This suggests that our subjects may be satisficing for the reasons that Simon [1955] originally proposed,
+as a rule of thumb that performs adequately across a broad range of environments, rather than
+finely honing their search strategy to each choice environment they face. We find some evidence
+that reservation levels in choice process settings are below those in equivalent standard choice
+settings.
+While our findings are in line with simple theories of sequential search, we consider (and reject) an alternative model in which subjects search the entire choice set, but make calculation
+errors that lead to choice mistakes. We estimate a random utility model in which the size of the
+utility error depends on the size and complexity of the choice set. Fitting the model requires seemingly large perceptual errors, yet simulations based on the fitted model significantly overestimate
+subject performance in large and complex choice sets. Moreover, the estimated calculation errors are incompatible with the fact that subjects almost always switch from lower to higher value
+alternatives, in line with the principle of sequential search.
+The paper is arranged into six sections. In section I we introduce our experimental protocols.
+In section II we describe the pattern of choice mistakes exhibited by our subjects. In section III
+we test the satisficing model, and show how reservation rules vary across environments. Order
+3 See Bernheim and Rangel [2008], Gul and Pesendorfer [2008] and Koszegi and Rabin [2008] for methodological
+viewpoints on the classification of particular decisions as “poor” or “mistaken.”
+4 Caplin and Dean [Forthcoming] characterize theoretical connections between choice process data, sequential search,
+and reservation stopping rules with arbitrary objects of choice.
+
+VOL. VOL NO. ISSUE
+
+SEARCH AND SATISFICING
+
+3
+
+effects on choice are addressed in section IV. Section V investigates the connection between
+standard choice experiments and choice process experiments. Section VI contains our estimates
+of the model based entirely on calculation errors rather than sequential search.
+I. Experimental Design
+We conducted experiments of four types. Experiment 1 measures choice quality in our experimental task in a standard choice experiment. Experiment 2 uses the choice process design to
+examine provisional choices within the same environment. Experiment 3 uses the choice process
+experiment to explore search order. Experiment 4 imposes a time limit on subjects in an otherwise
+standard choice task, allowing us to understand the source of differences in behavior between experiments 1 and 2. All experiments were conducted at the Center for Experimental Social Science
+laboratory at New York University, using subjects recruited from the undergraduate population.
+A. Experiment 1: Standard Choice
+Our goal in this paper is to study whether a model of information search can explain why
+people sometimes fail to choose the best available option. Hence we work with objects of choice
+for which such failures are easy to identify: dollar amounts expressed as addition and subtraction
+operations. We conducted six treatments that differ in terms of complexity (3 or 7 addition and
+subtraction operations for each object) and the total number of available alternatives (10, 20 or
+40). Figure 1 shows a 10 option choice set with objects of complexity 3.5
+F IGURE 1. A TYPICAL CHOICE ROUND
+
+Each round began with the topmost option on the screen selected, which had a value of $0 and
+was worse than any other option. While only the final choice was payoff relevant, subjects could
+select whichever option they wanted at any time by clicking on the option or on the radio button
+next to it.6 The currently selected option was displayed at the top of the screen. Once subjects
+had finalized their selection, they could proceed by clicking on the submit button at the bottom
+of the screen. Subjects faced no time constraint in their choices.
+The value of each alternative was drawn from an exponential distribution with λ = 0.25,
+truncated at $35 (a graph of the distribution was shown in the experimental instructions – see
+online supplemental material).7 The individual terms in the algebraic expression representing the
+alternative were generated stochastically in a manner that ensured that neither the first nor the
+maximal term in the expression were correlated with total value.
+Subjects for experiment 1 took part in a single experimental session consisting of 2 practice
+rounds and between 27 and 36 regular rounds, drawn from all 6 treatments. At the end of the
+session, two regular rounds were drawn at random, and the subject received the value of the final
+selected object in each round, in addition to a $10 show up fee. Each session took about an hour,
+for which subjects earned an average of $32. In total we observed 22 undergraduate students
+making 657 choices.
+5 Given that the subjects (New York University students) made negligible mistakes when purely numerical options
+were presented, we wrote out the arithmetic expressions in word form rather than in symbolic form.
+6 Changes that were made over the pre-decision period were recorded and are analyzed in section V.
+7 For each of the three choice set sizes we generated 12 sets of values, which were used to generate the choice objects
+for both the low and the high complexity treatments.
+
+4
+
+THE AMERICAN ECONOMIC REVIEW
+
+MONTH YEAR
+
+B. Experiment 2: Choice Process
+Choice process data tracks not only final choice, but also how subjects’ provisional choices
+evolve with contemplation time. It is closely related to standard choice data, in that all observations represent choices, albeit indexed by time. We see this data as complementary to other
+attempts to use novel data to understand information search, such as those based on eye tracking
+or Mouselab (Payne, Bettman and Johnson [1993], Gabaix et al. [2006], Reutskaja et al. [Forthcoming]). While choice process data misses out on such potentially relevant clues to search behavior as eye movements, it captures the moment at which search changes a subject’s assessment
+of the best option thus far encountered.
+Our experimental design for eliciting choice process data has two key features. First, subjects are allowed to select any alternative in the choice set at any time, changing their selected
+alternative whenever they wish. Second, actualized choice is recorded at a random point in time
+unknown to the experimental subject. Only at the end of each round does the subject find out
+the time that was actualized, and what their selection had been at that time. This incentivizes
+subjects always to select the option that they perceive as best. We therefore treat their sequence
+of selections as recording their preferred option at each moment in time.8
+The instructions that were given to subjects in the choice process experiment are available in
+the online supplemental material. They were informed that the actualized time would be drawn
+from a beta distribution with parameters α = 2 and β = 5, truncated at 120 seconds.9 The
+interface for selecting and switching among objects was identical to that of experiment 1. A
+subject who finished in less than 120 seconds could press a submit button, which completed the
+round as if they had kept the same selection for the remaining time. Typically, a subject took part
+in a session consisting of 2 practice rounds and 40 regular rounds. Two recorded choices were
+actualized for payment, which was added to a $10 show up fee.
+Experiment 2 included six treatments that matched the treatments in experiment 1: choice sets
+contained 10, 20 or 40 alternatives, with the complexity of each alternative being either 3 or 7
+operations. Moreover, exactly the same choice object values were used in the choice process and
+standard choice experiments. For the 6 treatments of experiment 2, we collected data on 1066
+choice sets from 76 subjects.
+C. Experiment 3: Varying Complexity
+Experiment 3 was designed to explore how screen position and object complexity impacts
+search order. All choice sets were of size 20, and the objects in each set ranged in complexity
+from one to nine operations. Subjects were instructed that object complexity, screen position and
+object value were independent of one another. Incentives were as in experiment 2, the choice
+process experiment. Experiment 3 was run on 21 subjects for a total of 206 observed choice sets.
+D. Experiment 4: Time Constraint
+While the choice process experiments included time limits, the standard choice experiment
+did not. In order to explore whether this time limit was responsible for differences in behavior
+between the two settings, we re-ran the standard choice experiment with a two minute time constraint, as in the choice process experiment. If subjects failed to press the submit button within
+120 seconds they received $0 for that round. For this experiment, a total of 29 subjects chose
+from 407 observed choice sets.
+8 In support of this interpretation, 58 of 76 subjects in a post experiment survey responded directly that they always
+had their most preferred option selected, while others gave more indirect responses that suggest similar behavior (e.g.
+having undertaken a recalculation before selecting a seemingly superior alternative).
+9 A graph of this distribution was shown in the experimental instructions. The front-weighting in the beta distribution
+provides an incentive for subjects to begin recording their most preferred options at an early stage.
+
+VOL. VOL NO. ISSUE
+
+SEARCH AND SATISFICING
+
+5
+
+II. Choice Performance
+A. Standard Choice Task
+Table 1 reports the results of experiment 1, the standard choice experiment. The top section
+reports the “failure rate” – the proportion of rounds in which the subject did not choose the option
+with the highest dollar value. The second section reports the average absolute loss – the difference
+in dollar value between the chosen item and the highest value item in the choice set.
+Averaging across all treatments, subjects fail to select the best option almost 38 percent of the
+time, and leave $3.12, or 17 percent of the maximum amount on the table in each round.10 Both of
+these performance measures worsen with the size and the complexity of the choice set, reaching
+a failure rate of 65 percent, and an average loss of $7.12 in the size 40, complexity 7 treatment.
+Regression analysis shows that the difference in losses between treatments is significant.11
+B. Choice Process Task
+Given that our analysis of the search-based determinants of choice quality is based primarily
+on the choice process data of experiment 2, it is important to explore how the level and pattern
+of final choices compares across experiments 1 and 2. To ensure that subjects in experiment
+2 had indeed finalized their choices, we retain only rounds in which they explicitly press the
+submit button before the allotted 120 seconds. This removes 94 rounds, or 8.8 percent of our
+total observations. Table 1 compares failure rates and average absolute losses by treatment for
+choice process and standard choice tasks.
+In both the choice process experiment and the standard choice experiment, subjects fail to find
+the best option more frequently and lose more money in larger and more complicated choice
+sets. However, in almost all treatments, the quality of final choice is worse in the choice process
+task than the standard choice task. We explore this difference in section V, where we relate it
+to the different incentives in the two experiments. There is less incentive to continue search in
+the choice process task, given that the probability of additional effort raising the payoff falls over
+time.
+III. Sequential Search and Satisficing
+We use the choice process data from experiment 2 to test whether a simple sequential search
+model with a reservation level of utility can explain the failure of people to select the best available option. We test both whether subjects appear to understand the value of each searched object
+in full before moving on to the next (as in the classic search models of Stigler [1961] and McCall [1970]), and whether they appear to search until an object is found that is above a fixed
+reservation utility level. The power of our tests depends on observing subjects switching from
+one alternative to another. Fortunately, in 67 percent of rounds we observe at least one occasion
+on which the subject switches between options after the initial change away from $0. The mean
+number of such switches is 1.4.
+10 There is no evidence for any effect of learning or fatigue on choice performance. The order in which choice rounds
+were presented was reversed for half the subjects, and the order of presentation did not have a significant effect on
+performance. In part, this may be because our experimental design is structured to remove learning effects. The decision
+making context, including the distribution of prizes, is known to the decision maker at the start of each experimental
+round.
+11 Absolute loss was regressed on dummies for choice set size, complexity and interactions, with standard errors
+calculated controlling for clustering at the subject level. Losses were significantly higher at the 5 percent level for size 40
+compared to size 10 choice sets, and for the interaction of size 40 and complexity 7 compared to size 10 and complexity
+3 choice sets.
+
+6
+
+THE AMERICAN ECONOMIC REVIEW
+
+MONTH YEAR
+
+TABLE 1—P ERFORMANCE IN CHOICE PROCESS TASK ( EXPERIMENT 2) VS . STANDARD CHOICE TASK ( EXPERIMENT
+1)
+
+Failure rate (percent)
+Complexity
+Set size
+Set size
+3
+7
+10
+Choice process 11.38 46.53
+Standard choice 6.78 23.61
+20
+Choice process 26.03 58.72
+Standard choice 21.97 56.06
+40
+Choice process 37.95 80.86
+Standard choice 28.79 65.38
+Absolute loss (dollars)
+Complexity
+Set size
+Set size
+3
+7
+10
+Choice process
+0.42
+3.69
+Standard choice 0.41
+1.69
+20
+Choice process
+1.62
+4.51
+Standard choice 1.10
+4.00
+40
+Choice process
+2.26
+8.30
+Standard choice 2.30
+7.12
+Number of observations
+Complexity
+Set size
+3
+7
+10
+Choice process
+123
+101
+Standard choice
+59
+72
+20
+Choice process
+219
+172
+Standard choice
+132
+132
+40
+Choice process
+195
+162
+Standard choice
+132
+130
+
+A. Sequential Search
+Caplin and Dean [Forthcoming] provide a method of identifying whether or not choice process
+data is consistent with sequential (but possibly incomplete) search. Assuming that utility is
+monotonically increasing in money, a necessary and sufficient condition for choice process data
+to be in line with sequential search is that successive recorded values in the choice process must
+be increasing. We refer to this as Condition 1:
+Condition 1 If option y is selected at time t and option x is selected at time s > t, it must be the
+case that the value of x is no less than the value of y.12
+In order to test whether our subjects are close to satisfying Condition 1, we use a measure of
+consistency proposed by Houtman and Maks [1985]. The Houtman-Maks (HM) index is based
+on calculating the largest fraction of observations that are consistent with Condition 1.13
+Figure 2 shows the distribution of HM indices for all 76 subjects. Over 40 percent of our
+subjects have an HM index above 0.95, while almost 70 percent have an HM index above 0.9
+12 Note that the choice process methodology only identifies a subset of searched objects: anything that is chosen at
+some point we assume must have been searched, but there may also be objects that are searched but never chosen, which
+we cannot identify. Combining our technology with a method of identifying what a subject has searched (for example
+
+VOL. VOL NO. ISSUE
+
+SEARCH AND SATISFICING
+
+7
+
+F IGURE 2. D ISTRIBUTION OF HM INDICES FOR ACTUAL AND RANDOM DATA ( EXPERIMENT 2)
+
+– meaning that over 90 percent of their switches are consistent with Condition 1, and therefore
+consistent with sequential search. Figure 2 also shows the distribution of HM indices for 76,000
+simulated subjects with the same number of switches as our subjects but who choose at random
+– a measure of the power of our test (see Bronars [1987]). Clearly, the two distributions are very
+different, as confirmed by a Kolmogorov–Smirnov test ( p < 0.0001).
+This analysis suggests that, for the population as a whole, sequential search does a good job of
+describing search behavior. We can also ask whether the behavior of a particular subject is well
+described by the sequential search model. To identify such sequential searchers, we compare
+each subject’s HM index with the HM indices of 1,000 simulations of random data with exactly
+the same number of observations in each round as that subject. For the remainder of the paper
+we focus on the 68 out of 76 subjects who have an HM index above the 95th percentile of their
+randomly generated distribution.14
+F IGURE 3. P ROPORTION OF FINAL CHOICES WHERE THE BEST OPTION WAS FOUND AND LARGEST PROPORTION OF
+SELECTIONS TO HIGHER VALUE ( EXPERIMENT 2)
+
+One feature of the sequential search model is that it revives the concept of revealed preference
+in a world of incomplete information. Panel A of figure 3 shows how close our subjects are to
+satisfying the standard rationality assumption in each of our treatments, by showing the proportion of rounds in which the best alternative is chosen. Panel B shows how close our subjects are
+to satisfying rationality for sequential search in each treatment by calculating the HM index with
+respect to Condition 1. The level of mistakes as measured by the standard definition of revealed
+preference is far higher than by the sequential search measure. Note also that while there is strong
+evidence of increasing mistakes in larger and more complex choice sets according to the standard
+measure, such effects are minimal according to the sequential search measure. Using the latter,
+there is no effect of set size on mistakes, and only a small effect from complexity.
+B. Satisficing and Reservation Utility
+The essential advantage that choice process data provides in testing the satisficing model is
+that it allows us to observe occasions in which subjects continue to search having uncovered
+Mouselab or eye tracking) would therefore be of interest.
+13 Specifically, we identify the smallest number of observations that need to be removed for the resulting data to be
+consistent with condition 1. The HM index is the number of remaining observations, normalized by dividing through by
+the total number of observations.
+14 An alternative measure of the failure of Condition 1 would be to calculate the minimum total change in payoff
+needed in order to adjust the data to satisfy Condition 1. For example, if an object worth 12 was selected first and then
+one worth 4, we would have to make a reduction of 8 to bring the data in line with Condition 1. On the other hand, if a
+subject selected 5 and then 4, only a reduction of 1 would be needed.
+The correlation between these two measures is very high in our sample: the Spearman’s rank correlation is 0.96.
+However, our subjects perform worse relative to the random benchmark according to this measure than according to the
+standard HM index. Using the new measure, 62 out of 76 subjects can be categorized as sequential search types using the
+95th percentile of random choice simulations. This suggests that, when our subjects mistakenly switch to worse objects,
+they sometimes make large errors in terms of dollar value.
+
+8
+
+THE AMERICAN ECONOMIC REVIEW
+
+MONTH YEAR
+
+unsatisfactory objects. This allows us to directly test the reservation stopping rule and estimate
+reservation values for our different treatments.
+The first indication that our subjects exhibit satisficing behavior is shown in figure 4. This
+shows how the value of the selected object changes with order of selection for each of our six
+treatments. Each graph has one isolated point and three segmented lines. The isolated point shows
+the average object value for those who stop at the first object chosen.15 The first segmented line
+shows the average value of each selection from rounds in which one switch was made. The next
+segmented line shows the average value of each selection in rounds where 2 switches were made,
+and the final segmented line for rounds in which 3 switches were made.
+F IGURE 4. AVERAGE VALUE BY SELECTION ( EXPERIMENT 2)
+
+Figure 4 is strongly suggestive of satisficing behavior. First, as we would expect from the
+preceding section, aggregate behavior is in line with sequential search: in all but one case, the average value of selections is increasing. Second, we can find reservation values for each treatment
+such that aggregate behavior is in line with satisficing according to these reservations. The horizontal lines drawn on each graph show candidate reservation levels, estimated using a technique
+we describe below. In every case, the aggregate data show search continuing for values below
+the reservation level and stopping for values above the reservation level, just as Simon’s theory
+predicts.
+E STIMATING R ESERVATION L EVELS
+In order to estimate reservation utilities for each treatment, we assume that all individuals in
+a given choice environment have the same reservation value v and experience variability ε in
+this value each time they decide whether or not to continue search. Further, we assume this stochasticity enters additively and is drawn independently and identically from the standard normal
+distribution.16 Letting v be the value of the item that has just been evaluated, the decision maker
+(DM) stops search if and only if v ≥ v + ε, where ε ∼ N (0, 1). To cast this as a binary choice
+model, let k be a decision node, v k be the value of the object uncovered and εk the error. Note
+that the probability of stopping search is (v k − v), where is the cumulative density function
+of the standard normal distribution, so we can estimate v̄ using maximum likelihood.
+To employ this procedure using our data, we need to identify when search has stopped, and
+when it has continued. The latter is simple: search continues if a subject switches to another
+15 Following the initial switch away from the zero value option.
+16 There are at least two ways to interpret the additive error term in this model. The first is that subjects calculate each
+
+option perfectly but only have a rough idea of their reservation value. The second is that subjects have a clear idea of
+their reservation value, but see the value of each option with some error.
+The existing literature regarding stochastic choice models is summarized in Blavatsky and Pogrebna [2010]. Models
+can broadly be categorized into two types. The first are “tremble” models of the type used in Harless and Camerer [1994].
+For any given decision, there is a constant probability that the subject will make a mistake. All types of mistake are then
+equally probable. The second type assumes that the value of each option is observed with some stochastic error. Different
+models of this type assume different error structures, but all assume that small errors are more likely than large ones.
+Our estimation technique uses a model from the second category: the Fechner Model of Heteroscedastric Random
+Errors, which assumes that the reservation value is observed with an additive, normally distributed error term. In our
+setting, we find the tremble class of models implausible – neither intuition nor the data supports the idea that small errors
+are as likely as large ones.
+It terms of the precise distribution of the error term, we tested other common alternatives: logistic and extreme value
+errors. The results under these alternative assumptions were essentially the same.
+
+VOL. VOL NO. ISSUE
+
+SEARCH AND SATISFICING
+
+9
+
+alternative after the current selection. Identifying stopped search is slightly more complicated.
+If we observe that a subject does not make any more selections after the current one, then there
+are three possibilities. First, they might have continued to search, but run out of time before they
+found a better object. Second, they might have continued to search, but already have selected the
+best option. Third, they might have stopped searching. We therefore consider a subject to have
+stopped searching at a decision node only if they made no further selections, pressed the submit
+button, and the object they had selected was not the highest value object in the choice set.
+R ESULTS : E STIMATED R ESERVATION L EVELS
+Because we assume that all individuals have the same distribution of reservation values in a
+given environment, we pool together all selections within each treatment for the 68 participants
+whose choice data is best modeled with sequential search. Table 2 shows the estimated reservation levels for each treatment, with standard errors in parentheses.
+TABLE 2—E STIMATED RESERVATION LEVELS ( EXPERIMENT 2)
+
+Complexity
+Set size
+10
+20
+40
+
+3
+Sequential search types
+9.54 (0.20)
+Reservation-based search types 10.31 (0.23)
+Sequential search types
+11.18 (0.12)
+Reservation-based search types 11.59 (0.13)
+Sequential search types
+15.54 (0.11)
+Reservation-based search types 15.86 (0.12)
+Note: Standard errors in parenthesis
+
+7
+6.36
+6.39
+9.95
+10.15
+10.84
+11.07
+
+(0.13)
+(0.13)
+(0.10)
+(0.10)
+(0.10)
+(0.10)
+
+Table 2 reveals two robust patterns in the estimated reservation levels. First, reservation levels
+decrease with complexity: using a likelihood-ratio test, estimated reservation levels are significantly lower for high complexity treatments than for low complexity treatments at all set sizes
+( p < 0.001). Second, reservation levels increase monotonically with set size (significantly different across set sizes for both complexity levels with p < 0.001).
+One question that this estimation strategy does not answer is how well the reservation utility
+model explains our experimental data. In order to shed light on this question, we calculate the
+equivalent of the HM index for this model with the estimated reservation levels of table 2. For
+each treatment, we calculate the fraction of observations which obey the reservation strategy (i.e.
+subjects continue to search when they hold values below the reservation level and stop when they
+have values above the reservation level).
+TABLE 3—AGGREGATE HM INDICES FOR RESERVATION - BASED SEARCH ( EXPERIMENT 2)
+
+Set size
+10
+20
+40
+
+Complexity
+3
+7
+0.90 0.81
+0.87 0.78
+0.82 0.78
+
+The results, aggregated across all subjects, are shown in table 3. The estimated model describes
+about 86 percent of observations for treatments with simple objects and about 78 percent for com-
+
+10
+
+THE AMERICAN ECONOMIC REVIEW
+
+MONTH YEAR
+
+plicated objects. Both of these percentages are significantly higher than the random benchmark
+of 50 percent (where people arbitrarily stop or continue at each decision node) at the 1 percent
+level.
+There is significant heterogeneity across individuals with respect to how well they follow a
+fixed reservation stopping rule. While the majority of subjects have HM indices above 75 percent,
+some have extremely low scores and are clearly poorly described by a reservation utility model
+with the given estimated reservation levels. In order to ensure these individuals are not affecting
+our estimates in table 2, we repeat the estimation of reservation strategies without those subjects
+who have an HM index below 50 percent (an additional 6 subjects). These results are in table 2
+under the rows for “Reservation-based search types.” The estimated reservation levels are similar
+to those for the whole sample.
+C. Reservation Utility or Reservation Time?
+A natural question is whether our data is consistent with other stopping rules. One obvious
+candidate is a stopping rule based on a reservation time, in which subjects search for a fixed time
+and select the best option found subject to this time constraint. In order to assess this possibility,
+we redraw in figure 5 the graphs of figure 4, but show the average time of each switch, rather than
+the average value on the vertical axis.
+F IGURE 5. AVERAGE TIME BY SWITCH ( EXPERIMENT 2)
+
+Figure 5 provides no support for the reservation time stopping rule. Unlike in figure 4, there
+is generally no “reservation time” such that subjects continue to search for times below this level
+and stop for times above that level (the horizontal lines on each graph show a reservation stopping time estimated using the procedure describes in section III.B). Instead, those who identified
+a high value object with their first selection stopped quickly, while those who made the most
+switches took significantly longer. This is precisely as the reservation utility model would suggest, and runs counter to the predictions of the reservation time model.
+IV. Search Order and Choice
+In this section we show that choice process data provides insight into the order of search, and
+that this information can help predict when subjects will do badly in particular choice sets.
+The first finding is that subjects in experiment 2 tend to search from the top to the bottom of
+the screen. When we regress the order in which an object is selected on its position on screen,
+we find that the average screen position is significantly higher (i.e. further down the screen) for
+later selections.17 This relationship is more pronounced for choice sets with simple, rather than
+complex objects.18
+To assess whether subjects search from top to bottom (TB), we calculate the fraction of observations that are consistent with this search order – in other words, the fraction of observations
+for which objects selected later appear further down the screen. A subject is categorized as being
+a TB searcher if this HM index for their search order is in the 95th percentile of a benchmark
+17 Regressing selection number on the screen position of the selection gives a coefficient of 0.028, significant at the 1
+percent level (allowing for clustering at the subject level).
+18 For complexity 3 choice sets, regressing selection number on the screen position of the selection gives a coefficient
+of 0.036, significant at the 1 percent level, while for complexity 7 sets the coefficient is 0.018, not significant at the 10
+percent level.
+
+VOL. VOL NO. ISSUE
+
+SEARCH AND SATISFICING
+
+11
+
+distribution constructed using random search orders. With this criterion, 53 percent of subjects
+in experiment 2 are well described by TB search.
+While the search order HM index is determined independently of a subject’s performance, we
+find that TB searchers do worse when the best object appears further down the screen. When
+we regress whether a subject found the best option onto the screen location of the best option,
+the coefficient is negative (-0.03) and significant at the 1 percent level for TB searchers, but is
+smaller in magnitude (-0.01) and insignificant at the 10 percent level for those not classified as
+TB searchers.
+For subjects that are strict TB searchers, sequential search has particularly strong implications.
+Thus far, we have assumed that we only know an object has been searched if it has been chosen
+at some point. However, if a strict TB searcher at some point selects the object at a certain screen
+position, then they must have searched all objects in screen positions above it. For example, if
+the object in position 10 is selected, then the objects in positions 1 to 9 must have been searched
+through as well. In this case, the test for sequential search is whether or not, at any given time, the
+value of the currently chosen object is higher than all the objects that fall earlier in the assumed
+search order.
+In the low complexity choice environment, we find that subjects classified as TB searchers
+behave in line with this strict form of sequential search in about 92 percent of cases. They also
+do significantly better in this test than subjects that we do not classify as TB.19 However, even
+those we categorize as TB searchers violate this condition in about 42 percent of cases for more
+complicated choice sets. This suggests that, in more complicated choice sets, even subjects who
+generally search from top to bottom may not fully examine all of the objects along the way.
+In addition to TB search, experiment 3 enables us to explore whether or not object complexity
+impacts search order. We find not only that subjects in general search the screen from top to
+bottom, but also from simple to complex objects.20 We define a subject in this experiment to
+be a “Simple-Complex” (SC) searcher if they have a corresponding HM index above the 95th
+percentile of random search orders. Eight subjects are categorized as both TB and SC searchers,
+six as just TB searchers, three as just SC searchers. Only three subjects could be categorized as
+neither.
+V. Choice Process and Standard Choice Data
+The choice process experiment has incentives that are different from those operating in a standard choice environment. To understand the impact that these incentives have on decisions, we
+characterize optimal stopping strategies in a sequential search model that covers both the standard
+experiment and the choice process experiment. We also explore behavioral differences between
+experiments. In this respect we take advantage of the fact that, in experiment 1, subjects were able
+to, and indeed did, select options prior to hitting the submit button and finalizing their choices.21
+We can use these intermediate clicks to test our search models in the standard choice environment
+of experiment 1, just as we did in experiment 2.
+A. Condition 1 in Experiment 1
+We use the intermediate choice data from experiment 1 to explore evidence for Condition 1,
+the sequential search condition, in the standard choice environment. These tests indicate that if
+19 Controlling for selection number and position on screen, the coefficient on being a Top-Bottom searcher is negative
+and significant ( p = 0.005) in a regression where success or failure of top down sequential search is the dependent
+variable.
+20 Regressing selection number on the screen position and complexity of the object selected gives coefficients of 0.037
+and 0.136 respectively, both significant at the 1 percent level (allowing for clustering at the subject level).
+21 While there was no direct financial incentive for changing the selection in experiment 1, there may be a psychological
+incentive if object selection aids memory.
+
+12
+
+THE AMERICAN ECONOMIC REVIEW
+
+MONTH YEAR
+
+anything, data from the standard choice environment are more in line with sequential search than
+choice process data. Indeed, there are even fewer violations of Condition 1 in experiment 1 (8
+percent of rounds with a violation) than there were in experiment 2 (10 percent of rounds with a
+violation). Once again there was little effect of either complexity or choice set size on conformity
+with Condition 1.
+B. A Model of Optimal Search
+Given that Condition 1 applies generally in both experiments 1 and 2, we develop an optimizing
+model of sequential search that covers both experimental designs. The search cost is specified
+in utility terms, as in Gabaix et al. [2006]. The DM is an expected utility (EU) maximizer with
+a utility function u : X → R on the choice set X. We endow the searcher with information on
+one available option at time t = 0, a period in which no choice is to be made. We normalize
+u : X → R so that the endowed prize has an EU of zero. At each subsequent time 1 ≤ t ≤ T ,
+the DM faces the option of selecting one of the options already searched, or examining an extra
+option and paying a psychological search cost κ > 0 (in EU units). The agent’s search strategy
+from any nonempty finite subset A ⊂ X is based only on the size M of the set of available objects
+in A, not the identities of these objects. Each available prize is assumed ex ante to have a utility
+level that is independently drawn from some distribution F(z), as in our experiment. There is no
+discounting.
+To break the otherwise rigid connection between time and the number of objects searched, we
+introduce parameter q ∈ (0, 1) as the probability that searching an object in hand for one period
+will result in its identity being known. If this does not happen, the same geometric probability
+applies in the following periods. Once search stops, the agent must choose one of the identified
+objects.22
+To match the choice process experimental design, we allow for the possibility that search after
+time t ≥ 1 will have no impact on the actual selection. We let the non-increasing function J (t)
+identify the probability that the search from time t on will actually impact choice. In the standard
+choice environment, J (t) is constant at 1, while in the choice process environment J (0) = 1,
+J (t) − J (t + 1) > 0 for 1 ≤ t ≤ T − 1 and J (T + 1) = 0 (where T = 120 seconds).
+Our characterization of the optimal search strategy is straight forward, and the proof is available in the online appendix.
+THEOREM 1: For any time t, 1 ≤ t ≤ T , define the reservation utility level u R (t) as the unique
+solution to the equation,
+
+(1)
+
+∞
+
+[z − x] d F(z) =
+
+κ
+.
+q J (t)
+
+u R (t)
+
+It is uniquely optimal to stop search and select the best prior object searched of utility ū t−1 if
+ū t−1 > u R (t), to continue search if ū t−1 < u R (t), with both strategies optimal if ū t−1 = u R (t).
+In the standard choice environment, J (t) = 1 for all t. Theorem 1 implies that the optimal
+strategy is a fixed reservation level ū R defined as the solution to the following equation:
+
+(2)
+
+∞
+
+(z − ū R )d F(z) =
+
+κ
+.
+q
+
+ū R
+22 This method of modeling makes the process of uncovering an option equivalent to the process of “locating” it as
+feasible. The strategy is more intricate if we allow unexplored options to be selected.
+
+VOL. VOL NO. ISSUE
+
+SEARCH AND SATISFICING
+
+13
+
+This reservation level is decreasing in the cost of search κ, but is invariant to both the size of the
+choice set and the number of options that remain unsearched.
+In the choice process environment, J (t) is decreasing. Theorem 1 therefore implies that the
+optimal strategy is defined by a declining reservation level that depends only on J (t), not the size
+of the choice set or the number of remaining alternatives. For any time t > 0, the reservation
+level in the choice process environment will be below the level in the equivalent standard choice
+environment. This result is intuitive: for any t > 0, the probability of further search affecting the
+outcome is higher in the standard choice environment than the choice process environment.
+C. Stopping Rules in Experiments 1 and 2
+The theoretical model suggests that, if anything, standard choice data should be better explained by the satisficing model than the choice process data. We begin by repeating the analysis
+of section III to determine whether this is the case. We find that the standard choice experiments
+are indeed well explained by a fixed reservation rule. Figure 6 recreates the analysis of figure 4,
+and suggests that a reservation stopping rule broadly describes the aggregate data. Table 4 shows
+that the estimated reservation levels for the standard choice data exhibit the same comparative
+statics as do those for the choice process data.23 Table 5 shows that the estimated HM indices for
+these reservation levels in the standard choice data are roughly similar for lower complexity and
+smaller for higher complexity.24 This suggests that there is little qualitative distinction between
+behavior in the standard choice and choice process environments.
+F IGURE 6. AVERAGE VALUE BY SWITCH ( EXPERIMENT 1)
+
+TABLE 4—E STIMATED RESERVATION LEVELS ( EXPERIMENT 1 AND EXPERIMENT 2)
+
+Complexity
+Set size
+10
+20
+40
+
+3
+Choice process 10.17 (0.22) 6.34
+Standard choice 10.05 (0.50) 8.41
+Choice process 11.22 (0.11) 8.92
+Standard choice 11.73 (0.16) 8.39
+Choice process 15.15 (0.10) 10.07
+Standard choice 16.38 (0.13) 10.39
+Note: Standard errors in parenthesis
+
+7
+(0.13)
+(0.20)
+(0.09)
+(0.12)
+(0.09)
+(0.12)
+
+The optimal stopping model suggests that there should be two differences between the standard choice data and the choice process data. First, reservation levels should be lower in the
+choice process environment than in the standard choice environment. Table 4 suggests that this
+is broadly so for the sample pursuing reservation strategies (HM index above 0.5). As table 4
+23 For the analysis of table 4 we drop subjects who never switch in any round and who are not classified as using a
+reservation strategy.
+24 For none of the treatments is the difference between experiments 1 and 2 in terms of compliance with the reservation
+utility model significant at the 5 percent level.
+
+14
+
+THE AMERICAN ECONOMIC REVIEW
+
+MONTH YEAR
+
+TABLE 5—AGGREGATE HM INDICES FOR RESERVATION - BASED SEARCH ( EXPERIMENT 1)
+
+Set size
+10
+20
+40
+
+Complexity
+3
+7
+0.94 0.74
+0.83 0.74
+0.77 0.73
+
+shows, the reservation utility is lower in experiment 1 than in experiment 2 in four of six treatments. This difference is significant in only two cases, and in both cases experiment 1 has the
+lower reservation level. Lower reservation levels could also explain why subjects in the choice
+process experiment finished searching more quickly than those in the standard choice environment.
+While differing incentives could explain why final choice performance is worse in the choice
+process environment than in the standard choice environment, another possibility is more mundane – experiment 2 had a time limit while experiment 1 did not. Experiment 4 allows us to
+determine which of these is the case, as it replicates the pure choice environment of experiment
+1, but with a 2 minute time limit. The results suggest that the time limit is responsible for some,
+but not all of the difference. The average failure rate across all treatments is 33.7 percent for
+the standard choice experiment, 39.5 percent in the standard choice with time limit experiment,
+and 43.6 percent in the choice process experiment.25 The difference in incentives does appear to
+impact performance in experiment 2 relative to that in experiment 1, over and above the effect of
+the time limit.
+The theoretical model shows that, while a fixed reservation strategy is optimal in the standard
+choice data case, a declining reservation strategy is optimal in the choice process environment.
+We use a revealed preference approach to test for the possibility of a declining reservation level.
+The revealed preference implication of a declining reservation level is straightforward. If a subject stops searching and chooses an object x at time t, but continues searching having found
+object y at time s > t, it must be the case that x is preferred to y. This is because the value of x
+must be above the reservation value at time t, which is in turn above the reservation level at time
+s. Moreover, the value of y must be below the reservation level at time s as search is continuing.
+Thus x must be preferred to y. In contrast, the revealed preference implication of a fixed reservation level is that x is preferred to y if search stops with x at some time t but continues with
+y at some time s, regardless of the relationship between t and s. Note that the fixed reservation
+model is a special case of the declining reservation model.
+Armed with these observations, we can ask whether the declining reservation model helps to
+explain more of the choice process data than the fixed reservation model, by asking how many
+times the relevant revealed preference condition is violated. We classify data as violating a particular revealed preference condition if option x is revealed preferred to option y, but the value of
+y is greater than the value of x. It turns out that the declining reservation model does not offer a
+better description of choice process data. While the declining reservation model by definition has
+fewer violations in absolute terms, the proportion of observations that violate revealed preference
+is higher – 24 percent for the fixed reservation model versus 32 percent for the declining reservation. Thus, our revealed preference approach finds little evidence that our subjects are responding
+to the choice process environment by implementing a declining reservation strategy.
+25 To calculate the average across all treatments, we calculate the average loss for each treatment and average across
+these.
+
+VOL. VOL NO. ISSUE
+
+SEARCH AND SATISFICING
+
+15
+
+D. Comparing Behavior across Treatments
+Assuming that search costs are higher for more complex objects, our model of optimal search
+implies that reservation utility should be lower in the higher complexity environment. It implies
+also that optimal reservation levels are independent of the size of the choice set. The comparative statics properties of our experimentally estimated stopping rules do not align perfectly with
+those of the optimal stopping rule. While subjects reduce their reservation level in response to
+higher search costs, they also tend to increase their reservation level as the size of the choice set
+increases.
+One possible reason for this discrepancy is that subjects may be searching “too much” in
+larger choice sets relative to smaller ones. This may relate to findings from the psychology and
+experimental economics literature that show that people may prefer smaller choice sets (Iyengar
+and Lepper [2000], Seuanez-Salgado [2006]).26 It is also possible that satisficing is followed as
+a rule of thumb, as Simon [1955] suggested. In the more everyday context with unknown object
+values, subjects may search more in larger sets in order to refine their understanding of what
+is available. They may then import this behavior into the experimental lab, despite being fully
+informed about the distribution of object values.
+VI. A Pure Random Error Model
+Our explanation for subjects’ failure to pick the objectively best option is based on incomplete
+sequential search. However, another possibility is that these failures result from calculation errors
+– subjects search the entire choice set but make errors when evaluating each option. In order to
+test this alternative explanation, we consider a simple model of complete search with calculation
+errors. We put a simple structure on the error process – subjects are modeled as if they see the true
+value of each object with an error that is drawn independently from an extreme value distribution.
+The mode of this distribution is 0, and the scale factor on the error term is allowed to vary with
+complexity level and set size. With these assumptions, we can estimate the scale factor for each
+treatment using logistic regression. Specifically, we find the scale factor that best predicts the
+actual choice in each choice set.27 We allow for scale factors to differ between treatments.
+Table 6 shows the estimated standard deviations from the calculation error model. This provides the first piece of evidence to suggest that the calculation error model is implausible. In large
+and complicated choice sets, the standard deviation needed to fit the data becomes very large –
+for example, in the size 40, complexity 3 treatment, the range between minus one and plus one
+standard deviation is around $7, while the mean value of our choice objects is just $4.
+Despite these large standard deviations, the calculation error model significantly underpredicts
+both the frequency and magnitude of our subjects’ losses, as shown in table 7.28 The prediction of
+subject performance under the estimated calculation error model was based on 1,000 simulations
+of each observed choice set, in which a draw from the estimated distribution was added to the
+value of each option and the object of highest total value was identified as being chosen.
+A final problem with the calculation error model is that it should lead to far more violations
+of sequential search than we in fact observe. Were subjects to be making calculation errors of
+26 One factor that potentially links these two findings is the concept of regret. Zeelenberg and Pieters [2007] show
+that decision makers experience more regret in larger choice sets and suggest that this can lead them to search for more
+information.
+27 For example, if a value of 10 was chosen by a subject from {7, 10, 12}, then our estimation strategy would find the
+scale factor that gives the highest probability to choosing 10, given that all options are seen with their own error. With
+this approach, enough error must be applied so that the noisy signal of 10 appears larger than the noisy signal of 12, but
+not so much error that the noisy signal of 7 appears larger than the noisy signal of 10.
+28 Alternatively, we could have estimated the scale factor to best match the number of mistakes or magnitude of mistakes found in the data, but this would ignore the actual choices that subjects made, which may contain other unpredicted
+patterns.
+
+16
+
+THE AMERICAN ECONOMIC REVIEW
+
+MONTH YEAR
+
+TABLE 6—E STIMATED STANDARD DEVIATIONS ( IN DOLLARS ) FOR THE CALCULATION ERROR MODEL ( EXPERI MENT 1 AND EXPERIMENT 2)
+
+Set size
+10
+20
+40
+
+Set size
+Choice process
+Standard choice
+Choice process
+Standard choice
+Choice process
+Standard choice
+
+Complexity
+3
+7
+1.91 5.32
+1.90 3.34
+2.85 5.23
+2.48 4.75
+3.54 7.25
+3.57 6.50
+
+TABLE 7—P ERFORMANCE OF ACTUAL CHOICES AND SIMULATED CHOICES USING THE CALCULATION ERROR
+MODEL ( EXPERIMENT 2)
+
+Set size
+10
+20
+40
+
+Set size
+10
+20
+40
+
+Failure rate (percent)
+Complexity
+Set size
+3
+7
+Actual choices
+11.38 46.53
+Simulated choices 8.35 32.47
+Actual choices
+26.03 58.72
+Simulated choices 20.13 37.81
+Actual choices
+37.95 80.86
+Simulated choices 25.26 44.39
+Absolute loss (dollars)
+Complexity
+Set size
+3
+7
+Actual choices
+0.42
+3.69
+Simulated choices 0.19
+1.86
+Actual choices
+1.62
+4.51
+Simulated choices 0.62
+1.78
+Actual choices
+2.26
+8.30
+Simulated choices 0.75
+2.48
+
+the magnitude required to explain final choices, we would expect to see them switch to worse
+objects more often than they do. We demonstrate this in figure 7. For this figure, the prediction
+of subject performance under the estimated calculation error model is based on simulations of
+choice process data assuming that values are observed with treatment-specific error.29 Note that
+29 Simulated data was generated as follows. For each sequence of choice process data observed in experiment 2, we
+simulated 1,000 sequences of the same length. For each sequence, a draw from the value distribution (rounded to the
+nearest integer) was treated as the initial selection. The sum of this value and a draw from the treatment-specific error
+distribution was then compared to the sum of a second draw from the value distribution and a draw from the treatmentspecific error distribution. If the latter sum was higher than the initial sum, then we assumed a switch occurred, and the
+value of the second draw from the value distribution was carried forward as the current selection. Otherwise we assumed
+that no switch occurred, and so the initial selection remained the current selection. Another draw from the value and error
+distributions was then made, and compared to the current selection plus error. This process was then repeated until the
+number of simulated switches was equal to the length of actual switches in sequence taken from experiment 2. We then
+calculated the ratio of correct switches (where the true value of the new selection was higher than the true value of the
+current selection) to the total number of switches.
+
+VOL. VOL NO. ISSUE
+
+SEARCH AND SATISFICING
+
+17
+
+F IGURE 7. C OMPARISON OF THE PROPORTION OF SWITCHES TO LARGER VALUE FOR ACTUAL DATA AND SIMU LATED DATA FROM CALCULATION ERROR MODEL ( EXPERIMENT 2)
+
+the predicted success rates for the calculation error model lie below the lower bounds of the 95
+percent confidence interval bars for all treatments.
+
+VII. Concluding Remarks
+
+We introduce a choice-based experiment that bridges the gap between revealed preference theory and the theory of search. We use it to classify search behaviors in various decision making
+contexts. Our central finding concerns the prevalence of satisficing behavior. Models of sequential search based on achievement of context dependent reservation utility closely describe our
+experimental data, suggesting the value of the search theoretic lens in systematizing our understanding of boundedly rational behavior.
+
+18
+
+THE AMERICAN ECONOMIC REVIEW
+
+MONTH YEAR
+
+REFERENCES
+
+Bernheim, B. Douglas, and Antonio Rangel. 2008. “Choice-Theoretic Foundations for Behavioral Welfare Economics.” In The Foundations of Positive and Normative Economics, ed. Andrew Caplin and Andrew Schotter. New York: Oxford University Press.
+Blavatsky, Pavlo and Ganna Pogrebna. 2010. “Models of Stochastic Choice and Decision Theories: Why Both are Important for Analyzing Decisions.” Journal of Applied Econometrics,
+25(6): 963-986.
+Bronars, Stephen. 1987. “The Power of Nonparametric Tests of Preference Maximization.”
+Econometrica, 55(3): 693-698.
+Campbell, Donald. 1978. “Realization of Choice Functions.” Econometrica, 46(1): 171-180.
+Caplin, Andrew, and Mark Dean. Forthcoming. “Search, Choice, and Revealed Preference.”
+Theoretical Economics.
+Eliaz, Kfir, and Ran Spiegler. Forthcoming. “Consideration Sets and Competitive Marketing.”
+Review of Economic Studies.
+Gabaix, Xavier, David Laibson, Guillermo Moloche, and Stephen Weinberg. 2006. “Costly Information Acquisition: Experimental Analysis of a Boundedly Rational Model.” American Economic Review, 96(4): 1043-1068.
+Gul, Faruk, and Wolfgang Pesendorfer. 2008. “The Case for Mindless Economics.” In The Foundations of Positive and Normative Economics, ed. Andrew Caplin and Andrew Schotter. New
+York: Oxford University Press.
+Harless, David, and Colin Camerer. 1994. “The Predictive Utility of Generalized Expected Utilities Theories.” Econometrica, 62(6): 1251-1289.
+Houtman, Martijn, and J. A. H. Maks. 1985. “Determining all Maximal Data Subsets Consistent
+with Revealed Preference.” Kwantitatieve Methoden, 19: 89-104.
+Iyengar, Sheena, and Mark Lepper. 2000. “When Choice is Demotivating: Can One Desire Too
+Much of a Good Thing?” Journal of Personality and Social Psychology, 79: 995-1006.
+Koszegi, Botond, and Matthew Rabin. 2008. “Revealed Mistakes and Revealed Preferences.”
+In The Foundations of Positive and Normative Economics, ed. Andrew Caplin and Andrew
+Schotter. New York: Oxford University Press.
+Manzini, Paola, and Marco Mariotti. 2007. “Sequentially Rationalizable Choice.” American
+Economic Review, 97(5): 1824-1840.
+Masatlioglu, Yusufcan, and Daisuke Nakajima. 2009. “Choice by Iterative Search.” Unpublished.
+McCall, John. 1970. “Economics of Information and Job Search.” Quarterly Journal of Economics, 84(1): 113-126.
+Ok, Efe. 2002. “Utility Representation of an Incomplete Preference Relation.” Journal of Economic Theory, 104: 429-449.
+Payne, John, James Bettman, and Eric Johnson. 1993. The Adaptive Decision Maker. Cambridge, MA: Cambridge University Press.
+Reutskaja, Elena, Rosemarie Nagel, Colin Camerer, and Antonio Rangel. Forthcoming. “Search
+Dynamics in Consumer Choice under Time Pressure: An Eyetracking Study.” American Economic Review.
+Rubinstein, Ariel, and Yuval Salant. 2006. “A Model of Choice from Lists.” Theoretical Economics, 1(1): 3-17.
+Seuanez-Salgado, Maria. 2006. “Choosing to have Less Choice.” FEEM Working Paper No. 37.
+http://ssrn.com/sequential searchtract=889311.
+
+VOL. VOL NO. ISSUE
+
+SEARCH AND SATISFICING
+
+19
+
+Simon, Herbert. 1955. “A Behavioral Model of Rational Choice.” Quarterly Journal of Economics, 69(1): 99-118.
+Stigler, George. 1961. “The Economics of Information.” Journal of Political Economy, 69(3):
+213-225.
+VanLehn, Kurt. 1982. “Bugs are Not Enough: An Analysis of Systematic Subtraction Errors.”
+Journal of Mathematical Behavior, 3(2): 3-71.
+Zeelenberg, Marcel, and Rik Pieters. 2007. “A Theory of Regret Regulation.” Journal of Consumer Psychology, 17(1): 3-18.
+
+Figure 1: A typical choice round
+
+Fraction of subjects
+0 .1 .2 .3 .4
+
+Figure 2: Distribution of HM indices for actual and random data (experiment 2)
+
+Actual data
+
+.6
+
+.7
+
+.8
+
+.9
+
+1
+
+Fraction of subjects
+0 .1 .2 .3 .4
+
+HM index
+
+Random data
+
+.4
+
+.6
+HM index
+
+.8
+
+1
+
+1
+
+Figure 3: Proportion of final choices where the best option was found and largest proportion of selections
+to higher value (experiment 2)
+Panel A: Best option found
+
+.8
+
+0.89
+
+0.77
+
+Fraction of choices
+.4
+.6
+
+0.67
+
+0.54
+0.49
+
+0
+
+.2
+
+0.23
+
+10
+
+20
+
+40
+
+10
+
+Complexity 3
+
+20
+
+40
+
+Complexity 7
+
+1
+
+Panel B: Higher value selected
+0.97
+
+0.94
+
+0.95
+0.86
+0.82
+
+0
+
+.2
+
+.4
+
+HM index
+.6
+
+.8
+
+0.84
+
+10
+
+20
+
+Complexity 3
+
+40
+
+10
+
+20
+
+Complexity 7
+
+40
+
+Figure 4: Average value by selection (experiment 2)
+10 Options, Complexity 3
+
+10 Options, Complexity 7
+
+20 Options, Complexity 3
+
+20 Options, Complexity 7
+
+40 Options, Complexity 3
+
+40 Options, Complexity 7
+
+Figure 5: Average time by switch (experiment 2)
+10 Options, Complexity 3
+
+10 Options, Complexity 7
+
+20 Options, Complexity 3
+
+20 Options, Complexity 7
+
+40 Options, Complexity 3
+
+40 Options, Complexity 7
+
+Figure 6: Average value by switch (experiment 1)
+10 Options, Complexity 3
+
+10 Options, Complexity 7
+
+20 Options, Complexity 3
+
+20 Options, Complexity 7
+
+40 Options, Complexity 3
+
+40 Options, Complexity 7
+
+.6
+
+Success rate
+.7
+.8
+
+.9
+
+1
+
+Figure 7: Comparison of the proportion of switches to larger value for actual data and
+simulated data from calculation error model (experiment 2)
+
+3, 10
+
+3, 20
+
+3, 40
+
+7, 10
+
+7, 20
+
+Complexity, Set size
+Actual data
+
+Note: Interval bars represent 95 percent confidence intervals
+
+Simulated data
+
+7, 40
+
+Search, Choice, and Revealed Preference∗
+Andrew Caplin†and Mark Dean‡
+May 2010
+
+Abstract
+With complete information, choice of one option over another conveys preference. Yet when
+search is incomplete, this is not necessarily the case. It may instead reflect unawareness that
+a superior alternative was available. To separate these phenomena, we consider non-standard
+data on the evolution of provisional choices with contemplation time. We characterize precisely
+when the resulting data could have been generated by a general form of sequential search. We
+characterize also search that terminates based on a reservation utility stopping rule. We outline
+an experimental design that captures provisional choices in the pre-decision period.
+Key Words: Revealed preference, search, incomplete information, revealed preference,
+framing eﬀects, status quo bias, bounded rationality, stochastic choice, decision time
+
+1
+
+Introduction
+
+In principle, incomplete information can explain apparent deviations from utility maximizing behavior: decision makers (DMs) may choose an inferior over a superior alternative if they are not
+aware that the superior one is available. Yet traditional decision theory focuses exclusively on situations in which choice of one option over another reflects an underlying preference. This “revealed
+preference” approach breaks down when information is incomplete.
+∗
+
+We thank Vince Crawford, Drew Fudenberg, Bart Lipman, Alessandro Lizzeri, Daniel Martin, Rosemarie Nagel,
+
+Efe Ok, Antonio Rangel, Ariel Rubinstein, Yuval Salant and three anonymous reviewers for insightful suggestions.
+†
+Center for Experimental Social Science and Department of Economics, New York University. Email address
+andrew.caplin@nyu.edu
+‡
+Department of Economics, Brown University. Email address mark_dean@brown.edu
+
+1
+
+In contrast with decision theory, search theory is premised on incomplete information [Stigler
+1961]. Given the tension between the principle of revealed preference in standard decision theory
+and search theory, it is understandable that there are few linkages between them.
+We develop a unified theoretical and experimental framework to help bridge the gap between
+search theory and the principle of revealed preference by characterizing models of choice which
+incorporate the process of information search. We first consider a model of “alternative-based”
+search (ABS), in which the DM searches sequentially through the available options, comparing
+searched options in full according to a fixed utility function. We consider also “reservation-based”
+search (RBS), a refinement of ABS under which the DM searches until an object is identified with
+utility above a fixed reservation level.
+While ABS and RBS represent important classes of search behavior, neither provides testable
+restrictions for standard choice data. Without additional ad hoc assumptions, any pattern of final
+choice is rationalizable with either model. We therefore consider a richer data set, which we call
+“choice process” data, with which to test the models. These data convey not only the final option
+that the DM selects, but also how their choice changes during the period of contemplation prior to
+making the final selection.1 By so enriching the data we are able to characterize whether or not
+incomplete information and search can explain apparent violations of utility maximization.
+The key to the axiomatic characterization of the ABS and RBS models is understanding what
+type of behavior implies a revealed preference in the context of each model. In neither case does
+final choice of one object over another necessarily indicate preference as the decision maker may be
+unaware of the unchosen object. However, in both cases, a DM who changes their choice from one
+object to another is interpreted as preferring the later-chosen object. The necessary and suﬃcient
+condition for the ABS model to hold is that this information must be “consistent”, in the sense
+of being acyclic. Under the RBS model, there may be additional revealed preference information
+in the final choice itself, as in a set comprising objects all of which are below reservation utility,
+search must be complete.
+The ABS and RBS models both treat search order as unobservable. This makes it natural to
+develop stochastic variants, given that search order is not a priori fixed and that there is no reason to
+believe that search from a given set will always take place in the same order. The stochastic versions
+1
+
+This data has previously been considered by Campbell [1978]
+
+2
+
+of ABS and RBS are developed in section 4. While stochasticity adds to the technical intricacy
+of the model, there is no conceptual diﬀerence between the deterministic and the stochastic cases:
+the stochastic results are precise analogs of their deterministic counterparts.
+The process of information search provides one particular channel by which choice can be
+aﬀected by seemingly unimportant features of the environment, such as the positioning of objects
+on the screen, or in a shop. This in turn could lead to behavioral phenomena such as framing
+eﬀects, status quo bias and stochastic choice. Our models imply that, when driven by search, these
+phenomena will have distinctive patterns. For example, if stochastic choice is driven by RBS and
+random search order, choice is random amongst choice sets consisting of above-reservation items,
+but deterministic in sets containing only below-reservation items. Characterizations in this spirit
+of framing eﬀects, status quo bias and stochastic choice are in section 5. To be clear, our approach
+to these phenomena does not well describe several of the most well-studied cases.
+The unified approach to theory and experiment that we take in this paper rests on two key
+premises.
+
+1. PREMISE 1: ABS and RBS represent broad styles of search that may be undertaken in a
+wide variety of diﬀerent decision making environments.
+2. PREMISE 2: It is conceptually and experimentally feasible to collect data on the evolution
+of “intended” choice with contemplation time.2
+
+With regard to the first premise, we study ABS and RBS because we see them as broad search
+modes that are of particular interest. We think that ABS-style search is a natural way to model
+search behavior in many environments — particularly when there is a cost of switching attention
+from one alternative to another, or if items can only be understood in their entirety. It is also
+the canonical model of search within economics: search is alternative-based in most labor market
+models, as well as Stigler [1961]’s model of price search, and Simon [1955]’s boundedly rational
+model of search. In addition to its central role in the theoretical canon, there is also experimental
+evidence suggesting that ABS may be a good description of search in some environments (e.g.
+2
+
+There is a gap between the theoretically ideal data and the data our experiments generate. The model assumes
+
+that we can identify not just one, but all best options at each point in time. In contrast, the experiment consider
+only a single choice at each point in time. A similar gap is encountered in tests of standard rationality axioms.
+
+3
+
+Reutskaja et al. [2008] and Payne, Bettman and Johnson [1988, 1993]). Similarly, we see RBS as
+a natural first model of search termination. It is the stopping rule suggested by Simon [1955] in
+his work on satisficing, and it also bears an interesting relationship with optimal search in certain
+environments.3
+With regard to the second premise, in section 6 we outline an experimental design that data
+on the evolution of provisional choices with contemplation time. Subjects are presented with a
+collection of objects from which they must choose. They can select an option at any time by
+clicking on it, and change their selection as many times as they like. The key to the experimental
+design is that the subject’s choice is not recorded at the point at which they press the finish button,
+but at a randomly selected time unknown to the subject. This ensures that it is in the interest
+of the subject to always keep selected their currently preferred option. As detailed in section 6,
+Caplin, Dean, and Martin [2009] conduct a proof-of-principle experiment in which both ABS and
+RBS are broadly supported.
+While important, ABS and RBS are not universally applicable. There are other modes of
+search available, such as those in which objects are compared on an attribute-by-attribute basis.
+Hence ABS may be more prevalent in environments in which there are high costs to switching
+among searched objects (for example, if the items of search were in diﬀerent physical locations), or
+where alternatives are best understood holistically (for example a written description of a financial
+contract). In contrast, if it is easy to compare diﬀerent alternatives on the same dimension, we
+might expect ABS to be a poor description of behavior. ABS also appears less intuitively compelling
+in when objects are easy to identify, yet diﬃcult to compare. In such less favorable contexts, our
+tests provide formal tools for understanding how the environment impacts search style, which in
+turn may impact the nature and extent of incomplete information.
+We see our approach as complementary to other attempts to use novel data to understand
+information search based on eye tracking or Mouselab [e.g. Payne, Bettman and Johnson, 1993;
+Gabaix et al., 2006, Reutskaja et al. 2008]. These approaches make aspects of the search process
+observable, yet do not connect these intermediate acts of search with their implications for choice.
+3
+
+While we do not explicitly derive ABS or RBS as resulting from optimal search it is true that a reservation based
+
+stopping rule is optimal within the class of ABS search behavior for a DM who has fixed costs of search, and is not
+learning about their environment. Moreover, the optimal reservation level does not depend on the size of the choice
+set the DM is choosing from, just the cost of search and perceived distribution of object values.
+
+4
+
+In comparison, choice process data misses out on potentially relevant visual and other cues on
+search behavior, but captures the moment at which the search that has been undertaken changes
+the DM’s assessment of the best option thus far encountered.4 The connection of eye tracking and
+Mouselab data with standard theories of choice has yet to be characterized.
+In the theoretical literature, Salant and Rubinstein [2006] also focus on data enrichment. They
+study choices made from sets presented in “list” order. In their main result, they assume that the
+order of the list is known to an outside observer, eﬀectively making the order of search observable.
+In this setting, they characterize a choice procedure by which the list order is only used to break
+ties in the case of indiﬀerence. The tie can be broken either by choosing the first or last of the
+optimal objects in the list. By contrast, we treat search order as unobservable, and assume that
+people may not fully examine the available set.
+Ours is not the first or only eﬀort to bridge the gap between decision theory and search theory.
+An alternative approach is to identify restrictions on more standard choice data deriving from
+particular search procedures. Masatlioglu and Nakajima [2009] characterize choices that result
+when the search path that is adopted depends only on an initial (externally observable) reference
+point. Ergin [2003], Manzini and Marrioti [2007], and Ergin and Sarver [2009] also characterize the
+implications for standard choice of various decision making procedures that produce incomplete
+information. Masatlioglu, Nakajima and Ozbay [2009] identify objects that a decision maker is
+actively considering by assuming that the removal of unconsidered objects cannot aﬀect choice. We
+believe that these various approaches are all worth pursuing, and that the intensification of interest
+among decision theorists in incomplete consideration of options is overdue.5
+4
+
+More broadly, prior experimental work on search and choice has made use of data that is less readily related to
+
+choice: the time taken in arriving at a decision [Busermeyer and Townsend, 1992; Rustichini, 2008]; direct observation
+of the order of information search using Mouselab [Payne, Bettman and Johnson, 1993; Ho, Camerer, and Weigelt,
+1998; Johnson et al., 2002; Gabaix et al., 2006]; eye movements [Wang, Spezio and Camerer, 2006]; and verbal
+responses [Ericsson and Simon, 1984].
+5
+In addition to playing an essential role in search theory, the fact that decision makers eﬀectively choose among a
+small subset of potentially available options is familiar in the marketing literature. One of the central challenges in
+marketing is how to get an option to be actively considered, rather than being rejected sight unseen. The literature
+on “consideration sets” reflects this focus on product awareness as a necessary prelude to product choice (e.g. Alba
+and Chattopadhyay [1985] and Roberts and Lattin [1991]). Eliaz and Speigler [2010] study the behavior of a firm
+that can use costly marketing devices to manipulate the consideration set of a consumer.
+
+5
+
+2
+
+Alternative Based Search: The Deterministic Case
+
+2.1
+
+The Choice Process
+
+In order to characterize our models of search, we use an enriched data set we call choice process
+data. Rather than recording only the alternative that is finally chosen by the DM, choice process
+data tracks how choice evolves with contemplation time. As such, choice process data comes in
+the form of sequences of observed choices. Let X be a nonempty finite set of elements representing
+possible alternatives, with X denoting non-empty subsets of X. Let Z be the set of all infinite
+sequences from X with generic element Z = {Zt }∞
+1 with Zt ∈ X /∅ all t ≥ 1. For A ∈ X , define
+ZA ⊂ Z to comprise all such sequences selected from A,
+ZA = {Z∈ Z|Zt ⊂ A all t ≥ 1} .
+Definition 1 A (deterministic) choice process (X, C) comprises a finite set X and a function,
+C : X → Z such that C(A) ∈ ZA ∀ A ∈ X .
+Given A ∈ X , choice process data assigns not just final choices (a subset of A), but a sequence
+of such choices, representing the DM’s choices after considering the problem for diﬀerent lengths
+of time. We let CA denote C(A) and CA (t) ∈ A denote the t-th element in the sequence CA , with
+CA (t) referring to the objects chosen after contemplating A for t periods. Choice process data
+represents a relatively small departure from standard choice data, in the sense that all observations
+represent choices, albeit constrained by time.
+
+2.2
+
+ABS
+
+Our first model captures the process of sequential search with recall, in which the DM evaluates
+an ever-expanding set of objects, choosing at all times the best object thus far identified. We say
+choice process data has an alternative-based search (ABS) representation if there exists a utility
+function and a non-decreasing search correspondence for each choice set such that what is chosen
+at any time is utility-maximizing in the corresponding searched set. To define this, we introduce
+Z ND ⊂ Z, the non-decreasing sequences of sets in Z,
+Z ND = {Z∈ Z|Zt ⊂ Zt+1 all t ≥ 1} .
+6
+
+Definition 2 Choice process (X, C) has an ABS representation (u, S) if there exists a utility
+function u : X → R and a search correspondence S : X → Z ND , with SA ∈ ZA all A ∈ X , such
+that,
+CA (t) = arg max u(x).
+x∈SA (t)
+
+The ABS model describes a DM who always chooses the best objects that they have searched.
+As time passes, objects are either searched, and so in SA (t), or not searched. All objects that are
+searched are compared in full according to a fixed utility function. Since the DM is assumed to recall
+all past searches, SA (t) is non-decreasing and the choice made by the DM weakly improves over
+time. It is this assumption that gives the concept of ABS empirical traction. Note that the ABS
+model makes no assumptions concerning how or why a decision maker decides to stop searching there is no restriction on how the function S behaves in the limit. There is also no restriction on
+the first object searched, since it may be the only object identified.
+Given that final choice of x over y is unrevealing with incomplete search, the ABS characterization relies on an enriched notion of revealed preference. To understand the required enrichment,
+it is useful to consider behavioral patterns that contradict ABS. To describe these patterns we use
+the notation C(A) = B1 ; B2 ; ...; Bn ! with Bi ⊂ A to indicate that the sets B1 , ..., Bn are chosen
+sequentially from A, with Bn being the final choice. We can readily identify four patterns of choice
+process data that contradict ABS.6
+• C α ({x, y}) = x; y; x!
+• C β ({x, y}) = x; {x, y}; y!
+• C γ ({x, y}) = y; x!; C γ ({x, y, z}) = x; y!
+• C δ ({x, y}) = y; x!; C δ ({y, z}) = z; y!; C δ ({x, z}) = x; z!
+C α contains a preference reversal: the DM first switches to y from x. As y has been chosen
+by the DM, it must be in the searched set when they choose x, implying that x is preferred to y.
+However, the DM then switches back to y, indicating that y is preferred to x. C β involves y first
+being revealed indiﬀerent to x, as x and y are chosen at the same time. Yet later y is revealed to be
+strictly preferred to x as x is dropped from the choice set. In C γ the direction in which preference
+6
+
+We drop the braces around singleton sets: x; y; x! conveys selection of choice sets {x}, {y}, and {x}.
+
+7
+
+is revealed as between y and x changes between the two element and three element choice set.
+C δ involves an indirect cycle, with separate two element sets revealing x as preferred to y, y as
+preferred to z, and z as preferred to x.
+As these examples suggest, the appropriate notion of strict revealed preference in the case of
+ABS is based on the notion of alternatives being replaced in the choice sequence over time. A DM
+who switches from choosing y to choosing x at some later time is interpreted by the ABS model
+as preferring x to y. As search is non-decreasing, the DM must be aware of y when they choose
+x. Thus the choice of x over y indicates revealed preference. Similarly, if we ever see x and y
+being chosen at the same time, it must be that the DM is indiﬀerent between the two alternatives.
+We capture the revealed preference information implied by the ABS model in the following binary
+relations.
+
+Definition 3 Given choice process (X, C), the symmetric binary relation ∼ on X is defined by
+x ∼ y if there exists A ∈ X such that {x, y} ⊂ CA (t) some t ≥ 1. The binary relation ÂC on X is
+/
+defined by x ÂC y if there exists A ∈ X and s, t ≥ 1 such that y ∈ CA (s), x ∈ CA (s + t) but y ∈
+CA (s + t).
+
+For a choice process to have an ABS representation it is necessary and suﬃcient for the revealed
+preference information captured in ÂC and ∼ to be consistent with an underlying utility ordering.
+Our characterization of ABS therefore makes use of Lemma 1, a standard result which captures
+the conditions under which an incomplete binary relation can be thought of as reflecting some
+underlying complete pre-order.7 Essentially, we require the revealed preference information to be
+acyclic.
+
+Lemma 1 Let P and I be binary relations on a finite set X, with I symmetric, and define P I on
+X as P ∪ I. There exists a function v : X → R that respects P and I:
+xP y =⇒ v(x) > v(y);
+xIy =⇒ v(x) = v(y);
+if and only if P and I satisfy OWC (only weak cycles): given x1 , x2 , x3 , .., xn ∈ X with x =
+x1 P Ix2 P Ix3 ..P Ixn = x1 , there is no k with xk P xk+1 .
+7
+
+Note that Lemma 1 is a direct corollary of Theorem 2.6 in Bossert and Suzumura [2009].
+
+8
+
+Armed with this result, we establish in theorem 1 that the key to existence of an ABS representation is for ÂC and ∼ to satisfy OWC.8 This OWC condition is closely related to the standard
+strong axiom of revealed preference. It is readily testable, and various metrics have been developed
+to measure how close a data set is to satisfying such conditions (see Dean and Martin [2009] for a
+review). Corollary 1, which is essentially immediate, characterizes equivalent representations of a
+choice process for which ÂC and ∼ satisfy OWC.
+Theorem 1 Choice process (X, C) has an ABS representation if and only if ÂC and ∼ satisfy
+OWC.
+
+Proof. By lemma 1, the result is equivalent to establishing that (X, C) admits an ABS representation if and only if there exists a function v : X → R that respects ÂC and ∼ in the sense of the
+lemma. Certainly, if an ABS representation (u, S) exists, x ∼ y implies u(x) = u(y) since both
+achieve the same maximum, while if x ÂC y, then u(x) > u(y) follows from y ∈ CA (s) ⊂ SA (s) ⊂
+SA (s+t) with t ≥ 1 in which u(x) is maximal, while u(y) is not. Conversely, if a function v : X → R
+exists that respects ÂC and ∼ on X, we can define the expanding correspondence S ∗ : X × N → X
+by,
+∗
+(t) = ∪s≤t CA (s).
+SA
+
+To show that (v, S ∗ ) form an ABS representation of (X, C), we show that CA (t) comprises all
+∗ (t) according to v : X → R. Note that if x ∈ C (t), then x ÂC y or
+elements maximal in SA
+A
+∗ (t), whereupon v(x) ≥ v(y) follows from the fact that v respects ÂC and ∼
+x ∼ y all y ∈ SA
+∗ (t) satisfying v(x) ≥ v(y) all y ∈ S ∗ (t) but
+on X. Conversely, suppose that we can find x ∈ SA
+A
+
+with x ∈
+/ CA (t). In this case, all y ∈ CA (t) satisfy y ÂC x, implying that v(y) > v(x), which
+contradiction completes the proof.
+8
+
+While their paper has a diﬀerent set up, there is a natural relation between our OWC condition and the dominating
+
+anchor axiom in Masatlioglu and Nakajima [2009]. Under a natural translation between the two settings, OWC implies
+the dominating anchor axiom but not vice versa. Masatlioglu and Nakajima [2009] consider extended choice problems
+that map choice sets and a reference point to final choice. The dominating anchor axiom states that, for any set S,
+there exists a “best” option x such that, if x is the reference point and some element from S is chosen from set T ,
+that element must be x itself. Our axiom implies this if we assume that the starting point is always searched. Under
+this condition, a violation of the dominating axiom would also lead to a violation of our OWC condition (as every
+item in the set S would have been revealed inferior to some other element in S). However, the dominating anchor
+axiom does not imply our OWC condition, as it has nothing to say about intermediate (i.e. non-final) choices.
+
+9
+
+Corollary 1 Utility function v : X → R and search correspondence S : X → Z ND form an ABS
+representation of (X, C) if
+
+1. v respects ÂC and ∼;
+2. ∪s≤t CA (s) ⊆ SA (t) ⊆ CA (t) ∪ {x ∈ X|v(x) < v(y), y ∈ CA (t)} for all A ∈ X , t ∈ N.
+
+Note from corollary 1 that there are strong limits to what can be said about search order. It
+characterizes representations as involving a utility function v that respects ÂC and ∼ on X, a
+search correspondence S that must include at least all objects which have been chosen from all
+sets A at times s ≤ t, and that may also contain any additional elements that have utility strictly
+below that associated with chosen objects according to v. Hence all that can be definitely asserted
+is that items rejected along the path were searched. Items that are never chosen may or may not
+have been searched. This implies that the more switches there are between objects in the choice
+process data, the more restricted is the search order.9
+Given that a utility function v : X → R can form the basis for an ABS representation, note
+that any strictly increasing transform of v will still form an ABS representation in combination
+with precisely the same set of search correspondences. However, we can also change the function
+v in non-monotonic ways that do not contradict the information in ÂC and ∼. For example, if
+X = {a, b, c}, and ÂC contains only {(a, b), (c, b)}, while ∼ is empty, the consistent utility functions
+do not restrict the ranking of a against b, so that non-monotonic changes to the utility function
+may still form part of an ABS representation. However, corollary 1 states, the upper bound on
+what may be contained in SA (t) is determined by the set of objects that have utility lower than
+those being chosen from A at time t. Thus, non-monotonic changes in the utility function may
+change the set of permissible search functions.
+9
+
+A reasonable prior, e.g. that search is in list order (Salant and Rubinstein [2008]), may enrich the inferences
+
+one can make from choice process data. This theory of search order would be supported if chosen options were only
+replaced by items higher in the list. Support would be even stronger if the selected options were the successive
+maxima in list order.
+
+10
+
+3
+
+Reservation Based Search: The Deterministic Case
+
+Since the ABS model says nothing about the stopping rule for search, we augment it with a simple
+“reservation utility” stopping rule in which search continues until an object is found which has
+utility above some fixed reservation level, whereupon it immediately ceases.10 We believe that
+RBS is an interesting model in its own right, as many of the search models currently used within
+economic fall into this category. These include search models in labor economics and industrial
+organization, as well as the satisficing procedure first introduced by Simon [1955].
+The key to the empirical content of RBS is that one can make inferences as to objects that must
+have been searched even if they are never chosen. Specifically, in any set in which the final choice
+has below reservation utility, it must be the case that all objects in the set are searched. Hence
+final choices may contain revealed preference information.
+Intuitively, an RBS representation is an ABS representation (u, S) in which a reservation level
+of utility ρ exists, and in which the above- and below-reservation sets Xuρ = {x ∈ X|u(x) ≥ ρ}
+
+and X\Xuρ play critical roles. Specifically, search stops if and only if an above-reservation item is
+
+discovered, so that search is complete if there are no above-reservation items in available. In order
+L = lim
+to capture this notion formally, we define CA
+t→∞ CA (t), as the final choice the DM makes
+L ≡ lim
+from a set A ∈ X as well as limit search sets SA
+t→∞ SA (t) ∈ X . Note that, for finite X, the
+
+existence of an ABS representation guarantees that such limits are well defined.
+
+Definition 4 Choice process (X, C) has a reservation-based search (RBS) representation (u, S, ρ)
+if (u, S) form an ABS representation and ρ ∈ R is such that, given A ∈ X ,
+L = A.
+R1 If A ∩ Xuρ = ∅, then SA
+
+R2 If A ∩ Xuρ 6= ∅, then:
+(a) there exists t ≥ 1 such that SA (t) ∩ Xuρ 6= ∅;
+(b) SA (t) ∩ Xuρ 6= ∅ =⇒ SA (t) = SA (t + s) all s ≥ 0.
+10
+
+One can readily allow for reservation rules that condition on immediately observable features of the choice set,
+
+such as its cardinality. Tyson [2007] considers the implications for final choice of a reservation level that decreases as
+choice sets get larger. However, Tyson assumes that the observable data is the set of all above reservation objects in
+a particular set.
+
+11
+
+Condition R1 demands that any set containing no objects above reservation utility is fully
+searched. Condition R2(a) demands that search must at some point uncover an element of the
+above-reservation set if present in the feasible set. Condition R2(b) states that search stops as soon
+as reservation utility is achieved.
+It should be noted that the RBS model only refines the behavioral implications of the ABS
+model by demanding both R1 and R2. With R1 alone, the RBS model imposes no additional
+behavioral restrictions, as any data that admits an ABS representation would also satisfy R1 if we
+set the reservation utility ρ such that Xuρ = X. Similarly, data that allows an ABS representation
+can also trivially satisfy R2 alone by setting ρ such that Xuρ = ∅.
+As with the ABS model, the key to characterizing the RBS model is to understand the corresponding notion of revealed preference. As RBS is a refinement of ABS, it must be the case that
+behavior that implies a revealed preference under ABS also does so under RBS. However, the RBS
+model implies that some revealed preference information may also come from final choice, with sets
+that contain only below-reservation utility objects being completely searched.
+The following cases that satisfy ABS but not RBS illustrate behaviors that must be ruled out:
+
+• C α ({x, y}) = x; y!; C α ({x, z}) = x!; C α ({y, z}) = z!
+• C β ({x, y}) = x; y!; C β ({x, y, z}) = x!
+In the first case, the fact that x was replaced by y in {x, y} reveals the latter to be preferred
+and the former to be below reservation utility. Hence the fact that x was chosen from {x, z} reveals
+z to have been searched and rejected as worse than x, making its choice from {y, z} contradictory.
+In the second, the fact that x is followed by y in the choice process from {x, y} reveals y to be
+preferred to x, and x to have utility below the reservation level (otherwise search must stop as
+soon as x is found). The limit choice of x from {x, y, z} therefore indicates that there must be no
+objects of above-reservation utility in the set. However, this in turn implies that the set must be
+fully searched in the limit, which is contradicted by the fact that we know y is preferred to x and
+yet x is chosen.
+These examples indicate the additional revealed preference information inherent in the RBS
+model. Under an RBS representation, when a unique final choice is made from two objects x, y ∈ X
+12
+
+either of which has below reservation utility, then we can conclude that the chosen object is strictly
+preferred. To see this, suppose that y has below reservation utility. In this case if it is chosen over
+x it must be that x was searched and rejected. Conversely, suppose that x is chosen over y. In this
+case either x is above reservation, in which case it is strictly preferred to y, or it is below reservation,
+in which case we know that the entire set has been searched, again revealing x superior.
+In order to use this insight to characterize when an RBS representation exists, we define a class
+of binary relations ÂL
+D on X for any set D ∈ X . These binary relations capture the revealed
+preference information that would derive from final choice with D as the set of below-reservation
+C
+utility objects. These binary relations ÂL
+D on X are then united with the information from Â to
+
+produce the new binary relation ÂR
+D which captures the revealed preference information from the
+RBS model under the assumption that D is the below reservation set.
+Definition 5 Given a choice process model (X, C) and set D ∈ X , the binary relation ÂL
+D on X is
+L
+L.
+/ CA
+defined by x ÂL
+D y if {x, y} ∩ D 6= ∅, and there exists A ∈ X with x, y ∈ A, x ∈ CA , yet y ∈
+L
+C
+R
+R
+The binary relation ÂR
+D is defined as ÂD ∪ Â , and %D is defined as ÂD ∪ ∼.
+
+To identify conditions for an RBS representation we focus on identifying objects that must be
+below-reservation utility in any possible representation. As a first step, we know that an object
+must have utility below the reservation level if we see a DM continue to search even after they have
+found that object. We call such an object non-terminal.
+Definition 6 Given choice process (X, C) define the non-terminal set X N ⊂ X
+X N = {x ∈ X|∃A ∈ X s.t. x ∈ CA (t) and CA (t) 6= CA (t + s) some s, t ≥ 1 }
+Using this concept, Proposition 1 characterizes the below-reservation sets that admit an RBS
+representation. The result establishes that below reservation sets must satisfy three properties.
+First, they must contain all non-terminal elements. Second, they must be closed under %R
+D : if x
+is below-reservation, and is revealed at least as good as y, then y must also be below reservation.
+Third, ÂR
+D and ∼ must satisfy condition OWC. We prove the proposition in appendix 1.
+Proposition 1 A choice process model (X, C) admits an RBS representation with below reservation set D if and only if:
+13
+
+1. X N ⊂ D.
+2. If x ∈ D and x %R
+D y, then y ∈ D.
+3. ÂR
+D and ∼ satisfy OWC.
+A necessary and suﬃcient condition for an RBS representation is therefore that there is some
+set D that satisfies these conditions. Note that if the third condition is satisfied for some set D,
+R
+R
+it will be satisfied for any D∗ ⊂ D: if D∗ ⊂ D, then ÂR
+D contains ÂD∗ , so that if ÂD (along with
+
+∼) satisfies OWC, then so will ÂR
+D∗ . Thus the relevant necessary and suﬃcient condition is that
+the revealed preference information generated by the smallest below-reservation set that satisfies 1
+and 2 satisfies OWC.
+To identify such a set, we introduce the indirectly non terminal set. This is the set of object in
+X that are either directly revealed as non-terminal, or are revealed as inferior to a non-terminal
+object.
+Definition 7 Given choice process (X, C) define the indirectly non-terminal set X IN ⊂ X as,
+L
+}.
+X IN = X N ∪ {x ∈ X|∃A ∈ X , y ∈ X N with x, y ∈ A and y ∈ CA
+
+It is clear that any below-reservation set must contain X IN : if y ∈ X N and y is chosen from
+A, then the entire set must have been searched, revealing unchosen elements to be worse than y.
+and ∼ satisfy OWC, then X IN satisfies conditions 1 and
+However, it is also true that, if ÂR
+X IN
+and ∼ satisfy
+2. Thus, a choice process data admits of an RBS representation if and only ÂR
+X IN
+OWC. Given its importance, we suppress the X IN subscript for preference relations defined using
+). We prove theorem 2 in appendix 1.
+this below-reservation set (i.e. ÂR =ÂR
+X IN
+Theorem 2 A choice process (X, C) has an RBS representation if and only if ÂR and ∼ satisfy
+OWC.
+The following corollary characterizes the set of equivalent RBS representations. First, one identifies all possible below reservation sets through proposition 1. Given such a set, which must include
+X IN , one checks that the utility function respects the resulting revealed preference information.
+Finally, the search correspondence is constructed as it was in the ABS model in the period before
+search stops, with no further search allowed once an above reservation element is identified.
+14
+
+Corollary 2 A utility function v : X → R, reservation level ρ, and S : X → Z ND form an RBS
+representation of a choice process if and only if
+
+1. D = {x ∈ X|v(x) < ρ} satisfies the properties of proposition 1.
+2. v respects ÂR
+D and ∼ .
+3. ∪s≤t CA (s) ⊆ SA (t) ⊆ CA (t) ∪ {x ∈ X|v(x) < v(y), y ∈ CA (t)} for all A ∈ X , t ∈ N.
+4. SA (t) ∩ Xuρ 6= ∅ =⇒ SA (t) = SA (t + s) all s ≥ 0.
+
+4
+
+The Stochastic Model
+
+The ABS and RBS models both treat search order as unobservable, and characterize the extent
+to which it is recoverable from choice process data. This makes it natural to develop stochastic
+variants, since there is no reason to believe that search from a given set will always take place in
+the same order. We therefore generalize the deterministic models of section 2 and 3 to allow for
+stochasticity. This allows us to develop stochastic versions of the RBS and ABS models, in which
+choice is generated from the maximization of a fixed utility function against a stochastic search
+sequence.
+
+4.1
+
+ABS
+
+We introduce a probability space on Z, the class of infinite sequences from X . The probability
+model is built upon standard foundations using cylinder sets.
+Definition 8 Given T ≥ 1 and Y ⊂ X T , define the cylinder set H (Y, T ) by,
+H (Y, T ) = {Z ∈ Z| (Z1 , ...ZT ) ∈ Y} .
+©
+ª
+T
+∈ 2Z , define F =σ(G) as the σ-algebra generated
+Define the algebra G = ∪∞
+T =1 H (Y, T ) |Y ⊂ X
+by G, and define P as all probability measures on (Z, F), with generic element P ∈ P.
+
+We define the stochastic choice process as a mapping from sets A ∈ X to probability distributions over ZA ⊂ Z.
+15
+
+Definition 9 A stochastic choice process (X, C̃) comprises a finite set X and a function C̃ :
+X → P such that C̃A ≡ C̃(A) has support ZA ⊂ Z.
+As for the deterministic case, a stochastic choice process has an ABS representation if it can be
+viewed as resulting from maximization of a utility function in the context of some process of search,
+with the searched set never shrinking. However we allow the search process to be stochastic. We
+will use S̃ : X → P ND to denote a stochastic search function, where: P ND ⊂ P identify probability
+measures on (Z, F) with support Z ND , the non-decreasing elements of Z. Given A ∈ X and
+F ∈ F, let C̃A (F ) , S̃A (F ) respectively denote the measure assigned to F by C̃(A), S̃(A).11
+Definition 10 Stochastic choice process (X, C̃) has a stochastic ABS representation (u, S̃) if
+there exists u : X → R and S̃ : X → P ND such that C̃ is the stochastic choice process derived by
+optimizing u against S̃,
+¾∞
+¾¶
+µ½
+½
+∈F
+, all A ∈ X , F ∈ F.
+Z ∈ Z| arg max u(x)
+C̄A (F ) = S̃A
+x∈Zt
+
+t=1
+
+The theorem that characterizes the stochastic ABS representation is essentially identical to that
+in the deterministic case. It simplifies notation to define join and replacement sets J xy , Rxy ⊂ Z
+for x, y ∈ X, where J xy is the set of choice processes in which x and y are chosen at the same time,
+while Rxy are those in which y is replaced by x.
+J xy = {Z ∈ Z| {x, y} ⊂ Zt some t ≥ 1} ;
+Rxy = {Z ∈ Z|y ∈ Zs , x ∈ Zs+t , y ∈
+/ Zs+t some s, t ≥ 1} ;
+Measurability of J xy , Rxy ⊂ Z is established in appendix 2.
+For purposes of establishing the stochastic ABS representation, we define x to be revealed
+strictly preferred to y if Rxy has strictly positive measure, and x to be revealed indiﬀerent to y if
+the set J xy has strictly positive measure.
+
+Definition 11 Given stochastic choice process (X, C̃), the binary relation ∼C̃ on X is defined by
+x ∼C̃ y if there exists A ∈ X with x, y ∈ A and C̃A (J xy ) > 0. The binary relation ÂC̃ on X is
+defined by x ÂC y if there exists A ∈ X with x, y ∈ A and C̃A (Rxy ) > 0.
+11
+
+That the set of Z ∈ Z with arg maxx∈Zt u(x)∞
+t=1 ∈ F is measurable is demonstrated in appendix 2.
+
+16
+
+As before, the condition for the characterization is that this revealed preference information is
+consistent with a fixed underlying utility function.
+
+Theorem 3 Stochastic choice process (X, C̃) has a stochastic ABS representation (u, S̃) if and
+only if ÂC̃ and ∼C̃ satisfy OWC.
+
+4.2
+
+RBS
+
+As in the deterministic case, the definition of a stochastic RBS representation requires the analysis
+of limit behavior. Given B ∈ X , we define LB to be the F-measurable subset of Z with limit B,
+n
+o
+LB = Z ∈ Z| lim Zt = B .
+t→∞
+
+In appendix 2 it is shown that a stochastic choice process model (X, C̃) with stochastic ABS
+representation (u, S̃) necessarily assigns full measure to the set in which limits exist,
+©
+ª
+C̃A ∪B∈X LB = 1.
+
+Hence, given a stochastic choice process model (X, C̃) with stochastic ABS representation (u, S̃)
+L , S̃ L on X endowed with
+and A ∈ X , we can define limit choice and search probability measures C̃A
+A
+
+the discrete sigma-algebra,
+L
+L
+(B) = C̃A (LB ) and S̃A
+(B) = S̃A (LB ) any B ∈ X .
+C̃A
+
+As in the deterministic case, the definition of stochastic RBS involves a utility function u :
+X → R and a level of reservation utility ρ which together identify above reservation set Xuρ ≡
+{x ∈ X|u(x) ≥ ρ}. Given Z ∈ Z, a key random variable in the stochastic RBS representation
+is the first time that reservation utility is hit. To simplify notation in the stochastic version of
+RBS, we let Huρ : Z −→ N ∪ ∞ denote this first hitting time associated with utility function u and
+reservation utility level ρ,
+Huρ (Z) =
+
+⎧
+⎨ inf t≥1 {Zt ∩ Xuρ } 6= ∅, if {Zt ∩ Xuρ } 6= ∅ some t;
+⎩
+
+∞ otherwise.
+
+That hitting times are F-measurable functions is standard.
+We use the notion of hitting times to define the stochastic version of the RBS model.
+17
+
+Definition 12 Stochastic choice process (X, C̃) has a stochastic RBS representation (u, S̃, ρ) if
+(u, S̃) form a stochastic ABS representation and ρ ∈ R is such that, given A ∈ X ,
+L (A) = 1
+RS1 If A ∩ Xuρ = ∅, then S̃A
+
+RS2 If A ∩ Xuρ 6= ∅, then:
+(a) S̃A {Z ∈ Z|Huρ (Z) is finite} = 1;
+o
+n
+L = S̃ (H ρ (Z)) = 1.
+(b) S̃A Z ∈ Z|S̃A
+u
+A
+As with ABS, the stochastic RBS characterization is the precise analog of the deterministic
+version, and relies on the identification of directly and indirectly non-terminal sets. We define
+∆y ⊂ Z to be the set of sequences in which y ∈ X appears at some point, but the sequence changes
+thereafter. Measurability is established in appendix 2.
+Definition 13 Given stochastic choice process (X, C̃), define the non-terminal set X̃ N ⊂ X as,
+n
+o
+X̃ N = x ∈ X|∃A ∈ X with x ∈ A and C̃A (∆x ) > 0 .
+
+Define the indirectly non-terminal set X̃ IN as X̃ N and elements rejected with positive probability
+
+in favor of an element of X N ,
+L
+({y}) > 0}.
+X̃ IN = X̃ N ∪ {x ∈ X||∃A ∈ X , y ∈ X̃ N with x, y ∈ A and C̃A
+
+The definition of revealed preference in the stochastic RBS model can now proceed in line with
+the deterministic case.
+Definition 14 Given stochastic choice process (X̃, C), the binary relation ÂL̃ on X is defined
+L {x} > 0 and
+by x ÂL̃ y if {x ∪ y} ∩ X̃ IN 6= ∅, and there exists A ∈ X with x, y ∈ A with C̃A
+
+C̃A (J xy ) = 0. Binary relation ÂR̃ is defined as ÂL̃ ∪ ÂC̃ .
+Using this definition, the standard application of Lemma 1 characterizes existence of an RBS
+representation.
+Theorem 4 Stochastic choice process (X, C̃) has a stochastic RBS representation (u, S̃, ρ) if and
+only if ÂR̃ and ∼C̃ satisfy OWC.
+18
+
+4.3
+
+Sketch of Proofs
+
+The proofs of theorem 3 and of theorem 4 are detailed in appendix 3. We limit ourselves in this
+discussion to presenting structural elements. Both proofs work by reducing the stochastic case to
+its deterministic counterpart. The key step involves showing that nothing is lost by “compressing”
+choice process data by removing time periods in which choice does not change.
+
+Definition 15 Stochastic choice process (X, C̃) is compressed if C̃A (Z COM ) = 1 for all A ∈ X ,
+where,
+Z COM ≡ {Z ∈ Z|Zt = Zt+1 =⇒ Zt = Zt+s all s ≥ 1}.
+In the first step of the reduction, a given stochastic choice process (X, C̃) is associated with a
+unique compressed choice process by removing all periods of constancy (see appendix 3 for details).
+The process of compression reduces to equivalence an infinite number of choice processes diﬀering
+only in the delay between switches.
+The first observation that makes compression of value is the invariance of key properties under
+compression and its inverse, decompression. It is immediate that the orderings ÂR̃ , ÂC̃ and ∼C̃ are
+preserved under both operations. It is equally immediate that ABS and RBS survive both under
+compression and decompression, since one uses exactly the same utility function and reservation
+utility in the representation of the original process and its transformation, using compression only to
+change the search correspondence by removing repetition in the case of compression, and inverting
+suitably in the process of decompression.
+The second observation that makes compression of value is that any compressed process that
+satisfies ABS is “finite”, in that only a finite number of sequences have strictly positive probability.
+Conversely, any compressed stochastic choice process for which ÂC̃ and ∼C̃ satisfy OWC is finite.
+While the formal definitions and proof are in appendix 3, the intuition is simple. Both ABS and
+OWC imply that a compressed stochastic choice process must stop changing within a number of
+periods that matches the cardinality of the power set of X .
+The bottom line of this reduction process is that the proofs in of theorems 3 and 4, detailed
+in the appendix, are provided only for finite models, with the extension to the general case being
+immediate. The critical observation in establishing the finite case is that any finite stochastic
+
+19
+
+choice processes (X, C̃) can be identified with an appropriately defined convex combinations of
+deterministic choice processes.
+
+5
+
+RBS and Non-Standard Behavior
+
+The stochastic RBS model allows for two channels by which seemingly unimportant changes in
+the decision making environment might lead to changes in the choices people make. First, they
+may impact the probability distribution over paths of search. Second, they may impact the level
+of reservation utility. These changes can, in turn, lead to framing eﬀects, status quo bias and
+stochastic choice of a specific form that we now characterize.
+
+5.1
+
+Framing Eﬀects
+
+To model framing eﬀects, let Γ comprise abstract elements γ ∈ Γ that we refer to as frames. For
+example, these frames may represent diﬀerent ways in which objects are physically displayed to
+the DM. Let Φ : Γ → C¯ be a mapping from frames to the class C¯ of stochastic choice processes on
+(Z, F), with Φ(γ) the process associated with γ ∈ Γ. We seek to characterize data sets in which all
+choice processes regardless of frame can be derived from a common underlying utility function but
+with frame-specific search orders and reservation utilities. Such a characterization is experimentally
+useful, since it indicates conditions under which one can derive information on preferences in a low
+search cost (hence high reservation utility) environment that will apply equally in a higher search
+cost (hence lower reservation utility) frame in which choice process data yields less direct evidence
+on preferences. It turns out that we need to apply OWC to a binary relation that appropriately
+unifies revealed preference information across frames. In the statement, S̄ denotes the set of all
+stochastic search processes on (Z, F).
+Definition 16 Define x ÂR̃(Γ) y if x ÂR̃ y according to some stochastic choice process Φ(γ) for
+some γ ∈ Γ . Similarly define x ∼C̃(Γ) y if x ∼R̄ y according to some stochastic choice process Φ(γ)
+for some γ ∈ Γ.
+Theorem 5 Given finite set X, frames Γ, and Φ : Γ → ¯
+C, there exists a utility function u : X → R,
+a family of reservation utilities ρ : Γ → R, and family of stochastic search processes Θ : Γ → S̄ such
+20
+
+that (u, Θ(γ), ρ(γ)) forms a stochastic RBS representation of Φ(γ) ∀ γ ∈ Γ if and only if ÂR̃(Γ)
+and ∼C̃(Γ) satisfy OWC.
+
+5.2
+
+Status Quo Bias
+
+One particular class of framing eﬀect that can be explored using the RBS model is status quo bias
+- the increased likelihood of selecting a particular object simply because it is the status quo, or
+currently selected option [Samuelson and Zeckhauser, 1988]. We can model such behavior as a
+framing model in which each status quo gives rise to its own frame. In order to capture status
+quo bias, we posit that the status quo object is always the first object searched in any choice
+environment.
+Under this assumption, the stochastic RBS model makes particular predictions about how status
+quo will aﬀect choice. For above-reservation utility objects, status quo bias will be complete: when
+such objects are the status quo then they will always be chosen, as the DM is immediately aware
+of their existence and will indulge in no further search. However, if the status quo object is below
+reservation utility then it will not be chosen unless it is the highest utility object in the choice set,
+in which case it will be chosen regardless of the status quo, as the stochastic RBS model implies
+that search will be complete in such cases. Thus, the RBS model implies a form of status quo bias
+that has two extremes: either an object will always be chosen when it is the status quo, or the
+status quo will have no eﬀect.
+
+5.3
+
+Stochastic Choice
+
+It is clear that the stochastic RBS model can give rise to stochastic choice in the form of a probability
+distribution over final choices. Even with a fixed utility function, final choice will be random if
+the order of search is random and search is incomplete. However this distribution will be of a
+particular form: choice may be stochastic among above reservation objects, while objects with
+below reservation utility are never chosen. In the simplest possible case with all search orders
+being equally probable, final choice is deterministic and consistent for choice sets made up only
+of below-reservation items, whereas for choice sets containing above-reservation items, there is an
+equal chance of choosing any such item. Observed stochasticity in choice will therefore increase as
+reservation utility falls.
+21
+
+6
+
+Eliciting Choice Process Data in the Laboratory
+
+For the above results to advance our understanding of incomplete search and choice one must be
+able to experimentally identify the path of provisional choices over the pre-decision period. We
+sketch the approach that Caplin, Dean and Martin [2009] (CDM) use to generate just this data,
+and describe results for a highly stylized experiment.
+Subjects in the experiment were presented with various subsets of a larger choice set, from each
+of which they had to make a choice. They were given a fixed time window within which to choose
+from among each fixed set of available alternatives. They were allowed to select any alternative
+at any point in a fixed time window.12 They were informed that they could change the selected
+alternative whenever they wished. Rather than being based on final choice alone, actualized choice
+was recorded at a random point in the given time window that was only revealed at the end of
+the experiment. This incentivized subjects to always have selected their current best option in the
+choice set. It is for this reason that we interpret the sequence of selections as comprising provisional
+choices.13
+Our first experiment using this interface was deliberately stark, missing the conflicting priorities
+that may typify more intricate decisions. The objects of choice were kept as simple as possible,
+and subject to clear and universal preferences: all options were deterministic dollar amounts. To
+render the problem non-trivial, the dollar amount for each option was represented as a sequence of
+addition and subtraction operations. The simplicity of the setting enabled us to explore the ABS
+and RBS models in an uncluttered and “friendly” experimental context.
+Each experimental round began with the topmost, and worst, option of $0 selected.14 Subjects
+could at any time select any of the alternatives on the screen, with the currently selected object
+12
+
+As with tests of standard choice theory, this experiment uncovers only one most preferred element rather than all
+
+such elements. This opens some daylight between the theoretical definition of choice process data and the experimental
+data.
+13
+In support of this interpretation, 58 of 76 subjects in a post-experiment survey responded directly that they always
+had their most preferred option selected, while others gave more indirect responses that suggest similar behavior (e.g.
+having undertaken a re-calculation before selecting a seemingly superior alternative).
+14
+The subjects knew that the $0 option was the worst in the choice set. They therefore had the incentive to
+immediately change their selection, which is consistent with the ABS model with this being the only object searched.
+The model is restrictive only when a switch is made, at which point it implies that the object switched to is of higher
+value.
+
+22
+
+being displayed at the top of the screen. In each round there was a time constraint, with subjects
+having up to 120 seconds to complete the choice task (though this constraint was only binding
+in about 5% of rounds). A subject who finished in less than 120 seconds could press a submit
+button, which completed the round as if they had kept the same selection for the remaining time.
+Treatments were run varying in the number of alternatives available and in the complexity of each
+alternative.
+As one might have expected, the experiment provided support for ABS-style search. Subjects
+made several selections in the course of a round and generally switched from lower value to higher
+value objects over time. In the context of the experiment this is equivalent to finding positive
+support for the ABS model of search. A more striking finding was that behavior was well approximated by the RBS model. While behavior did change as the number of available options and their
+level of complexity was varied, it did so within the RBS framework. The results suggest that choice
+process data is of more than theoretical interest.
+
+7
+
+Concluding Remarks
+
+Incomplete information may explain many apparent deviations from utility maximizing behavior.
+Standard choice data does not allow one to pin down when such deviations are caused by changing
+preferences, and when they result from incomplete information. We develop clean procedures for
+accomplishing this separation by expanding beyond standard choice data to include data on the
+evolution of choice with time. We characterize standard alternative-based and reservation-based
+procedures that are ubiquitous in search theory. Experimental investigation of choice process data
+is ongoing.
+
+8
+
+Appendix 1: RBS
+
+Proof of Proposition 1 To prove suﬃciency, we note from lemma 1 that (3) implies existence of
+u : X → R that respects ÂR
+D and ∼ on X. Define
+ρ=
+
+maxx∈D u(x) + minx∈X\D u(x)
+.
+2
+
+23
+
+Note from (2) that C L {x, y} = y whenever y ∈ X\D and x ∈ D, implying y ÂR
+D x and
+
+u(y) > u(x) and hence that X/D = Xuρ . Mimicking the proof of theorem 1, one can then
+define a search correspondence such that (u, S) that together form an ABS representation.
+⎧
+⎨
+∪s≤t CA (s) for t < T (A);
+SA (t) =
+⎩ ∪
+C (s) ∪ L(A) for t ≥ T (A);
+s≤T (A)
+
+A
+
+L }) is the time at which choice first achieves its limit and
+where T (A) ≡ min{t ≥ 1|CA (t) = CA
+
+L(A) comprises all elements of A with utility strictly below maxx∈C L u(x). We now show that
+A
+
+all requirements for (u, S) and ρ together to form an RBS representation with reservation set
+X\D are met:
+L, y ∈
+L =⇒ x ÂL y, so that
+/ CA
+• R1: When A ∩ Xuρ = ∅, and so A ⊂ D, we know that x ∈ CA
+D
+L = arg max
+L
+u(x) > u(y). Hence CA
+{x∈A} u(x) with SA = A by construction.
+L ∩ D = ∅ since x ∈ C L ∩ D, y ∈
+L =⇒
+• R2(a): If A ∩ Xuρ 6= ∅ and so A ∩ X\D 6= ∅, then CA
+/ CA
+A
+
+u(x) > u(y) contradicting the fact that utility is strictly higher on X\D than on D. Hence
+there exists t ≥ 1 such that CA (t) ∩ Xuρ 6= ∅.
+• R2(b): If CA (t)∩Xuρ 6= ∅, then CA (t)∩X N = ∅ by (1), implying directly that CA (t+s) = CA (t)
+all s ≥ 1, by construction, it is therefore the case that SA (t + s) = SA (t) all s ≥ 1 as required.
+That condition (1) of the proposition is necessary for an RBS representation follows directly from
+property R2(b) of RBS definition, which implies that X N ⊂ D is required for D to be a reservation
+set. Given lemma 1, to prove that (3) is necessary it suﬃces to show that u represents ÂR
+D and ∼
+
+in any RBS representation (u, S, ρ), where D = X\Xuρ and Xuρ is the corresponding reservation set.
+
+The fact that u represents ÂC and ∼ is direct since (u, S) form an ABS representation of (X, C).
+L
+To see that ÂL
+D is respected, suppose to the contrary that x ÂD y but u(y) ≥ u(x). Note in this case
+
+that x ∈ D, since y ∈ D =⇒ x ∈ D and {x ∪ y} ∩ D 6= ∅ by definition of x ÂL
+D y. But then by R1,
+L =⇒ C L = arg max
+L . This contradiction establishes
+/ CA
+x ∈ CA
+x∈A u(x) hence u(y) < u(x) since y ∈
+A
+
+that u indeed represents ÂR
+D and ∼ . With this we know that condition (2) of the proposition is
+
+necessary, since x ∈ D =⇒ u(x) < ρ whereupon x %R
+D y implies u(y) < ρ, hence y ∈ D, completing
+
+the proof.
+Proof of Theorem 2 To prove suﬃciency, we show that the conditions of the proposition are
+satisfied in this case for D = X IN . For (1) and (3) this is direct. Hence it suﬃces to establish
+24
+
+that if x ∈ X IN and x %R y, then y ∈ X IN . By definition x ∈ X IN implies that we can
+
+L
+= y, we have that x %R y ÂR z ºL x violating
+find z ∈ X N with z ºL x. Now, if C{y,z}
+
+OWC. Thus it must be the case that z ºL y, implying by definition that y ∈ X IN , as
+
+required. To show that ÂR and ∼ satisfying OLC is necessary for (X, C) to have any RBS
+representation (u, S, ρ), it suﬃces by lemma 1 to show that such u : X → R must respect ÂR
+and ∼. This follows directly for ÂC and ∼ since (u, S) form an ABS representation of (X, C).
+L, y ∈
+L , and
+/ CA
+To confirm that u : X → R respects ÂL , consider A ∈ X with x, y ∈ A, x ∈ CA
+
+x or y ∈ X IN . There are two cases.
+L =⇒ A ∩ X ρ = ∅ by R2(a) hence S L = A by R1, hence u(y) < u(x)
+• If u(x) < ρ, then x ∈ CA
+u
+A
+L.
+all y ∈ A with y ∈
+/ CA
+
+• If u(x) ≥ ρ, then x ∈
+/ X IN follows directly from condition 2(b) of the RBS definition, so that
+y ∈ X IN ⊂ X\Xuρ , and u(y) < ρ ≤ u(x).
+
+9
+
+Appendix 2: Measurability
+
+We show that various sets are contained in the σ−algebra F.
+• Z COM and Z ND : Given T ≥ 1, define N DT as all subsets of X T that are non-diminishing,
+Zt ⊂ Zt+1 all 1 ≤ t ≤ T , and N RT as all subsets of X T in which there is no immediate
+repetition, Zt 6= Zt+1 any 1 ≤ t ≤ T − 1, and note that,
+
+©
+ª
+T
+∈ F;
+Z ND = ∩∞
+T =1 Z ∈ Z| (Z1 , .., ZT ) ∈ N D
+© ∞ ©
+ªª
+t
+Z COM = ∪∞
+∈ F.
+t=1 ∩s=1 Z ∈ Z| (Z1 , .., Zt ) ∈ N R , Zt = Zt+s
+
+• That{Z ∈ Z| {arg maxx∈Zt u(x)}∞
+t=1 ∈ F } ∈ F for any F ∈ F, note that it can be expressed
+as follows as a countable collection of cylinder sets,
+½
+¾
+∞
+∩T =1 Z ∈ Z|∃ Y ∈ F s.t. arg max u(x) = Yt ∀ t ∈ {1, ..., T } .
+x∈Zt
+
+• For any x, y ∈ X, the sets J xy , Rxy , and ∆x . Given A ∈ X , define WA as all supersets of A
+C (t) ∈ G by,
+and WAC ⊂ X as its complement. Define the cylinder sets WA (t), WA
+
+WA (t) ≡ {Z ∈ Z|Zt ∈ WA };
+C
+(t) ≡ {Z ∈ Z|Zt ∈ WAC }.
+WA
+
+25
+
+• Note that:
+J xy = ∪t W{x,y} (t) ∈ F;
+n
+n
+n
+ooo
+∞
+C
+W
+W
+(t)
+∩
+∪
+(t
++
+s)
+∩
+W
+(t
++
+s)
+∈ F;
+Rxy = ∪∞
+{y}
+{y}
+t=1
+s=1
+{y}
+n
+o
+∞
+∆x = ∪∞
+t=1 ∪B∈W{x} {∪s=1 {Z ∈ Z|Zt = B, Zt+s 6= B}} ∈ F.
+• Z NCY = {Z ∈ Z|Zt+1 6= Zt =⇒ Zt+s 6= Zt any s ≥ 1}: (see appendix 3). First, index all
+sets in X , A1 , , Am , .., AM , with M the cardinality of X . Define Π(M ) to be all permutations
+of the first m ≤ M integers. Given π m ∈ Π(M ), define the countable set Υ(π m ) to comprise
+all strictly increasing sets of m natural numbers,
+m
+m
+)|T1m = 1, Tim ∈ N and Tim < Ti+1
+all i ≥ 1}.
+Υ(π m ) = {T m = {T1m , T2m , .., Tm
+
+That Z NCY ∈ F follows since it is a countable union of cylinder sets,
+©
+ª
+m
+m
+.
+for Tim ≤ t < Ti+1
+, 1 ≤ i ≤ m − 1; Zt = Aπm
+for t ≥ Tm
+∪πm ∈Π(M) ∪T m ∈Υ(πm ) Z ∈ Z|Zt = Aπm
+m
+i
+• E(Y ) : (see appendix 3). Given K non-negative integers sk define S0 = 0 and partial sums
+k
+X
+Sk =
+sj enabling the following short definition:
+j=1
+
+© ∞
+ªª
+© ∞
+E(Y ) = ∩∞
+∈ F.
+K=1 ∪sK =1 .... ∪s1 =1 {Z ∈ Z|Zτ = Zk for Sk−1 + 1 ≤ τ ≤ Sk and 1 ≤ k ≤ K}
+
+Proposition 2 If (X, C̃) permits of a stochastic ABS representation (u, S̃), then for any A ∈ X ,
+©
+ª
+C̃A ∪B∈X LB = 1.
+Proof. Since (X, C̃) has an ABS representation (u, S̃), we know that S̃A (Z ND ) = 1. Note that since
+©
+ª
+X is finite, limit elements exist for all Z ∈ Z N D , establishing that S̃A ∪B∈X LB = 1. Now note
+B
+B
+that if Z ∈ ∪B∈X LB , then {arg maxx∈Zt u(x)}∞
+t=1 ∈ ∪B∈X L , as, Z ∈ ∪B∈X L implies that there
+
+must be some t such that Zt = Zt+s ∀ s ≥ 0, thus it must be the case that arg maxx∈Zt u(x) = arg
+maxx∈Zt u(x) ∀ s ≥ 0. Hence,
+½
+½
+¾∞
+¾
+©
+ª
+ª
+©
+B
+B
+= S̄ Z ∈ Z| arg max u(x)
+∈ ∪B∈X L
+≥ S̄ ∪B∈X LB = 1.
+C̃A ∪B∈X L
+x∈Zt
+
+t=1
+
+26
+
+10
+
+Appendix 3: Theorems 3 and 4
+
+We first formally define compression, from which it follows immediately that it is suﬃcient to prove
+theorems 3 and 4 for compressed stochastic choice processes. We then show that compressed stochastic choice processes of interest are finite, further simplifying the requirements to establishing 3
+and 4 for finite stochastic choice processes. Next, we show that finite stochastic choice processes can
+be represented as weighted averages of deterministic processes. We close out by proving theorems
+3 and 4 for the finite case, which proof is general in light of the earlier results.
+
+10.1
+
+Compression
+
+Definition 17 Given Z ∈ Z, define the set of times at which Z changes in sequential fashion
+starting with τ 1 (Z) = 1 as follows;
+⎧
+⎨ mins≥1 {Z
+τ j (Z)+s 6= Zτ j (Z) } if ∃s ≥ 1 s.t Zτ j (Z)+s 6= Zτ j (Z) ;
+τ j+1 (Z) =
+⎩
+=Z
+all s ≥ 1.
+∞ if Z
+τ j (Z)+s
+
+τ j (Z)
+
+Let J(Z) ∈ N ∪ ∞ be the number of distinct points of change, and define the compression of any
+
+element Z ∈ Z, D(Z) ∈ Z COM , by removing all time indices in which there is repetition and
+repeating the limit element if there is any repetition,
+⎧
+⎨ (Z
+τ 1 (Z) , ..., Zτ j (Z) , ..Zτ J(Z) (Z) , ...Zτ J(Z) (Z) , ..Zτ J(Z) (Z) ) if J(Z) is finite;
+D(Z) =
+⎩
+, ..., Z
+, ..) if J(Z) = ∞.
+(Z
+τ 1 (Z)
+
+Given Y
+
+τ j (Z)
+
+∈ Z COM , define the equivalence classes of compressed elements of E(Y ) ⊂ Z ((the proof
+
+that E(Y ) ∈ F is in appendix 2),
+E(Y ) = {Z ∈ Z|D(Z) = Y }.
+Given a measure P ∈ P, we define its compression DP ∈ P by shifting probabilities onto the
+compressed representative of each equivalence class,
+⎧
+⎨ P (E(Y )) for Y ∈ Z COM ;
+.
+DP (Y ) =
+⎩ 0 for Y = Z\Z COM .
+
+10.2
+
+Compression and Finiteness
+
+Proposition 3 A compressed SCP that has an ABS representation or for which ÂC̃ and ∼C̃ satisfy
+OWC is finite, in that there exists a finite set G ∈ F such that C̃A (G) = 1 all A ∈ X .
+27
+
+Proof. To show that compression and ABS imply that the SCP is finite, let M = |X | and let
+Z(M ) ∈ F be sequences that are unchanging after period M :
+Z(M ) = {Z ∈ Z|Zt = Zs ∀ t, s > M }.
+It is intuitive that a compressed choice sequence with an ABS representation satisfies C̄A (Z(M )) =
+1 ∀ A ∈ X . To confirm, consider the union of all cylinder sets with Zt 6= Zs some t, s > M . If any
+element Z in this set is to be in Z COM , it must be the case that, for some r, w < s, Zr = Zw and
+r 6= w ± 1. Consider now the cylinder sets defined by,
+{Z ∈ Z|Zt 6= Zs , Zr = Zw }.
+Now take any k such that r < k < w. and consider the cylinder set
+{Z ∈ Z|Zt 6= Zs , Zk 6= Zr = Zw }.
+These cylinder sets must have measure zero in any choice process that has an ABS representation,
+as the set of search sequences such that
+arg
+
+max u(x) 6= arg
+
+x∈SA (k)
+
+max u(x) = arg
+
+x∈SA (r)
+
+max u(x),
+
+x∈SA (w)
+
+is measure zero (as any such sequence would be non-increasing). As Z\Z(M ) can be obtained by
+the repeated countable union across {Z ∈ Z|Zt 6= Zs , Zr = Zw }, we know that if a choice process
+is compressed and has an ABS representation C̃A (Z\Z(M )) = 0 ∀ A ∈ X , and so C̄A (Z(M )) = 1.
+This in turn proves that (X, C̃) is finite.
+To prove that a compressed SCP that satisfies for whichÂC̃ and ∼C̃ satisfy OWC is finite,
+note that this implies that the associated choice process must apply full measure to Z NCY , those
+elements of Z in which there are no cycles (the proof that Z NCY is measurable is in appendix 2),
+Z NCY = {Z ∈ Z|Zt+1 6= Zt =⇒ Zt+s 6= Zt any s ≥ 1} ∈ F.
+To see why %C̃ satisfying OWC implies that C̃A (Z NCY ) = 1 for any set A ∈ X, assume to
+the contrary that there is a set of strictly positive measure according to some A ∈ X such that
+Zt+1 6= Zt , yet Zt+s = Zt for some s ≥ 1. There are two possibilities. One is that there is an
+/ Zt : in this case consider any x ∈ Zt+1 , and note that C̃A (Rxy ) > 0
+element y ∈ Zt+1 with y ∈
+due to exit of element y and entry of element x from period t + 1 to period t + s, while also one
+of the statements C̃A (Ryx ) > 0 or C̃A (J yx ) > 0 in consideration of the entry of y in period t + 1.
+28
+
+In the former case, the contradiction to %C̃ satisfying OWC is that x ÂC̃ y and y ÂC̃ x, while in
+the latter case the contradiction is that x ÂC̃ y and y ∼C̃ x. Alternatively, it could be that there is
+
+some y ∈ Zt and y 6∈ Zt+1 . A similar argument shows that this violates %C̃ satisfying OWC . This
+
+establishes the required finiteness, since elements of Z COM ∩Z NCY are unchanging after a number
+of periods no larger than the cardinality of X , completing the proof.
+
+10.3
+
+Structure of The Finite Case
+
+Proposition 4 A stochastic choice process (X, C̃) is finite if and only if it is the convex combination of a finite number of deterministic choice processes, in that there exist some J deterministic
+J
+X
+ªJ
+©
+λj = 1, and such that
+choice processes (X, C j ) j=1 and weight vector λ ∈ RJ++ satisfying
+j=1
+
+C̃ =
+
+J
+X
+j=1
+
+λj C j : i.e for all F ∈ F and A ∈ X ,
+
+C̃A (F ) =
+
+J
+X
+
+j
+λj CA
+(F ) =
+
+j=1
+
+J
+X
+j=1
+
+λj 1{C j ∈F } .
+A
+
+ªJ
+©
+Proof. It is immediate that the convex combination of deterministic choice processes (X, C j ) j=1
+
+is finite, since C̃A {Z ∈ Z| ∃ j ∈ {1, .., J} s.t. Z = C j } = 1 all A ∈ X . To prove that any finite
+process (X, C̃) can be decomposed as the proposition asserts, use integers 1 ≤ k ≤ K to index
+elements Zk of the finite set G with the property that C̃A (G) = 1 ∀ A ∈ X : we call these the basic
+K
+X
+C̃A (Zk ) = 1 we can use indicator functions to record
+choice processes. Since C̃A (Zk ) ≥ 0 and
+k=1
+
+the probability of any set F ∈ F as a convex combination of these basic processes as follows,
+C̃A (F ) =
+
+K
+X
+k=1
+
+C̃A (Zk )1{Zk ∈F ) .
+
+We now show that we can use these weights to construct a finite set of choice processes that are
+able simultaneously to capture such probability information across sets F ∈ F and A ∈ X .
+First, gather together in the finite set J all values taken on by the cumulative distributions
+taken in order according to k across all A ∈ X ,
+)
+(
+k
+X
+C̃A (Zi ) for some A ∈ X , k ∈ {1, ..K} .
+J = x ∈ (0, 1]|x =
+i=1
+
+29
+
+We index members of the set J by 1 ≤ j ≤ J in increasing order, so that xj < xj+1 , with xJ = 1.
+We now define a family of functions f A : J → G that, for each A ∈ X , record which basic choice
+process is related to each cumulative probability level,
+Ãk−1
+#
+k
+X
+X
+C̃A (Zi ),
+C̃A (Zi ) .
+f A (xj ) = C̃A (Zk ) if and only if xj ∈
+i=1
+
+i=1
+
+We use these objects to construct the finite set of choice processes of interest using the following
+iteration. The probability assigned to the first deterministic choice process C 1 is x1 and the actual
+specification involves using the set specific weights as follow,
+1
+= f A (x1 ).
+CA
+
+If J > 1, we iterate the construction, using at step j weight xj − xj−1 > 0 and specifying choice
+
+j
+to satisfy,
+process CA
+
+j
+X
+
+j
+= f A(
+CA
+
+xi ).
+
+i=1
+
+The above construction identifies a finite set of deterministic choice process C j , 1 ≤ j ≤ J and
+weights λj = xj − xj−1 ≥ 0 and summing to 1. We now such that, for all A ∈ X and F ∈ F,
+C̃A (F ) =
+
+J
+X
+
+j
+λj CA
+(F ) =
+
+j=1
+
+J
+X
+j=1
+
+λj 1{C j ∈F } .
+A
+
+We consider first the sets Zk ∈ F, noting that,
+J
+X
+j=1
+
+³P
+j
+
+´
+
+λj 1{C j =Z } =
+A
+
+k
+
+J
+X
+j=1
+
+λj 1{f A (Sj
+
+i=1 λi
+
+)=Zk } ,
+
+³
+
+i
+
+Pj
+Pk−1
+Pk
+i=1 C̃A (Zi ),
+i=1 C̃A (Zi ) . Hence we can
+i=1 λi = Zk if and only if
+i=1 λi ∈
+Pk−1
+Pl
+Pk
+Pj
+identify j, l such i=1 λi = i=1 C̃A (Zi ) and i=1 λi = i=1 C̃A (Zi ), so that by construction we
+and that f A
+
+get,
+
+J
+X
+j=1
+
+λj 1{C j =Zk } =
+A
+
+k
+X
+i=1
+
+C̃A (Zi ) −
+
+k−1
+X
+
+C̃A (Zi ) = C̃A (Zk ).
+
+i=1
+
+That the same is true for any F ∈ F follows directly, since,
+⎛
+⎞
+K
+K
+J
+J
+X
+X
+X
+X
+⎝
+C̃A (F ) =
+λj 1{C j =Z } ⎠ 1{Zk ∈F } =
+λj 1{C j ∈F } .
+C̃A (Zk )1{Zk ∈F } =
+k
+A
+A
+i=1
+
+i=1
+
+j=1
+
+30
+
+j=1
+
+10.4
+
+Proof of Theorem 3
+
+Proof. Application of the compression and decompression relations establishes that the finite case
+is all that needs to be considered. To prove that if ∼C̃ and ÂC̃ satisfy OWC ABS follows, we
+
+apply lemma 1 directly to show that %C̃ satisfying OWC implies existence of ũ : X → R that
+
+respects the binary relations ∼C̃ and ÂC̃ . Moreover, in light of the last proposition, (X, C̃) is the
+J
+X
+λj C j , which have the property that
+weighted average of deterministic choice processes, C̃ =
+j=1
+
+their corresponding relations ∼j and Âj are all respected by the same ũ : X −→ R, since ∼C̃ and
+
+ÂC̃ represent the union of these deterministic relations:
+C̃A (J xy ) > 0 if and only if x ∼j y, some 1 ≤ j ≤ J;
+C̃A (F xy ) > 0 if and only if x Âj y, some 1 ≤ j ≤ J.
+
+©
+ªJ
+Re-application of lemma 1 to each of the deterministic choice processes (X, C j ) j=1 implies that
+
+∼j and Âj satisfy OWC for all j, and moreover that the utility function ũ : X → R forms
+part of some ABS representation of them, further ensuring the existence of deterministic search
+
+processes S j such that (ũ, S j ) form ABS representations of (X, C j ) for all 1 ≤ j ≤ J. Defining the
+J
+n
+o∞
+X
+S j = arg max
+λj S j and vA
+u(x)
+,
+corresponding weighted average search process S̃ ≡
+j
+x∈S (t)
+A
+
+j=1
+
+t=1
+
+one can immediately confirm that (ũ, S̃) form a stochastic ABS representation of (X, C̃), since
+given F ∈ F and A ∈ X ,
+C̃A (F ) =
+
+J
+X
+j=1
+
+λj 1{C j ∈F } =
+A
+
+J
+X
+j=1
+
+λj 1qvSj ∈F r .
+A
+
+n
+o
+j
+But as S̃A Z ∈ Z|Z = SA
+for no j ∈ {1, .., J} , we know that,
+µ½
+½
+¾∞
+¾¶
+Z ∈ Z| arg max u(x)
+∈F
+S̃A
+x∈Zt
+
+=
+
+j
+X
+j=1
+
+=
+
+J
+X
+j=1
+
+t=1
+
+j
+S̃A (S̃A
+)1qvSj ∈F r
+A
+
+λj 1qvSj ∈F r .
+A
+
+J) = λ .
+The last equality follows from the fact that, ∀ j ∈ {1, ..J}, S̃A (S̃A
+j
+
+To prove that ABS implies that ∼C̃ and ÂC̃ satisfy OWC, note that if (ũ, S̃) form an ABS
+representation of (X, C̃), Lemma 1 then implies that ũ respects the orderings ∼C̃ and ÂC̃ on X,
+31
+
+which therefore satisfy OWC.
+
+10.5
+
+Proof of Theorem 4
+
+As for ABS, the proof need be given only for the finite case in light of the compression and
+decompression operations. This finite proof follows from the a generalized version of the RBS
+characterization precisely as the deterministic result followed from proposition 1. To prove the
+relevant result we need to generalize the ordering %R̃ of section 4.
+Definition 18 Given a stochastic choice process (X̃, C) and set D ∈ X , the binary relation ÂL̃
+D on
+L
+X is defined by x ÂL̃
+D y if {x ∪ y} ∩ D 6= ∅, and there exists A ∈ X with x, y ∈ A with C̃A {x} > 0
+L {y} = 0. The binary relation ÂR̃ is defined as ÂL̃ ∪ ÂC̃ .
+and C̃A
+D
+
+Proposition 5 A finite stochastic choice process model (X, C̃) has a stochastic RBS representation
+(u, S̃, ρ) with below-reservation set D ⊂ X if and only if :
+1. X̃ N ⊂ D.
+2. If x ∈ D and x %R̄
+D y, then y ∈ D.
+R̄
+R̄
+3. Given x1 , x2 , x3 , .., xn ∈ X with x = x1 %R̄
+D x2 %D .. %D xn = x, there is no k with
+
+xk ÂR̄
+D xk+1 .
+Proof. The proof that conditions (1) - (3) of the proposition are suﬃcient is constructive, and
+similar to that in the deterministic case. As there, we define a utility function u : X → R that
+respects ÂR̃
+D and ∼ on X, define reservation utility ρ as the average between the maximum on
+the set D and the minimum on the set X\D, and demonstrate again that X\D is the reservation
+set associated with the utility function u : X → R and reservation utility level ρ by noting that
+u(x) > u(y) whenever x ∈ X\D and y ∈ D. To see this, note that x ∈ X\D and y ∈ D implies by
+L
+({x}) = 1, whereupon x ÂR̃
+condition (2) above that C{x,y}
+D y, so that u(x) > u(y) by construction.
+
+We now consider all deterministic processes C j in the decomposition of the finite stochastic
+choice process map C̃ that we know by the last proposition to be available. Define XjN as the nonterminal set associated with deterministic choice process (X, C j ), and define also the corresponding
+32
+
+R
+C
+L
+R
+binary relations ∼j , ÂC , ÂL
+D , ÂD , % , %D , and %D . We show now that any set D ⊂ X with
+j
+
+j
+
+j
+
+j
+
+j
+
+j
+
+properties 1-3 above for the stochastic choice process (X, C̃) necessarily satisfies corresponding
+deterministic properties 1-3 established in theorem 2 to be necessary and suﬃcient for D to be a
+reservation set in some RBS representation of each (X, C j ). With respect to the first such property,
+note directly from the definition that any non-terminal element in (X, C j ) is necessarily so in the
+stochastic models, so that XjN ⊂ X̃ N , hence XjN ⊂ D as required. The second and third properties
+j
+
+R̄
+j
+follow directly from the fact that, for any j ∈ {1, ..., J}, x ÂR
+D y ⇒ x ÂD y and x ∼ y ⇒ x ∼ y. To
+j
+
+j
+
+j
+
+C y or x ÂL y. The former case indicates
+see this, note first that x ÂR
+D y implies that either x Â
+D
+j
+
+that for some A ∈ X , C̃A (Rxy ) ≥ λj > 0, and so x ÂC y, while the latter implies that, for some
+L (B) ≥ λ > 0, so x ÂL y. In each case, x ÂR̄ y. A similar
+A ∈ X and B ⊂ A, x ∈ B, y ∈
+/ B and C̃A
+j
+D
+D
+
+argument shows that x ∼j y implies for some A ∈ X , C̃A (J xy ) ≥ λj > 0 and so x ∼ y. This result
+shows that any violation of conditions 2 and 3 at the level of the deterministic choice process j
+would lead to a violation of the equivalent condition at the level of the stochastic choice function.
+Given that the assumptions of theorem 2 are satisfied, we conclude not only that there exists
+an RBS representation of each (X, C j ) with reservation set D, but also that the utility function
+u : X → R and reservation utility level ρ can be utilized in constructing such a representation,
+given that these are precisely the objects that are constructed in the course of the deterministic
+proof. Hence, for each j, there exists a search correspondence S j such that (u, S j , ρ) represents an
+RBS representation of (X, C j ). We show now that (u, S̃, ρ) comprises an RBS representation of
+(X, C̃), where S̃ is the corresponding convex combination of the deterministic search processes S j ,
+S̃ =
+
+J
+X
+
+λj S j
+
+j=1
+
+That (u, S̃) for a stochastic ABS representation follows as in the proof of the ABS representation theorem. That X\D = {x ∈ X|u(x) ≥ ρ} holds by construction. Moreover given A ∈ X ,
+we know that if A ∩ (X\D) = φ, then A is searched fully in all search correspondences S j , enL (A) = 1. On the other hand, if A ∩ X R ∩ (X\D) 6= φ, then we know that in
+suring that S̃A
+
+the limit, search reaches into the reservation set in all search correspondences S j , ensuring that
+ª
+©
+S̃A Z ∈ Z|H R (Z) is finite = 1. Finally, since each element in the reservation set has the property
+
+that search ceases at once with probability one when such an element is encountered in each S j ,
+n
+¢o
+¡ R
+L = S̃
+(Z)
+= 1, completing the proof that (u, S̃, ρ) comprises
+we know that S̃A Z ∈ Z|S̃A
+H
+A
+an RBS representation of (X, C̃).
+
+33
+
+The proof that conditions 1-3 above are necessary for a finite stochastic choice process (X, C̄)
+to have an RBS representation (u, S̃, ρ) is essentially identical to that in the deterministic case. We
+let D be the below reservation set generated by that representation, and establish that the three
+conditions of the proposition hold.
+
+Proof of Theorem 5 Application of Lemma 1 translates the theorem to the statement that there
+exists u : X → R, ρ : Γ → R, and Θ : Γ → S̄ such that (u, Θ(γ), ρ(γ)) forms a stochastic
+RBS representation of Φ(γ) ∀ γ ∈ Γ if and only if there exists v : X → R that respects
+ÂR̃(Γ) and ∼C̃(Γ) . To see that existence of such a function v : X → R is necessary, note from
+theorem 4 that the given function u : X → R such that (u, Θ(γ), ρ(γ)) forms a stochastic
+RBS representation of Φ(γ) for all γ ∈ Γ respects ÂR̃(γ) and ∼C̃(γ) all γ ∈ Γ and hence
+respects ÂR̃(Γ) and ∼C̃(Γ) . Conversely, given v : X → R that respects ÂR̃(Γ) and ∼C̃(Γ) ,
+by definition it respects ÂR̃(γ) and ∼C̃(γ) all γ ∈ Γ, whereupon theorem 4 implies that there
+exists an RBS representation of Φ(γ) for all γ ∈ Γ. In fact the proof of theorem 4 reveals
+that the given function v : X → R that respects ÂR̃(γ) and ∼C̃(γ) can form the basis for an
+ABS representation with appropriately defined ρ : Γ → R and Θ : Γ → S̄, with (v, Θ(γ), ρ(γ))
+therefore forming the required stochastic RBS representation of Φ(γ) ∀ γ ∈ Γ.
+
+11
+
+Bibliography
+
+References
+[1] Alba, J. W. and A. Chattopadhyay. 1985. “Eﬀects of context and part-category cues on recall
+of competing brands”. Journal of Marketing Research, 22, pp. 340—349.
+[2] Block, H. D., and Marschak, J. 1960. “Random Orderings and Stochastic Theories of Response”. Contributions to Probability and Statistics. Essays in honor of Harold Hotelling. Ed.
+I. Olkin Stanford University Press, Stanford, CA.
+[3] Bossert, Walter and Kotaro, Suzumura. 2009. “Consistency, Choice and Rationality”. PIE/CIS
+Discussion Paper 428, Center for Intergenerational Studies, Institute of Economic Research,
+Hitotsubashi University, http://econpapers.repec.org/RePEc:hit:piecis:428.
+
+34
+
+[4] Busemeyer and J.T. Townsend. 1992. “Fundamental derivations for decision field theory”.
+Mathematical Social Sciences 23 , pp. 255—282.
+[5] Campbell, Donald. 1978. “Realization of Choice Functions”. Econometrica 46: 171-180.
+[6] Caplin, Andrew, Mark Dean, and Daniel Martin. 2009. “Search and Mistakes: An Experimental
+Approach with Choice Theoretic Foundations”. Mimeo.
+[7] Dean, Mark and Daniel Martin. 2009. “How Consistent are your Choice Data?” Mimeo.
+[8] Eliaz, Kfir, and Ran Spiegler. Forthcoming. “Consideration Sets and Competitive Marketing.”
+Review of Economic Studies.
+[9] Ergin, Haluk, 2003, “Costly Contemplation”, Unpublished Manuscript.
+[10] Ericsson, K. & H. Simon, 1984, Protocol Analysis. Cambridge, MA, MIT Press.
+[11] Gabaix, Xavier and David Laibson. 2000. “A boundedly rational decision algorithm”, American
+Economic Review Papers and Proceedings, 90, p. 433-438.
+[12] Gabaix, Xavier, David Laibson, Guillermo Moloche and Stephen Weinberg. 2006. “Costly
+Information Acquisition: Experimental Analysis of a Boundedly Rational Model” American
+Economic Review, American Economic Association, vol. 96(4), pages 1043-1068.
+[13] Ho, T., C. Camerer, and K. Weigelt. “Iterated dominance and iterated best-response in experimental ‘P-beauty contests”, American Economic Review 88, 1998, pp.947-969.
+[14] Johnson, Eric J., Colin Camerer, Sankar Sen, and Talia Rymon. 2002. “Detecting Failures of
+Backward Induction: Monitoring Information Search in Sequential Bargaining”, Journal of
+Economic Theory 104, 16-47.
+[15] Manzini, Paola and Marco Mariotti. 2007.“Sequentially Rationalizable Choice.” American Economic Review, American Economic Association, vol. 97(5), pages 1824-1839.
+[16] Masatlioglu, Yusufcan and Daisuke Nakajima. 2009. “Choice by Iterative Search.” University
+of Michigan Working Paper.
+[17] Masatlioglu,
+vealed
+
+Yusufcan,
+
+Attention.”
+
+Daisuke
+
+University
+
+Nakajima,
+of
+
+and
+
+Michigan
+
+Working
+
+personal.umich.edu/~ndaisuke/Revealed_Attention.pdf
+35
+
+Erkut
+
+Y.
+
+Ozbay.
+
+Paper.
+
+2009.
+
+“Re-
+
+http://www-
+
+[18] McCall, John J. 1970. “Economics of information and job search”. Quarterly Journal of Economics 84, pp. 113-126.
+[19] Payne, J. W., J. R. Bettman, and E. J. Johnson. 1988. “Adaptive strategy selection in decision
+making”. Journal of Experimental Psychology: Learning, Memory, and Cognition, 14: 534-552.
+[20] – 1993. “The adaptive decision maker”. Cambridge University Press, Cambridge.
+[21] Reutskaja, E., Pulst-Korenberg, J., Nagel, R., Camerer, C., Rangel, A. 2008. “Economic
+decision-making under conditions of extreme time pressure and option overload: an eyetracking
+study.” Mimeo
+[22] Roberts, J.H. and M. J. Lattin. 1991. “Development and testing of a model of consideration
+set composition”. Journal of Marketing Research, 28(4):429—440.
+[23] Rubinstein, Ariel and Yuval Salant. 2006. “A Model of Choice from Lists”, Theoretical Economics, 1, No. 1, 3-17.
+[24] Rustichini, A. 2008. “Neuroeconomics: Formal Models of Decision Making and Cognitive
+Neuroscience” in Neuroeconomics, Decision Making and the Brain, Glimcher, P., C. Camerer,
+E. Fehr, and R Poldrak eds, Elsevier.
+[25] Salant, Yuval & Ariel Rubinstein. 2008.“("A", "f"): Choice with Frames,” Review of Economic
+Studies, Blackwell Publishing, vol. 75(4), pages 1287-1296, October.
+[26] Samuelson, William and Zeckhauser, Richard. 1988. “Status Quo Bias in Decision Making”
+Journal of Risk and Uncertainty, Springer, vol. 1(1), pages 7-59, March.
+[27] Simon, Herbert. 1955. “A behavioral model of rational choice”, Quarterly Journal of Economics, 69 (1), pp 99-118.
+[28] Stigler, G. L. 1961. “The Economics of Information”, Journal of Political Economy, 69:3, pp
+213-225.
+[29] Tyson, C. 2007. “Cognitive Constraints, Contraction Consistency, and the Satisficing Criterion”. Working Papers 614, Queen Mary, University of London, Department of Economics,
+revised.
+
+36
+
+[30] Wang, Joseph, Michael Spezio, and Colin Camerer. 2006. “Pinocchio’s Pupil: Using Eyetracking and Pupil Dilation To Understand Truth-telling and Deception in Games”. Mimeo.
+
+37
+
+

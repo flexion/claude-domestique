@@ -1,0 +1,125 @@
+schema_version: 1
+tracker: jira
+item: WI-1234
+registry_revision: "9f2c1ab"
+registry_selections: [INV-2]
+mandates: [data-integrity, correctness, resource]
+non_goals:
+  - "retry button behaviour — tracked as JIRA-1250"
+interpretation:
+  goal:
+    statement: "a large-account export either completes or leaves the destination unchanged"
+    provenance: inferred
+    support:
+      - kind: repo_path
+        ref: "services/export/writer.py"
+  problem:
+    statement: "large-account exports time out and leave a partial file behind"
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "description#1"
+  claim_provenance:
+    C1:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "description#1"
+    C3:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "description#2"
+  corrections: []
+  gaps: []
+claims:
+  - id: C1
+    text: "exports fail for large accounts"
+  - id: C3
+    text: "empty file left behind on hang"
+coupling:
+  - id: CPL-1
+    kind: consumer
+    target: "jobs/reconcile.py"
+  - id: CPL-2
+    kind: metric
+    target: "dashboards/export.json"
+entails:
+  CPL-1: PRES-1
+  CPL-2: uncovered
+entries:
+  - id: INV-2
+    statement: "destination holds a file only if its row count equals the manifest"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [data-integrity]
+    traces: [C3, INV-2]
+    observation: "force a timeout mid-export, list the destination"
+    decision: "no file present, or row count equals manifest"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  - id: PRES-1
+    statement: "the reconcile job completes against every terminal export state"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [CPL-1]
+    observation: "run reconcile against a destination with no file"
+    decision: "exit code 0"
+    quantitative: false
+    test_role: preservation
+    baseline: pass
+  - id: AC-1
+    statement: "export of 500k rows completes inside the gateway budget"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1]
+    observation: "run a 500k export against staging, warm cache"
+    decision: "terminal status SUCCEEDED within the stated budget"
+    quantitative: true
+    quantity:
+      value: "240"
+      conditions: "staging, warm cache, single concurrent export, 500k rows"
+      filled_from:
+        kind: repo_path
+        ref: "infra/gateway/timeouts.yaml"
+    test_role: change
+    baseline: assertion_fail
+  - id: AC-4
+    statement: "peak RSS stays within the stated ratio of the 50k baseline in production"
+    verifier: mechanical
+    verification_stage: production
+    obligation: must
+    mandate: [resource]
+    traces: [C1]
+    observation: "production RSS metric over 24h"
+    decision: "ratio within the stated bound"
+    quantitative: true
+    quantity:
+      value: "1.50"
+      unit: "ratio to the 50k peak"
+      conditions: "production, 24h window, p99"
+      filled_from:
+        kind: repo_path
+        ref: "infra/gateway/timeouts.yaml"
+    handoff:
+      owner: "platform-oncall"
+      trigger: "24h after deploy"
+      verification_method: "grafana panel export.rss.p99"
+      evidence_destination: "runs/WI-1234/handoff/"
+      failure_transition: "reopen WI-1234"
+  - id: W-1
+    statement: "export duration trend does not regress"
+    verifier: observation
+    verification_stage: production
+    obligation: watch
+    mandate: [resource]
+    traces: [C1]
+    observation: "export.duration_ms p99 weekly"
+    decision: "recorded, not gated"
+    quantitative: false
