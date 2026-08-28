@@ -3,8 +3,9 @@
 GOAL: Take a Jira issue to Ready for Merge -- complete, correct, and high quality -- without a human in the loop, and stop on a fixed condition rather than when the reviewers run out of things to say.
 HOW: Author one boundary bundle, have it independently reviewed, and freeze it before implementation; then implement on an isolated branch against that boundary and nothing else, with mechanical gates and one bounded repair loop per review kind. Escalate whenever the boundary cannot be made decidable, a genuinely new obligation appears, or the coupling reaches past what this repo controls.
 
-Merge is a human approval boundary. After a confirmed merge event the orchestrator records the merge
-SHA and may transition Jira to `Done`, but only when no post-merge or production obligation remains.
+Merge is a human approval boundary. After a confirmed merge event a separate idempotent
+merge-watcher records the merge SHA and may transition Jira to `Done`, but only when no post-merge or
+production obligation remains. The run itself has already stopped by then.
 Deploy and rollback are a named handoff, out of scope.
 
 Actor: action form. One line per step. `JIRA-1234` is the worked example.
@@ -62,16 +63,50 @@ Each entry also carries `id`, `statement`, `observation`, `decision`, `traces[]`
 quantities — `value`, `unit`, `conditions`. Floor invariants are **selected** from
 `registry/invariants.yaml` at a pinned revision, by path glob, never authored per issue.
 
-Mechanical entries additionally carry `test_role`:
+Only `mechanical` + `pre_merge` + `must` entries carry `test_role` and a baseline. Base-versus-head
+gating is meaningless for a `post_merge` or `production` entry, which cannot be checked here at all,
+and for a `watch` entry, which gates nothing.
 
-- `test_role: change` — the behavior is new or altered. Its tests must show a **targeted behavioral
-  delta**: fail on base, pass on head.
-- `test_role: preservation` — the behavior must not change. Its tests must **pass on base and on
-  head**. Floor invariants are almost always this, and the previous draft made them unrepresentable
-  by requiring every mechanical must to fail on base.
+`test_role` is one of:
 
-Evidence is a **many-to-many map** between entries and tests, not one test per entry. One test may
-discharge several entries; one entry may need several tests.
+- `change` — the behavior is new or altered.
+- `preservation` — the behavior must not change. Floor invariants are almost always this, and an
+  earlier draft made them unrepresentable by requiring every mechanical must to fail on base.
+
+`baseline` is a closed union, and the Linter constrains it against `test_role`:
+
+| `baseline` | Meaning | Allowed with |
+| --- | --- | --- |
+| `assertion_fail` | The test runs on base and its assertion fails | `change` |
+| `expected_error` | The test cannot run on base, and that *is* the evidence — carries a typed `error_code` and a match pattern | `change` |
+| `pass` | The test runs and passes on base | `preservation` |
+
+Head expectation is always `pass`. There is exactly one authority for the baseline, which is this
+field — an earlier draft said the gate accepted an error "when the entry declares" one while no such
+field existed, and in the same sentence required the outcome to be `failed`.
+
+**Evidence edges bind an entry to a specific collected test case**, by runner node id, not to a test
+file. A runner outcome is scalar, so one test *file* cannot simultaneously evidence a `change` entry
+that must fail on base and a `preservation` entry that must pass on base. Two constraints follow, both
+mechanical:
+
+- An edge names a collected test case id, and the Linter rejects an id the runner does not collect.
+- A single test case may carry several edges only if every one of them declares the **same**
+  `baseline`. Conflicting baselines on one case are rejected.
+
+One entry may still need several test cases. "One test discharges several entries" holds only under
+that same-baseline constraint.
+
+**A preservation edge also needs a sensitivity probe**, or pass-on-base plus pass-on-head proves
+nothing — `assert True` satisfies it. Each preservation edge declares one of:
+
+- `negative_control` — a known-bad fixture the test case must fail against.
+- `mutation` — a named controlled perturbation of the code under test that the case must catch.
+
+The Gate runs the probe and requires the case to fail against it. An entry with no available probe is
+**not** a mechanical entry: reclassify it as `independent_review` rather than let stage 5 claim it
+proved something. This is the difference between outcome stability, which pass/pass shows, and
+sensitivity to the invariant, which is what the entry actually asserts.
 
 The Markdown view is rendered on demand and never committed.
 
@@ -94,15 +129,23 @@ mechanisms, not substitutes for them:
 
 - **Durable store and append guarantee.** The stream lives on a store providing single-writer
   atomic append with a monotonic `seq`; a torn write is detectable and the last complete record wins.
-- **Fencing.** The lease carries a fencing token. Every external effect presents it, so a resumed or
-  duplicated orchestrator with a stale token cannot act.
-- **Idempotency keys.** Every external effect — branch create, PR create, Jira transition, CI
-  trigger — carries a stable operation id derived from `(run_id, operation)`. Retrying is safe.
+- **Fencing needs an enforcement point.** Presenting a token stops nothing on its own; the sink, or
+  a credential-holding gateway in front of it, has to reject a stale one. Route every external effect
+  through one gateway that holds the credentials and checks the current fence, because Jira, git
+  hosting, and CI will not do it for you.
+- **Idempotency is per-sink, not universal.** Many sinks accept no arbitrary key. Where a native key
+  exists, use it. Where none does, write an external marker before acting and reconcile by query on
+  resume — the marker plus the query is the idempotency.
+- **Keys must include the input.** `(run_id, operation)` collides: a repair round re-triggers CI for
+  the same run and operation. The key is `(run_id, effect_kind, target, input_digest)`, where
+  `input_digest` is the head SHA for anything branch-scoped.
 - **Intent then result.** Each external effect appends an `intent` event before acting and a `result`
   event after. A crash between them is recoverable precisely because the intent is on disk.
 - **Startup reconciliation.** On resume the orchestrator replays the stream, finds every intent with
   no result, and reconciles against the real world — Jira, git, PR, CI — before proceeding. This is
   the answer to the crash-between-PR-creation-and-event case, which no amount of metadata solves.
+  Intent-then-result replay is only sound once the per-sink semantics above exist; without them it
+  detects the gap and cannot close it.
 
 ---
 
@@ -132,13 +175,12 @@ IMPACT: high -- (RubricBench :151 -- the boundary is what "correct" means for th
 - Author (Opus 5 max or gpt-5.6-sol max): writes a **bounded mechanism sketch** — the chosen change surface, affected interfaces and subsystems, data and control-flow edges, external dependencies; not code and not a plan
 - Orchestrator (no model): runs coupling extractors against the sketch's named surface
 - Author (Opus 5 max or gpt-5.6-sol max): selects applicable `INV-*` from the registry; emits `escalate: floor_gap` if one is missing
-- Author (Opus 5 max or gpt-5.6-sol max): writes `boundary/JIRA-1234.yaml` with the three closed fields per entry, a handoff object for every production must, and a non-empty non-goals list
+- Author (Opus 5 max or gpt-5.6-sol max): writes `boundary/JIRA-1234.yaml` with the three closed fields per entry, a handoff object for every `post_merge` **and** `production` must, `test_role` plus `baseline` on every `mechanical` + `pre_merge` + `must`, and a non-empty non-goals list
 - Linter (no model): loads under the YAML 1.2 core schema with a comment-preserving round-trip loader, canonicalizes, validates the schema, resolves every trace
 - Linter (no model): warns — does not reject — on an entry that appears to name an implementation; that check is not decidable
 - Linter (no model): re-runs up to `MAX_LINT_ROUNDS`, then escalates `criteria_not_lintable`
-- Orchestrator (no model): runs the **conclusive** eligibility check now that coupling and obligations exist — mechanical part only: does the coupling map name a path outside the ownership map, and does every `post_merge` or `production` must carry a complete handoff object
-- Boundary-reviewer (Opus 5 max or gpt-5.6-sol max): judges whether each handoff is *feasible*, which the Linter cannot; an infeasible handoff makes the issue ineligible
-- Orchestrator (no model): on ineligible — appends `run_ineligible`, finalizes the lease, stops before any review round is spent
+- Orchestrator (no model): runs the **mechanical** half of the conclusive eligibility check now that coupling and obligations exist — does the coupling map name a path outside the ownership map, and does every `post_merge` or `production` must carry a complete handoff object
+- Orchestrator (no model): on mechanical ineligibility — appends `run_ineligible`, finalizes the lease, stops before any model call is spent
 
 > Mechanism-aware authoring is compatible with withholding the candidate implementation, but that
 > compatibility is a local design inference and not RubricBench evidence. The source withholds
@@ -153,8 +195,11 @@ IMPACT: high -- (Wall :435 -- an aspiration level adapted from recent outcomes "
 
 - Orchestrator (no model): starts Boundary-reviewer in a fresh session, cross-family from the Author
 - Boundary-reviewer (Opus 5 max or gpt-5.6-sol max): receives the boundary, the sketch, the coupling analysis, the issue text, and read-only repo access; receives neither the Author's reasoning nor any candidate change
+- Boundary-reviewer (Opus 5 max or gpt-5.6-sol max): judges handoff **feasibility** first — the semantic half of eligibility, which the Linter cannot do; an infeasible handoff exits `ineligible` here, before the adversarial exercise and without a second top-model call
 - Boundary-reviewer (Opus 5 max or gpt-5.6-sol max): describes a change that satisfies every entry literally while failing the issue's evident intent, or returns `no_gap_found`; a described gap counts and no artifact is owed
-- Author (Opus 5 max or gpt-5.6-sol max): on a gap — amends the exploited entry, re-runs the Linter
+- Author (Opus 5 max or gpt-5.6-sol max): on a gap — amends the exploited entry
+- Orchestrator (no model): invalidates every bundle asset downstream of the amendment and re-runs the stage-2 derivations that produced them — mechanism sketch, coupling analysis, registry selection, handoff objects — then the Linter and the conclusive eligibility check, before a fresh review round
+- Orchestrator (no model): does this because an amendment can move the mechanism surface; without it the frozen digest faithfully preserves stale coupling
 - Orchestrator (no model): repeats with a fresh reviewer up to `MAX_BOUNDARY_ROUNDS`, then escalates `boundary_ungameable_unproven`
 - Orchestrator (no model): commits the manifest and every referenced asset to the run branch, computes the **bundle digest**, appends `boundary_frozen` with that digest and the commit SHA, attaches a remote link to Jira
 - Orchestrator (no model): from here the frozen bundle is the only input; the issue text is not read again
@@ -170,9 +215,9 @@ IMPACT: high -- (Lightman :76 -- process supervision solves 78.2% of the MATH su
 - Implementer (Sonnet 5 xhigh or gpt-5.6-terra xhigh): records the entry-to-test evidence map, which is many-to-many
 - Implementer (Sonnet 5 xhigh or gpt-5.6-terra xhigh): implements until green, touching only paths the sketch named
 - Implementer (Sonnet 5 xhigh or gpt-5.6-terra xhigh): appends out-of-scope defects as `deferral` events; does not fix them
-- Implementer (Sonnet 5 xhigh or gpt-5.6-terra xhigh): emits `escalate: coupling_found_after_freeze` if the work reveals a consumer the coupling analysis missed
-- Orchestrator (no model): resolves the escalation mechanically where it can — if the named consumer already appears in the frozen coupling analysis or in an entry's `traces[]`, it is entailed, and the run continues as a plan correction
-- Adjudicator (Opus 5 max or gpt-5.6-sol max): decides the remainder, because "entailed by a frozen obligation" is a question about meaning and a no-model actor cannot answer it
+- Implementer (Sonnet 5 xhigh or gpt-5.6-terra xhigh): emits `escalate: coupling_found_after_freeze` on any consumer whose obligation coverage is not already declared
+- Orchestrator (no model): accepts mechanically **only** an exact hit in the frozen `entails` map — a reviewed edge from a coupling-edge or consumer id to an obligation id, authored in stage 2 and frozen in the bundle; presence in the coupling analysis or in `traces[]` proves the consumer was *known*, which is not the same as an obligation covering the new work
+- Adjudicator (Opus 5 max or gpt-5.6-sol max): decides everything else, cross-family from the Implementer or a human — "entailed" is the **permissive** direction, so it is constrained the same way safety rejection is
 - Orchestrator (no model): treats anything unmatched, ambiguous, or undecided as `boundary_invalid` — the conservative default, because the failure direction is shipping past an obligation nobody agreed to
 - Orchestrator (no model): never adds an entry in place, and never treats logging an addition as authorization
 - Orchestrator (no model): opens a draft PR, appends `pr_opened` with the PR number and head SHA
@@ -200,8 +245,9 @@ JUSTIFICATION: A reviewer asked to find problems will supply problems, so the lo
 IMPACT: high -- (Zheng :60 -- judge-human agreement tops out near 80%, "the same level of agreement between humans"; this is where quality is actually found and also where the ceiling binds)
 
 - Orchestrator (no model): starts Reviewer in a fresh session, cross-family from the Implementer
-- Reviewer (Opus 5 xhigh or gpt-5.6-sol xhigh): receives the diff, the boundary, and the coupling analysis; receives neither the implementer's session nor any prior round
-- Reviewer (Opus 5 xhigh or gpt-5.6-sol xhigh): returns `pass` | `fail` | `unable_to_verify` per in-scope entry, with `test_id`, `file:line`, or `trace_id` on every fail
+- Reviewer (Opus 5 xhigh or gpt-5.6-sol xhigh): receives the diff, the frozen bundle, read-only checkouts of **both base and head**, and the `evidence_refs` for this run's CI and gate artifacts; receives neither the implementer's session nor any prior round
+- Reviewer (Opus 5 xhigh or gpt-5.6-sol xhigh): returns `pass` | `fail` | `unable_to_verify` per in-scope entry, with a typed evidence value on every fail — `test_id`, `file:line`, `trace_id`, `artifact_ref` into a content-addressed artifact, or `observation` carrying a reproduction command and its captured output
+- Reviewer (Opus 5 xhigh or gpt-5.6-sol xhigh): uses `observation` for failures that are output, a log line, a command result, or an absence; without that form a valid semantic fail is either dropped by Triage for lacking a citable pointer or becomes an avoidable `unable_to_verify` that invalidates the boundary
 - Reviewer (Opus 5 xhigh or gpt-5.6-sol xhigh): returns uncited observations in a separate array; no cap on cited verdicts
 - Triage (no model): drops findings with no entry id, an out-of-scope id, or a fail without evidence, and appends every drop as an event
 - Triage (no model): routes `unable_to_verify` to the boundary as a spec defect, which invalidates the boundary rather than the change
@@ -274,7 +320,7 @@ one semantic repair round. Every cap is a handoff, not a signal to buy another r
 Reason codes: `floor_gap`, `ineligible_no_handoff`, `ineligible_crosses_boundary`,
 `criteria_not_lintable`, `boundary_ungameable_unproven`, `coupling_found_after_freeze`,
 `gate_not_passable`, `semantic_review_not_converging`, `ineligible_infeasible_handoff`,
-`coupling_unmatched_after_freeze`, `requires_product_tradeoff`,
+`coupling_unmatched_after_freeze`, `no_sensitivity_probe`, `requires_product_tradeoff`,
 `requires_stakeholder_preference`, `underdetermined_by_issue`, `requires_unavailable_observability`.
 
 ## Out of scope, named rather than omitted
