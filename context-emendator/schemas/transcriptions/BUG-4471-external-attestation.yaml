@@ -9,6 +9,27 @@ registry_selections: []
 mandates: [contract]
 non_goals:
   - "everything in BUG-4471 proper"
+interpretation:
+  goal:
+    statement: "the manifest addition ships without breaking the downstream vendor's ingest"
+    provenance: inferred
+    support:
+      - kind: repo_path
+        ref: "services/export/manifest.py"
+  problem:
+    statement: "the vendor parses our export header and has not seen the manifest addition"
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "description#1"
+  claim_provenance:
+    C4:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "description#1"
+  corrections: []
+  gaps: []
 claims:
   - id: C4
     text: "the downstream vendor parses our export header and must confirm the manifest addition is accepted"

@@ -1,0 +1,16 @@
+# Deliberately unparseable. Kept OUTSIDE schemas/fixtures/ because every loop in
+# the suite reads that directory and expects a document; a file that cannot load
+# belongs where only the CLI test looks for it.
+#
+# This exists because E_PARSE was emitted by the CLI and absent from the CODES
+# registry, so no necessity assertion covered it — the same "emitted but not
+# asserted" gap the registry was introduced to close, in the one code path that
+# lives outside the three linting passes.
+schema_version: 1
+tracker: jira
+item: WI-1234
+entries:
+  - id: BROKEN
+    statement: "unclosed quote
+    verifier: mechanical
+   bad_indent: true

@@ -1,37 +1,66 @@
+# Derived from valid.yaml. Goal, problem, and every claim are inferred, so the reconstruction is a feature built from the repository with a work item stapled to it.
 schema_version: 1
 tracker: jira
 item: WI-1234
 registry_revision: "9f2c1ab"
-registry_selections: [INV-2, INV-77]
+registry_selections: [INV-2]
 mandates: [data-integrity, correctness, resource]
 non_goals:
   - "retry button behaviour — tracked as JIRA-1250"
 interpretation:
+  # A deliberately unrefined item: it states a symptom, no goal, no numbers, and
+  # one thing that is not true. Every one of those is recorded rather than
+  # smoothed over, which is the whole point of the block.
   goal:
     statement: "a large-account export either completes or leaves the destination unchanged"
     provenance: inferred
     support:
       - kind: repo_path
         ref: "services/export/writer.py"
+      - kind: log_query
+        ref: "export.status=FAILED AND rows_written>0, last 30d"
   problem:
-    statement: "large-account exports time out and leave a partial file behind"
-    provenance: stated
+    statement: "large-account exports time out at the gateway and leave a partial file behind"
+    provenance: inferred
     support:
-      - kind: item_locator
-        ref: "description#1"
+      - kind: log_query
+        ref: "export.duration_ms p99 by account_size, last 30d"
   claim_provenance:
     C1:
-      provenance: stated
+      provenance: inferred
       support:
-        - kind: item_locator
-          ref: "description#1"
+        - kind: log_query
+          ref: "export.status=FAILED by account_size, last 30d"
     C3:
-      provenance: stated
+      # The item says the leftover file is empty. It is not — it holds the rows
+      # written before the timeout. The obligation reads the same either way,
+      # which is what moves_surface: false records below.
+      provenance: contradicted
       support:
-        - kind: item_locator
-          ref: "description#2"
-  corrections: []
-  gaps: []
+        - kind: log_query
+          ref: "export.rows_written WHERE status=FAILED, last 30d"
+        - kind: repo_path
+          ref: "services/export/writer.py"
+  corrections:
+    - about: C3
+      item_assertion: "an empty file is left behind on hang"
+      repo_finding: "the file left behind holds the rows written before the timeout, not zero rows"
+      resolution: item_wrong
+      moves_surface: false
+      support:
+        - kind: log_query
+          ref: "export.rows_written WHERE status=FAILED, last 30d"
+  gaps:
+    # AC-1 asserts 240 seconds and the item supplies no number at all. Without
+    # this entry that threshold is an assumption wearing a quantity object.
+    - element: "the completion budget for a large export"
+      filled_from:
+        kind: repo_path
+        ref: "infra/gateway/timeouts.yaml"
+    - element: "what counts as a large account"
+      filled_from:
+        kind: log_query
+        ref: "row_count percentiles by account, last 90d"
 claims:
   - id: C1
     text: "exports fail for large accounts"
@@ -46,7 +75,7 @@ coupling:
     target: "dashboards/export.json"
 entails:
   CPL-1: PRES-1
-  CPL-2: uncovered
+  CPL-2: PRES-2
 entries:
   - id: INV-2
     statement: "destination holds a file only if its row count equals the manifest"
@@ -114,6 +143,34 @@ entries:
       verification_method: "grafana panel export.rss.p99"
       evidence_destination: "runs/WI-1234/handoff/"
       failure_transition: "reopen WI-1234"
+  - id: PRES-2
+    statement: "alert EXP-1 fires on the same conditions after the status change"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [CPL-2]
+    observation: "replay the alert expression against both status vocabularies"
+    decision: "same firing set"
+    quantitative: false
+    test_role: preservation
+    baseline: pass
+  - id: AC-7
+    statement: "the reconcile job's first post-merge run consumes every terminal state"
+    verifier: independent_review
+    verification_stage: post_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [CPL-1]
+    observation: "read the first nightly reconcile log after merge"
+    decision: "no unhandled terminal state"
+    quantitative: false
+    handoff:
+      owner: "data-platform"
+      trigger: "first nightly reconcile after merge"
+      verification_method: "reconcile job exit status and unhandled-state counter"
+      evidence_destination: "runs/WI-1234/handoff/"
+      failure_transition: "reopen WI-1234 and revert the status enum"
   - id: W-1
     statement: "export duration trend does not regress"
     verifier: observation

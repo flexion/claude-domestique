@@ -11,6 +11,53 @@ mandates: [data-integrity, correctness, resource, observability, blast-radius]
 non_goals:
   - "retry button behaviour — split to BUG-4488"
   - "export performance below 50k rows — no evidence of defect"
+interpretation:
+  # Transcribed like the rest of the file: the source stated a symptom and no
+  # goal, so the goal below is reconstructed and says so. C2 is why the
+  # provenance enum has a fourth member — see index.yaml.
+  goal:
+    statement: "an export above 50k rows either completes or leaves nothing at the destination"
+    provenance: inferred
+    support:
+      - kind: repo_path
+        ref: "services/export/writer.py"
+      - kind: log_query
+        ref: "export.status=FAILED AND row_count>50000"
+  problem:
+    statement: "exports above 50k rows hang and leave a file behind"
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "description#1"
+  claim_provenance:
+    C1:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "description#1"
+        - kind: log_query
+          ref: "export.status=FAILED AND row_count>50000"
+    C2:
+      # "regression since ~July — unverified secondhand", exactly as the source
+      # wrote it. The source's own answer was W-C2, a watch entry: the claim is
+      # recorded and gates nothing.
+      provenance: stated_unverified
+      support:
+        - kind: item_locator
+          ref: "comment#2"
+    C3:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "description#2"
+        - kind: repo_path
+          ref: "services/export/writer.py"
+  corrections: []
+  gaps:
+    - element: "the 50k threshold — the source gives a round number and no measurement"
+      filled_from:
+        kind: log_query
+        ref: "export failure rate by row_count decile"
 claims:
   - id: C1
     text: "export fails above 50k rows"
@@ -63,6 +110,9 @@ entries:
       value: "240"
       unit: "seconds"
       conditions: "staging, warm cache, single concurrent export, 500k rows; bounded by the 5 minute gateway timeout"
+      filled_from:
+        kind: repo_path
+        ref: "infra/gateway/timeouts.yaml"
     test_role: change
     baseline: assertion_fail
   - id: AC-2

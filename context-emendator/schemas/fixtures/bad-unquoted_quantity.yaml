@@ -6,6 +6,32 @@ registry_selections: [INV-2]
 mandates: [data-integrity, correctness, resource]
 non_goals:
   - "retry button behaviour — tracked as JIRA-1250"
+interpretation:
+  goal:
+    statement: "a large-account export either completes or leaves the destination unchanged"
+    provenance: inferred
+    support:
+      - kind: repo_path
+        ref: "services/export/writer.py"
+  problem:
+    statement: "large-account exports time out and leave a partial file behind"
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "description#1"
+  claim_provenance:
+    C1:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "description#1"
+    C3:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "description#2"
+  corrections: []
+  gaps: []
 claims:
   - id: C1
     text: "exports fail for large accounts"
@@ -60,6 +86,9 @@ entries:
       value: 240
       unit: "seconds"
       conditions: "staging, warm cache, single concurrent export, 500k rows"
+      filled_from:
+        kind: repo_path
+        ref: "infra/gateway/timeouts.yaml"
     test_role: change
     baseline: assertion_fail
   - id: AC-4
@@ -76,6 +105,9 @@ entries:
       value: "1.50"
       unit: "ratio to the 50k peak"
       conditions: "production, 24h window, p99"
+      filled_from:
+        kind: repo_path
+        ref: "infra/gateway/timeouts.yaml"
     handoff:
       owner: "platform-oncall"
       trigger: "24h after deploy"

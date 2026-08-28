@@ -6,6 +6,64 @@ registry_selections: [INV-2]
 mandates: [data-integrity, correctness, resource]
 non_goals:
   - "retry button behaviour — tracked as JIRA-1250"
+interpretation:
+  # A deliberately unrefined item: it states a symptom, no goal, no numbers, and
+  # one thing that is not true. Every one of those is recorded rather than
+  # smoothed over, which is the whole point of the block.
+  goal:
+    statement: "a large-account export either completes or leaves the destination unchanged"
+    provenance: inferred
+    support:
+      - kind: repo_path
+        ref: "services/export/writer.py"
+      - kind: log_query
+        ref: "export.status=FAILED AND rows_written>0, last 30d"
+  problem:
+    statement: "large-account exports time out at the gateway and leave a partial file behind"
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "description#1"
+      - kind: log_query
+        ref: "export.duration_ms p99 by account_size, last 30d"
+  claim_provenance:
+    C1:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "description#1"
+    C3:
+      # The item says the leftover file is empty. It is not — it holds the rows
+      # written before the timeout. The obligation reads the same either way,
+      # which is what moves_surface: false records below.
+      provenance: contradicted
+      support:
+        - kind: log_query
+          ref: "export.rows_written WHERE status=FAILED, last 30d"
+        - kind: repo_path
+          ref: "services/export/writer.py"
+  corrections:
+    - about: C3
+      item_assertion: "an empty file is left behind on hang"
+      repo_finding: "the file left behind holds the rows written before the timeout, not zero rows"
+      resolution: item_wrong
+      moves_surface: false
+      support:
+        - kind: log_query
+          ref: "export.rows_written WHERE status=FAILED, last 30d"
+  gaps:
+    # AC-1 asserts 240 seconds and the item supplies no number at all. The
+    # enforcement is quantity.filled_from on AC-1 itself; this entry is the
+    # summary. Emptying gaps[] used to leave the threshold standing and clean,
+    # which made this list decorative.
+    - element: "the completion budget for a large export"
+      filled_from:
+        kind: repo_path
+        ref: "infra/gateway/timeouts.yaml"
+    - element: "what counts as a large account"
+      filled_from:
+        kind: log_query
+        ref: "row_count percentiles by account, last 90d"
 claims:
   - id: C1
     text: "exports fail for large accounts"
@@ -60,6 +118,9 @@ entries:
       value: "240"
       unit: "seconds"
       conditions: "staging, warm cache, single concurrent export, 500k rows"
+      filled_from:
+        kind: repo_path
+        ref: "infra/gateway/timeouts.yaml"
     test_role: change
     baseline: assertion_fail
   - id: AC-4
@@ -76,6 +137,9 @@ entries:
       value: "1.50"
       unit: "ratio to the 50k peak"
       conditions: "production, 24h window, p99"
+      filled_from:
+        kind: log_query
+        ref: "export.rss.p99 at 50k rows, last 90d"
     handoff:
       owner: "platform-oncall"
       trigger: "24h after deploy"

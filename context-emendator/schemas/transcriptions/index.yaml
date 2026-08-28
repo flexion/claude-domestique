@@ -16,6 +16,17 @@ transcriptions:
       keeps the obligation while discarding the base/head comparison structure that
       test_role would have given it.
 
+      This transcription is where the provenance enum got its fourth member. C2 reads
+      "regression since ~July — unverified secondhand", and a three-member enum of
+      stated | inferred | contradicted could only record the first half: an assertion
+      the resolution pass could neither corroborate nor contradict looked identical to
+      one it confirmed. The source had already solved the consequence without naming
+      the cause — C2 grounds W-C2, a watch entry, and gates nothing. So the schema
+      gained stated_unverified and one rule, E_UNVERIFIED_GROUNDS_MUST, which is what
+      the source was doing by hand. Worth recording as the direction this register is
+      supposed to run in: the finding came from transcribing a case authored before
+      the rules, not from anyone reviewing the rules.
+
   - file: BUG-4471-external-attestation.yaml
     source: "same issue, with the vendor-attestation obligation the conversation implied and never wrote down"
     verdict: unrepresentable

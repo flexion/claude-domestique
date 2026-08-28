@@ -1,0 +1,14 @@
+# The item's addressable parts, as the tracker adapter's `read(ref)` would return
+# them. Supplied to the linter so an `item_locator` can be checked for RESOLUTION
+# and not merely for presence.
+#
+# Fixture-declared here, adapter-supplied in production. The check is written and
+# tested now; the infrastructure later feeds an already-tested check instead of
+# arriving alongside an untested one. Circular while the author writes both, and
+# non-circular for free once the adapter produces it — with no rewrite.
+item: WI-1234
+parts:
+  - description#1
+  - description#2
+  - comment#1
+  - comment#2
