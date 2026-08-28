@@ -1,14 +1,15 @@
-# Autonomous Jira issue to Ready for Merge — pilot workflow
+# Autonomous work item to Ready for Merge — pilot workflow
 
-GOAL: Take a Jira issue to Ready for Merge -- complete, correct, and high quality -- without a human in the loop, and stop on a fixed condition rather than when the reviewers run out of things to say.
+GOAL: Take a work item to Ready for Merge -- complete, correct, and high quality -- without a human in the loop, and stop on a fixed condition rather than when the reviewers run out of things to say.
 HOW: Author one boundary bundle, have it independently reviewed, and freeze it before implementation; then implement on an isolated branch against that boundary and nothing else, with mechanical gates and one bounded repair loop per review kind. Escalate whenever the boundary cannot be made decidable, a genuinely new obligation appears, or the coupling reaches past what this repo controls.
 
 Merge is a human approval boundary. After a confirmed merge event a separate idempotent
-merge-watcher records the merge SHA and may transition Jira to `Done`, but only when no post-merge or
-production obligation remains. The run itself has already stopped by then.
+merge-watcher records the merge SHA and may project the item to its closed state, but only when no
+post-merge or production obligation remains. The run itself has already stopped by then.
 Deploy and rollback are a named handoff, out of scope.
 
-Actor: action form. One line per step. `JIRA-1234` is the worked example.
+Actor: action form. One line per step. `WI-1234` is the worked example — the workflow is not bound to
+a tracker, so the key is opaque.
 
 Each stage opens with GOAL, HOW, JUSTIFICATION with its grounding in
 `research/satisficing-references/text/` by file stem and line, and IMPACT as high, medium, or low
@@ -30,9 +31,61 @@ causally diagnosed failure class in two or more independent pilot runs, or one c
 event — plus evidence that the failure cannot be handled by changing an existing stage. Record that
 decision in the run evidence. Do not create a document to hold the process for it.
 
+## Two ports, and why they are separate
+
+The workflow names no tracker. It calls two adapters, and they are independent because real setups
+split them: Jira is a tracker with no forge, GitHub and Azure DevOps supply both, and beads is a
+tracker that is local rather than hosted. Jira plus GitHub is probably the most common combination
+there is, so a design that conflates them is unusable.
+
+**Tracker port** — work items.
+
+| Operation | Required | Used by |
+| --- | --- | --- |
+| `list_eligible(filter)` | yes | stage 1 |
+| `read(ref)` | yes | stages 1-2 |
+| `comment(ref, text)` | yes | escalation |
+| `attach_reference(ref, label, uri)` | yes | stage 3 freeze |
+| `project(ref, state, note)` | best effort | stages 1, 3, 7 |
+| `claim(ref, owner, expiry, fence)` | capability-gated | stage 1 |
+| `assign(ref, owner)` | optional | escalation |
+
+**Forge port** — branch, pull request, checks: `create_branch`, `open_pr`, `mark_pr_ready`,
+`checks_status(sha)`, `observe_merge(pr)`. All required. A tracker-only setup cannot run this pilot,
+which is a statement about scope rather than a gap to work around.
+
+### The run record is authoritative; the tracker is a projection
+
+This is the load-bearing consequence of going generic. Trackers have incompatible state machines —
+Jira's are configurable with validators and transition permissions, GitHub Issues has open and closed
+plus labels, Azure Boards has per-process states, beads has its own set. The workflow's states cannot
+live in any of them.
+
+So the run record holds the state and the tracker receives a **best-effort projection**. A tracker
+that cannot represent `handoff_pending` simply does not: the item stays open with a comment naming the
+open handoffs and their owners. Nothing downstream ever reads state back out of the tracker, and a
+failed projection is an event in the run record rather than a stalled run.
+
+### Claim is the operation most likely to be missing
+
+Everything else degrades gracefully. Atomic claim does not — without it two orchestrators take the
+same item and both run.
+
+| Tracker | Claim primitive | Degradation |
+| --- | --- | --- |
+| Azure DevOps Boards | revision-based optimistic concurrency on work item update | none needed |
+| Jira | conditional issue-property update | none needed |
+| beads | transactional local database | sound against one shared database; cross-machine claims settle only as that database syncs |
+| GitHub Issues | none — issue field writes are last-write-wins | the lease must move to an external store |
+
+Config declares each adapter's capabilities, and the stage-1 gate refuses to start when a required one
+is absent — the same treatment as a missing ownership map, because an undeclared capability is a
+configuration error rather than something to discover at runtime. Where `claim` is unavailable the
+lease lives in an external compare-and-set store and any tracker-side claim is advisory decoration.
+
 ## The boundary file
 
-`boundary/JIRA-1234.yaml` is a **manifest**, not a lone criteria list. It carries the obligation
+`boundary/WI-1234.yaml` is a **manifest**, not a lone criteria list. It carries the obligation
 entries inline and digest-references every other normative asset — the mechanism sketch, the coupling
 analysis, the `entails` map, the selected registry revision. Freezing computes and records a **bundle digest** over the
 manifest plus every referenced asset. "The frozen bundle is the only input" is then true; "the
@@ -48,7 +101,8 @@ reference linter could not be written without them:
 | Field | Purpose |
 | --- | --- |
 | `schema_version` | The manifest's own version, so a linter can refuse a shape it does not know |
-| `issue` | The Jira key |
+| `tracker` | Which adapter produced `item` — `jira`, `azure-boards`, `github-issues`, `beads`, … |
+| `item` | The work item reference, opaque to everything downstream |
 | `registry_revision` | The pinned registry revision the floor was selected from |
 | `mandates[]` | The declared mandate set. Orphan-entry and unanchored-mandate checks are unimplementable without it, and "one reviewer per mandate" has no domain |
 | `non_goals[]` | Non-empty |
@@ -160,7 +214,7 @@ The Markdown view is rendered on demand and never committed.
 
 ## The run record
 
-`runs/JIRA-1234/<run-id>.jsonl`. Append-only, one file per **run attempt** rather than per issue, so
+`runs/WI-1234/<run-id>.jsonl`. Append-only, one file per **run attempt** rather than per issue, so
 a refreeze starts a new run rather than mutating an old one. A single orchestrator owns sequence
 allocation and append.
 
@@ -179,8 +233,8 @@ mechanisms, not substitutes for them:
   atomic append with a monotonic `seq`; a torn write is detectable and the last complete record wins.
 - **Fencing needs an enforcement point.** Presenting a token stops nothing on its own; the sink, or
   a credential-holding gateway in front of it, has to reject a stale one. Route every external effect
-  through one gateway that holds the credentials and checks the current fence, because Jira, git
-  hosting, and CI will not do it for you.
+  through one gateway that holds the credentials and checks the current fence, because no tracker,
+  git host, or CI system will do it for you.
 - **Idempotency is per-sink, not universal.** Many sinks accept no arbitrary key. Where a native key
   exists, use it. Where none does, write an external marker before acting and reconcile by query on
   resume — the marker plus the query is the idempotency.
@@ -190,7 +244,7 @@ mechanisms, not substitutes for them:
 - **Intent then result.** Each external effect appends an `intent` event before acting and a `result`
   event after. A crash between them is recoverable precisely because the intent is on disk.
 - **Startup reconciliation.** On resume the orchestrator replays the stream, finds every intent with
-  no result, and reconciles against the real world — Jira, git, PR, CI — before proceeding. This is
+  no result, and reconciles against the real world — tracker, git, PR, checks — before proceeding. This is
   the answer to the crash-between-PR-creation-and-event case, which no amount of metadata solves.
   Intent-then-result replay is only sound once the per-sink semantics above exist; without them it
   detects the gap and cannot close it.
@@ -199,33 +253,34 @@ mechanisms, not substitutes for them:
 
 ## 1. Qualify and claim
 
-GOAL: Take exclusive ownership of one eligible issue, or leave it alone.
-HOW: Query for eligible issues, claim one under a compare-and-set, and run a preliminary screen for conditions already visible in the issue text. The conclusive eligibility decision cannot happen here and is taken at the end of stage 2.
-JUSTIFICATION: An issue that is obviously out of scope should cost nothing to reject, but coupling and production obligations are not known until stage 2, so rejecting on them here would repeat the ordering defect one stage earlier. -- (no source -- eligibility screening is local judgment)
+GOAL: Take exclusive ownership of one eligible work item, or leave it alone.
+HOW: Query for eligible work items, claim one under a compare-and-set, and run a preliminary screen for conditions already visible in the item text. The conclusive eligibility decision cannot happen here and is taken at the end of stage 2.
+JUSTIFICATION: An item that is obviously out of scope should cost nothing to reject, but coupling and production obligations are not known until stage 2, so rejecting on them here would repeat the ordering defect one stage earlier. -- (no source -- eligibility screening is local judgment)
 IMPACT: medium -- (SWE-bench Verified -- 68.3% of samples were filtered as unusable by professional annotators, so screening rejects a large fraction cheaply, but it decides nothing about the ones that pass)
 
-- Orchestrator (no model): queries `status = "To Do" AND labels = agent-eligible`
-- Orchestrator (no model): claims the issue with a compare-and-set on a single claim record — issue key, owner, expiry, `run_id`, fencing token; a lost CAS is a no-op, not a retry. Jira's conditional issue-property update is one viable primitive; the protocol must be named in config, because "atomically" is not an implementation
-- Orchestrator (no model): opens `runs/JIRA-1234/<run-id>.jsonl` and appends `run_claimed`
-- Orchestrator (no model): creates branch `agent/JIRA-1234/<run-id>` from the target base, so the frozen bundle has somewhere to live
+- Orchestrator (no model): calls `list_eligible` with the configured filter; the filter is adapter-specific and lives in config, not here
+- Orchestrator (no model): refuses to start if the configured tracker does not declare the `claim` capability and no external claim store is configured
+- Orchestrator (no model): calls `claim` — owner, expiry, `run_id`, fencing token — against the tracker or the external store; a lost compare-and-set is a no-op, not a retry
+- Orchestrator (no model): opens `runs/WI-1234/<run-id>.jsonl` and appends `run_claimed` with the tracker id and item reference
+- Orchestrator (no model): creates branch `agent/WI-1234/<run-id>` from the target base, so the frozen bundle has somewhere to live
 - Orchestrator (no model): runs the **preliminary** screen only — issue type, labels, declared component ownership, and any pre-declared out-of-scope marker
 - Orchestrator (no model): on preliminary reject — appends `run_ineligible` with a reason code, finalizes the lease, stops
 
 ## 2. Author the boundary
 
 GOAL: Produce one boundary bundle containing every obligation this change must satisfy, plus the sketch and coupling analysis it rests on.
-HOW: Extract claims from the issue, resolve them against the repo and logs, sketch the change surface, then run coupling analysis against that sketch. Select floor invariants from the registry rather than writing them.
+HOW: Extract claims from the item, resolve them against the repo and logs, sketch the change surface, then run coupling analysis against that sketch. Select floor invariants from the registry rather than writing them.
 JUSTIFICATION: Coupling cannot be found before a mechanism is chosen, so the sketch has to precede the analysis and both have to precede the freeze. -- (RubricBench :151 -- models "fail to define the necessary constraints on their own", 27% gap against human rubrics, which is why the floor is selected and not authored)
 IMPACT: high -- (RubricBench :151 -- the boundary is what "correct" means for this run, and the corpus identifies the criteria rather than the reasoning as the binding constraint)
 
-- Author (Opus 5 max or gpt-5.6-sol max): extracts numbered claims from the issue text alone
+- Author (Opus 5 max or gpt-5.6-sol max): extracts numbered claims from the item text alone
 - Author (Opus 5 max or gpt-5.6-sol max): resolves each claim against read-only repo, logs, and deploy history; quantifies vague terms from data
 - Author (Opus 5 max or gpt-5.6-sol max): writes a **bounded mechanism sketch** — the chosen change surface, affected interfaces and subsystems, data and control-flow edges, external dependencies; not code and not a plan
 - Orchestrator (no model): runs coupling extractors against the sketch's named surface
 - Author (Opus 5 max or gpt-5.6-sol max): writes the `entails` map — one edge per coupling edge or consumer id to the obligation id that covers it, and an explicit `uncovered` marker where none does
 - Linter (no model): rejects the bundle if any coupling edge is neither mapped nor marked `uncovered`, so coverage is declared rather than assumed
 - Author (Opus 5 max or gpt-5.6-sol max): selects applicable `INV-*` from the registry; emits `escalate: floor_gap` if one is missing
-- Author (Opus 5 max or gpt-5.6-sol max): writes `boundary/JIRA-1234.yaml` with the three closed fields per entry, a handoff object for every `post_merge` **and** `production` must, `test_role` plus `baseline` on every `mechanical` + `pre_merge` + `must`, and a non-empty non-goals list
+- Author (Opus 5 max or gpt-5.6-sol max): writes `boundary/WI-1234.yaml` with the three closed fields per entry, a handoff object for every `post_merge` **and** `production` must, `test_role` plus `baseline` on every `mechanical` + `pre_merge` + `must`, and a non-empty non-goals list
 - Linter (no model): loads under the YAML 1.2 core schema with a comment-preserving round-trip loader, canonicalizes, validates the schema, resolves every trace
 - Linter (no model): warns — does not reject — on an entry that appears to name an implementation; that check is not decidable
 - Linter (no model): re-runs up to `MAX_LINT_ROUNDS`, then escalates `criteria_not_lintable`
@@ -239,21 +294,21 @@ IMPACT: high -- (RubricBench :151 -- the boundary is what "correct" means for th
 ## 3. Review and freeze
 
 GOAL: Get the boundary reviewed by someone who did not write it, then fix it so nothing later can move the target.
-HOW: An independent reviewer reads the boundary, the sketch, and the coupling analysis and tries to satisfy every entry while failing the issue's evident intent. On success the boundary is amended and re-reviewed; on a clean pass it is committed and frozen.
+HOW: An independent reviewer reads the boundary, the sketch, and the coupling analysis and tries to satisfy every entry while failing the item's evident intent. On success the boundary is amended and re-reviewed; on a clean pass it is committed and frozen.
 JUSTIFICATION: A boundary reviewed only by its author trades an unbounded failure mode for a bounded and silent one. -- (Panickssery :145, :166 -- GPT-4 recognises its own output 73.5% of the time and self-preference is linearly correlated with self-recognition)
 IMPACT: high -- (Wall :435 -- an aspiration level adapted from recent outcomes "could also become negative", making a performance decline acceptable; the freeze stops that, and the independent review stops the freeze from locking in a wrong target)
 
 - Orchestrator (no model): starts Boundary-reviewer in a fresh session, cross-family from the Author
-- Boundary-reviewer (Opus 5 max or gpt-5.6-sol max): receives the boundary, the sketch, the coupling analysis, the `entails` map, the issue text, and read-only repo access; receives neither the Author's reasoning nor any candidate change
+- Boundary-reviewer (Opus 5 max or gpt-5.6-sol max): receives the boundary, the sketch, the coupling analysis, the `entails` map, the item text, and read-only repo access; receives neither the Author's reasoning nor any candidate change
 - Boundary-reviewer (Opus 5 max or gpt-5.6-sol max): checks every `entails` edge, because that map is what later permits work to continue without a refreeze; an edge it rejects becomes `uncovered`
 - Boundary-reviewer (Opus 5 max or gpt-5.6-sol max): judges handoff **feasibility** first — the semantic half of eligibility, which the Linter cannot do; an infeasible handoff exits `ineligible` here, before the adversarial exercise and without a second top-model call
-- Boundary-reviewer (Opus 5 max or gpt-5.6-sol max): describes a change that satisfies every entry literally while failing the issue's evident intent, or returns `no_gap_found`; a described gap counts and no artifact is owed
+- Boundary-reviewer (Opus 5 max or gpt-5.6-sol max): describes a change that satisfies every entry literally while failing the item's evident intent, or returns `no_gap_found`; a described gap counts and no artifact is owed
 - Author (Opus 5 max or gpt-5.6-sol max): on a gap — amends the exploited entry
 - Orchestrator (no model): invalidates every bundle asset downstream of the amendment and re-runs the stage-2 derivations that produced them — mechanism sketch, coupling analysis, registry selection, handoff objects — then the Linter and the conclusive eligibility check, before a fresh review round
 - Orchestrator (no model): does this because an amendment can move the mechanism surface; without it the frozen digest faithfully preserves stale coupling
 - Orchestrator (no model): repeats with a fresh reviewer up to `MAX_BOUNDARY_ROUNDS`, then escalates `boundary_ungameable_unproven`
-- Orchestrator (no model): commits the manifest and every referenced asset to the run branch, computes the **bundle digest**, appends `boundary_frozen` with that digest and the commit SHA, attaches a remote link to Jira
-- Orchestrator (no model): from here the frozen bundle is the only input; the issue text is not read again
+- Orchestrator (no model): commits the manifest and every referenced asset to the run branch, computes the **bundle digest**, appends `boundary_frozen` with that digest and the commit SHA, and calls `attach_reference` so the item points at the frozen bundle
+- Orchestrator (no model): from here the frozen bundle is the only input; the item text is not read again
 
 ## 4. Implement
 
@@ -308,7 +363,7 @@ IMPACT: high -- (Zheng :60 -- judge-human agreement tops out near 80%, "the same
 ## 7. Finalize and hand off
 
 GOAL: Reach an autonomous stop state that names exactly what a human is being asked to do.
-HOW: Mark the PR ready, write the handoff summary as a projection of the run record, and stop. Transition Jira only on an observed merge event, and only when nothing post-merge or production remains open.
+HOW: Mark the PR ready, write the handoff summary as a projection of the run record, and stop. Project the item's closed state only on an observed merge event, and only when nothing post-merge or production remains open.
 JUSTIFICATION: Accepted imperfection has to be written down, or the next agent rediscovers the deferred items and starts fixing them. -- (Petersson :173 -- in ten years of capture-recapture research "only one paper has been classified" as an experience report)
 IMPACT: medium -- (Petersson :173 -- the corpus's own failure mode is knowledge that never reached practice, but no source measures whether a record prevents it)
 
@@ -318,7 +373,7 @@ IMPACT: medium -- (Petersson :173 -- the corpus's own failure mode is knowledge 
 - Orchestrator (no model): **finalizes the execution lease here**, at the autonomous stop, not after merge — the wait for human approval is unbounded and must not be held under lease
 - Merge-watcher (no model): a separately triggered, idempotent continuation keyed by `(run_id, "merge")`; it is not part of the run's execution
 - Merge-watcher (no model): on an observed merge event — appends `merged` with the merge SHA
-- Merge-watcher (no model): transitions Jira to `Done` only when a merge is recorded and no `post_merge` or `production` must remains open; otherwise the issue stays open with its handoffs listed
+- Merge-watcher (no model): projects the item's closed state only when a merge is recorded and no `post_merge` or `production` must remains open; otherwise the item stays open with its handoffs and owners in a comment
 
 ---
 
@@ -344,6 +399,11 @@ data-loss report stays legible to anyone reading the run.
 ## Reference implementation
 
 `scripts/lint-boundary.js` implements every rule this document calls mechanical.
+The suite also asserts **tracker independence**: the same boundary lints clean with a Jira key, a
+GitHub `org/repo#n` reference, an Azure Boards integer, a beads id, and an opaque string from an
+adapter nobody has written. A key shape that means something to one tracker must mean nothing to the
+linter, or the schema is Jira-shaped with a generic label on it.
+
 `schemas/fixtures/` carries one valid boundary, one negative fixture per rule, and
 `realcase-BUG-4471.yaml` — an instance transcribed from the source design conversation's worked
 example, authored under the earlier `INV`/`AC`/`PRES` vocabulary before this schema existed. It is
@@ -400,7 +460,7 @@ interval, and `failure_transition` cannot revert something we do not control.
 **It lints clean, and that is the finding.** The obligation is mis-encoded rather than malformed, so
 no mechanical check can see it. A test asserts the clean result precisely so the gap cannot be lost.
 Either `verification_stage` gains `external` with an event-triggered handoff, or the autonomy gate
-must reject such an issue at stage 1 and say so. It currently does neither.
+must reject such an item at stage 1 and say so. It currently does neither.
 
 **One stated requirement is unmet, and an earlier version of this section overstated what the tests
 show.** It claimed the tests "prove `NO`, `on`, `off`, and `1.10` all survive as strings". That was
@@ -418,8 +478,9 @@ what stage 3 claims.
 ## Stop conditions
 
 Two different things were conflated in an earlier draft. An **autonomous stop state** ends the run's
-execution and finalizes the lease. A **lifecycle final state** is where the Jira issue ends up, which
-may be later and is not the run's business.
+execution and finalizes the lease. A **lifecycle final state** is where the work item ends up, which
+may be later, is not the run's business, and is a projection the tracker may be unable to represent
+faithfully.
 
 Expect `handoff_pending` to be the common outcome rather than the exception. Any obligation that can
 only be verified after merge or in production caps the run there, and a realistic issue usually has at
@@ -434,15 +495,15 @@ Autonomous stop states — every one finalizes the lease:
 | `handoff_pending` | As above, but a `post_merge` or `production` must remains |
 | `boundary_invalid` | Genuinely new or unmatched obligation, `unable_to_verify` on a must, or a confirmed safety exception |
 | `escalated` | Any cap reached, with its reason code |
-| `ineligible` | Preliminary or conclusive eligibility screen rejected the issue |
+| `ineligible` | Preliminary or conclusive eligibility screen rejected the item |
 
 Lifecycle final states, reached by the merge-watcher and not by the run:
 
 | Final state | Reached when |
 | --- | --- |
-| Jira `Done` | Merge recorded **and** no `post_merge` or `production` must open |
-| Jira open with handoffs | Merge recorded, obligations outstanding, owners named |
-| Jira unchanged | No merge; a human decides what happens to the PR |
+| item closed | Merge recorded **and** no `post_merge` or `production` must open |
+| item open with handoffs | Merge recorded, obligations outstanding, owners named in a comment |
+| item unchanged | No merge; a human decides what happens to the PR |
 
 Caps live in config, not in prose: `MAX_LINT_ROUNDS`, `MAX_BOUNDARY_ROUNDS`, `MAX_GATE_RETURNS`, and
 one semantic repair round. Every cap is a handoff, not a signal to buy another round.

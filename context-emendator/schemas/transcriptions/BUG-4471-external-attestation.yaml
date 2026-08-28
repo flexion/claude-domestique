@@ -2,7 +2,8 @@
 # obligation, not as a valid boundary. The stage below is the least-wrong of the
 # three available and is still wrong.
 schema_version: 1
-issue: BUG-4471-EXT
+tracker: github-issues
+item: "org/repo#4471"
 registry_revision: "9f2c1ab"
 registry_selections: []
 mandates: [contract]

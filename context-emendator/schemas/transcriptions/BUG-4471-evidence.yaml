@@ -1,5 +1,6 @@
 schema_version: 1
-issue: BUG-4471
+tracker: jira
+item: BUG-4471
 boundary_digest: "sha256:1111111111111111111111111111111111111111111111111111111111111111"
 edges:
   - entry: INV-2

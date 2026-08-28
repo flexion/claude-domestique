@@ -1,5 +1,6 @@
 schema_version: 1
-issue: JIRA-1234
+tracker: jira
+item: WI-1234
 boundary_digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
 edges:
   - entry: INV-2

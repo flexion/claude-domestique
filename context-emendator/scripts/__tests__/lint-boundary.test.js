@@ -187,8 +187,8 @@ describe('generated — closed enums are total', () => {
 });
 
 describe('generated — required fields are all enforced', () => {
-  const top = ['schema_version', 'issue', 'registry_revision', 'mandates', 'non_goals',
-    'claims', 'coupling', 'entails', 'entries', 'registry_selections'];
+  const top = ['schema_version', 'tracker', 'item', 'registry_revision', 'mandates',
+    'non_goals', 'claims', 'coupling', 'entails', 'entries', 'registry_selections'];
   test.each(top)('deleting /%s reports a missing-field error', (k) => {
     const d = V();
     delete d[k];
@@ -316,5 +316,32 @@ describe('transcriptions — cases authored before the rules', () => {
     // accepts a boundary it should reject, so the finding cannot be lost.
     const b = load(path.join(TRANS, 'BUG-4471-external-attestation.yaml'));
     expect(failures(lintBoundary(b)).map((f) => f.code)).toEqual([]);
+  });
+});
+
+describe('tracker independence', () => {
+  // The linter must not interpret an item reference. A key shape that means
+  // something to one tracker has to mean nothing here, or the schema is
+  // Jira-shaped with a generic label on it.
+  const shapes = [
+    ['jira', 'WI-1234'],
+    ['github-issues', 'org/repo#4471'],
+    ['azure-boards', '12345'],
+    ['beads', 'domestique-l4l'],
+    ['some-tracker-nobody-has-written-yet', '::opaque::'],
+  ];
+  test.each(shapes)('a %s reference of the form %s lints clean', (tracker, item) => {
+    const d = clone(load(at('valid.yaml')));
+    d.tracker = tracker;
+    d.item = item;
+    expect(fCodes(d)).toEqual([]);
+  });
+
+  test('both the adapter name and the reference are required', () => {
+    for (const k of ['tracker', 'item']) {
+      const d = clone(load(at('valid.yaml')));
+      delete d[k];
+      expect(fCodes(d)).toContain('E_MISSING_TOP_FIELD');
+    }
   });
 });

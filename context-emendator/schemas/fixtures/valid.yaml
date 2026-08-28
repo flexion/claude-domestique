@@ -1,5 +1,6 @@
 schema_version: 1
-issue: JIRA-1234
+tracker: jira
+item: WI-1234
 registry_revision: "9f2c1ab"
 registry_selections: [INV-2]
 mandates: [data-integrity, correctness, resource]
@@ -79,8 +80,8 @@ entries:
       owner: "platform-oncall"
       trigger: "24h after deploy"
       verification_method: "grafana panel export.rss.p99"
-      evidence_destination: "runs/JIRA-1234/handoff/"
-      failure_transition: "reopen JIRA-1234"
+      evidence_destination: "runs/WI-1234/handoff/"
+      failure_transition: "reopen WI-1234"
   - id: PRES-2
     statement: "alert EXP-1 fires on the same conditions after the status change"
     verifier: mechanical
@@ -107,8 +108,8 @@ entries:
       owner: "data-platform"
       trigger: "first nightly reconcile after merge"
       verification_method: "reconcile job exit status and unhandled-state counter"
-      evidence_destination: "runs/JIRA-1234/handoff/"
-      failure_transition: "reopen JIRA-1234 and revert the status enum"
+      evidence_destination: "runs/WI-1234/handoff/"
+      failure_transition: "reopen WI-1234 and revert the status enum"
   - id: W-1
     statement: "export duration trend does not regress"
     verifier: observation

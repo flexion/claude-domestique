@@ -1,5 +1,6 @@
 schema_version: 1
-issue: JIRA-1234
+tracker: jira
+item: WI-1234
 registry_revision: "9f2c1ab"
 registry_selections: [INV-2]
 mandates: [data-integrity, correctness, resource]

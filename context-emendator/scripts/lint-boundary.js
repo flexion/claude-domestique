@@ -40,7 +40,10 @@ const BASELINE_ROLE = {
   assertion_fail: 'change', expected_error: 'change', pass: 'preservation',
 };
 const REQUIRED_TOP = [
-  'schema_version', 'issue', 'registry_revision', 'mandates', 'non_goals',
+  // `tracker` names the adapter, `item` is its opaque reference. Neither is
+  // interpreted here: the workflow is not bound to a tracker, so an id shape that
+  // means something to Jira must mean nothing to this linter.
+  'schema_version', 'tracker', 'item', 'registry_revision', 'mandates', 'non_goals',
   'claims', 'coupling', 'entails', 'entries', 'registry_selections',
 ];
 

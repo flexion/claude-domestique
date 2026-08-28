@@ -3,7 +3,8 @@
 # vocabulary; the mapping to verifier/verification_stage/obligation is the
 # transcription. Restored after being deleted in 0bdc14c.
 schema_version: 1
-issue: BUG-4471
+tracker: jira
+item: BUG-4471
 registry_revision: "9f2c1ab"
 registry_selections: [INV-2]
 mandates: [data-integrity, correctness, resource, observability, blast-radius]
