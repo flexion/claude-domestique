@@ -1,7 +1,7 @@
 schema_version: 1
 issue: JIRA-1234
 registry_revision: "9f2c1ab"
-registry_selections: []
+registry_selections: [INV-2]
 mandates: [data-integrity, correctness, resource]
 non_goals:
   - "retry button behaviour — tracked as JIRA-1250"
@@ -20,6 +20,7 @@ coupling:
 entails:
   CPL-1: PRES-1
   CPL-2: uncovered
+  CPL-TYPO: PRES-1
 entries:
   - id: INV-2
     statement: "destination holds a file only if its row count equals the manifest"
@@ -27,7 +28,7 @@ entries:
     verification_stage: pre_merge
     obligation: must
     mandate: [data-integrity]
-    traces: [INV-2]
+    traces: [C3, INV-2]
     observation: "force a timeout mid-export, list the destination"
     decision: "no file present, or row count equals manifest"
     quantitative: false

@@ -1,72 +1,95 @@
 'use strict';
 
+const fs = require('fs');
 const path = require('path');
-const { lint, load } = require('../lint-boundary');
+const yaml = require('js-yaml');
+const { lintBoundary, lintEvidence, load } = require('../lint-boundary');
 
 const FIX = path.join(__dirname, '..', '..', 'schemas', 'fixtures');
-const codes = (name) => lint(load(path.join(FIX, name))).map((f) => f.code).sort();
+const at = (n) => path.join(FIX, n);
+const bCodes = (n) => lintBoundary(load(at(n))).map((f) => f.code).sort();
+const eCodes = (n) => lintEvidence(load(at('valid.yaml')), load(at(n))).map((f) => f.code).sort();
 
-describe('boundary linter', () => {
-  test('the valid fixture is clean', () => {
-    expect(codes('valid.yaml')).toEqual([]);
+describe('boundary pass — stages 2 and 3, before the freeze', () => {
+  test('the valid manifest is clean', () => {
+    expect(bCodes('valid.yaml')).toEqual([]);
   });
 
-  // An instance transcribed from the source design conversation's worked example,
-  // authored under the old INV/AC/PRES vocabulary before this schema existed. It
-  // is here to test that the schema can express a real case, rather than only the
-  // case its author wrote to fit the rules.
-  test('the transcribed real case is clean', () => {
-    expect(codes('realcase-BUG-4471.yaml')).toEqual([]);
+  // The load-bearing regression. An earlier version decided whether a trace
+  // pointed at a registry invariant by matching /^INV-\d+$/, so renaming an id
+  // flipped the verdict on byte-identical content. Provenance is now declared in
+  // registry_selections, and this test is what stops that from coming back.
+  test('a verdict does not depend on how an id is spelled', () => {
+    const src = fs.readFileSync(at('valid.yaml'), 'utf8');
+    const renamed = src.replace(/INV-2/g, 'RES-2');
+    expect(renamed).not.toEqual(src);
+    expect(lintBoundary(yaml.load(renamed)).map((f) => f.code)).toEqual([]);
   });
 
-  test('the real case terminates at Handoff Pending, not Ready for Merge', () => {
-    const doc = load(path.join(FIX, 'realcase-BUG-4471.yaml'));
-    const blocking = doc.entries.filter(
-      (e) => e.obligation === 'must'
-        && (e.verification_stage === 'post_merge' || e.verification_stage === 'production'),
-    );
-    // PRES-4 is production-verified, so the pilot cannot reach a clean terminal
-    // state on its own first worked example. That is a finding about the example.
-    expect(blocking.map((e) => e.id)).toEqual(['PRES-4']);
-  });
-
-  // One fixture per rule the document calls mechanical. Each asserts the exact
-  // code set, so a rule that stops firing fails here rather than passing silently.
   const cases = [
     ['bad-observation_must.yaml', ['E_HANDOFF_MISSING', 'E_OBSERVATION_MUST']],
     ['bad-handoff_missing.yaml', ['E_HANDOFF_MISSING']],
     ['bad-baseline_mismatch.yaml', ['E_BASELINE_ROLE_MISMATCH']],
-    ['bad-no_probe.yaml', ['E_NO_SENSITIVITY_PROBE']],
-    ['bad-edge_conflict.yaml', ['E_EDGE_BASELINE_CONFLICT']],
-    ['bad-entails_undeclared.yaml', ['E_ENTAILS_UNDECLARED']],
-    ['bad-testrole_forbidden.yaml', ['E_TESTROLE_FORBIDDEN']],
     ['bad-expected_error_untyped.yaml', ['E_EXPECTED_ERROR_UNTYPED']],
+    ['bad-testrole_forbidden.yaml', ['E_TESTROLE_FORBIDDEN']],
     ['bad-orphan_and_unanchored.yaml', ['E_ORPHAN_ENTRY', 'E_UNANCHORED_MANDATE']],
     ['bad-self_trace.yaml', ['E_NO_UPSTREAM_TRACE', 'E_SELF_TRACE']],
     ['bad-no_upstream_trace.yaml', ['E_NO_UPSTREAM_TRACE']],
+    ['bad-entails_undeclared.yaml', ['E_ENTAILS_UNDECLARED']],
+    ['bad-entails_alien_key.yaml', ['E_ENTAILS_ALIEN_KEY']],
+    ['bad-duplicate_id.yaml', ['E_DUPLICATE_ID', 'E_TRACE_UNRESOLVED']],
+    ['bad-missing_top_field.yaml', ['E_MISSING_TOP_FIELD']],
+    ['bad-unsupported_schema.yaml', ['E_UNSUPPORTED_SCHEMA']],
+    ['bad-selection_not_an_entry.yaml', ['E_SELECTION_NOT_AN_ENTRY']],
+    ['bad-quantitative_undeclared.yaml', ['E_QUANTITATIVE_UNDECLARED']],
+    ['bad-quantity_incomplete.yaml', ['E_QUANTITY_INCOMPLETE']],
+    ['bad-unquoted_quantity.yaml', ['E_UNQUOTED_QUANTITY']],
+    ['bad-evidence_in_manifest.yaml', ['E_EVIDENCE_IN_MANIFEST']],
   ];
-
   test.each(cases)('%s reports exactly %p', (file, expected) => {
-    expect(codes(file)).toEqual([...expected].sort());
+    expect(bCodes(file)).toEqual([...expected].sort());
   });
 });
 
-describe('YAML 1.2 core schema', () => {
-  // The document's stated typing hazard. Under 1.1 resolvers NO becomes false and
-  // 1.10 becomes 1.1; under the 1.2 core schema both stay strings.
-  const yaml = require('js-yaml');
-  const parse = (s) => yaml.load(s, { schema: yaml.CORE_SCHEMA });
-
-  test('NO is not coerced to a boolean', () => {
-    expect(parse('id: NO').id).toBe('NO');
+describe('evidence pass — stage 5, once tests exist', () => {
+  test('the valid evidence map is clean against the valid manifest', () => {
+    expect(eCodes('valid-evidence.yaml')).toEqual([]);
   });
 
-  test('on and off are not coerced to booleans', () => {
-    expect(parse('a: on\nb: off')).toEqual({ a: 'on', b: 'off' });
+  const cases = [
+    ['bad-ev_no_probe.yaml', ['E_NO_SENSITIVITY_PROBE']],
+    ['bad-ev_baseline_conflict.yaml', ['E_EDGE_BASELINE_CONFLICT']],
+    ['bad-ev_missing_edge.yaml', ['E_NO_EVIDENCE_EDGE']],
+    ['bad-ev_nongating.yaml', ['E_EDGE_ON_NONGATING', 'E_NO_EVIDENCE_EDGE']],
+  ];
+  test.each(cases)('%s reports exactly %p', (file, expected) => {
+    expect(eCodes(file)).toEqual([...expected].sort());
+  });
+});
+
+describe('the YAML typing hazard is real and the loader cannot fix it', () => {
+  // An earlier version of this suite claimed three tests "prove NO, on, off and
+  // 1.10 survive as strings". That was false twice over: js-yaml 5.2.3 resolves
+  // identically with and without the CORE_SCHEMA option, so those tests did not
+  // discriminate, and the 1.10 case quoted its own input and asserted a tautology.
+  const withOpt = (s) => yaml.load(s, { schema: yaml.CORE_SCHEMA });
+  const without = (s) => yaml.load(s);
+
+  test.each([['a: NO'], ['a: on'], ['a: off'], ['a: 1.10']])(
+    'the CORE_SCHEMA option changes nothing for %s, so asserting it proves nothing',
+    (src) => {
+      expect(withOpt(src)).toEqual(without(src));
+    },
+  );
+
+  test('an unquoted 1.10 really does become 1.1 — the hazard is unmitigated in the loader', () => {
+    expect(without('value: 1.10').value).toBe(1.1);
+    expect(withOpt('value: 1.10').value).toBe(1.1);
   });
 
-  test('an unquoted version-like scalar keeps its trailing zero', () => {
-    // 1.10 parsed as a float would become 1.1 and silently change a threshold.
-    expect(String(parse('threshold: "1.10"').threshold)).toBe('1.10');
+  test('the linter is what mitigates it, by requiring the quoted form', () => {
+    expect(bCodes('bad-unquoted_quantity.yaml')).toEqual(['E_UNQUOTED_QUANTITY']);
+    expect(load(at('valid.yaml')).entries.find((e) => e.id === 'AC-1').quantity.value)
+      .toBe('240');
   });
 });

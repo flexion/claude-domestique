@@ -55,19 +55,28 @@ reference linter could not be written without them:
 | `claims[]` | `id` plus text, from stage 2 |
 | `coupling[]` | `id`, `kind`, `target` — the id is the key space for `entails` |
 | `entails{}` | Keyed by **coupling edge id**, valued by obligation entry id or the literal `uncovered` |
+| `registry_selections[]` | The entry ids that were **selected** from the registry at `registry_revision`, rather than authored for this issue. Provenance is declared here because it cannot be inferred: an earlier draft decided it by matching `INV-<n>`, which made the claim unfalsifiable and let a rule be defeated by renaming an id |
 | `entries[]` | The obligations |
 
 `traces[]` on an entry resolves, in this order, against: a claim id, another entry id, a coupling edge
 id, or a registry invariant id matching `INV-<n>`. The last case is separate because a selected
 invariant is both a registry id and an entry id, and an earlier draft left that ambiguous.
 
-Two constraints on top of resolution, because resolvability alone is trivially satisfiable:
+**What `traces[]` is for**, which an earlier draft never said — it stated only what a trace resolves
+*against*, which is a syntax rule wearing a semantics rule's clothes, and a resolution rule with no
+stated purpose is satisfiable by any self-consistent closed set:
 
-- An entry may not trace **its own id**, unless that id is a registry invariant, where tracing the
+> `traces[]` anchors an obligation to a requirement stated **outside** the boundary. At least one
+> trace must reach a claim, a coupling edge, or this entry as a declared registry selection. A trace
+> to another entry records a relationship between obligations and does not discharge the anchoring
+> requirement.
+
+Two constraints follow from that purpose rather than being added on top of it:
+
+- An entry may not trace **its own id** unless it appears in `registry_selections`, where tracing the
   registry is the anchor. Any other self-reference resolves and anchors nothing.
-- At least one trace must reach a **claim, a coupling edge, or a registry invariant**. Tracing only
-  other obligations anchors the entry to nothing outside the boundary, so the whole set could be
-  internally consistent and connected to no stated requirement.
+- `traces[]` must be non-empty. Carrying an empty list satisfies "the entry carries traces" and
+  anchors nothing, so the list is required to have at least one member.
 
 Every entry carries three closed fields. The **cross-product is exhaustive** — partial rules were how
 the previous draft left `observation` + `must` and `post_merge` + `must` undefined.
@@ -86,8 +95,15 @@ completeness are mechanical**; whether the handoff is *feasible* is semantic and
 Boundary-reviewer, not to a script. The previous draft called every rule here mechanical, which was
 false.
 
-Each entry also carries `id`, `statement`, `observation`, `decision`, `traces[]`, and — for
-quantities — `value`, `unit`, `conditions`. Floor invariants are **selected** from
+Each entry also carries `id`, `statement`, `observation`, `decision`, `traces[]`, and a
+`quantitative: true | false` declaration. No script can read a statement and decide whether it
+asserts a number, so the author declares it; when true, a `quantity` object with `value`, `unit`, and
+`conditions` is required.
+
+**`quantity.value` must be a quoted string.** This is a mitigation, not a preference. The loader turns
+an unquoted `1.10` into the number `1.1` and silently changes a threshold, and no loader
+configuration prevents it — the tests assert that directly. Requiring the quoted form is the only
+place the corruption can be caught. Floor invariants are **selected** from
 `registry/invariants.yaml` at a pinned revision, by path glob, never authored per issue.
 
 Only `mechanical` + `pre_merge` + `must` entries carry `test_role` and a baseline. Base-versus-head
@@ -111,6 +127,11 @@ and for a `watch` entry, which gates nothing.
 Head expectation is always `pass`. There is exactly one authority for the baseline, which is this
 field — an earlier draft said the gate accepted an error "when the entry declares" one while no such
 field existed, and in the same sentence required the outcome to be `failed`.
+
+**The evidence map is a stage-4 artifact, not part of the frozen bundle.** It is authored by the
+Implementer once tests exist, keyed to entry ids, and carries the frozen bundle digest it was written
+against. An earlier draft made evidence a field of the manifest, which put three checks a stage
+earlier than the data they need and froze the bundle before the map was written.
 
 **Evidence edges bind an entry to a specific collected test case**, by runner node id, not to a test
 file. A runner outcome is scalar, so one test *file* cannot simultaneously evidence a `change` entry
@@ -346,11 +367,16 @@ npx jest context-emendator/scripts/__tests__/lint-boundary.test.js
 It is not wired into the root `npm test`; `context-emendator` has no package manifest, and adding one
 is a separate decision.
 
-**One stated requirement is unmet by this implementation.** The Linter is supposed to load under the
-YAML 1.2 core schema *with a comment-preserving round-trip loader*, because comments carry an entry's
-rationale and canonicalization must be byte-stable. `js-yaml` gives the 1.2 core schema — the tests
-prove `NO`, `on`, `off`, and `1.10` all survive — but it discards comments, so the canonicalization
-half is not implemented. In Node the round-trip option is the `yaml` package rather than `js-yaml`; in
+**One stated requirement is unmet, and an earlier version of this section overstated what the tests
+show.** It claimed the tests "prove `NO`, `on`, `off`, and `1.10` all survive as strings". That was
+false twice: `js-yaml` 5.2.3 resolves identically with and without the core-schema option, so those
+assertions did not discriminate, and the `1.10` case quoted its own input and asserted a tautology.
+**Unquoted, `1.10` becomes `1.1` under every configuration.** The suite now asserts the hazard rather
+than a workaround for it, and the linter mitigates it by requiring `quantity.value` to be quoted.
+
+The Linter is also supposed to use a *comment-preserving round-trip loader*, because comments carry an
+entry's rationale and canonicalization must be byte-stable. `js-yaml` discards comments, so the
+canonicalization half is not implemented. In Node the round-trip option is the `yaml` package rather than `js-yaml`; in
 Python it is `ruamel.yaml` at `typ="rt"`. Choosing one is a prerequisite for the freeze digest to mean
 what stage 3 claims.
 
@@ -359,6 +385,11 @@ what stage 3 claims.
 Two different things were conflated in an earlier draft. An **autonomous stop state** ends the run's
 execution and finalizes the lease. A **lifecycle final state** is where the Jira issue ends up, which
 may be later and is not the run's business.
+
+Expect `handoff_pending` to be the common outcome rather than the exception. Any obligation that can
+only be verified after merge or in production caps the run there, and a realistic issue usually has at
+least one — the first worked example transcribed into this schema has exactly one, and a test asserts
+it. A design that treats `ready_for_merge` as the normal case will mis-set expectations.
 
 Autonomous stop states — every one finalizes the lease:
 

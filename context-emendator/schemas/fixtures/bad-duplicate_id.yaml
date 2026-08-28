@@ -1,14 +1,14 @@
 schema_version: 1
 issue: JIRA-1234
 registry_revision: "9f2c1ab"
-registry_selections: []
+registry_selections: [INV-2]
 mandates: [data-integrity, correctness, resource]
 non_goals:
   - "retry button behaviour — tracked as JIRA-1250"
 claims:
   - id: C1
     text: "exports fail for large accounts"
-  - id: C3
+  - id: C1
     text: "empty file left behind on hang"
 coupling:
   - id: CPL-1
@@ -27,7 +27,7 @@ entries:
     verification_stage: pre_merge
     obligation: must
     mandate: [data-integrity]
-    traces: [INV-2]
+    traces: [C3, INV-2]
     observation: "force a timeout mid-export, list the destination"
     decision: "no file present, or row count equals manifest"
     quantitative: false

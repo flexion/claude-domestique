@@ -1,0 +1,15 @@
+schema_version: 1
+issue: JIRA-1234
+boundary_digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+edges:
+  - entry: INV-2
+    case_id: "tests/export/test_commit.py::test_no_file_on_timeout"
+  - entry: INV-2
+    case_id: "tests/export/test_commit.py::test_no_file_on_cancel"
+  - entry: PRES-1
+    case_id: "tests/recon/test_inputs.py::test_recon_tolerates_missing_file"
+    probe:
+      kind: negative_control
+      ref: "fixtures/recon_pre_guard_clause"
+  - entry: AC-1
+    case_id: "tests/export/test_e2e.py::test_500k_succeeds_within_budget"
