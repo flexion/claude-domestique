@@ -1,0 +1,84 @@
+schema_version: 1
+issue: JIRA-1234
+registry_revision: "9f2c1ab"
+mandates: [data-integrity, correctness, resource]
+non_goals:
+  - "retry button behaviour — tracked as JIRA-1250"
+claims:
+  - id: C1
+    text: "exports fail for large accounts"
+  - id: C3
+    text: "empty file left behind on hang"
+coupling:
+  - id: CPL-1
+    kind: consumer
+    target: "jobs/reconcile.py"
+  - id: CPL-2
+    kind: metric
+    target: "dashboards/export.json"
+entails:
+  CPL-1: INV-2
+  CPL-2: uncovered
+entries:
+  - id: INV-2
+    statement: "destination holds a file only if its row count equals the manifest"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [data-integrity]
+    traces: [C3, CPL-1]
+    observation: "list destination after a forced timeout"
+    decision: "no file present, or row count equals manifest"
+    test_role: change
+    baseline: pass
+    evidence:
+      - case_id: "tests/test_export.py::test_no_partial_file_on_timeout"
+  - id: INV-9
+    statement: "reconcile completes against every terminal export state"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [CPL-1]
+    observation: "run reconcile against a destination with no file"
+    decision: "exit code 0"
+    test_role: preservation
+    baseline: pass
+    evidence:
+      - case_id: "tests/test_recon.py::test_recon_handles_missing_input"
+        probe:
+          kind: negative_control
+          ref: "fixtures/recon_crashes_on_missing"
+  - id: AC-1
+    statement: "export of 500k rows is the right abstraction for the writer"
+    verifier: independent_review
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1]
+    observation: "reviewer reads the writer call path"
+    decision: "reviewer verdict"
+  - id: AC-4
+    statement: "peak RSS stays within 1.5x of the 50k baseline in production"
+    verifier: mechanical
+    verification_stage: production
+    obligation: must
+    mandate: [resource]
+    traces: [C1]
+    observation: "production RSS metric over 24h"
+    decision: "p99 within 1.5x"
+    handoff:
+      owner: "platform-oncall"
+      trigger: "24h after deploy"
+      verification_method: "grafana panel export.rss.p99"
+      evidence_destination: "runs/JIRA-1234/handoff/"
+      failure_transition: "reopen JIRA-1234"
+  - id: W-1
+    statement: "export duration trend does not regress"
+    verifier: observation
+    verification_stage: production
+    obligation: watch
+    mandate: [resource]
+    traces: [C1]
+    observation: "export.duration_ms p99 weekly"
+    decision: "recorded, not gated"

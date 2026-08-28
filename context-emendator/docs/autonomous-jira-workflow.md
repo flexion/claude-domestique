@@ -42,6 +42,25 @@ the coupling analysis.
 The bundle is committed to the run branch, which exists from stage 1. An earlier draft committed it
 before any branch existed, which would have landed the boundary on the base branch or lost it.
 
+Manifest-level fields, all required — every one of these was implied by prose and named only after a
+reference linter could not be written without them:
+
+| Field | Purpose |
+| --- | --- |
+| `schema_version` | The manifest's own version, so a linter can refuse a shape it does not know |
+| `issue` | The Jira key |
+| `registry_revision` | The pinned registry revision the floor was selected from |
+| `mandates[]` | The declared mandate set. Orphan-entry and unanchored-mandate checks are unimplementable without it, and "one reviewer per mandate" has no domain |
+| `non_goals[]` | Non-empty |
+| `claims[]` | `id` plus text, from stage 2 |
+| `coupling[]` | `id`, `kind`, `target` — the id is the key space for `entails` |
+| `entails{}` | Keyed by **coupling edge id**, valued by obligation entry id or the literal `uncovered` |
+| `entries[]` | The obligations |
+
+`traces[]` on an entry resolves, in this order, against: a claim id, another entry id, a coupling edge
+id, or a registry invariant id matching `INV-<n>`. The last case is separate because a selected
+invariant is both a registry id and an entry id, and an earlier draft left that ambiguous.
+
 Every entry carries three closed fields. The **cross-product is exhaustive** — partial rules were how
 the previous draft left `observation` + `must` and `post_merge` + `must` undefined.
 
@@ -292,6 +311,31 @@ work, an uncited one can only invalidate the boundary.
 
 Suppression is a projector outcome derived from the stream, never a deletion. A wrongly rejected
 data-loss report stays legible to anyone reading the run.
+
+## Reference implementation
+
+`scripts/lint-boundary.js` implements every rule this document calls mechanical, and
+`schemas/fixtures/` carries one valid boundary plus one negative fixture per rule.
+`scripts/__tests__/lint-boundary.test.js` asserts the exact finding set for each, so a rule that
+stops firing fails a test rather than passing silently.
+
+Run it directly:
+
+```
+node context-emendator/scripts/lint-boundary.js context-emendator/schemas/fixtures/*.yaml
+npx jest context-emendator/scripts/__tests__/lint-boundary.test.js
+```
+
+It is not wired into the root `npm test`; `context-emendator` has no package manifest, and adding one
+is a separate decision.
+
+**One stated requirement is unmet by this implementation.** The Linter is supposed to load under the
+YAML 1.2 core schema *with a comment-preserving round-trip loader*, because comments carry an entry's
+rationale and canonicalization must be byte-stable. `js-yaml` gives the 1.2 core schema — the tests
+prove `NO`, `on`, `off`, and `1.10` all survive — but it discards comments, so the canonicalization
+half is not implemented. In Node the round-trip option is the `yaml` package rather than `js-yaml`; in
+Python it is `ruamel.yaml` at `typ="rt"`. Choosing one is a prerequisite for the freeze digest to mean
+what stage 3 claims.
 
 ## Stop conditions
 
