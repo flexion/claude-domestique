@@ -20,13 +20,48 @@ drift toward whatever the implementation happened to produce.
 its fixture corpus and a measured mutation baseline. Everything under `lib/` named in the slice
 documents is still `*planned*`. See [The slices](#the-slices).
 
-**modus is self-contained, and that is a build constraint, not just a description.** The sibling
-plugins are installed and in use; this one has no users yet. So nothing here may require a change to
-another plugin in order to work — a slice that depends on `mantra`'s rule injection or `comitatus`'s
-review fan-out is a slice that cannot ship, and should do the thing itself even where that duplicates
-a sibling. Duplication is reversible by deleting code; a premature coupling is reversible only by
+## Two constraints on anything added here
+
+**1. modus is self-contained.** This is a build constraint, not a description. The sibling plugins
+are installed and in use; this one has no users yet. So nothing here may require a change to another
+plugin in order to work — a slice that depends on `mantra`'s rule injection or `comitatus`'s review
+fan-out is a slice that cannot ship, and should do the thing itself even where that duplicates a
+sibling. Duplication is reversible by deleting code; a premature coupling is reversible only by
 regressing a plugin someone else depends on. Redistributing this work across plugins is a live option
 for later, once the design has earned it.
+
+**2. Every check must be able to say "I could not check."** Give it three outcomes, not two:
+
+| Exit | Meaning |
+| --- | --- |
+| `0` | ran, found nothing |
+| `1` | ran, found something |
+| `2` | could not run — says so in its own words, and names the cause |
+
+`0` and `1` are a two-valued answer to a three-valued question. A check whose inputs are missing has
+not passed, and if it reports `0` it has produced a false green; if it reports `1` it has produced a
+false finding, and after that is dismissed once nobody reads it again. Both failures are worse than
+the honest third answer, and neither is visible from the outside — that is what makes this class
+expensive.
+
+This is not a hypothetical. Building the tooling in this directory produced the same defect three
+independent times, and every instance was green:
+
+- A reconcile of the seven-way document split compared the declared ranges **to each other** rather
+  than to the documents claiming them. Two reviewers both certified "no duplicates, all clean."
+  Three material omissions and three mis-attributions survived it. That is why
+  `scripts/lint-slice-headers.js` exists.
+- That linter then read history through a repo-root-relative pathspec without pinning `cwd`. Run
+  from anywhere but the root it found nothing and reported `cannot resolve a pre-split source` —
+  its sentence for *the source is genuinely gone*.
+- With that fixed, CI hit the same wall from the other side: `actions/checkout` defaults to
+  `fetch-depth: 1`, so there was no history to walk, and the message was again identical to real
+  provenance loss.
+
+Every one of them was an oracle that could not distinguish **"I checked and it is fine"** from
+**"I could not check."** The generalising fix is the table above: make the unverifiable case
+announce itself in its own words and give it its own exit code. Anything added under `scripts/` is
+expected to follow it.
 
 ## The problem
 
@@ -72,7 +107,7 @@ carries YAML frontmatter declaring what it ships, its gating test, and what it d
 ## Running the checks
 
 ```
-npm test --workspace modus          # 179 tests
+npm test --workspace modus          # 183 tests
 node modus/scripts/lint-boundary.js modus/tests/fixtures/*.yaml
 node modus/scripts/lint-slice-headers.js
 ```
@@ -81,6 +116,11 @@ node modus/scripts/lint-slice-headers.js
 checks that the line's content is actually present in the document claiming it. It reads the
 pre-split source out of git history rather than the working tree, so its source path is deliberately
 a historical one — see the note on `HISTORICAL_SOURCE_PATH` in that script before changing it.
+
+Because it reads history, **it needs a full clone.** In a shallow one it exits `2` and prints
+`PROVENANCE NOT VERIFIED` rather than guessing, per the rule above. CI sets `fetch-depth: 0` so the
+check actually runs; if that is ever reverted the check does not silently pass, it announces that it
+was skipped.
 
 ## Relationship to onus
 
