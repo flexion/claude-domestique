@@ -20,7 +20,7 @@ drift toward whatever the implementation happened to produce.
 its fixture corpus and a measured mutation baseline. Everything under `lib/` named in the slice
 documents is still `*planned*`. See [The slices](#the-slices).
 
-## Two constraints on anything added here
+## Three constraints on anything added here
 
 **1. modus is self-contained.** This is a build constraint, not a description. The sibling plugins
 are installed and in use; this one has no users yet. So nothing here may require a change to another
@@ -62,6 +62,23 @@ Every one of them was an oracle that could not distinguish **"I checked and it i
 **"I could not check."** The generalising fix is the table above: make the unverifiable case
 announce itself in its own words and give it its own exit code. Anything added under `scripts/` is
 expected to follow it.
+
+**3. A metric that cannot express the defect is not evidence about the defect** — however true the
+number is.
+
+The extraction that created this plugin was reported, by the person who did it and confirmed by two
+reviewers, as *109 files rename-detected, 96 of them at R100*. That was accurate. It was also not
+evidence of what it was being used for. Rename detection can only describe files that moved; it has
+no way to say anything about files that were **added**, and the defect was two stale copies restored
+at the old path by a mistaken `git checkout HEAD -- <old-path>`. The renames were clean because the
+moves really did happen. The additions sat on a different line of the same summary, and the number
+everyone was looking at could not have gone up or down in response to them.
+
+The check that would have settled it in one line — `git ls-tree -r --name-only HEAD | grep
+'^context-emendator/'` — asks about the state that was actually claimed, which is that the old path
+is gone. So before a number is offered as evidence, establish that the defect being ruled out is
+inside the range of things that number could report. A metric outside that range is decoration, and
+it is more dangerous than no metric, because it survives review.
 
 ## The problem
 
