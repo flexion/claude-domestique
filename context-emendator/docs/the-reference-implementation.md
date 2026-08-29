@@ -107,16 +107,77 @@ emittable code fires somewhere; totality generates all eighteen
 `verifier`/`verification_stage`/`obligation` cells. `js-yaml` turns unquoted `1.10` into `1.1`, even
 with the core schema option, so quantity values must be quoted and the tests assert the hazard.
 
+Run the reference checks directly:
+
+```
+node context-emendator/scripts/lint-boundary.js context-emendator/tests/fixtures/*.yaml
+npx jest context-emendator/scripts/__tests__/lint-boundary.test.js
+```
+
+They are not wired into root `npm test`; `context-emendator` has no package manifest, and adding one is
+a separate decision.
+
 ## Mutation instruments must discriminate
 
-The fast sweep is a biased pre-filter, not a coverage measurement. It reports 132 fixture-corpus
-survivors; the real oracle reports 137; 100 overlap. Thirty of the 37 apparent real-only survivors are
-vacuous because the code cannot fire in their cells, leaving seven genuine gaps, now closed.
+**The denominator was wrong twice, in opposite directions, and hid itself.** Two independent
+implementations of this sweep first reported 33 sites / 264 mutations and 29 / 232. One found the loop
+opening and then scanned a fixed 200-line window, overrunning into the following sweeps by 39 lines. The
+other anchored on `entries.forEach((e, i) => {` and got the *first* match, which is an id-registration
+one-liner 21 lines above the real loop. Six emission sites between them were outside the entry loop.
+
+What made it self-concealing is the interesting part. A mutated guard on a site outside that loop
+references an `e` that does not exist, so it throws `ReferenceError` — and because the guard is lazily
+evaluated it throws only when it fires. A throw changes the battery's signature, so every phantom
+mutation read as **caught** and contributed zero survivors. The inflated denominator therefore produced
+no visible symptom, which is why one implementation reported the same 144 raw survivors under two
+different denominators.
+
+Reconciled: **28 sites, 224 mutations**, agreed by both implementations once bounded correctly. The
+sweep now asserts that no mutation throws, because a phantom site silently counted as caught is the same
+"passes for the wrong reason" shape the suite guards against elsewhere.
+
+The corrected shares are **48%** and **59%** live for the two reachability methods, not the 41% first
+reported — that figure divided by the inflated denominator, and the arithmetic error ran in the
+flattering direction.
+
+That caveat is now closed by measurement, and the answer is that **both** effects are real and neither
+dominates. The battery compares the full code-and-outcome multiset per fixture, which is stronger than
+the suite per fixture — that produces 32 false positives. It covers none of the generated, pair-pass or
+YAML tests, which is narrower — that produces 37 false negatives. An earlier version asserted a single
+direction without support, and a later one asserted the opposite direction on a circular measurement.
+Measured: 132 against 137, overlapping in 100. The bias is now known in both directions and stated,
+which is what makes the fast battery usable and what stops it being quoted as coverage.
 
 An early offset experiment reported zero survivors because its oracle included the detector itself.
 The suite now names the oracle explicitly and applies a null mutation first: unchanged source must
 survive. If it reads as caught, the oracle is constant and the run aborts.
 
+That guard catches one of two measured failure modes and not the other, which is why both are kept:
+
+| Mode | Effect | Caught by |
+| --- | --- | --- |
+| Baseline stale relative to the linter | Oracle is a **constant** — the null mutation itself reads as caught, so every cell does | The null mutation, on iteration one |
+| Instrument inside the oracle | Oracle is **self-referential** — mutating the linter changes what the sweep computes | Naming the oracle explicitly; the null mutation passes here |
+
 Family A varies a shared instrument that can make agreement look like evidence. Family B asks which
 check consumes a stated property. The first catches self-referential oracles and manufactured agreement;
 the second catches properties stated but never checked. Neither detector replaces the other.
+
+## Unrepresentable is a legal verdict
+
+`tests/transcriptions/` holds cases transcribed from sources that predate the schema, each with a
+declared verdict in `index.yaml`. This exists because a fixture written by the rules' author can only say
+*I made this pass* or *I made this fail*; neither can express **a real case the schema cannot represent**,
+so schema findings had nowhere to live.
+
+One is on record. An obligation that only a party outside this repository can discharge — a vendor
+attesting that a format change does not break their ingest — has no home in `verification_stage`, whose
+members all name a point in *this* pipeline. An earlier draft had `verifiable_in` with an `external`
+member and the rewrite to three closed fields dropped it. Encoding it as `production` + handoff
+misstates it: the trigger is another organisation acting rather than an interval, and
+`failure_transition` cannot revert something we do not control.
+
+**It lints clean, and that is the finding.** The obligation is mis-encoded rather than malformed, so no
+mechanical check can see it. A test asserts the clean result precisely so the gap cannot be lost. Either
+`verification_stage` gains `external` with an event-triggered handoff, or the autonomy gate must reject
+such an item at stage 1 and say so. It currently does neither.

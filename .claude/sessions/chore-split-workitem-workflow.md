@@ -10,7 +10,7 @@
 Define independently testable, shippable vertical slices for the autonomous-work-item workflow. This branch documents the slice boundaries; later work implements them.
 
 ## Approach
-Use the 1,118-line document preserved at `HEAD` as the immutable extraction source. Sly owns ports, discharge, reference implementation, and walking skeleton; Tim owns reconstruction, the boundary bundle, and the final spine/index. Every destination uses ordered YAML frontmatter, a matching human-facing header/table, explicit source ranges, and links to shared contracts rather than duplicated schema.
+Use the 1,118-line pre-split document preserved at `70e26874`, recoverable with `git show 70e26874:context-emendator/docs/autonomous-workitem-workflow.md`, as the immutable extraction source. Sly owns ports, discharge, reference implementation, and walking skeleton; Tim owns reconstruction, the boundary bundle, and the final spine/index. Every destination uses ordered YAML frontmatter, a matching human-facing header/table, explicit source ranges, and links to shared contracts rather than duplicated schema.
 
 ## Session Log
 - 2026-08-29: Session created
@@ -24,6 +24,7 @@ Use the 1,118-line document preserved at `HEAD` as the immutable extraction sour
 - 2026-08-29: Final coverage review found a material citation loss in discharge. Restored separate GOAL/HOW/JUSTIFICATION/IMPACT blocks for implementation, mechanical gate, semantic review, and handoff, including Lightman, Sharma, Zheng, and Petersson citations; removed the boundary-owned line 543 from discharge provenance. Targeted provenance checks, whitespace validation, and the 174-test reference gate pass.
 - 2026-08-29: Tim completed the final coverage and inbound-pointer reconciliation. All seven frontmatter contracts and dependencies validate; `git diff --check` and the full `npm test` suite pass. The branch remains uncommitted pending operator integration choice.
 - 2026-08-29: Final commit prepared after the operator selected push and PR. The seven slice documents, machine-readable headers, source coverage, and inbound references are reconciled; full tests are green.
+- 2026-08-29: PR follow-up added a source-history-aware header linter and restored the slice provenance audit. The final review found and restored the safety-exception rejection record, the reference mutation denominator reconciliation, and the unrepresentable external-attestation verdict; the focused context-emendator suite passes 179 tests.
 
 ## Files Changed
 - `.claude/sessions/chore-split-workitem-workflow.md`
@@ -38,6 +39,8 @@ Use the 1,118-line document preserved at `HEAD` as the immutable extraction sour
 - `context-emendator/docs/the-reference-implementation.md`
 - `context-emendator/docs/walking-skeleton.md`
 - `context-emendator/scripts/lint-boundary.js`
+- `context-emendator/scripts/lint-slice-headers.js`
+- `context-emendator/scripts/__tests__/lint-slice-headers.test.js`
 
 ## Next Steps
 1. [x] Choose branch integration: local merge, PR, or keep the worktree unchanged.

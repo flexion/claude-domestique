@@ -81,7 +81,8 @@ Several edges may share a case only when their declared baseline is identical.
 Preservation requires a sensitivity probe. `pass` on base and head permits `assert True`; each edge
 therefore names a `negative_control` fixture or a controlled `mutation` that the case must fail against.
 If no probe exists, the obligation is not mechanical: reclassify it as `independent_review` instead of
-letting the gate claim a proof it did not perform.
+letting the gate claim a proof it did not perform. Until that reclassification, the Gate records
+`no_sensitivity_probe` rather than accepting the edge.
 
 ## Implement a frozen bundle
 
@@ -99,6 +100,9 @@ The Implementer writes tests for each `mechanical` + `must` entry before the cha
 fails on base and a `preservation` test passes on base. It records the many-to-many evidence map,
 implements until green only on sketch-named paths, and records unrelated defects as deferrals rather
 than fixing them.
+
+On any consumer whose obligation coverage is not already declared, the Implementer emits
+`escalate: coupling_found_after_freeze`.
 
 An undisclosed consumer is not authorization. The Orchestrator accepts only an exact, reviewed,
 frozen hit in `entails`; presence in coupling analysis or `traces[]` proves the consumer was known, not
@@ -145,11 +149,36 @@ Triage drops missing, out-of-scope, or uncited findings and records every drop. 
 invalidates the boundary rather than blaming the change. Cited failures get one repair round; exhaustion
 escalates `semantic_review_not_converging`. Observations without evidence do not create work.
 
-An uncited observation may request a stop only for a closed safety set: security boundary breach, secret
-or privacy exposure, data loss or corruption, or irreversible external effect. It needs a counterexample
-or reproducible evidence. A distinct cross-family Adjudicator or human confirms, rejects, or cannot
-decide; uncertainty confirms because hard-harm uncertainty resolves toward stopping. Confirmation ends
-the run as `boundary_invalid` and never authorizes an in-run fix.
+Uncited observations return in a separate array; there is no cap on cited verdicts. Semantic repair
+gates `independent_review` entries and `verifier` is singular, so no test is owed there—an optional
+regression test is allowed, not required.
+
+An uncited reviewer observation may **request a stop**. It may never create work. That asymmetry is
+what keeps the exception from becoming an unbounded reviewer veto: a cited finding can produce repair
+work, an uncited one can only invalidate the boundary.
+
+- Reviewer: may file a safety exception only for a closed set — security-boundary breach, secret or
+  privacy exposure, data loss or corruption, irreversible external side effect.
+- Reviewer: must supply an observed counterexample or reproducible evidence reference, the affected
+  asset, the impact, and why no frozen obligation applies.
+- Adjudicator: a distinct actor cross-family from the Reviewer, or a human, returns `confirm` | `reject`
+  | `unable`; no severity score and no open invariant category, because both restore veto discretion.
+- Adjudicator: on `unable`, treats the outcome as `confirm`, because uncertainty about a hard-harm claim
+  resolves toward stopping.
+- Orchestrator: requires a cross-family adjudicator or a human specifically to **reject**; rejection is
+  the unsafe direction and same-family rejection is not permitted.
+- Orchestrator: on confirm, appends `boundary_invalid`, ends the run; this does **not** authorize an
+  in-run fix.
+- Orchestrator: on reject, appends `safety_exception_rejected` carrying `finding_id`, category, affected
+  asset, canonical claim, `submission_digest`, the original `evidence_refs`, adjudicator, reason, and
+  timestamp.
+- Orchestrator: suppresses the identical **evidence packet**, not the underlying hazard — the
+  `finding_id` is stable, each submission gets its own digest.
+- Orchestrator: allows one automatic reopening when a resubmission declares `novel_evidence_refs` and
+  the adjudicator confirms a material evidence delta; further reopening needs a human override event.
+
+Suppression is a projector outcome derived from the stream, never a deletion. A wrongly rejected
+data-loss report stays legible to anyone reading the run.
 
 ## Handoff and merge observation
 
