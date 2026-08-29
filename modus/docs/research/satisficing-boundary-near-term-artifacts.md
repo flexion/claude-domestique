@@ -152,11 +152,29 @@ list exists.
 
 ## Open questions to settle before building
 
-- **Ownership.** The research sits under `context-emendator/`, but per `AGENTS.md` the
-  injected rule belongs with behavioral rules (`mantra`) and the review orchestration belongs
-  with herd workflows (`comitatus`). If `context-emendator` is to own the boundary concept it
-  needs a host manifest; otherwise this work splits across three plugins and the
-  one-source-of-truth principle has to be honoured explicitly.
+- **Ownership.** *Settled: `modus` owns all of it.* The research now sits under `modus/`, which
+  has the host manifest this question asked for — the work was extracted out of
+  `context-emendator/`, whose name belongs to the workflow-config auditor.
+
+  The question anticipated a split, because per `AGENTS.md` the injected rule would belong with
+  behavioral rules (`mantra`) and the review orchestration with herd workflows (`comitatus`).
+  That split is **deliberately not being made now**, and the reason is not architectural. Every
+  sibling plugin is installed and in use; `modus` is in development and has no users. Splitting
+  the work across three plugins would mean changing two things people depend on in order to
+  build a third thing nobody uses yet — paying a regression risk against a design that has not
+  been validated, at the moment it is least worth paying.
+
+  So `modus` is self-contained and owns the rule and the orchestration as well as the boundary
+  concept. Redistribution stays on the table for later, once the design has been proven and the
+  cost of touching `mantra` and `comitatus` buys something real. Until then the one-source-of-
+  truth principle is honoured trivially: there is one source, and it is this plugin.
+
+  The practical constraint this puts on the slices: nothing under `modus/` may require a change
+  to another plugin in order to work. A dependency on `mantra`'s injection or `comitatus`'s
+  fan-out is a design that cannot ship yet, and should be written as something `modus` does
+  itself, even where that duplicates a sibling. Duplication here is the cheaper error — it is
+  reversible by deleting code, whereas a premature coupling is reversible only by regressing
+  someone else's plugin.
 
 - **Who reviews the checklist.** The briefing's closing risk (§5) is that this design trades
   an unbounded failure mode for a bounded and silent one: the loop stops running away and

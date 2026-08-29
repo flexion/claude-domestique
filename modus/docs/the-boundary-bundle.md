@@ -6,18 +6,18 @@ job: >-
   one committed manifest plus its referenced assets under a bundle digest.
 ships:
   - kind: deterministic
-    path: context-emendator/lib/lint-boundary.js
+    path: modus/lib/lint-boundary.js
   - kind: deterministic
-    path: context-emendator/lib/freeze.js
+    path: modus/lib/freeze.js
   - kind: prompt
-    path: context-emendator/prompts/author-boundary.md
+    path: modus/prompts/author-boundary.md
   - kind: prompt
-    path: context-emendator/prompts/reviewer-adversarial.md
+    path: modus/prompts/reviewer-adversarial.md
   - kind: doc
-    path: context-emendator/docs/the-boundary-bundle.md
+    path: modus/docs/the-boundary-bundle.md
 gating_test:
   status: planned
-  command: npx jest context-emendator/lib/__tests__/lint-boundary.test.js
+  command: npx jest modus/lib/__tests__/lint-boundary.test.js
   evidence: >-
     Exact finding-set assertions over the twenty-two `bad-*.yaml` fixtures and the valid fixture;
     generated totality over all eighteen cells of the verifier/verification_stage/obligation
@@ -47,7 +47,7 @@ target — producing one committed manifest plus its referenced assets under a b
 | | |
 | --- | --- |
 | Ships | `lib/lint-boundary.js` · `lib/freeze.js` · the Author's boundary-authoring prompt · the Boundary-reviewer's adversarial prompt · this document |
-| Gating test | *planned* — `npx jest context-emendator/lib/__tests__/lint-boundary.test.js`. Exact finding-set assertions over the 22 `bad-*.yaml` fixtures, generated totality over all eighteen cross-product cells, a digest-stability test, and a prompt template contract for both prompts |
+| Gating test | *planned* — `npx jest modus/lib/__tests__/lint-boundary.test.js`. Exact finding-set assertions over the 22 `bad-*.yaml` fixtures, generated totality over all eighteen cross-product cells, a digest-stability test, and a prompt template contract for both prompts |
 | Non-gating | Model eval of the adversarial pass · escalation-rate reporting for `boundary_ungameable_unproven` |
 | Depends on | [`reconstructing-the-item`](reconstructing-the-item.md) — owns the `interpretation` contract this manifest carries · [`tracker-and-forge-ports`](tracker-and-forge-ports.md) — `attach_reference` and the run branch |
 | Terminal failure owned | `criteria_not_lintable`, `boundary_ungameable_unproven`, `ineligible_infeasible_handoff`, `ineligible_crosses_boundary`, `floor_gap` |
@@ -252,7 +252,7 @@ difference so that semantically identical manifests digest identically. The dige
 *identity* — "the frozen bundle is the only input" — and a canonical digest would let two different
 files freeze to the same value. It would have weakened the guarantee while appearing to secure it.
 
-And the comment-preserving loader had no consumer. Nothing in `context-emendator` writes YAML, and the
+And the comment-preserving loader had no consumer. Nothing in `modus` writes YAML, and the
 only actor that amends a frozen bundle is the Author, a model editing text — which preserves comments
 because they are in the text being edited. The Orchestrator's job on an amendment is to regenerate
 downstream *assets*, not to rewrite the manifest in place. The requirement would matter the moment a

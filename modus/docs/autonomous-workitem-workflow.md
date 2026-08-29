@@ -6,14 +6,14 @@ job: >-
   eligibility screen, and the registries every other slice reads.
 ships:
   - kind: deterministic
-    path: context-emendator/lib/eligibility.js
+    path: modus/lib/eligibility.js
   - kind: deterministic
-    path: context-emendator/lib/codes.js
+    path: modus/lib/codes.js
   - kind: doc
-    path: context-emendator/docs/autonomous-workitem-workflow.md
+    path: modus/docs/autonomous-workitem-workflow.md
 gating_test:
   status: planned
-  command: npx jest context-emendator/lib/__tests__/eligibility.test.js context-emendator/lib/__tests__/codes.test.js
+  command: npx jest modus/lib/__tests__/eligibility.test.js modus/lib/__tests__/codes.test.js
   evidence: >-
     Item metadata plus config resolves to `eligible` or `ineligible` with a reason code; a lost
     compare-and-set is a no-op rather than a retry; the three code-prefix sets partition the
@@ -39,7 +39,7 @@ preliminary eligibility screen, and the registries every other slice reads.
 | | |
 | --- | --- |
 | Ships | `lib/eligibility.js` · `lib/codes.js` · this document, which is also the index for the other six |
-| Gating test | *planned* — `npx jest context-emendator/lib/__tests__/eligibility.test.js context-emendator/lib/__tests__/codes.test.js`. Item metadata plus config resolves to a decision with a reason code; a lost compare-and-set is a no-op; the three prefix sets partition the registry; every reason code is reachable from some stop state |
+| Gating test | *planned* — `npx jest modus/lib/__tests__/eligibility.test.js modus/lib/__tests__/codes.test.js`. Item metadata plus config resolves to a decision with a reason code; a lost compare-and-set is a no-op; the three prefix sets partition the registry; every reason code is reachable from some stop state |
 | Non-gating | Offline calibration of every cap value · interpretation escalation rate and its breakdown |
 | Depends on | [`tracker-and-forge-ports`](tracker-and-forge-ports.md) — `list_eligible`, `claim`, and the run branch |
 | Terminal failure owned | `ineligible`, `escalated` |

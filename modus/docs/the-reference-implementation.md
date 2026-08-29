@@ -5,16 +5,16 @@ job: >-
   to detect, producing an auditable fixture corpus and measured limits rather than assertions of trust.
 ships:
   - kind: deterministic
-    path: context-emendator/scripts/lint-boundary.js
+    path: modus/scripts/lint-boundary.js
   - kind: deterministic
-    path: context-emendator/scripts/mutation-sweep.js
+    path: modus/scripts/mutation-sweep.js
   - kind: deterministic
-    path: context-emendator/scripts/mutation-offset.js
+    path: modus/scripts/mutation-offset.js
   - kind: doc
-    path: context-emendator/docs/the-reference-implementation.md
+    path: modus/docs/the-reference-implementation.md
 gating_test:
   status: implemented
-  command: npx jest context-emendator/scripts/__tests__/lint-boundary.test.js context-emendator/scripts/__tests__/mutation-sweep.test.js
+  command: npx jest modus/scripts/__tests__/lint-boundary.test.js modus/scripts/__tests__/mutation-sweep.test.js
   evidence: >-
     Exact finding-set assertions, generated enum totality, fixture necessity, and the null-mutation
     guard make a deleted or vacuous check visible.
@@ -38,7 +38,7 @@ assertions of trust.
 | | |
 | --- | --- |
 | Ships | `scripts/lint-boundary.js` · `scripts/mutation-sweep.js` · `scripts/mutation-offset.js` · this document |
-| Gating test | *implemented* — `npx jest context-emendator/scripts/__tests__/lint-boundary.test.js context-emendator/scripts/__tests__/mutation-sweep.test.js`. Exact findings, totality, necessity, and mutation-oracle discrimination |
+| Gating test | *implemented* — `npx jest modus/scripts/__tests__/lint-boundary.test.js modus/scripts/__tests__/mutation-sweep.test.js`. Exact findings, totality, necessity, and mutation-oracle discrimination |
 | Non-gating | Adapter-backed locator resolution · runner-backed collected-case integration |
 | Depends on | [`reconstructing-the-item`](reconstructing-the-item.md) · [`the-boundary-bundle`](the-boundary-bundle.md) · [`discharging-the-boundary`](discharging-the-boundary.md) |
 | Terminal failure owned | None — this slice verifies instruments; workflow slices own their stops |
@@ -49,6 +49,19 @@ assertions of trust.
 The source's reference-tooling rules and measured results are retained; their order is condensed around
 the maintainer's assurance job. The boundary statement and headings are new, and production-input
 ownership is linked to its enforcing slices rather than repeated here.
+
+Three claimed source lines were reworded when this work was extracted from `context-emendator/` into
+its own `modus` plugin, and `lint-slice-headers` reports each as `W_CONTENT_NOT_FOUND` against
+`70e2687`:
+
+| Source line | Rewording |
+| --- | --- |
+| 810, 811 | The two `node`/`npx jest` invocations now name `modus/` paths. The commands are otherwise unchanged; only the directory moved. |
+| 814 | The claim that these checks "are not wired into the root `npm test`" was true of a directory that was not a plugin and is false of one that is. Replaced with the `test:modus` workspace script that now runs them. |
+
+Nothing else in the claimed ranges was touched. The measured results quoted from the source — survivor
+counts, oracle contamination figures, test totals — are historical readings and keep the command
+spellings they were taken with.
 
 GOAL: Make every schema-local mechanical rule observable, testable, and honest about the domain it
 does not yet receive from production.
@@ -110,12 +123,14 @@ with the core schema option, so quantity values must be quoted and the tests ass
 Run the reference checks directly:
 
 ```
-node context-emendator/scripts/lint-boundary.js context-emendator/tests/fixtures/*.yaml
-npx jest context-emendator/scripts/__tests__/lint-boundary.test.js
+node modus/scripts/lint-boundary.js modus/tests/fixtures/*.yaml
+npx jest modus/scripts/__tests__/lint-boundary.test.js
 ```
 
-They are not wired into root `npm test`; `context-emendator` has no package manifest, and adding one is
-a separate decision.
+They also run from root `npm test`, which reaches them through the `test:modus` workspace script.
+That was a separate decision while this work lived in a directory that was not a plugin; extracting
+it into `modus` settled it, because a plugin whose tests CI cannot run has been relocated rather
+than extracted.
 
 ## Mutation instruments must discriminate
 

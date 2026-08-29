@@ -33,8 +33,8 @@
  * Both guards are therefore required and neither subsumes the other.
  *
  * Run from the repository root, on an isolated copy:
- *   cp -R context-emendator /tmp/iso && ln -s "$PWD/node_modules" /tmp/iso/
- *   cd /tmp/iso && node context-emendator/scripts/mutation-offset.js
+ *   cp -R modus /tmp/iso && ln -s "$PWD/node_modules" /tmp/iso/
+ *   cd /tmp/iso && node modus/scripts/mutation-offset.js
  */
 
 const fs = require('fs');
@@ -47,7 +47,7 @@ const ms = require('./mutation-sweep');
 
 // The coverage suite ONLY. Adding the sweep's own suite makes the instrument part
 // of its own ground truth; see failure mode 2 above.
-const ORACLE = ['jest', 'context-emendator/scripts/__tests__/lint-boundary.test.js', '--silent'];
+const ORACLE = ['jest', 'modus/scripts/__tests__/lint-boundary.test.js', '--silent'];
 
 // Which test files count as coverage. A "caught" verdict is only meaningful if a
 // test IN THIS SET failed; anything else means the oracle objected for a reason

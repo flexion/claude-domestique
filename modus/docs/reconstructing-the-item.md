@@ -6,16 +6,16 @@ job: >-
   reading, or stop with the drafted interpretation as the run's product.
 ships:
   - kind: deterministic
-    path: context-emendator/lib/lint-interpretation.js
+    path: modus/lib/lint-interpretation.js
   - kind: prompt
-    path: context-emendator/prompts/author-blind-read.md
+    path: modus/prompts/author-blind-read.md
   - kind: prompt
-    path: context-emendator/prompts/reviewer-blind-read.md
+    path: modus/prompts/reviewer-blind-read.md
   - kind: doc
-    path: context-emendator/docs/reconstructing-the-item.md
+    path: modus/docs/reconstructing-the-item.md
 gating_test:
   status: planned
-  command: npx jest context-emendator/lib/__tests__/lint-interpretation.test.js
+  command: npx jest modus/lib/__tests__/lint-interpretation.test.js
   evidence: >-
     Exact finding-set assertions over the interpretation fixtures; the five
     assertion-versus-absence portability assertions; a prompt template contract asserting
@@ -45,7 +45,7 @@ second independent reading, or stop with the drafted interpretation as the run's
 | | |
 | --- | --- |
 | Ships | `lib/lint-interpretation.js` · the Author's blind-read prompt · the Boundary-reviewer's blind-read prompt · this document |
-| Gating test | *planned* — `npx jest context-emendator/lib/__tests__/lint-interpretation.test.js`. Exact finding-set assertions over the interpretation fixtures, the five assertion-versus-absence portability assertions, and a prompt template contract asserting every placeholder binds and the declared output shape validates against the linter's input schema |
+| Gating test | *planned* — `npx jest modus/lib/__tests__/lint-interpretation.test.js`. Exact finding-set assertions over the interpretation fixtures, the five assertion-versus-absence portability assertions, and a prompt template contract asserting every placeholder binds and the declared output shape validates against the linter's input schema |
 | Non-gating | Model eval over `tests/transcriptions/` · offline hand-grading of the reconstruction against what the requester actually wanted |
 | Depends on | [`tracker-and-forge-ports`](tracker-and-forge-ports.md) — `read(ref)` must return addressable parts, or every `item_locator` has nothing to resolve against |
 | Terminal failure owned | `X_GAP_UNRESOLVABLE`, `X_QUANTITY_ASSUMED`, `X_CORRECTION_CHANGES_SCOPE`, `X_RECONSTRUCTION_UNANCHORED`, `X_ITEM_UNANCHORED`, `X_MOVES_SURFACE_DISPUTED` — all reaching the `interpretation_blocked` stop state |

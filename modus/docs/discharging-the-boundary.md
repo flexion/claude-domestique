@@ -5,20 +5,20 @@ job: >-
   obligations, independently review its semantic obligations, and produce an explicit handoff.
 ships:
   - kind: deterministic
-    path: context-emendator/lib/lint-evidence.js
+    path: modus/lib/lint-evidence.js
   - kind: deterministic
-    path: context-emendator/lib/gate.js
+    path: modus/lib/gate.js
   - kind: prompt
-    path: context-emendator/prompts/implementer.md
+    path: modus/prompts/implementer.md
   - kind: prompt
-    path: context-emendator/prompts/reviewer-semantic.md
+    path: modus/prompts/reviewer-semantic.md
   - kind: prompt
-    path: context-emendator/prompts/triage.md
+    path: modus/prompts/triage.md
   - kind: doc
-    path: context-emendator/docs/discharging-the-boundary.md
+    path: modus/docs/discharging-the-boundary.md
 gating_test:
   status: planned
-  command: npx jest context-emendator/lib/__tests__/discharge.test.js
+  command: npx jest modus/lib/__tests__/discharge.test.js
   evidence: >-
     A disposable base/head fixture proves change and preservation baselines, collected-case identity,
     sensitivity probes, out-of-scope rejection, cited-review triage, and the bounded repair outcomes.
@@ -45,7 +45,7 @@ handoff.
 | | |
 | --- | --- |
 | Ships | `lib/lint-evidence.js` · `lib/gate.js` · Implementer, Reviewer, and Triage prompts · this document |
-| Gating test | *planned* — `npx jest context-emendator/lib/__tests__/discharge.test.js`. A disposable base/head fixture proves baselines, collected cases, probes, scope, triage, and bounded outcomes |
+| Gating test | *planned* — `npx jest modus/lib/__tests__/discharge.test.js`. A disposable base/head fixture proves baselines, collected cases, probes, scope, triage, and bounded outcomes |
 | Non-gating | Offline model-review calibration · human review of deferrals |
 | Depends on | [`the-boundary-bundle`](the-boundary-bundle.md) · [`tracker-and-forge-ports`](tracker-and-forge-ports.md) |
 | Terminal failure owned | `coupling_found_after_freeze` · `gate_not_passable` · `semantic_review_not_converging` · `no_sensitivity_probe` |
