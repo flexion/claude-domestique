@@ -20,6 +20,14 @@ drift toward whatever the implementation happened to produce.
 its fixture corpus and a measured mutation baseline. Everything under `lib/` named in the slice
 documents is still `*planned*`. See [The slices](#the-slices).
 
+**modus is self-contained, and that is a build constraint, not just a description.** The sibling
+plugins are installed and in use; this one has no users yet. So nothing here may require a change to
+another plugin in order to work — a slice that depends on `mantra`'s rule injection or `comitatus`'s
+review fan-out is a slice that cannot ship, and should do the thing itself even where that duplicates
+a sibling. Duplication is reversible by deleting code; a premature coupling is reversible only by
+regressing a plugin someone else depends on. Redistributing this work across plugins is a live option
+for later, once the design has earned it.
+
 ## The problem
 
 An agentic review loop has two failure modes and they are the same failure.
