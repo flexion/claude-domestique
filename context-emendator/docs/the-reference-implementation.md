@@ -26,7 +26,7 @@ depends_on:
   - the-boundary-bundle
   - discharging-the-boundary
 terminal_failure_owned: []
-source_lines: 217-232, 269-274, 768-995
+source_lines: 216-232, 269-274, 768-995
 ---
 
 # The reference implementation
@@ -42,7 +42,7 @@ assertions of trust.
 | Non-gating | Adapter-backed locator resolution · runner-backed collected-case integration |
 | Depends on | [`reconstructing-the-item`](reconstructing-the-item.md) · [`the-boundary-bundle`](the-boundary-bundle.md) · [`discharging-the-boundary`](discharging-the-boundary.md) |
 | Terminal failure owned | None — this slice verifies instruments; workflow slices own their stops |
-| Source lines | 217-232, 269-274, 768-995 of the pre-split `autonomous-workitem-workflow.md` |
+| Source lines | 216-232, 269-274, 768-995 of the pre-split `autonomous-workitem-workflow.md` |
 
 ## Extraction note
 

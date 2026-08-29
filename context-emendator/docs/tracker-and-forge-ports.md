@@ -1,15 +1,13 @@
 ---
 slice: tracker-and-forge-ports
 job: >-
-  Implement one tracker/forge adapter and the durable run-record boundary that let an orchestrator
-  safely claim an item, address its evidence, perform external effects, and recover after a crash.
+  Define portable tracker/forge interfaces and implement the durable run-record boundary that let an
+  orchestrator safely claim an item, address its evidence, perform external effects, and recover after a crash.
 ships:
   - kind: deterministic
     path: context-emendator/lib/ports.js
   - kind: deterministic
     path: context-emendator/lib/run-record.js
-  - kind: deterministic
-    path: context-emendator/lib/adapters/beads.js
   - kind: doc
     path: context-emendator/docs/tracker-and-forge-ports.md
 gating_test:
@@ -28,13 +26,13 @@ source_lines: 38-89, 293-297, 545-580
 
 # Tracker and forge ports
 
-**Slice boundary.** Implement one tracker/forge adapter and the durable run-record boundary that let
-an orchestrator safely claim an item, address its evidence, perform external effects, and recover after
-a crash.
+**Slice boundary.** Define portable tracker/forge interfaces and implement the durable run-record
+boundary that lets an orchestrator safely claim an item, address its evidence, perform external effects,
+and recover after a crash.
 
 | | |
 | --- | --- |
-| Ships | `lib/ports.js` · `lib/run-record.js` · one Beads adapter · this document |
+| Ships | `lib/ports.js` · `lib/run-record.js` · the adapter contract suite · this document |
 | Gating test | *planned* — `npx jest context-emendator/lib/__tests__/ports-contract.test.js`. Every adapter passes the same contract suite for fencing, stable locators, projection, incomplete effects, and reconciliation |
 | Non-gating | Cross-machine Beads claim behavior after Dolt sync · provider latency and rate limits |
 | Depends on | None |
@@ -45,7 +43,8 @@ a crash.
 
 The port operations and run-record guarantees are verbatim or lightly condensed from the cited ranges.
 The opening boundary statement and section grouping are new; they do not add an adapter capability or
-change which actor consumes it.
+change which actor consumes it. The walking skeleton owns the thin Beads adapter; this slice supplies
+the interface, durable record, and contract suite that later harden it.
 
 GOAL: Give the workflow generic, recoverable access to work items and forge effects without pretending
 that trackers share either a state machine or an atomic claim primitive.

@@ -33,7 +33,7 @@ terminal_failure_owned:
   - X_RECONSTRUCTION_UNANCHORED
   - X_ITEM_UNANCHORED
   - X_MOVES_SURFACE_DISPUTED
-source_lines: 90-199, 234-237, 275-292, 350-430, 606-614, 639-647
+source_lines: 90-199, 234-237, 275-292, 350-430, 447-461, 606-614, 639-647, 660-681
 ---
 
 # Reconstructing the item
@@ -49,7 +49,7 @@ second independent reading, or stop with the drafted interpretation as the run's
 | Non-gating | Model eval over `tests/transcriptions/` · offline hand-grading of the reconstruction against what the requester actually wanted |
 | Depends on | [`tracker-and-forge-ports`](tracker-and-forge-ports.md) — `read(ref)` must return addressable parts, or every `item_locator` has nothing to resolve against |
 | Terminal failure owned | `X_GAP_UNRESOLVABLE`, `X_QUANTITY_ASSUMED`, `X_CORRECTION_CHANGES_SCOPE`, `X_RECONSTRUCTION_UNANCHORED`, `X_ITEM_UNANCHORED`, `X_MOVES_SURFACE_DISPUTED` — all reaching the `interpretation_blocked` stop state |
-| Source lines | 90-199, 234-237, 275-292, 350-430, 606-614, 639-647 of the pre-split `autonomous-workitem-workflow.md` |
+| Source lines | 90-199, 234-237, 275-292, 350-430, 447-461, 606-614, 639-647, 660-681 of the pre-split `autonomous-workitem-workflow.md` |
 
 GOAL: Recover the item's goal, the problem it is solving, and the obligations that would settle
 it, with every part declaring whether the item stated it, the repository supplied it, or the two
@@ -254,6 +254,11 @@ widened rather than joined by a new rule: it already abstains when either side c
 grounds that the comparison has no domain, and one identical locator on each side is the same
 condition — a set with no discriminating power, where identical and opposite readings are
 indistinguishable.
+
+Resolving locators against a real part list, once the adapter supplies one, does **not** rescue the
+degenerate overlap case. Two reconstructions both citing a *valid* `description#1` are still
+indistinguishable from each other, which is why `abstain` exists and why there is still no diversity
+metric.
 
 Two residuals, stated rather than checked. A side resting on one locator while the other cites three
 still reports overlap; drawing that line needs a diversity metric, and the semantic differential is the

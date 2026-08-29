@@ -35,7 +35,7 @@ terminal_failure_owned:
   - ineligible_infeasible_handoff
   - ineligible_crosses_boundary
   - floor_gap
-source_lines: 238-268, 299-348, 463-511, 543-543, 615-630, 648-681
+source_lines: 238-268, 299-348, 463-511, 543-543, 615-630, 648-659
 ---
 
 # The boundary bundle
@@ -51,7 +51,7 @@ target — producing one committed manifest plus its referenced assets under a b
 | Non-gating | Model eval of the adversarial pass · escalation-rate reporting for `boundary_ungameable_unproven` |
 | Depends on | [`reconstructing-the-item`](reconstructing-the-item.md) — owns the `interpretation` contract this manifest carries · [`tracker-and-forge-ports`](tracker-and-forge-ports.md) — `attach_reference` and the run branch |
 | Terminal failure owned | `criteria_not_lintable`, `boundary_ungameable_unproven`, `ineligible_infeasible_handoff`, `ineligible_crosses_boundary`, `floor_gap` |
-| Source lines | 238-268, 299-348, 463-511, 543-543, 615-630, 648-681 of the pre-split `autonomous-workitem-workflow.md` |
+| Source lines | 238-268, 299-348, 463-511, 543-543, 615-630, 648-659 of the pre-split `autonomous-workitem-workflow.md` |
 
 GOAL: Produce one boundary bundle containing every obligation that would settle the item, plus the
 sketch and coupling analysis it rests on, and freeze it.

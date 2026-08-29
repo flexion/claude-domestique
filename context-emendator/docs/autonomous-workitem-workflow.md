@@ -27,7 +27,7 @@ depends_on:
 terminal_failure_owned:
   - ineligible
   - escalated
-source_lines: 1-36, 201-216, 431-461, 584-598, 996-1076, 1079-1118
+source_lines: 1-36, 201-215, 431-446, 584-598, 996-1076, 1079-1118
 ---
 
 # Autonomous work item to Ready for Merge — pilot workflow
@@ -43,7 +43,7 @@ preliminary eligibility screen, and the registries every other slice reads.
 | Non-gating | Offline calibration of every cap value · interpretation escalation rate and its breakdown |
 | Depends on | [`tracker-and-forge-ports`](tracker-and-forge-ports.md) — `list_eligible`, `claim`, and the run branch |
 | Terminal failure owned | `ineligible`, `escalated` |
-| Source lines | 1-36, 201-216, 431-461, 584-598, 996-1076, 1079-1118 of the pre-split document |
+| Source lines | 1-36, 201-215, 431-446, 584-598, 996-1076, 1079-1118 of the pre-split document |
 
 GOAL: Take a work item to Ready for Merge -- complete, correct, and high quality -- without a human in the loop, and stop on a fixed condition rather than when the reviewers run out of things to say.
 HOW: Reconstruct the item's goal, problem, and obligations into one boundary bundle -- recording for every part whether the item stated it, the repository supplied it, or the two disagree -- have that bundle independently reviewed, and freeze it before implementation; then implement on an isolated branch against that boundary and nothing else, with mechanical gates and one bounded repair loop per review kind. Escalate whenever the item's goal cannot be recovered, the boundary cannot be made decidable, a genuinely new obligation appears, or the coupling reaches past what this repo controls.

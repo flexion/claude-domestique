@@ -21,10 +21,7 @@ gating_test:
 non_gating:
   - Model quality for future reconstruction and adversarial prompts.
   - Cross-machine Beads synchronization behavior.
-depends_on:
-  - tracker-and-forge-ports
-  - the-boundary-bundle
-  - discharging-the-boundary
+depends_on: []
 terminal_failure_owned: []
 source_lines: new
 ---
@@ -40,7 +37,7 @@ to a human.
 | Ships | `lib/orchestrator.js` · one Beads adapter · one trivial boundary fixture · this document |
 | Gating test | *planned* — `npx jest context-emendator/lib/__tests__/walking-skeleton.test.js`. A disposable Beads-backed fixture records claim, recovery, freeze, gate, and handoff in order |
 | Non-gating | Future prompt quality · cross-machine Beads synchronization |
-| Depends on | [`tracker-and-forge-ports`](tracker-and-forge-ports.md) · [`the-boundary-bundle`](the-boundary-bundle.md) · [`discharging-the-boundary`](discharging-the-boundary.md) |
+| Depends on | None — this first increment carries the thin implementations it integrates |
 | Terminal failure owned | None — existing slice contracts own their outcomes |
 | Source lines | new |
 
