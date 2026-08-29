@@ -8,7 +8,16 @@
 
 **Tech Stack:** Markdown, Node.js CommonJS, Jest, YAML fixtures, `js-yaml`.
 
-**Spec:** `context-emendator/docs/autonomous-workitem-workflow.md`
+> **Superseded on 2026-08-29.** This plan established the single-document baseline it describes.
+> That document has since been split by vertical slice on `chore/split-workitem-workflow`, so the
+> file paths in the tasks below refer to the pre-split source, recoverable with
+> `git show HEAD:context-emendator/docs/autonomous-workitem-workflow.md`. The spec is now seven
+> documents: `autonomous-workitem-workflow.md` (index and spine), `walking-skeleton.md`,
+> `tracker-and-forge-ports.md`, `reconstructing-the-item.md`, `the-boundary-bundle.md`,
+> `discharging-the-boundary.md`, and `the-reference-implementation.md`.
+
+**Spec:** `context-emendator/docs/autonomous-workitem-workflow.md` — now the index for the six
+sibling slice documents rather than the whole specification.
 
 ## Global Constraints
 

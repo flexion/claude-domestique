@@ -2,13 +2,19 @@
 'use strict';
 
 /**
- * Reference linter for the boundary bundle in docs/autonomous-workitem-workflow.md.
+ * Reference linter for the boundary bundle. The specification was one document and is
+ * now split by vertical slice; each pass below is specified by a different one:
  *
- * Three passes, because the artifacts are authored a stage apart:
+ *   docs/reconstructing-the-item.md    the interpretation contract
+ *   docs/the-boundary-bundle.md        the manifest and the freeze
+ *   docs/discharging-the-boundary.md   the evidence map
+ *   docs/autonomous-workitem-workflow.md  the index, code prefixes, and stop states
  *
- *   lintBoundary(doc)                    stages 2 and 3, before the freeze
- *   lintInterpretationPair(a, b)         stage 3, two blind reconstructions
- *   lintEvidence(boundary, ev)           stage 5, once tests exist
+ * Three passes, because the artifacts are authored a slice apart:
+ *
+ *   lintBoundary(doc)                    the boundary bundle, before the freeze
+ *   lintInterpretationPair(a, b)         two blind reconstructions
+ *   lintEvidence(boundary, ev)           once tests exist
  *
  * Work items are unrefined, incorrect, and incomplete. The `interpretation`
  * block is the reconstruction of goal, problem, and obligations that the rest of
