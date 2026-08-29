@@ -24,7 +24,7 @@ const fs = require('fs');
 const path = require('path');
 const { sweep } = require('../mutation-sweep');
 
-const BASELINE = path.join(__dirname, '..', '..', 'schemas', 'mutation-baseline.json');
+const BASELINE = path.join(__dirname, '..', '..', 'tests', 'mutation-baseline.json');
 
 describe('enum-exclusion mutation sweep over the entry loop', () => {
   const baseline = JSON.parse(fs.readFileSync(BASELINE, 'utf8'));

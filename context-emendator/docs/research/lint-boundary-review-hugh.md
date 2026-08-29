@@ -5,7 +5,7 @@ at `975c802` and re-verified at `7364b2c`; all of them survive the move. Untrack
 or delete it.
 
 Reproduced: `node context-emendator/scripts/lint-boundary.js
-context-emendator/schemas/fixtures/*.yaml` → 11 FAIL + 2 ok, exit 1. `npx jest
+context-emendator/tests/fixtures/*.yaml` → 11 FAIL + 2 ok, exit 1. `npx jest
 …lint-boundary.test.js` → 17 passed. Every claim below is backed by a probe I ran, named `pN` and
 listed at the end.
 

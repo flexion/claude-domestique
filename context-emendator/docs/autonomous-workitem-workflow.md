@@ -781,8 +781,8 @@ GitHub `org/repo#n` reference, an Azure Boards integer, a beads id, and an opaqu
 adapter nobody has written. A key shape that means something to one tracker must mean nothing to the
 linter, or the schema is Jira-shaped with a generic label on it.
 
-`schemas/fixtures/` carries one valid boundary and targeted negative fixtures across the three passes.
-`schemas/transcriptions/BUG-4471.yaml` is an instance transcribed from the source design conversation's
+`tests/fixtures/` carries one valid boundary and targeted negative fixtures across the three passes.
+`tests/transcriptions/BUG-4471.yaml` is an instance transcribed from the source design conversation's
 worked example, authored under the earlier `INV`/`AC`/`PRES` vocabulary before this schema existed. It
 is there because a fixture written by the schema's author to fit the schema's rules is weak evidence;
 one written before the rules is better.
@@ -807,7 +807,7 @@ stops firing fails a test rather than passing silently.
 Run it directly:
 
 ```
-node context-emendator/scripts/lint-boundary.js context-emendator/schemas/fixtures/*.yaml
+node context-emendator/scripts/lint-boundary.js context-emendator/tests/fixtures/*.yaml
 npx jest context-emendator/scripts/__tests__/lint-boundary.test.js
 ```
 
@@ -959,7 +959,7 @@ which is what makes the fast battery usable and what stops it being quoted as co
 
 ## Unrepresentable is a legal verdict
 
-`schemas/transcriptions/` holds cases transcribed from sources that predate the schema, each with a
+`tests/transcriptions/` holds cases transcribed from sources that predate the schema, each with a
 declared verdict in `index.yaml`. This exists because a fixture written by the rules' author can only
 say *I made this pass* or *I made this fail*; neither can express **a real case the schema cannot
 represent**, so schema findings had nowhere to live.

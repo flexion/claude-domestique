@@ -1,4 +1,4 @@
-# Deliberately unparseable. Kept OUTSIDE schemas/fixtures/ because every loop in
+# Deliberately unparseable. Kept OUTSIDE tests/fixtures/ because every loop in
 # the suite reads that directory and expects a document; a file that cannot load
 # belongs where only the CLI test looks for it.
 #

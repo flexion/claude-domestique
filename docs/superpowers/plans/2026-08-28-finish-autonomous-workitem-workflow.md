@@ -28,7 +28,7 @@
 - Read: `context-emendator/scripts/mutation-sweep.js`
 - Read: `context-emendator/scripts/__tests__/lint-boundary.test.js`
 - Read: `context-emendator/scripts/__tests__/mutation-sweep.test.js`
-- Read: `context-emendator/schemas/mutation-baseline.json`
+- Read: `context-emendator/tests/mutation-baseline.json`
 
 **Interfaces:**
 - Consumes: the uncommitted workflow document and executable reference artifacts.

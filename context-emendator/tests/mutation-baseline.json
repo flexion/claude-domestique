@@ -1,6 +1,6 @@
 {
   "note": "Enum-exclusion mutation survivors over the entry loop, measured against the FIXTURE CORPUS ONLY. A fast pre-filter with measured error in BOTH directions, not a coverage measurement. The assertion is that this set does not GROW.",
-  "measured_against": "schemas/fixtures/*.yaml and schemas/transcriptions/*.yaml",
+  "measured_against": "tests/fixtures/*.yaml and tests/transcriptions/*.yaml",
   "reconciled": "Two independent sweeps first reported 33/264 and 29/232. Both mis-anchored the entry-loop slice in opposite directions and every phantom site threw ReferenceError, which read as CAUGHT and hid the error. 28/224 is the reconciled figure; the sweep now asserts no mutation throws.",
   "sites": 28,
   "mutations": 224,
