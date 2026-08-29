@@ -76,7 +76,8 @@ must fail on base and one preservation entry that must pass on base.
 A Gate rejects a case id the runner did not collect. Until runner integration exists, the reference
 linter can only require a non-empty `case_id`; its fixture list catches slips rather than lies. This
 slice owns that production input because the runner, not the manifest, supplies the collected-case list.
-Several edges may share a case only when their declared baseline is identical.
+Several edges may share a case only when their declared baseline is identical. One entry may still need
+several test cases; one test discharges several entries only under that same-baseline constraint.
 
 Preservation requires a sensitivity probe. `pass` on base and head permits `assert True`; each edge
 therefore names a `negative_control` fixture or a controlled `mutation` that the case must fail against.
@@ -99,10 +100,13 @@ for outcome supervision and the gap widens with N; `:63` — it specifies the ex
 The Implementer writes tests for each `mechanical` + `must` entry before the change: a `change` test
 fails on base and a `preservation` test passes on base. It records the many-to-many evidence map,
 implements until green only on sketch-named paths, and records unrelated defects as deferrals rather
-than fixing them.
+than fixing them. The tests are committed as their own commit, so the pre-fix baseline is auditable
+rather than asserted.
 
 On any consumer whose obligation coverage is not already declared, the Implementer emits
 `escalate: coupling_found_after_freeze`.
+
+The Orchestrator opens a draft PR and appends `pr_opened` with the PR number and head SHA.
 
 An undisclosed consumer is not authorization. The Orchestrator accepts only an exact, reviewed,
 frozen hit in `entails`; presence in coupling analysis or `traces[]` proves the consumer was known, not
@@ -194,8 +198,8 @@ measures whether a record prevents it.
 After passing obligations, the Orchestrator marks the PR ready and renders a handoff projection from the
 run record: discharged obligations, deferrals, rounds, residual risk, and open handoff objects. It
 finalizes the execution lease at the autonomous stop, not after merge. A separately triggered,
-idempotent Merge-watcher records an observed merge and projects the item closed only when no post-merge
-or production obligation remains.
+idempotent Merge-watcher keyed by `(run_id, "merge")` records an observed merge and projects the item
+closed only when no post-merge or production obligation remains.
 
 The stop-state registry lives in the
 [`autonomous-workitem-workflow`](autonomous-workitem-workflow.md) spine. This slice reaches

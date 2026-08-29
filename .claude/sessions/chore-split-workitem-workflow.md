@@ -25,6 +25,7 @@ Use the 1,118-line pre-split document preserved at `70e26874`, recoverable with 
 - 2026-08-29: Tim completed the final coverage and inbound-pointer reconciliation. All seven frontmatter contracts and dependencies validate; `git diff --check` and the full `npm test` suite pass. The branch remains uncommitted pending operator integration choice.
 - 2026-08-29: Final commit prepared after the operator selected push and PR. The seven slice documents, machine-readable headers, source coverage, and inbound references are reconciled; full tests are green.
 - 2026-08-29: PR follow-up added a source-history-aware header linter and restored the slice provenance audit. The final review found and restored the safety-exception rejection record, the reference mutation denominator reconciliation, and the unrepresentable external-attestation verdict; the focused context-emendator suite passes 179 tests.
+- 2026-08-29: Completed the remaining provenance audit in the unmerged branch. Restored run-record sequence ownership and derived deferral projections, concrete tracker-state evidence, test-only baseline commits, PR-opened events, the merge-watcher idempotency key, and the same-baseline multi-test constraint. The header linter remains at zero errors.
 
 ## Files Changed
 - `.claude/sessions/chore-split-workitem-workflow.md`

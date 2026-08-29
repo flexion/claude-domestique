@@ -78,6 +78,11 @@ The ports remain separate. Jira supplies no forge, GitHub and Azure DevOps can s
 a local tracker. A consumer may compose any valid pair; no linter or manifest field may infer a provider
 from the opaque item reference.
 
+The state-machine incompatibility is concrete: Jira's transitions are configurable with validators and
+transition permissions; GitHub Issues has open and closed plus labels; Azure Boards has per-process
+states; and Beads has its own set. The workflow's states therefore cannot live authoritatively in any
+tracker.
+
 ## Stable item evidence and claims
 
 `read(ref)` returns addressable item parts with stable identifiers such as `description#1` and
@@ -96,14 +101,15 @@ selected.
 ## The run record is authoritative
 
 `runs/WI-1234/<run-id>.jsonl` is append-only and belongs to one run attempt. A refreeze makes a new
-run rather than rewriting history. Its envelope is `schema_version`, `run_id`, `seq`, `timestamp`,
+run rather than rewriting history. A single Orchestrator owns sequence allocation and append. Its envelope is `schema_version`, `run_id`, `seq`, `timestamp`,
 `actor`, `event_type`, `input_digests`, `outcome`, `reason_code`, and `evidence_refs`; large logs and
 review payloads remain immutable referenced artifacts.
 
 The record is authoritative and tracker state is a best-effort projection. A tracker that cannot
 represent `handoff_pending` stays open with a comment naming handoffs and owners. No downstream actor
 reads workflow state back from the tracker, and a failed projection is an event rather than a stalled
-run.
+run. Deferrals are events: current state, the deferral list, and every human view are derived projections,
+never a second source of truth and never committed.
 
 The runtime guarantees are part of this slice, not metadata wishes:
 
