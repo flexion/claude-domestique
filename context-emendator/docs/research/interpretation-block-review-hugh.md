@@ -1235,7 +1235,7 @@ of as a red flag. Confirmation from a biased sample, where the bias was introduc
 
 ## What is now wrong in the artifact, which is why I broke the stop
 
-`schemas/mutation-baseline.json` carries this in its `note`, date-stamped:
+`tests/mutation-baseline.json` carries this in its `note`, date-stamped:
 
 > "Measured 2026-08-28: the real suite was run against all 132 of these and ZERO survived, so every
 > entry here is a false positive relative to the suite. Everything the filter calls caught IS caught; it

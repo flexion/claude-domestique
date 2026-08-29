@@ -9,7 +9,7 @@ const {
   TERMINAL_TRIGGER, ABSENCE_TRIGGERED,
 } = require('../lint-boundary');
 
-const FIX = path.join(__dirname, '..', '..', 'schemas', 'fixtures');
+const FIX = path.join(__dirname, '..', '..', 'tests', 'fixtures');
 const at = (n) => path.join(FIX, n);
 
 // The linter records outcomes, not only failures, so a positive fixture can
@@ -999,7 +999,7 @@ describe('a wrong-shaped supplied list is a caller error, not no-domain', () => 
 describe('the CLI reports a file that will not parse', () => {
   test('a malformed document is E_PARSE and a non-zero exit', () => {
     const cli = path.join(__dirname, '..', 'lint-boundary.js');
-    const bad = path.join(__dirname, '..', '..', 'schemas', 'malformed', 'not-yaml.yaml');
+    const bad = path.join(__dirname, '..', '..', 'tests', 'malformed', 'not-yaml.yaml');
     const r = require('child_process').spawnSync(process.execPath, [cli, bad], { encoding: 'utf8' });
     expect(r.status).toBe(1);
     expect(r.stdout).toContain('E_PARSE');
@@ -1076,7 +1076,7 @@ describe('necessity — no check is deletable without a test failing', () => {
 // is where a finding about the schema itself can live.
 // ---------------------------------------------------------------------------
 
-const TRANS = path.join(__dirname, '..', '..', 'schemas', 'transcriptions');
+const TRANS = path.join(__dirname, '..', '..', 'tests', 'transcriptions');
 const register = load(path.join(TRANS, 'index.yaml')).transcriptions;
 
 describe('transcriptions — cases authored before the rules', () => {

@@ -31,8 +31,8 @@ const path = require('path');
 const yaml = require('js-yaml');
 
 const SRC = path.join(__dirname, 'lint-boundary.js');
-const FIX = path.join(__dirname, '..', 'schemas', 'fixtures');
-const TRANS = path.join(__dirname, '..', 'schemas', 'transcriptions');
+const FIX = path.join(__dirname, '..', 'tests', 'fixtures');
+const TRANS = path.join(__dirname, '..', 'tests', 'transcriptions');
 
 const VERIFIER = ['mechanical', 'independent_review', 'observation'];
 const STAGE = ['pre_merge', 'post_merge', 'production'];
