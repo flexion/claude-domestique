@@ -14,6 +14,8 @@
  * split document rather than silently measuring against it.
  */
 
+const os = require('os');
+const path = require('path');
 const { execFileSync } = require('child_process');
 const { main, HISTORICAL_SOURCE_PATH } = require('../lint-slice-headers');
 
@@ -75,6 +77,26 @@ describe('pre-split source resolution', () => {
     expect(resolved).toMatch(/^# Autonomous work item to Ready for Merge/m);
   });
 
+  // SOURCE_PATH is a repo-root-relative pathspec and git resolves pathspecs against the
+  // working directory, so an unpinned `git log -- <path>` finds nothing when the caller is
+  // anywhere but the root — which `npm test --workspace modus` always is. The linter then
+  // reports "cannot resolve a pre-split source", identical to genuine history loss. Assert
+  // the resolution is a property of the repository, not of where the caller stood.
+  test.each([
+    ['the plugin directory', path.join(__dirname, '..', '..')],
+    ['the scripts directory', path.join(__dirname, '..')],
+    ['a directory outside the repository', os.tmpdir()],
+  ])('resolves the source when run from %s', (_label, dir) => {
+    const cwd = process.cwd();
+    try {
+      process.chdir(dir);
+      const { text } = run([]);
+      expect(text).toMatch(/^source: [0-9a-f]{8}:/);
+      expect(text).toMatch(/\(1118 lines\)/);
+    } finally {
+      process.chdir(cwd);
+    }
+  });
 });
 
 describe('explicit --source is checked, not obeyed', () => {

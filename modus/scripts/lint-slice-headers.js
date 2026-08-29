@@ -29,6 +29,14 @@ const { execFileSync } = require('child_process');
 // working-tree path — see the note at its use site in main() before changing it.
 const HISTORICAL_SOURCE_PATH = 'context-emendator/docs/autonomous-workitem-workflow.md';
 
+// Resolved rather than assumed: this file sits two levels below the root today, but a linked
+// worktree's root is not the main checkout's, so ask git instead of counting `..` segments.
+function repoRoot() {
+  return execFileSync('git', ['rev-parse', '--show-toplevel'], {
+    encoding: 'utf8', cwd: __dirname, stdio: ['ignore', 'pipe', 'pipe'],
+  }).trim();
+}
+
 const REQUIRED_KEYS = [
   'slice', 'job', 'ships', 'gating_test', 'non_gating',
   'depends_on', 'terminal_failure_owned', 'source_lines',
@@ -94,7 +102,14 @@ function main(argv) {
   const isSplitDoc = (text) => /^---\n[\s\S]*?\nslice:\s/.test(text) || /^---\nslice:\s/.test(text);
   // stderr is inherited by default, so a probe that misses leaks `fatal: path ... does not
   // exist` into the caller's output. Probing history is normal control flow here.
-  const GIT = { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] };
+  //
+  // cwd is pinned to the repository root because `sourcePath` is a repo-root-relative pathspec
+  // and git resolves pathspecs against the working directory. Run from `modus/` — which is what
+  // `npm test --workspace modus` does — an unpinned `git log -- <path>` matches nothing, the
+  // candidate list comes back empty, and the linter reports that no pre-split source exists.
+  // That failure is indistinguishable from real history loss, so it must not depend on where
+  // the caller happened to stand.
+  const GIT = { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], cwd: repoRoot() };
   const readAt = (r) => execFileSync('git', ['show', `${r}:${sourcePath}`], GIT);
 
   // Verify the oracle before trusting it. The spine slice reuses the pre-split filename, so

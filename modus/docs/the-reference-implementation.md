@@ -57,7 +57,7 @@ its own `modus` plugin, and `lint-slice-headers` reports each as `W_CONTENT_NOT_
 | Source line | Rewording |
 | --- | --- |
 | 810, 811 | The two `node`/`npx jest` invocations now name `modus/` paths. The commands are otherwise unchanged; only the directory moved. |
-| 814 | `modus` has a package manifest now, so the source's "no package manifest" no longer holds. The checks are still outside the root `npm test`. |
+| 814 | The claim that these checks "are not wired into the root `npm test`" was true of a directory that was not a plugin and is false of one that is. Replaced with the `test:modus` workspace script that now runs them. |
 
 Nothing else in the claimed ranges was touched. The measured results quoted from the source — survivor
 counts, oracle contamination figures, test totals — are historical readings and keep the command
@@ -127,7 +127,10 @@ node modus/scripts/lint-boundary.js modus/tests/fixtures/*.yaml
 npx jest modus/scripts/__tests__/lint-boundary.test.js
 ```
 
-They run under `npm test` from inside `modus/`. The root `npm test` does not reach them yet.
+They also run from root `npm test`, which reaches them through the `test:modus` workspace script.
+That was a separate decision while this work lived in a directory that was not a plugin; extracting
+it into `modus` settled it, because a plugin whose tests CI cannot run has been relocated rather
+than extracted.
 
 ## Mutation instruments must discriminate
 
