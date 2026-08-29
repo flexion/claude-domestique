@@ -19,6 +19,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # modus/scripts/lint-slice-headers.js verifies that each slice document's claimed
+          # source_lines are actually present in the pre-split specification, which it reads
+          # out of git history. The default fetch-depth of 1 leaves nothing to read, so the
+          # check would be skipped and CI would go green having verified no provenance at
+          # all. Full history is 95 commits and ~34M here; the clone costs well under a
+          # second.
+          fetch-depth: 0
 
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4

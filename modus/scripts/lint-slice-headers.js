@@ -37,6 +37,21 @@ function repoRoot() {
   }).trim();
 }
 
+// Distinct from both "clean" and "found something". The check could not be run at all, and a
+// caller that treats it as either is being misled. Kept out of the 0/1 range the E_ count uses.
+const EXIT_UNVERIFIABLE = 2;
+
+// A shallow clone has been truncated on purpose; its missing history is not evidence.
+function isShallow() {
+  try {
+    return execFileSync('git', ['rev-parse', '--is-shallow-repository'], {
+      encoding: 'utf8', cwd: __dirname, stdio: ['ignore', 'pipe', 'pipe'],
+    }).trim() === 'true';
+  } catch (_) {
+    return false;
+  }
+}
+
 const REQUIRED_KEYS = [
   'slice', 'job', 'ships', 'gating_test', 'non_gating',
   'depends_on', 'terminal_failure_owned', 'source_lines',
@@ -145,7 +160,22 @@ function main(argv) {
     break;
   }
   if (!src) {
-    console.error(`cannot resolve a pre-split ${sourcePath} from history`);
+    // Two very different situations reach this line and they must not print the same thing.
+    //
+    // A shallow clone HAS no history to walk — CI checks out at fetch-depth 1 — so the
+    // absence proves nothing about the repository. Genuine loss of the pre-split source in
+    // a full clone is a real finding and the thing this linter exists to notice. Reporting
+    // both as "cannot resolve" is the same defect this script was written to catch, one
+    // level up: an unverifiable state wearing a finding's clothes, where the reasonable
+    // response to the message is to shrug.
+    if (isShallow()) {
+      console.error(`PROVENANCE NOT VERIFIED: this is a shallow clone, so ${sourcePath}`);
+      console.error('is unreachable regardless of whether it exists. Nothing was checked.');
+      console.error('Fetch full history (actions/checkout fetch-depth: 0) to run this check.');
+      return EXIT_UNVERIFIABLE;
+    }
+    console.error(`cannot resolve a pre-split ${sourcePath} from history.`);
+    console.error('History is present in this clone, so the source is genuinely missing.');
     return 1;
   }
   console.log(`source: ${resolvedRev.slice(0, 8)}:${sourcePath} (${src.length} lines)\n`);
@@ -261,4 +291,4 @@ function main(argv) {
 }
 
 if (require.main === module) process.exit(main(process.argv.slice(2)));
-module.exports = { main, HISTORICAL_SOURCE_PATH };
+module.exports = { main, HISTORICAL_SOURCE_PATH, isShallow, EXIT_UNVERIFIABLE };
