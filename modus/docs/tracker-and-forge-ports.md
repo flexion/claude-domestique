@@ -5,14 +5,14 @@ job: >-
   orchestrator safely claim an item, address its evidence, perform external effects, and recover after a crash.
 ships:
   - kind: deterministic
-    path: context-emendator/lib/ports.js
+    path: modus/lib/ports.js
   - kind: deterministic
-    path: context-emendator/lib/run-record.js
+    path: modus/lib/run-record.js
   - kind: doc
-    path: context-emendator/docs/tracker-and-forge-ports.md
+    path: modus/docs/tracker-and-forge-ports.md
 gating_test:
   status: planned
-  command: npx jest context-emendator/lib/__tests__/ports-contract.test.js
+  command: npx jest modus/lib/__tests__/ports-contract.test.js
   evidence: >-
     Every adapter passes the same contract suite for claim fencing, stable item-part addressing,
     best-effort projection, intent/result recovery, and reconciliation of an incomplete effect.
@@ -33,7 +33,7 @@ and recover after a crash.
 | | |
 | --- | --- |
 | Ships | `lib/ports.js` · `lib/run-record.js` · the adapter contract suite · this document |
-| Gating test | *planned* — `npx jest context-emendator/lib/__tests__/ports-contract.test.js`. Every adapter passes the same contract suite for fencing, stable locators, projection, incomplete effects, and reconciliation |
+| Gating test | *planned* — `npx jest modus/lib/__tests__/ports-contract.test.js`. Every adapter passes the same contract suite for fencing, stable locators, projection, incomplete effects, and reconciliation |
 | Non-gating | Cross-machine Beads claim behavior after Dolt sync · provider latency and rate limits |
 | Depends on | None |
 | Terminal failure owned | None — the spine owns eligibility and stop-state decisions |

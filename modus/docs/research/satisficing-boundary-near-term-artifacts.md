@@ -152,10 +152,11 @@ list exists.
 
 ## Open questions to settle before building
 
-- **Ownership.** The research sits under `context-emendator/`, but per `AGENTS.md` the
-  injected rule belongs with behavioral rules (`mantra`) and the review orchestration belongs
-  with herd workflows (`comitatus`). If `context-emendator` is to own the boundary concept it
-  needs a host manifest; otherwise this work splits across three plugins and the
+- **Ownership.** *Half settled.* The research now sits under `modus/`, which has the host
+  manifest this question asked for — the work was extracted out of `context-emendator/`, whose
+  name belongs to the workflow-config auditor. What is still open is the split: per `AGENTS.md`
+  the injected rule belongs with behavioral rules (`mantra`) and the review orchestration
+  belongs with herd workflows (`comitatus`), so this work still spans three plugins and the
   one-source-of-truth principle has to be honoured explicitly.
 
 - **Who reviews the checklist.** The briefing's closing risk (§5) is that this design trades

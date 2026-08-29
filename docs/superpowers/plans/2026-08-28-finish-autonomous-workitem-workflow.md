@@ -11,7 +11,9 @@
 > **Superseded on 2026-08-29.** This plan established the single-document baseline it describes.
 > That document has since been split by vertical slice on `chore/split-workitem-workflow`, so the
 > file paths in the tasks below refer to the pre-split source, recoverable with
-> `git show HEAD:context-emendator/docs/autonomous-workitem-workflow.md`. The spec is now seven
+> `git show 70e2687:context-emendator/docs/autonomous-workitem-workflow.md` — pinned to that
+> revision because `HEAD` advanced past it the moment the split committed, and at `a0896d1`
+> that same path is the 288-line spine rather than the 1118-line source. The spec is now seven
 > documents: `autonomous-workitem-workflow.md` (index and spine), `walking-skeleton.md`,
 > `tracker-and-forge-ports.md`, `reconstructing-the-item.md`, `the-boundary-bundle.md`,
 > `discharging-the-boundary.md`, and `the-reference-implementation.md`.

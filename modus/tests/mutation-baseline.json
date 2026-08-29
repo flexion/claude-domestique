@@ -142,7 +142,7 @@
   ],
   "offset_experiment": {
     "measured": "2026-08-28, third run — first used a circular oracle, second a non-site-count-preserving mutation form",
-    "oracle": "context-emendator/scripts/__tests__/lint-boundary.test.js ONLY. Using `npx jest context-emendator` makes mutation-sweep.test.js part of its own ground truth and returns a false global zero.",
+    "oracle": "modus/scripts/__tests__/lint-boundary.test.js ONLY. Using `npx jest modus` makes mutation-sweep.test.js part of its own ground truth and returns a false global zero.",
     "cells": 224,
     "fixture_corpus_survivors": 132,
     "real_oracle_survivors": 129,
@@ -154,8 +154,8 @@
     "false_negatives_genuine": 0,
     "genuine_closed": "all 7 previously-genuine cells are closed — E_SELF_TRACE outside the gating cell (5) and E_HANDOFF_INCOMPLETE for any verifier (2). The raw mismatch fell from 37 to 30, which is exactly the 30 vacuous cells remaining.",
     "caution": "The raw real-only count is not a gap count: the fast list is reachability-filtered and this one is not, so cells where the check cannot fire appear as mismatches. A filtered set and an unfiltered set are not comparable.",
-    "circular_oracle_magnitude": "In this tree `npx jest context-emendator` hides ALL 137, because the sweep test asserts exact survivor-set non-growth. The magnitude depends on how strong the sweep own assertions are, so it is not a fixed offset.",
-    "harness": "context-emendator/scripts/mutation-offset.js, four guards: negative control, named oracle, site-count preservation, failure attribution",
+    "circular_oracle_magnitude": "In this tree `npx jest modus` hides ALL 137, because the sweep test asserts exact survivor-set non-growth. The magnitude depends on how strong the sweep own assertions are, so it is not a fixed offset.",
+    "harness": "modus/scripts/mutation-offset.js, four guards: negative control, named oracle, site-count preservation, failure attribution",
     "provenance": "0 — INVALID. Measured against a circular oracle (npx jest context-emendator, which includes the sweep own suite). Do not quote. | 137 — SUPERSEDED BUT SOUND, for the code at 157 tests. Measured twice independently against the coverage-only oracle and agreed. The mutation-form defect affected only oracles that read the source text shape, i.e. anything calling sites(); verified that both forms give identical verdicts under the coverage-only oracle, so neither 137 measurement was touched by it. Usable as an audit checkpoint. | 129 — CURRENT, for the code at 174 tests, from a harness with four guards. The delta from 137 is the seven genuine cells closed by generated crossings plus one cell that moved from in-both to fast-only."
   },
   "do_not": "Do not treat this list as complete or as empty. It is a partial queue: about 100 of its 132 entries are genuine real-suite survivors and 32 are false positives. The false-negative side was 7 genuine cells (30 of the 37 raw mismatches were vacuous) and all 7 are now closed.",

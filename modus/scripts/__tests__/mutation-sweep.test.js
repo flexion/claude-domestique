@@ -16,7 +16,7 @@
  * conservative — 37 cells it reports as covered actually survive — and its list is
  * a partial queue rather than a complete or empty one.
  *
- * The oracle must exclude THIS FILE. Using `npx jest context-emendator` makes the
+ * The oracle must exclude THIS FILE. Using `npx jest modus` makes the
  * sweep part of its own ground truth and returns a unanimous zero.
  */
 
@@ -172,7 +172,7 @@ describe('a caught verdict must be attributable to a coverage test', () => {
   const { attribute, COVERAGE_FILES } = require('../mutation-offset');
   const report = (files) => JSON.stringify({
     testResults: files.map(([name, failed]) => ({
-      name: `/repo/context-emendator/scripts/__tests__/${name}`,
+      name: `/repo/modus/scripts/__tests__/${name}`,
       assertionResults: [{ status: failed ? 'failed' : 'passed' }],
     })),
   });

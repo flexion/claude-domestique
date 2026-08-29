@@ -40,6 +40,12 @@
       "source": "./stilus",
       "description": "Writing tools - remove AI slop, preserve project voice, and review prose for correctness and reader perception",
       "version": "0.2.0"
+    },
+    {
+      "name": "modus",
+      "source": "./modus",
+      "description": "Definition of done - derive a frozen, per-item standard from a vague work item, then verify against exactly that",
+      "version": "0.1.0"
     }
   ]
 }

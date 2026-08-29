@@ -5,16 +5,16 @@ job: >-
   freezes a trivial boundary, proves one mechanical obligation, and hands the result to a human.
 ships:
   - kind: deterministic
-    path: context-emendator/lib/orchestrator.js
+    path: modus/lib/orchestrator.js
   - kind: deterministic
-    path: context-emendator/lib/adapters/beads.js
+    path: modus/lib/adapters/beads.js
   - kind: deterministic
-    path: context-emendator/tests/fixtures/walking-skeleton.yaml
+    path: modus/tests/fixtures/walking-skeleton.yaml
   - kind: doc
-    path: context-emendator/docs/walking-skeleton.md
+    path: modus/docs/walking-skeleton.md
 gating_test:
   status: planned
-  command: npx jest context-emendator/lib/__tests__/walking-skeleton.test.js
+  command: npx jest modus/lib/__tests__/walking-skeleton.test.js
   evidence: >-
     A disposable Beads-backed fixture records ordered claim, intent/result, frozen-bundle, gate, and
     handoff events; restarting after a simulated crash reconciles the unmatched intent without a second effect.
@@ -35,7 +35,7 @@ to a human.
 | | |
 | --- | --- |
 | Ships | `lib/orchestrator.js` · one Beads adapter · one trivial boundary fixture · this document |
-| Gating test | *planned* — `npx jest context-emendator/lib/__tests__/walking-skeleton.test.js`. A disposable Beads-backed fixture records claim, recovery, freeze, gate, and handoff in order |
+| Gating test | *planned* — `npx jest modus/lib/__tests__/walking-skeleton.test.js`. A disposable Beads-backed fixture records claim, recovery, freeze, gate, and handoff in order |
 | Non-gating | Future prompt quality · cross-machine Beads synchronization |
 | Depends on | None — this first increment carries the thin implementations it integrates |
 | Terminal failure owned | None — existing slice contracts own their outcomes |

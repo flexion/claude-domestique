@@ -1,0 +1,92 @@
+# modus
+
+> *Est modus in rebus.* — There is a measure in things.
+
+Latin `modus`: the due measure, the proper limit — the point past which more effort stops being
+worth it. Horace's line (*Satires* 1.1.106) continues *sunt certi denique fines*: there are, in the
+end, definite boundaries. That is the job. It sits beside its sibling plugin `onus`, which carries
+the load of a work item; `modus` is the measure of when that load has been discharged.
+
+modus refines a vague work item into a per-item definition of done, implements against it, verifies
+against exactly that, and hands off whatever cannot be verified here.
+
+The novelty is in where the standard comes from. A definition of done is normally a static checklist
+the team wrote once and applies to everything. Here it is **derived for the individual work item**
+and **frozen before implementation begins**. Deriving it per item means it can be specific enough to
+actually decide anything; freezing it before implementation means the thing being satisfied cannot
+drift toward whatever the implementation happened to produce.
+
+**Status: design phase.** One component is implemented — the reference linter under `scripts/`, with
+its fixture corpus and a measured mutation baseline. Everything under `lib/` named in the slice
+documents is still `*planned*`. See [The slices](#the-slices).
+
+## The problem
+
+An agentic review loop has two failure modes and they are the same failure.
+
+A reviewer asked "what is wrong with this code?" is answering a search question, and search questions
+have a near-zero "nothing found" base rate — so the reviewer manufactures findings to justify itself.
+The implementer then treats every finding as an obligation, because nothing in the loop distinguishes
+a finding from a work item. Goal drift follows mechanically: the goal sits in the context window,
+findings accumulate in the context window, and by the third round most of the recent context is
+trivia about naming conventions. The model is faithfully serving what is in front of it.
+
+Both halves need the same missing object: an immutable artifact that says what this item has to
+achieve, written down before the work starts, against which a finding is either blocking or noise.
+
+## What it does
+
+1. **Reconstruct.** Work items are unrefined, incorrect, and incomplete. Recover the goal, the
+   problem, and the obligations the item is actually asking for, anchored to the item's own text.
+2. **Author and freeze.** Turn that reconstruction into a boundary bundle — the per-item definition
+   of done — review it adversarially, then freeze it. After the freeze it is the standard; it is not
+   renegotiated because the implementation turned out to be inconvenient.
+3. **Discharge.** Implement, then prove each obligation against the frozen bundle and nothing else.
+4. **Stop honestly.** Reach a named stop state. Anything that cannot be verified here is handed off
+   as an explicit request naming what a human is being asked to do — not silently dropped, and not
+   papered over with a passing summary.
+
+## The slices
+
+The design is seven vertical slices, each shippable and independently testable. Each document
+carries YAML frontmatter declaring what it ships, its gating test, and what it depends on.
+
+| Slice | Job |
+| --- | --- |
+| [`autonomous-workitem-workflow`](docs/autonomous-workitem-workflow.md) | the index and spine: orchestrator, eligibility screen, code registries, stop states |
+| [`walking-skeleton`](docs/walking-skeleton.md) | one thin end-to-end run that proves the integration |
+| [`tracker-and-forge-ports`](docs/tracker-and-forge-ports.md) | the port interface, one concrete adapter, the run record |
+| [`reconstructing-the-item`](docs/reconstructing-the-item.md) | recover what the item is for — the highest-risk slice |
+| [`the-boundary-bundle`](docs/the-boundary-bundle.md) | author, review, and freeze the boundary |
+| [`discharging-the-boundary`](docs/discharging-the-boundary.md) | implement, prove, review, hand off |
+| [`the-reference-implementation`](docs/the-reference-implementation.md) | make the linter trustworthy, and measure whether it is |
+
+## Running the checks
+
+```
+npm test --workspace modus          # 179 tests
+node modus/scripts/lint-boundary.js modus/tests/fixtures/*.yaml
+node modus/scripts/lint-slice-headers.js
+```
+
+`lint-slice-headers` verifies slice provenance: for every source line a slice document claims, it
+checks that the line's content is actually present in the document claiming it. It reads the
+pre-split source out of git history rather than the working tree, so its source path is deliberately
+a historical one — see the note on `HISTORICAL_SOURCE_PATH` in that script before changing it.
+
+## Relationship to onus
+
+`onus` carries a work item through the mechanics of delivery: fetching it, updating it, writing the
+commit and the pull request. `modus` decides what would make that item *done* and whether it is. They
+compose — onus handles the load, modus sets its limit — but neither depends on the other, and modus
+is deliberately tracker-agnostic behind the ports slice.
+
+## History
+
+This work was developed under `context-emendator/` and extracted into its own plugin. That name
+belongs to a different product — an auditor for agent workflow configuration — and the two had been
+sharing a directory. The research, docs, scripts, and tests moved here unchanged.
+
+One consequence is visible in the tooling: `lint-slice-headers` addresses the pre-split specification
+at `70e2687:context-emendator/docs/autonomous-workitem-workflow.md`, and that path stays spelled the
+old way because it names a revision in history, not a file on disk.

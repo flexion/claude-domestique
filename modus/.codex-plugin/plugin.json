@@ -1,0 +1,36 @@
+{
+  "name": "modus",
+  "version": "0.1.0",
+  "description": "Derives a frozen, per-item definition of done from a vague work item, then implements and verifies against exactly that",
+  "author": {
+    "name": "David Puglielli"
+  },
+  "repository": "https://github.com/flexion/claude-domestique",
+  "homepage": "https://github.com/flexion/claude-domestique/tree/main/modus",
+  "license": "MIT",
+  "keywords": [
+    "definition-of-done",
+    "acceptance-criteria",
+    "work-items",
+    "verification",
+    "handoff",
+    "goal-drift"
+  ],
+  "interface": {
+    "displayName": "Modus",
+    "shortDescription": "Measure a work item before building it",
+    "longDescription": "Refines a vague work item into a definition of done derived for that item and frozen before implementation, implements against it, verifies against exactly that, and hands off whatever cannot be verified here.",
+    "developerName": "Flexion",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Derive a definition of done",
+      "Freeze acceptance criteria",
+      "Verify against frozen criteria"
+    ],
+    "websiteURL": "https://github.com/flexion/claude-domestique/tree/main/modus",
+    "defaultPrompt": [
+      "Reconstruct what this work item is actually asking for.",
+      "Freeze the definition of done for this item before I start."
+    ]
+  }
+}
