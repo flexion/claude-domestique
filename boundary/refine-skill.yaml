@@ -54,7 +54,7 @@ interpretation:
         - kind: item_locator
           ref: "description#3"
         - kind: repo_path
-          ref: ".claude/skills/refine"
+          ref: "scripts/probe-skill.js"
   corrections:
     - about: C2
       item_assertion: "a skill is invoked, not injected, so this does not gate anything"
@@ -79,7 +79,7 @@ claims:
   - id: C2
     text: "a skill is invoked rather than injected, so it gates nothing"
   - id: C3
-    text: "the skill ships in modus and loads here through a symlink"
+    text: "the skill ships in modus and is exercised from source without installing it"
 coupling:
   # None of these three are in the item. All were found by reading the repo, and
   # each one fails the build if missed.
@@ -125,15 +125,23 @@ entries:
     quantitative: false
     test_role: preservation
     baseline: pass
+  # Was an assertion about a symlink at .claude/skills/refine. The symlink is gone:
+  # --plugin-dir loads the source directory on a fresh agent, so the property is
+  # now guaranteed by the mechanism rather than by a link someone has to maintain.
+  # The obligation still holds — what a run exercises must be the source — so it is
+  # restated against the thing that now provides it.
   - id: AC-2
-    statement: "the skill loads in this repository from plugin source rather than from a copy"
+    statement: "a fresh agent loads the skill from the plugin source directory"
     verifier: mechanical
     verification_stage: pre_merge
     obligation: must
     mandate: [correctness]
     traces: [C3]
-    observation: "resolve .claude/skills/refine and compare its target to the plugin path"
-    decision: "it is a symlink to modus/skills/refine"
+    # The probe reports skills that were INVOKED, not skills that are available,
+    # so asking it to expect a firing is the wrong check here: listing skills does
+    # not invoke one. The response text is what carries the list.
+    observation: "run the probe with a prompt asking the agent to list its skills; read the response"
+    decision: "modus:refine appears in the response"
     quantitative: false
     test_role: change
     baseline: assertion_fail
