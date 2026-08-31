@@ -1,6 +1,6 @@
 {
   "name": "@claude-domestique/modus",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Modus — derive a frozen, per-item definition of done, then verify against exactly that",
   "private": true,
   "scripts": {
