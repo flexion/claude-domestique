@@ -101,7 +101,7 @@ reference linter could not be written without them:
 | `claims[]` | `id` plus text |
 | `coupling[]` | `id`, `kind`, `target` — the id is the key space for `entails` |
 | `entails{}` | Keyed by **coupling edge id**, valued by obligation entry id or the literal `uncovered` |
-| `registry_selections[]` | The entry ids that were **selected** from the registry at `registry_revision`, rather than authored for this issue. Provenance is declared here because it cannot be inferred: an earlier draft decided it by matching `INV-<n>`, which made the claim unfalsifiable and let a rule be defeated by renaming an id |
+| `registry_selections[]` | The entry ids that were **selected** from the registry at `registry_revision`, rather than authored for this issue. Provenance is declared here because it cannot be inferred: an earlier draft decided it by matching `INV-<n>`, which made the claim unfalsifiable and let a rule be defeated by renaming an id. An empty list is `W_NO_FLOOR` — non-gating, because where no registry exists there is no remedy, but never silent |
 | `entries[]` | The obligations |
 
 `traces[]` resolves against claim, coupling-edge, or entry ids. An entry may use its own id as an

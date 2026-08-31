@@ -1,12 +1,12 @@
 {
   "name": "@claude-domestique/modus",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Modus — derive a frozen, per-item definition of done, then verify against exactly that",
   "private": true,
   "scripts": {
-    "test": "jest scripts/__tests__",
-    "test:watch": "jest scripts/__tests__ --watch",
-    "test:coverage": "jest scripts/__tests__ --coverage",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
     "lint:slices": "node scripts/lint-slice-headers.js"
   },
   "repository": {

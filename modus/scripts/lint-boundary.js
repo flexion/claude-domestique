@@ -107,7 +107,7 @@ const TERMINAL = [
 // Recorded and non-gating. A warning has no available remedy, so making it a
 // failure would spin a lint round on something no round can change, and making
 // it terminal would stop a run on a signal that only refutes.
-const WARNING = ['W_ANCHOR_DISJOINT'];
+const WARNING = ['W_ANCHOR_DISJOINT', 'W_NO_FLOOR'];
 
 /**
  * Every terminal code declares what it fires ON, and the property is decidable
@@ -190,7 +190,7 @@ const isGating = (e) => e.verifier === 'mechanical'
  */
 const CODES = [
   'E_NOT_A_MAPPING', 'E_MISSING_TOP_FIELD', 'E_UNSUPPORTED_SCHEMA', 'E_NONGOALS_EMPTY',
-  'E_NO_ENTRIES', 'E_NO_ID', 'E_DUPLICATE_ID', 'E_SELECTION_NOT_AN_ENTRY',
+  'E_NO_ENTRIES', 'E_NO_ID', 'E_DUPLICATE_ID', 'E_SELECTION_NOT_AN_ENTRY', 'W_NO_FLOOR',
   'E_ENTRY_NOT_A_MAPPING', 'E_ENTRY_MISSING_FIELD', 'E_ENUM_VERIFIER', 'E_ENUM_STAGE',
   'E_ENUM_OBLIGATION', 'E_OBSERVATION_MUST', 'E_HANDOFF_MISSING', 'E_HANDOFF_INCOMPLETE',
   'E_QUANTITATIVE_UNDECLARED', 'E_QUANTITATIVE_NOT_BOOLEAN', 'E_QUANTITY_MISSING',
@@ -775,6 +775,23 @@ function lintBoundary(doc, opts = {}) {
         `${id} is declared registry-selected but is not an entry id`);
     }
   });
+
+  // The floor is selected, not authored — and nothing checked that it ever was.
+  // An empty selection list read exactly like a satisfied one, so a manifest
+  // whose obligations are entirely self-authored passed in silence, and
+  // `registry_revision: "none"` passed with it because a revision and a word
+  // meaning "there isn't one" are both just strings.
+  //
+  // Warning rather than failure, and the distinction is the W_ contract: where
+  // no registry exists there is no remedy, so a retryable finding would spin an
+  // authoring round on something no round can fix. What the document cannot be
+  // allowed to do is stay quiet about it.
+  if (selections.length === 0) {
+    R.warn('W_NO_FLOOR', '/registry_selections',
+      'no entry is declared registry-selected, so every obligation here was authored for this item '
+      + 'and the manifest carries no floor; the grounding for a selected floor does not apply to this '
+      + 'boundary, and an empty list is not a claim that none was available');
+  } else ok('W_NO_FLOOR', '/registry_selections');
 
   // After claim ids exist, because claim_provenance resolves against them.
   // Absence is already E_MISSING_TOP_FIELD, so only a present value is linted.
