@@ -56,6 +56,8 @@ describe('boundary pass — stages 2 and 3, before the freeze', () => {
     ['bad-quantity_incomplete.yaml', ['E_QUANTITY_INCOMPLETE']],
     ['bad-unquoted_quantity.yaml', ['E_UNQUOTED_QUANTITY']],
     ['bad-evidence_in_manifest.yaml', ['E_EVIDENCE_IN_MANIFEST']],
+    // Non-gating, so it reports no failure — the warning itself is asserted below.
+    ['bad-no_floor.yaml', []],
     // The three terminal codes get hand-written fixtures rather than mutations,
     // because their consequence is ending a run: an exact code set is the claim
     // that nothing else fired and nothing else is being ended for.
@@ -70,6 +72,30 @@ describe('boundary pass — stages 2 and 3, before the freeze', () => {
   ];
   test.each(cases)('%s reports exactly %p', (file, expected) => {
     expect(bCodes(file)).toEqual([...expected].sort());
+  });
+
+  // The floor is supposed to be SELECTED from a pinned registry rather than
+  // authored for the issue, and nothing checked that it ever was. An empty
+  // registry_selections read exactly like a satisfied one, so a manifest whose
+  // obligations are entirely self-authored passed with no signal — the silent
+  // half of the three-outcome rule the scripts in this plugin are held to.
+  const warnCodes = (n) => warnings(lintBoundary(load(at(n)))).map((w) => w.code);
+
+  test('a manifest that selects no floor says so', () => {
+    expect(warnCodes('bad-no_floor.yaml')).toEqual(['W_NO_FLOOR']);
+  });
+
+  test('a manifest that selects a floor does not', () => {
+    expect(warnCodes('valid.yaml')).not.toContain('W_NO_FLOOR');
+  });
+
+  // Guards the skeleton's input rather than any logic here. A failure would stop
+  // the run at the boundary stage, so the gate and the handoff it is supposed to
+  // prove would never be reached — and the skeleton suite would fail somewhere
+  // far less obvious than this.
+  test('the walking skeleton freezes a boundary that carries no failure', () => {
+    expect(bCodes('walking-skeleton.yaml')).toEqual([]);
+    expect(warnCodes('walking-skeleton.yaml')).toEqual(['W_NO_FLOOR']);
   });
 
   // The prefix is the contract: E_ retryable, W_ warning, X_ terminal. Asserting

@@ -1,0 +1,102 @@
+# The pre-authored boundary the walking skeleton freezes.
+#
+# Deliberately trivial, and deliberately NOT clean of warnings: it carries no
+# registry, so W_NO_FLOOR fires and the run proceeds anyway. That is the point of
+# a non-gating code, and the skeleton asserts the run is not stopped by one.
+#
+# It must lint without failures. A terminal would end the run at the boundary
+# stage and the gate and handoff would never be reached, so the moves_surface
+# case stays in bad-correction_moves_surface.yaml where it belongs.
+#
+# Shape, not content, is carried over from the first boundary authored by hand
+# against a real work item: one change entry for the gate to prove, one
+# preservation entry covering a coupling edge, and one post-merge must whose
+# handoff caps the run at handoff_pending rather than ready_for_merge. The spine
+# says handoff_pending is the common outcome, so the skeleton exercises that one.
+schema_version: 1
+tracker: beads
+item: demo-1001
+registry_revision: "none"
+registry_selections: []
+mandates: [correctness]
+non_goals:
+  - "the deprecated field's server-side removal, which is a separate item"
+interpretation:
+  goal:
+    statement: "the account summary view carries no deprecated legacyId field"
+    provenance: inferred
+    support:
+      - kind: repo_path
+        ref: "src/views/account-summary.js"
+  problem:
+    statement: "the view still renders a legacyId column for an identifier nothing issues"
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "description#1"
+      - kind: repo_path
+        ref: "src/views/account-summary.js"
+  claim_provenance:
+    C1:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "description#1"
+  corrections: []
+  gaps: []
+claims:
+  - id: C1
+    text: "the account summary view renders a deprecated legacyId column"
+coupling:
+  - id: CPL-1
+    kind: consumer
+    target: "the summary footer row, which spans the view's columns"
+entails:
+  CPL-1: PRES-1
+entries:
+  # The one obligation the mechanical gate proves in this slice. Fails on base
+  # because the column is still there; passes on head once it is gone.
+  - id: AC-1
+    statement: "the rendered account summary contains no legacyId column"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1]
+    observation: "render the account summary against the base and head checkouts"
+    decision: "no column labelled legacyId is present in the rendered output"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  # Covers the coupling edge. Holds on base, and must still hold on head — the
+  # footer spans a column count that the change moves.
+  - id: PRES-1
+    statement: "the summary footer spans exactly the number of columns the view renders"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [CPL-1]
+    observation: "render the view with rows and with none; compare the footer span to the column count"
+    decision: "the footer span equals the rendered column count in both states"
+    quantitative: false
+    test_role: preservation
+    baseline: pass
+  # Not dischargeable in the run, so its handoff caps the stop state at
+  # handoff_pending. This is what the skeleton's projection has to render.
+  - id: HO-1
+    statement: "the first scheduled export after merge emits no legacyId header"
+    verifier: independent_review
+    verification_stage: post_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1]
+    observation: "read the header row of the first scheduled export after merge"
+    decision: "no legacyId header present"
+    quantitative: false
+    handoff:
+      owner: "data-platform"
+      trigger: "first scheduled export after merge"
+      verification_method: "export header row comparison"
+      evidence_destination: "runs/demo-1001/handoff/"
+      failure_transition: "reopen demo-1001"
