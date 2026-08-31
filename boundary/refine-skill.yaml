@@ -145,18 +145,51 @@ entries:
     quantitative: false
     test_role: change
     baseline: assertion_fail
-  # The one that decides whether the skill is worth having. AC-1 and AC-2 are
-  # satisfied by a well-formed file that teaches nothing.
+  # Linting a drafted boundary is necessary and does not measure refinement. Every
+  # defect found by review in this repository linted clean first: "judged usable"
+  # as a decision, "recorded, not gated" on a watch entry, an observation naming
+  # two of three banned categories. AC-6 keeps the cheap check; this entry is the
+  # one that can fail on a schema-valid document that decides nothing.
   - id: AC-3
-    statement: "an agent following the skill produces a boundary that lints without failures"
+    statement: "a reviewer can evaluate every decision in a boundary the skill produced"
     verifier: independent_review
     verification_stage: pre_merge
     obligation: must
     mandate: [usability]
     traces: [C1]
-    observation: "give the skill and one work item to an agent that did not write it; lint what it returns"
-    decision: "failures() is empty"
+    observation: >-
+      give a drafted boundary and its item to a reviewer that did not draft it; ask which
+      decisions it cannot evaluate
+    decision: "the returned list is empty"
     quantitative: false
+  - id: AC-6
+    statement: "a boundary the skill produced lints without failures"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1]
+    observation: "lint the drafted boundary with the item's part list supplied"
+    decision: "failures is empty"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  # Split from AC-6, which joined two separately falsifiable claims. Zero failures
+  # with three exempt checks reads as clean and is not: an exempt check declared it
+  # had no domain and did not run. That is what hid a citation pointing at a part
+  # the item does not have.
+  - id: AC-7
+    statement: "every citation in a drafted boundary resolves to a real part of the item"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1]
+    observation: "lint the drafted boundary with the part list supplied; count the exempt checks"
+    decision: "no check is exempt"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
   - id: AC-4
     statement: "the skill states the stopping rule that ends refinement"
     verifier: independent_review
