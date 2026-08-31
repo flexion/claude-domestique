@@ -1,0 +1,171 @@
+# Boundary for domestique-5bl — a refine skill so modus changes agent behaviour.
+#
+# Drafted by following modus/skills/refine/SKILL.md, which is the artifact this
+# boundary is about. The skill was written far enough to be followed, then used to
+# produce this. If this boundary is usable, the skill works.
+#
+# NOT FROZEN. No review yet.
+schema_version: 1
+tracker: beads
+item: domestique-5bl
+registry_revision: "none"
+registry_selections: []
+mandates: [correctness, usability]
+non_goals:
+  - "a rule or hook that gates automatically; a skill cannot do that and this item does not attempt it"
+  - "the drafting script and prompt of gh-158"
+  - "deriving goal and obligations from repo and history, which is gh-159"
+  - "any change to lint-boundary.js or to the manifest schema"
+  - "installing modus as a plugin in this session"
+interpretation:
+  goal:
+    statement: "an agent produces a frozen definition of done for an item before it writes code"
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "description#2"
+  problem:
+    statement: "installing modus changes no agent behaviour, so nothing prompts an agent to refine"
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "description#1"
+      - kind: repo_path
+        ref: "modus/.claude-plugin/plugin.json"
+  claim_provenance:
+    C1:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "description#1"
+        - kind: repo_path
+          ref: "modus/"
+    C2:
+      # The item says a skill is not injected at all. The repository's own
+      # reference says skill DISCOVERY is automatic-context: the description is
+      # surfaced without the agent asking. What is not guaranteed is compliance.
+      provenance: contradicted
+      support:
+        - kind: repo_path
+          ref: "docs/claude/skills.yml"
+    C3:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "description#3"
+        - kind: repo_path
+          ref: ".claude/skills/refine"
+  corrections:
+    - about: C2
+      item_assertion: "a skill is invoked, not injected, so this does not gate anything"
+      repo_finding: >-
+        docs/claude/skills.yml records skill discovery as automatic-context, so the description
+        reaches the agent without being asked for; only acting on it is discretionary
+      resolution: item_wrong
+      # The obligation reads the same either way. A skill still cannot guarantee
+      # the gate, so nothing about what gets built changes.
+      moves_surface: false
+      support:
+        - kind: repo_path
+          ref: "docs/claude/skills.yml"
+  gaps:
+    - element: "what description wording actually causes an agent to invoke the skill"
+      filled_from:
+        kind: repo_path
+        ref: "scripts/validate-plugins.js"
+claims:
+  - id: C1
+    text: "modus has no skills, rules, hooks or context"
+  - id: C2
+    text: "a skill is invoked rather than injected, so it gates nothing"
+  - id: C3
+    text: "the skill ships in modus and loads here through a symlink"
+coupling:
+  # None of these three are in the item. All were found by reading the repo, and
+  # each one fails the build if missed.
+  - id: CPL-1
+    kind: consumer
+    target: "metadata/skill-catalog.json — validate:plugins fails on a skill with no entry"
+  - id: CPL-2
+    kind: consumer
+    target: "modus/.claude-plugin/plugin.json — must declare skills for the plugin to ship them"
+  - id: CPL-3
+    kind: contract
+    target: "scripts/validate-plugins.js — a public description must begin with Use when"
+entails:
+  CPL-1: AC-1
+  CPL-2: AC-5
+  CPL-3: AC-5
+entries:
+  # Split from one entry that declared assertion_fail and would have passed on
+  # base: "validate:plugins exits zero" is true before the skill exists, so it
+  # proved nothing. Registration is false on base; validation staying green is
+  # true on both. Different baselines, so different entries.
+  - id: AC-1
+    statement: "the skill catalog registers modus:refine"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1, CPL-1]
+    observation: "read metadata/skill-catalog.json and look for an entry named modus:refine"
+    decision: "the entry is present"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  - id: AC-5
+    statement: "repository validation stays green with the skill present"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [CPL-2, CPL-3]
+    observation: "run npm run validate:plugins"
+    decision: "it exits zero"
+    quantitative: false
+    test_role: preservation
+    baseline: pass
+  - id: AC-2
+    statement: "the skill loads in this repository from plugin source rather than from a copy"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C3]
+    observation: "resolve .claude/skills/refine and compare its target to the plugin path"
+    decision: "it is a symlink to modus/skills/refine"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  # The one that decides whether the skill is worth having. AC-1 and AC-2 are
+  # satisfied by a well-formed file that teaches nothing.
+  - id: AC-3
+    statement: "an agent following the skill produces a boundary that lints without failures"
+    verifier: independent_review
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [usability]
+    traces: [C1]
+    observation: "give the skill and one work item to an agent that did not write it; lint what it returns"
+    decision: "failures() is empty"
+    quantitative: false
+  - id: AC-4
+    statement: "the skill states the stopping rule that ends refinement"
+    verifier: independent_review
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [usability]
+    traces: [C1]
+    observation: "ask a reviewer when refinement is finished, using only the skill"
+    decision: "the reviewer states a condition, not a judgment call"
+    quantitative: false
+  - id: W-1
+    statement: "agents reach for the skill when starting an item without a boundary"
+    verifier: observation
+    verification_stage: production
+    obligation: watch
+    mandate: [usability]
+    traces: [C2]
+    observation: "for each item started, record whether the skill was invoked unprompted"
+    decision: "the skill was invoked without being named"
+    quantitative: false

@@ -61,6 +61,10 @@
       "classification": "public"
     },
     {
+      "name": "modus:refine",
+      "classification": "public"
+    },
+    {
       "name": "onus:close",
       "classification": "public"
     },

@@ -15,5 +15,6 @@
     "verification",
     "handoff",
     "goal-drift"
-  ]
+  ],
+  "skills": "./skills/"
 }
