@@ -1,0 +1,228 @@
+# Boundary for gh-158 — "Writing boundaries by hand doesn't scale".
+#
+# Authored by hand, which is the thing this item exists to stop. That is
+# deliberate: it is the last one written this way, and writing it is how the
+# obligations for the drafter were found.
+#
+# NOT YET FROZEN. It has had no adversarial review, and the author of a boundary
+# is the wrong person to check it.
+schema_version: 1
+tracker: github-issues
+item: gh-158
+# No mechanism sketch. Refinement states what must be true, not how to build it.
+# The change surface is an implementation concern and belongs to the next phase.
+# boundary/gh-158.sketch.md is kept as implementation notes and is not normative,
+# not referenced here, and not part of this boundary.
+registry_revision: "none"
+registry_selections: []
+mandates: [correctness, usability]
+non_goals:
+  - "the adversarial boundary-review prompt — the other half of the-boundary-bundle slice"
+  - "deriving goal and obligations from repo and history, which is gh-159"
+  - "the orchestrator, run record, and mechanical gate, which are gh-155"
+  - "any change to lint-boundary.js or to the manifest schema"
+  - "fetching the item from any tracker — the drafter reads a supplied JSON document; fetching is gh-156 adapter work"
+  - "approving or freezing a boundary automatically; the script drafts a candidate and a human freezes it"
+interpretation:
+  goal:
+    statement: >-
+      an agent drafts the boundary rather than a human writing it, and a human approves before
+      freeze
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "description#3"
+  problem:
+    statement: >-
+      the boundary is hand-written for every item, so the discipline lasts only as long as
+      someone's patience for writing them
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "description#2"
+  claim_provenance:
+    C1:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "description#1"
+    C2:
+      # The item does not say this. It comes from authoring two by hand: the YAML
+      # is minutes, and finding the coupling the ticket omits is the rest of the
+      # afternoon. Recorded as inferred because the repository, not the item,
+      # supplies it.
+      provenance: inferred
+      support:
+        - kind: repo_path
+          ref: "modus/scripts/lint-boundary.js"
+        - kind: repo_path
+          ref: "modus/docs/the-boundary-bundle.md"
+  corrections: []
+  gaps:
+    - element: "which stage of hand-authoring actually costs the time"
+      filled_from:
+        kind: repo_path
+        ref: "modus/docs/the-boundary-bundle.md"
+claims:
+  - id: C1
+    text: "writing a boundary by hand for every ticket does not scale to a sprint"
+  # Provisional. Two hand-authored samples cannot establish this across ticket
+  # types, so it is recorded and grounds no obligation below. If it holds, the
+  # drafter built here automates the cheap half and gh-159 is where the value is;
+  # if it does not, this item is the value. Settling it needs a varied sample.
+  - id: C2
+    text: >-
+      PROVISIONAL, n=2: the expensive part of authoring may be reading the code rather than
+      writing the manifest
+coupling:
+  - id: CPL-1
+    kind: consumer
+    target: "modus/scripts/lint-boundary.js — every drafted manifest is its input"
+entails:
+  CPL-1: AC-1
+entries:
+  # The drafter's output is only useful if the existing linter accepts it. This
+  # is the obligation that makes "drafted" mean something.
+  - id: AC-1
+    statement: "a boundary drafted by the prompt lints without failures"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1, CPL-1]
+    observation: >-
+      render modus/prompts/author-boundary.md against the gh-158 issue text as the fixture item,
+      take its declared output shape, and run lintBoundary on the result
+    # Warnings do not count. W_NO_FLOOR is expected on any manifest drafted for a
+    # repository with no invariant registry, which is all of them today.
+    decision: "failures() is empty"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  - id: AC-2
+    statement: "every placeholder in the prompt template binds to a supplied value"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1]
+    observation: >-
+      render the template against its declared inputs and scan the output for the
+      double-brace placeholder form the template itself uses
+    decision: "no {{...}} token survives rendering"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  # Split from AC-2. A template with no placeholders at all satisfies "nothing
+  # unbound" and reads none of its input, so the two claims fail separately and
+  # are separate entries.
+  - id: AC-5
+    statement: "every input the template declares is consumed by at least one placeholder"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1]
+    observation: "list the template's declared inputs and the placeholder names it contains; compare the two sets"
+    decision: "no declared input is absent from the placeholder set"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  # The one that decides whether this was worth building. A drafter that emits
+  # schema-valid boilerplate passes AC-1 and AC-2 and is useless.
+  - id: AC-3
+    statement: >-
+      a reviewer who did not draft the boundary names no entry whose decision they could not
+      evaluate
+    verifier: independent_review
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [usability]
+    # Anchored to C1, not C2. A gating obligation must not rest on a provisional
+    # hypothesis: if C2 turns out false the usability verdict still has to stand.
+    traces: [C1]
+    observation: >-
+      give the draft and the item text to a reviewer that did not draft it; ask which decisions
+      it cannot evaluate
+    decision: "the returned list is empty"
+    quantitative: false
+  # AC-1 and AC-2 prove the output is well-formed. Neither proves the ITEM caused
+  # it: a static gh-158-shaped manifest lints clean, and inputs can be copied into
+  # a comment while goal, claims and entries stay boilerplate. This is the entry
+  # that makes the drafter answerable to its input.
+  - id: AC-4
+    statement: "the drafted boundary changes when the item text changes"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1]
+    # The adversarial fixed-manifest fixture is this entry's sensitivity probe and
+    # belongs to the evidence map at stage 5, not to the decision here. A frozen
+    # manifest cannot carry evidence edges — see E_EVIDENCE_IN_MANIFEST.
+    observation: "perturb one input part at a time and diff the drafted goal, problem and claims"
+    decision: "each perturbation changes at least one of goal, problem, or a claim"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  # "One claim per field" cannot be a script. Detecting a conjunction is trivial
+  # and wrong: AC-4's decision reads "at least one of goal, problem, or a claim",
+  # which is one claim with a disjunctive predicate. A crude check would report it
+  # and, per constraint 2 in the modus README, a check that produces false
+  # findings stops being read. This goes to the reviewer instead.
+  - id: AC-8
+    statement: "no drafted decision states more than one independently falsifiable claim"
+    verifier: independent_review
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1]
+    observation: "ask the reviewer which drafted decisions state more than one claim that could separately be false"
+    decision: "the returned list is empty"
+    quantitative: false
+  # A reviewer found modus/prompts/boundary-prose.md binds nothing: no prompt and
+  # no validation path references it, so a drafter can ignore every rule in it
+  # with no failure. These two entries are what make the checkable half of that
+  # file gate. The tells section stays judgment and is not mechanised — recorded
+  # as a limit rather than claimed as a check.
+  - id: AC-6
+    statement: "drafted text fields are within the word caps in boundary-prose.md"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1]
+    observation: "count words in each drafted statement, observation and decision; compare to the caps"
+    decision: "no drafted field exceeds its cap"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  - id: AC-7
+    statement: "drafted decisions contain none of the banned words in boundary-prose.md"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1]
+    # The observation named two of the three banned categories while the decision
+    # referred to all of them, so the observation did not supply what the decision
+    # needed. It now points at the closed list itself.
+    observation: "scan each drafted decision for every entry in the closed banned list in boundary-prose.md"
+    decision: "no banned entry appears in a drafted decision"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  - id: W-1
+    statement: "boundaries for new items are drafted rather than written by hand"
+    verifier: observation
+    verification_stage: production
+    obligation: watch
+    mandate: [usability]
+    traces: [C1]
+    # "recorded, not gated" was the decision here, copied from the house fixture.
+    # It states the entry's status and supplies no condition, so nothing could be
+    # false and the watch signalled nothing. A watch does not gate, but it still
+    # needs the condition that draws attention.
+    observation: "for each new item, record whether its boundary was drafted or written by hand"
+    decision: "no new item's boundary is written by hand"
+    quantitative: false
