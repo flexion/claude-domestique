@@ -190,6 +190,31 @@ entries:
     quantitative: false
     test_role: change
     baseline: assertion_fail
+  # The behaviour worth paying for. A drafter that restates the ticket in schema
+  # form passes AC-3, AC-6 and AC-7 and saves nobody anything; the value is in
+  # naming the work the item does not mention, which is found by reading code
+  # rather than by reading the item.
+  #
+  # Measurable only against a fixture whose omissions are already recorded, which
+  # is why it names one. This item is that fixture: it asked for a skill and said
+  # nothing about the skill catalog, the manifest's skills declaration, or the
+  # description rule, and all three are recorded above as CPL-1 to CPL-3. The open
+  # version — finds everything any item omits — needs ground truth nobody has, and
+  # is not claimed.
+  - id: AC-9
+    statement: "a drafted boundary names the consumers the item does not mention"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [usability]
+    traces: [C1]
+    observation: >-
+      draft a boundary for a fixture item whose omitted consumers are recorded; compare its
+      coupling list to the record
+    decision: "every recorded consumer appears in coupling"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
   - id: AC-4
     statement: "the skill states the stopping rule that ends refinement"
     verifier: independent_review

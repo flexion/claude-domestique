@@ -105,9 +105,11 @@ function codexToolCalls(stdout) {
   return { calls, text };
 }
 
+/** pluginDir null runs the baseline arm: same prompt, same cwd, no plugin. */
 function runClaude(pluginDir, prompt, cwd) {
+  const args = pluginDir ? ['--plugin-dir', pluginDir] : [];
   const r = spawnSync('claude', [
-    '--plugin-dir', pluginDir,
+    ...args,
     '--output-format', 'stream-json',
     '--verbose',
     '-p', prompt,
@@ -177,10 +179,21 @@ function main() {
 
   // Whether it fired is one bit. Whether the answer is any good is the reason for
   // running it at all, so the response is printed rather than summarised.
-  const shown = process.argv.includes('--full') || !text ? text : text.slice(0, 2000);
-  process.stdout.write(`\n--- response ---\n${shown || '(none captured)'}\n`);
-  if (text && shown.length < text.length) {
-    process.stdout.write(`\n[truncated, ${text.length} chars total; --full for all]\n`);
+  const full = process.argv.includes('--full');
+  const show = (t) => (full || !t ? t : t.slice(0, 2000)) || '(none captured)';
+  process.stdout.write(`\n--- with plugin ---\n${show(text)}\n`);
+  if (!full && text.length > 2000) process.stdout.write(`\n[truncated, ${text.length} chars; --full for all]\n`);
+
+  // Firing is an indicator, not a result. A run that invokes the skill and then
+  // says what the model would have said anyway has demonstrated nothing, and that
+  // is invisible from the with-arm alone. Claude only: codex has no way to load a
+  // plugin per-invocation, so its baseline would differ in more than the plugin.
+  if (process.argv.includes('--baseline')) {
+    if (host === 'codex') die('--baseline is claude-only; codex installs per-home, so the arms would not be comparable');
+    const base = runClaude(null, prompt, cwd);
+    process.stdout.write(`\n--- without plugin (baseline) ---\n${show(base.text)}\n`);
+    if (!full && base.text.length > 2000) process.stdout.write(`\n[truncated, ${base.text.length} chars; --full for all]\n`);
+    process.stdout.write('\nRead both. The delta is the result; the invocation above is only the indicator.\n');
   }
 
   if (!expect) return 0;
