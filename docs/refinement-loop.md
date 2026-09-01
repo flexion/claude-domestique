@@ -51,9 +51,10 @@ It records `updatedAt`. If a re-fetch differs, #158 was edited and the fixture i
 stale — say so rather than refining a version nobody else can see.
 
 `expected.md` states the shape of the output and the questions blocking its
-content. **The content is not known yet.** Passes 1 and 2 produce it. Until then
-the file is a contract on shape, not an answer to compare against, so pass 1
-cannot fail by disagreeing with it.
+content. **The content is not known yet**, and pass 1 established that it cannot
+yet be written: #158 is a placeholder, so its content waits on decisions nobody
+has made. Until it exists the file is a contract on shape, not an answer to
+compare against, and a pass cannot fail by disagreeing with it.
 
 ## Stages and their gates
 
@@ -62,12 +63,28 @@ costs one stage; the same defect caught at the assessment costs a whole pass.
 
 | Stage | Output | Gate |
 | --- | --- | --- |
-| 1 `human-work-item` | refined item + acceptance criteria | its own step 6: goal stated, a number wherever the item said fast or slow, what must keep working, what is out of scope, a name against every open question |
+| 1 `human-work-item` | refined item + acceptance criteria | its own step 6: goal stated, a number wherever a requirement depends on one, what must keep working, what is out of scope, a name against every open question |
 | 2 `agent-work-item` | boundary manifest | `lint-boundary.js`: `failures` empty **and** `exempt` zero, with the item's part list supplied |
 | 3 assessment | defect list | below |
 
 `exempt` zero is not a formality. An exempt check declared it had no domain and
 did not run, which is not passing — see modus README constraint 2.
+
+Stage 1's gate fails two ways and they need opposite responses. Something the
+human decided and the refined item omits is the skill underperforming. Something
+nobody has decided is a placeholder, and the skill did its job by recording it.
+Read the open questions to tell which.
+
+### When stage 1 finds a placeholder
+
+The pass ends at stage 1. A placeholder has no decided goal, and `agent-work-item`
+derives obligations from the goal — given an undecided one it invents them. Stages
+2 and 3 do not run.
+
+That is not a failed pass. It produced the thing worth having: the undecided
+questions named, with a route to an answer against each. Record it and stop.
+
+The pass resumes when those are answered, which may need work outside this loop.
 
 ## The assessment
 
@@ -101,8 +118,9 @@ Read backwards from the defect:
 | the refined item, absent from the raw item | `human-work-item` |
 | the boundary, absent from the refined item | `agent-work-item` |
 | nothing upstream, and both skills were followed as written | the boundary draft |
+| the raw item, and the human answered "not decided" | nothing — the item is a placeholder |
 
-Two consequences worth stating, because both are easy to get wrong:
+Three consequences worth stating, because all three are easy to get wrong:
 
 - A defect present in the refined item **and** the boundary belongs to
   `human-work-item`. It will also look like an `agent-work-item` defect. It is
@@ -111,6 +129,9 @@ Two consequences worth stating, because both are easy to get wrong:
   whether it *could* be followed. If the instruction was clear and got skipped,
   that is a compliance failure and the fix is bulletproofing, not new content.
   See `superpowers:writing-skills` on matching the form to the failure.
+- A recorded open question is not a defect. A skill refusing to guess is the
+  skill working. Attribute a defect only where a skill could have resolved
+  something and did not.
 
 ## The control item
 
@@ -168,8 +189,13 @@ point `expected.md` is an answer later passes are compared against, not only a
 contract on shape. Before the first approval it is shape only, and a pass cannot
 fail by disagreeing with it.
 
-Per-pass files are kept, not overwritten. A pass that regressed is only visible
-next to the one before it.
+Per-pass files are kept, not overwritten, and that includes the drafts a human
+rejected. A pass that regressed is only visible next to the one before it.
+
+`human-work-item` step 8 makes this consistent: approval gates the record — the
+tracker, the repository, any commit — and not the working draft. Before pass 2
+the skill said "wait for approval before writing it anywhere", which banned the
+per-pass file this document requires.
 
 Nothing is written to GitHub or to a tracker by a pass. `human-work-item` shows
 the rewritten item and waits; that rule holds here.
@@ -185,13 +211,90 @@ One pass that meets both ends the loop. A pass that meets both only because the
 previous pass edited a skill has not met the first condition — run one more with
 no edits and see.
 
-## What a pass records
+## When the loop is blocked
+
+Not the same as stopping. The loop is blocked when every remaining open question
+needs evidence nobody has. No number of passes closes it, and further passes
+produce invented answers.
+
+**Try to unblock before declaring it.** An undecided question is not the only
+thing standing in the way — the item's scope is also in play, and scope is
+decidable today because it is a human's call rather than a measurement. See
+Unblocking a placeholder in `human-work-item`: move the decision out of the item,
+separate motivation from requirement, or replace the unmeasurable measure with an
+observable one.
+
+Pass 1 declared #158 blocked on two questions. Pass 2 unblocked both without
+answering either. Declaring blocked before trying those three moves costs a pass
+and produces nothing.
+
+Blocked is still a real state and worth reporting when it holds. Name the
+questions, name what would answer each, and hold the loop until that evidence
+exists.
+
+## Pass record
 
 One row per pass, appended to this file.
 
-| Pass | Defects found | Attributed to | Edits made | Control item |
-| --- | --- | --- | --- | --- |
-| | | | | |
+| Pass | Findings | Attributed to | Control item |
+| --- | --- | --- | --- |
+| 1 | 5 | `human-work-item` 4, this document 1 | unchanged |
+| 2 | 4 | `human-work-item` 2, #158 itself 2 | unchanged |
+
+### Pass 1
+
+Stage 1 only. #158 is a placeholder: the human's role once the feature ships, and
+the number that decides "scales", are both undecided rather than unwritten.
+Stages 2 and 3 did not run.
+
+Findings against `human-work-item`:
+
+1. Step 4 gave a form for conflicts only. With no form for a missing
+   requirement, the run offered the human a menu of invented answers — and named
+   a linter, a manifest schema and a fixture corpus inside it, which is
+   implementation inside a question about the WHAT.
+2. No red flag against offering that menu.
+3. The wording rules banned metaphor but not unexplained vocabulary, so
+   "preservation obligation" and "held-out item" reached the human unexplained.
+4. No notion of a placeholder. The skill assumed refinement throughout, and its
+   Out of scope excluded "creating a work item from nothing" — excluding its own
+   common case.
+
+Finding against this document: the attribution table had no row for an answer of
+"not decided", so a correctly recorded open question read as a `human-work-item`
+defect. Fixed above.
+
+All five are fixed.
+
+### Pass 2
+
+Stage 1. #158 was unblocked without answering either question from pass 1, using
+two of the three moves in Unblocking a placeholder: the human-involvement
+decision moved out of the item into a separate one, and "doesn't scale" was
+reclassified from requirement to motivation. The measure was then replaced with
+an observable one — a reviewer names no entry they had to write themselves.
+
+#158 is defined and awaiting approval. It does not reach `expected.md` until then.
+
+Findings against `human-work-item`, both fixed:
+
+1. "Wait for approval before writing it anywhere" banned the per-pass working
+   draft this document requires, so a rejected draft would never be written and
+   the comparison would be lost. Step 8 now gates the record rather than the
+   notes.
+2. The acceptance-criteria test said a bullet needing judgment fails but named no
+   forms, and a draft bullet used "approves" — which `boundary-prose.md` rejects
+   as a state of mind. The three failing forms are now named with replacements.
+
+Findings against #158, carried to its open questions rather than fixed here:
+
+- A recorded blocker is not required to name what is wrong. A blocker reading
+  "rejected" cannot be resolved.
+- No outcome after a blocker is resolved: whether drafting resumes on its own or
+  has to be re-requested.
+
+Both came out of step 7, the second lens pass over the rewrite, on the first item
+that step has ever run against.
 
 ## Known harness limits
 
