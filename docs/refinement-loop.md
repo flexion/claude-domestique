@@ -11,13 +11,19 @@ one's ceiling is set by the artifact before it.
 The chain is:
 
 ```
-raw work item
-  → human-work-item   → a refined item a person can read
-  → agent-work-item   → a boundary an agent can discharge
-  → assessment        → defects
+raw item
+  → human-work-item    → a refined item a person can read
+  → agent-work-item    → criteria an autonomous agent can work from
+  → the drafter (#158) → the boundary
+  → assessment         → defects
 ```
 
-A refined item that never states what must keep working gives `agent-work-item`
+Today `agent-work-item` spans the last two arrows: a person follows the skill and
+writes the boundary manifest by hand. The drafter is what #158 delivers, so the
+final arrow is the deliverable rather than a stage the loop can run. The loop runs
+the stages that exist.
+
+A refined item that never states what must keep working gives the stages below it
 nothing to write a preservation entry from. The boundary is then missing that
 entry, and the boundary is not what is wrong. Tuning `agent-work-item` against a
 weak refined item measures the item, not the skill.
@@ -38,8 +44,8 @@ them.
 ### The fixture
 
 ```
-modus/evals/158-human-work-item/input.json    the raw item
-modus/evals/158-human-work-item/expected.md   the refined item
+modus/evals/158-human-work-item/input.json    the current raw item
+modus/evals/158-human-work-item/expected.md   the accepted refined item
 ```
 
 `input.json` is the GitHub API response, stored verbatim rather than as pasted
@@ -47,8 +53,15 @@ text. `agent-work-item` step 1 warns that a tracker's UI and its API can return
 different content for the same item, and bead `domestique-2no` is open on it. The
 fixture is what an adapter actually receives.
 
-It records `updatedAt`. If a re-fetch differs, #158 was edited and the fixture is
-stale — say so rather than refining a version nobody else can see.
+It records `updatedAt`, and the fixture advances by design. A pass may write an
+improved item back to the issue, and that becomes the input for the next pass, so
+the item converges alongside the skills. This is the bootstrapping period and
+several fixture changes are expected before the drafter exists.
+
+Every superseded generation is kept, so the item's own improvement stays
+readable. A re-fetch matching no stored generation means somebody else edited the
+issue — which is the case this check exists for, and is not the same thing as a
+deliberate advance.
 
 `expected.md` states the shape of the output and the questions blocking its
 content. **The content is not known yet**, and pass 1 established that it cannot
@@ -64,7 +77,7 @@ costs one stage; the same defect caught at the assessment costs a whole pass.
 | Stage | Output | Gate |
 | --- | --- | --- |
 | 1 `human-work-item` | refined item + acceptance criteria | its own step 6: goal stated, a number wherever a requirement depends on one, what must keep working, what is out of scope, a name against every open question |
-| 2 `agent-work-item` | boundary manifest | `lint-boundary.js`: `failures` empty **and** `exempt` zero, with the item's part list supplied |
+| 2 `agent-work-item` | criteria an agent can work from, and today the boundary too | `lint-boundary.js`: `failures` empty **and** `exempt` zero, with the item's part list supplied |
 | 3 assessment | defect list | below |
 
 `exempt` zero is not a formality. An exempt check declared it had no domain and
@@ -119,6 +132,7 @@ Read backwards from the defect:
 | the boundary, absent from the refined item | `agent-work-item` |
 | nothing upstream, and both skills were followed as written | the boundary draft |
 | the raw item, and the human answered "not decided" | nothing — the item is a placeholder |
+| the raw item, and the human says the item is wrong about its own subject | the item itself — a `contradicted` finding, which may change what gets built |
 
 Three consequences worth stating, because all three are easy to get wrong:
 
@@ -149,6 +163,11 @@ written to carry one defect per lens.
 
 Read its result every pass. Change nothing on its account. If it degrades while
 #158 improves, the last edit fitted #158.
+
+Once the item under test advances each pass, this is the only thing left holding
+skill quality honest. A better boundary can come from a better item as easily as
+from a better skill, and the attribution rule covers defects rather than
+improvements. This item is not a precaution any more.
 
 **What this control item cannot detect.** It fails by contradiction and runs about
 twice the length of a real issue here. The five open issues are 273 to 460
@@ -240,6 +259,7 @@ One row per pass, appended to this file.
 | --- | --- | --- | --- |
 | 1 | 5 | `human-work-item` 4, this document 1 | unchanged |
 | 2 | 4 | `human-work-item` 2, #158 itself 2 | unchanged |
+| 3 | 6 | `human-work-item` 2, this document 4 | not re-run yet |
 
 ### Pass 1
 
@@ -295,6 +315,46 @@ Findings against #158, carried to its open questions rather than fixed here:
 
 Both came out of step 7, the second lens pass over the rewrite, on the first item
 that step has ever run against.
+
+### Pass 3
+
+In progress. #158 is rewritten and not approved, so nothing has been written to
+the issue. One question stays open: after the blockers on a rejected draft are
+resolved, does drafting resume on its own or does someone re-request it.
+
+The pass changed what #158 is. The item says "draft the boundary from the
+ticket"; the input is in fact the output of `agent-work-item`. That is the first
+`contradicted` finding this process has produced, and it moved the surface — one
+draft acceptance criterion belonged to stage 1 rather than to the drafter and was
+removed.
+
+Findings against `human-work-item`, both fixed:
+
+1. No verdict existed for an item asserting something that is not so. The six
+   lenses cover absence, internal contradiction, ordering and implementation
+   leak, but not an item wrong about its own subject. `contradicted` is now the
+   highest verdict, with a required correction and a note on whether the
+   correction changes what gets built. The six lenses are unchanged — this
+   surfaces in step 4, not in the lens pass, because it needs knowledge from
+   outside the item.
+2. The skill guarded against implementation in the item and against the agent
+   adding it, but not against a format arriving inside the human's own answer.
+   The blocker format was accepted into a draft criterion for exactly that
+   reason. Step 4 now says to take the behaviour out and confirm that.
+
+Findings against this document, all fixed:
+
+3. The chain diagram omitted a stage. `agent-work-item` does not produce the
+   boundary in the target architecture; the drafter #158 delivers does. Today the
+   skill spans both arrows by hand, which is why the omission survived two
+   passes.
+4. The fixture was described as fixed. It advances by design — each pass may
+   write an improved item back to the issue, and that is the bootstrapping
+   process rather than an accident.
+5. The staleness check could not distinguish somebody else editing the issue from
+   a deliberate advance. Generations are kept and matched.
+6. The control item was described as a precaution. With the item under test no
+   longer fixed, it is the only thing holding skill quality honest.
 
 ## Known harness limits
 

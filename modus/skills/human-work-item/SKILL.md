@@ -61,12 +61,23 @@ cannot be answered with one answer.
 Give each finding one verdict. Where several apply, report the highest only:
 
 ```
-conflict > missing-goal > logic-problem > untestable-criterion >
-missing-requirement > implementation-leak
+contradicted > conflict > missing-goal > logic-problem >
+untestable-criterion > missing-requirement > implementation-leak
 ```
 
-A conflict makes everything below it undecidable, and a missing goal makes the
-rest unjudgeable.
+A contradicted claim makes the item's own text unreliable, so everything read
+from it is suspect until the claim is corrected. A conflict makes everything
+below it undecidable. A missing goal makes the rest unjudgeable.
+
+`contradicted` is the item asserting something that is not so. It rarely appears
+in the lens pass, because the lenses read the item and this needs knowledge from
+outside it. It usually appears in step 4, when the human's answer contradicts
+what the item says.
+
+A contradicted finding needs two more things than the others: a correction
+stating what is actually the case, and whether the correction changes what gets
+built. When it does, stop — the item is about something other than what it
+says, and that is a decision rather than a rewrite.
 
 **4. Resolve one finding with the human, then the next.** Never batch. Five
 questions in one message get one answer, about the easiest one.
@@ -93,6 +104,11 @@ recorded gap.
 
 Two answers sound alike and are not. "It is not written down" is a gap you close
 here. "It has not been decided" is not a gap at all — see Placeholder items.
+
+An answer may arrive with a format, a syntax, or a mechanism inside it. People
+describe how they picture a thing, and that is useful. It is still not the
+requirement. Take the behaviour out of it, say what you took, and confirm that.
+Putting the picture in the item makes it a requirement nobody chose.
 
 **5. Rewrite.** Title, the problem, what is wanted, then the acceptance criteria.
 Nothing in it that the human did not settle. Nothing about how to build it.
@@ -251,6 +267,7 @@ Each of these came out of a real run on a contradictory ticket.
 | "A rewrite is easier to react to than a list of questions" | It is easier to approve without answering. |
 | "Options are easier for the human than an open question" | Where the item said nothing, the options are your guesses. The human picks one and it becomes theirs. |
 | "The goal is undecided, but I can write criteria against the likely one" | Criteria for an undecided goal read as agreed. Record the question instead. |
+| "The human gave me the format, so it belongs in the item" | They described how they picture it. The requirement is the behaviour underneath. Confirm that instead. |
 | "Nine bullets, but each one is needed" | Past about five, say the item holds more than one goal. |
 | "The reader will understand 'not left waiting indefinitely'" | Two readers get two answers. The bullet fails the test. |
 
@@ -264,6 +281,7 @@ Stop if you are about to write, or have written:
 - a second or third item the human did not ask for
 - a list of candidate answers, for a finding where the item said nothing
 - a technology name, a data structure, or an API in the rewrite, or in a question
+- a format, a file layout, or a syntax in the item, because the human supplied it
 - acceptance criteria, when the goal came back undecided
 - an acceptance bullet describing a screen, a button, a field, or a column
 - "it is worth noting", "the real question is", "this is the key point"
