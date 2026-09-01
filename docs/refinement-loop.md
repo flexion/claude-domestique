@@ -33,8 +33,10 @@ created.
 
 ## The item under test
 
-GitHub #158, "Writing boundaries by hand doesn't scale". It is the goal and the
-fixture at once: completing it requires running the process it describes.
+GitHub #158, "Draft the boundary from the refined criteria". It is the goal and
+the fixture at once: completing it requires running the process it describes.
+Pass 3 rewrote its title and body, so the placeholder wording that pass 1 and 2
+worked against is now only in `input-gen0.json`.
 
 The GitHub issue is the item of record. Beads are derivative — `domestique-3z5`
 covers the same goal, and where the two disagree the issue wins. A reader outside
@@ -44,12 +46,14 @@ them.
 ### The fixture
 
 ```
-modus/evals/158-human-work-item/input.json    the current raw item
-modus/evals/158-human-work-item/expected.md   the accepted refined item
+modus/evals/158-human-work-item/input-gen0.json   the placeholder
+modus/evals/158-human-work-item/input-gen1.json   defined, criteria unlabelled
+modus/evals/158-human-work-item/input-gen2.json   the current raw item
+modus/evals/158-human-work-item/expected.md       the record of what was decided
 ```
 
-`input.json` is the GitHub API response, stored verbatim rather than as pasted
-text. `agent-work-item` step 1 warns that a tracker's UI and its API can return
+The highest-numbered generation is the input for the next pass. Each is the
+GitHub API response, stored verbatim rather than as pasted text. `agent-work-item` step 1 warns that a tracker's UI and its API can return
 different content for the same item, and bead `domestique-2no` is open on it. The
 fixture is what an adapter actually receives.
 
@@ -63,11 +67,14 @@ readable. A re-fetch matching no stored generation means somebody else edited th
 issue — which is the case this check exists for, and is not the same thing as a
 deliberate advance.
 
-`expected.md` states the shape of the output and the questions blocking its
-content. **The content is not known yet**, and pass 1 established that it cannot
-yet be written: #158 is a placeholder, so its content waits on decisions nobody
-has made. Until it exists the file is a contract on shape, not an answer to
-compare against, and a pass cannot fail by disagreeing with it.
+`expected.md` records what was decided, who decided it, the inferences drawn
+rather than asked, and the split proposed and not made. It does not copy the item
+text — the newest generation holds that, and two copies would drift.
+
+**The fixture is now at a fixed point.** Generation 2 is both the next pass's
+input and pass 3's accepted output, so a pass over it should find nothing new
+unless a skill improved in between. Finding nothing is the expected result, not a
+failed pass.
 
 ## Stages and their gates
 
@@ -259,7 +266,9 @@ One row per pass, appended to this file.
 | --- | --- | --- | --- |
 | 1 | 5 | `human-work-item` 4, this document 1 | unchanged |
 | 2 | 4 | `human-work-item` 2, #158 itself 2 | unchanged |
-| 3 | 6 | `human-work-item` 2, this document 4 | not re-run yet |
+| 3 | 8 | `human-work-item` 2, this document 4, #158 itself 2 | 8 findings against 10 |
+| 4 | 3 | `human-work-item` 2, both skills 1 | **used to drive edits — see below** |
+| 5 | 4 | `human-work-item` 4 | n/a — verified on #156 |
 
 ### Pass 1
 
@@ -318,9 +327,98 @@ that step has ever run against.
 
 ### Pass 3
 
-In progress. #158 is rewritten and not approved, so nothing has been written to
-the issue. One question stays open: after the blockers on a rejected draft are
-resolved, does drafting resume on its own or does someone re-request it.
+Complete. #158 was rewritten and approved, and the title and body were written
+back to the issue. The fixture was re-captured as generation 1 and generation 0
+kept. Generation 2 followed, adding citation labels without changing wording.
+
+Both skills learned the label scheme. `human-work-item` step 5 labels every
+separately falsifiable claim; `agent-work-item` step 1 cites a label where the
+item carries one and falls back to `<field>#<n>` where it does not. The fallback
+matters — #156, #157 and the control item carry no labels and still work.
+
+The label change came from a defect the definition itself created. Generation 1
+put seven criteria in one bullet list, and a bullet list is one paragraph, so all
+seven were `description#3`. Any entry tracing to any criterion cited the same id.
+Generation 0 had the same collapse over two claims; defining the item well made
+it worse by putting more content in each paragraph.
+
+### Pass 4
+
+**This pass broke the control item rule, on instruction.** Two findings visible in
+the control item were resolved in `human-work-item` rather than only recorded:
+
+1. A finding bundled three undefined cases into one line, against the stated rule
+   that one finding takes one answer. The rule was a prose aside inside step 3 and
+   did not hold. It is now a test on the answer rather than on the sentence, with
+   a red flag beside it.
+2. "Nothing states what must keep working" appeared in earlier runs and not in
+   this one. It was only reachable through the `missing` lens's general wording.
+   That lens now names the four things absent more often than present, so finding
+   them does not depend on thinking of them.
+
+**The consequence, stated so it is not lost.** The control item exists to detect
+the skills being fitted to the item under test, and it works only while nothing
+is changed on its account. For these two behaviours it is no longer a control —
+it cannot now show whether the fix generalises, because the fix was written
+against it.
+
+**Both fixes were then verified against #156**, which neither skill had ever been
+run on and which nothing has been changed on account of. That is what the
+compromised control could no longer answer.
+
+On #156 the run produced twelve findings and said so — "twelve findings, each
+needing its own answer". The partial-failure case and the already-claimed case
+came out as two findings rather than one, which is the split the old behaviour
+would not have made. "Nothing is said about what must keep working" appeared by
+name, along with the out-of-scope and failure-case items the `missing` lens now
+lists. The fourth listed item, a number for a vague quantity, correctly did not
+appear: #156 uses no such word.
+
+#156 carries no labels, so it also exercised the fallback. Citations came out as
+"the Goal line", "description, sentence 2", "title" — readable, and no worse than
+labels would have been on an item this short.
+
+So the fixes generalise on the evidence rather than on the argument. The verified
+finding stands, and the control item remains compromised for these two behaviours
+even though the fixes turned out to be sound: it cannot demonstrate that, and
+#156 had to.
+
+Proposed and not acted on: make #156 the control item. It is real rather than
+synthetic, it fails by omission the way this repository's items actually do, and
+nothing has been tuned against it.
+
+### Pass 5
+
+Four findings against `human-work-item`, all from watching it run rather than from
+reading it.
+
+1. **No stopping rule and no triage.** `agent-work-item` step 9 has one; this
+   skill had none, so every finding read as blocking. The #156 run announced
+   "Question 1 of 12", which is not a workflow anyone finishes — on a skill whose
+   subject is that people run out of patience. Findings are now split into
+   blocking (`contradicted`, `conflict`, missing goal) and everything else, and
+   there is a "When it is done" section that ends refinement on a condition
+   rather than on running out of findings.
+2. **Step 3 cited positions for items that carry labels.** Step 5 was taught to
+   write `Problem`, `Goal`, `AC1` in pass 3 and step 3 was not, so the skill
+   produced labelled items and then cited paragraph numbers in them.
+3. **Every run opened with a sentence explaining its own procedure** — "findings
+   first, because a rewrite now would carry my guesses". Four runs out of four.
+   The wording rules banned flourish in general and did not catch this shape.
+4. **Placeholder detection needed a question asked first.** Counting the findings
+   is free and catches the same thing earlier. More than about eight on a short
+   item means it was never defined or holds more than one thing.
+
+Re-run on #156 after the edits: it opened with the finding count, declared the
+item a placeholder, refused to write acceptance criteria, named one blocking
+finding out of twelve, asked one question, and produced the decided-so-far and
+open-questions sections instead of an item. It also declined to ask about two
+findings it judged the goal would settle, which the split enabled and nothing in
+the skill teaches directly.
+
+One difference that is not an improvement: the title-versus-goal mismatch came out
+as `implementation-leak` where the previous run called it `conflict`. Both are
+defensible readings.
 
 The pass changed what #158 is. The item says "draft the boundary from the
 ticket"; the input is in fact the output of `agent-work-item`. That is the first

@@ -1,0 +1,17 @@
+{
+    "author": {
+        "id": "MDQ6VXNlcjI1ODI2NjEw",
+        "is_bot": false,
+        "login": "dpuglielli",
+        "name": "David Puglielli"
+    },
+    "body": "Every ticket needs a boundary before work starts, and today every one is written by hand. That holds for a couple of items and not for a sprint.\n\nProblem: producing a boundary is manual every time, so the practice lasts only while someone has the patience for it.\nGoal: a person receives a drafted boundary built from the refined criteria, and decides whether it freezes.\n\nAcceptance criteria:\n- When the refined criteria become ready, a person is asked whether to draft the boundary, and nothing is drafted until they agree.\n- A reviewer given a drafted boundary names no entry they had to write themselves.\n- Refined criteria the drafter cannot produce a boundary from leave the issue recording each missing thing separately, and no boundary is produced.\n- Each recorded blocker names the missing criterion or the undecided question, and can be resolved without resolving the others.\n- Resolving the last blocker produces a new drafted boundary without anyone being asked again.\n- A boundary written or edited by hand freezes without any step a drafted one does not require.\n- Every frozen boundary carries a recorded approval by a person.\n\nOut of scope:\n- Reducing how much a person reviews. Separate item, blocked on measuring what review costs.\n- The boundary's shape. It may change to suit the agent stage; this item neither requires nor prevents that.\n- Producing the refined criteria. That is the upstream stage.\n",
+    "comments": [],
+    "createdAt": "2026-08-29T19:37:13Z",
+    "labels": [],
+    "number": 158,
+    "state": "OPEN",
+    "title": "Draft the boundary from the refined criteria",
+    "updatedAt": "2026-09-01T14:16:25Z",
+    "url": "https://github.com/flexion/claude-domestique/issues/158"
+}

@@ -1,104 +1,86 @@
 # Expected output: #158 refined
 
-**Content unresolved.** This file states the shape the output must take and the
-questions that block its content. Passes 1 and 2 of the refinement loop fill it
-in. See `docs/refinement-loop.md`.
+The accepted refined item is the current issue body, captured in
+`input-gen2.json`. It is not copied here — there would then be two versions to
+keep in step.
 
-Input: `input.json`, the GitHub API response for issue 158, captured
-2026-09-01 against `updatedAt: 2026-08-29T19:52:17Z`. If a re-fetch differs, the
-issue was edited and this fixture is stale.
+**The fixture is at a fixed point.** Generation 2 is both the input for the next
+pass and the accepted output of pass 3. A pass over it should find nothing new
+unless a skill improved in between. That is the condition to expect, not a
+problem to fix.
 
-## Shape
+## Generations
 
-Markdown. Four parts, in this order.
+| File | updatedAt | State |
+| --- | --- | --- |
+| `input-gen0.json` | 2026-08-29T19:52:17Z | placeholder. 302 characters, no stated goal, no measure |
+| `input-gen1.json` | 2026-09-01T14:16:25Z | defined. Seven criteria, scope stated, unlabelled |
+| `input-gen2.json` | 2026-09-01T14:22:34Z | same wording, criteria labelled `AC1`-`AC7` |
+
+Generation 2 changes no wording. It adds the labels that make each claim citable,
+and it is kept as its own generation because generation 1 was on the issue and
+could have been read.
+
+## What was decided
+
+All of it came from David Puglielli across passes 1 to 3. None was inferred from
+the repository.
+
+| | |
+| --- | --- |
+| human involvement | drafting ships, and a person approves every boundary before it freezes. Reducing that is a separate item |
+| the measure of done | a reviewer names no entry they had to write themselves |
+| "doesn't scale" | motivation, not a requirement. Needs no number |
+| the drafter's input | the output of `agent-work-item`, not the raw ticket |
+| must keep working | a boundary written or edited by hand, on the same terms as a drafted one, before the freeze |
+| not protected | the boundary's shape. It may change to suit the agent stage |
+| a rejected draft | records each missing thing on the issue separately, each resolvable on its own |
+| after blockers resolve | the drafter produces a new boundary unasked |
+| the first draft | a person is asked before anything is drafted |
+| two human touchpoints | accepted for now, expected to reduce with maturity |
+
+Two inferences were drawn rather than asked, and neither was contradicted:
+
+- Hand editing is allowed where it is allowed today, which is before the freeze.
+- Consent is asked once per item. The redraft does not ask again because the
+  person already agreed to drafting for this item. The word "again" in the fifth
+  criterion carries that.
+
+## Proposed, not acted on
+
+The item runs to seven criteria. Two describe what happens when the criteria are
+not sufficient: blockers recorded, work stops, no boundary. A drafter handling
+only good input would ship and be useful on its own, which makes that a separate
+deliverable rather than error handling inside this one.
+
+The split was proposed and not made. `human-work-item` proposes a split and
+waits; the human splits.
+
+## Citation targets
+
+Nine, each holding one separately falsifiable claim:
 
 ```
-# <title>
-
-<the problem, and why now>
-
-<what is wanted>
-
-## Acceptance criteria
-
-- <bullet>
-- <bullet>
-
-## Open questions
-
-- <question> — <name of whoever answers it>
+Problem  Goal  AC1  AC2  AC3  AC4  AC5  AC6  AC7
 ```
 
-No boundary manifest, no YAML, no implementation. Those belong to
-`agent-work-item`, which reads this file's eventual content as its input.
+Generation 1 had four addressable parts, because `agent-work-item` fell back to
+paragraph numbers and a bullet list is one paragraph. All seven criteria were
+`description#3`, so any entry tracing to any criterion cited the same id — worse
+than generation 0, where the collapse was two claims rather than seven. Defining
+the item well caused it, by putting more content in each paragraph.
 
-## What the content must satisfy
+Labels fix it and also survive editing. A paragraph index shifts when anything
+above it changes, which lets a frozen boundary cite a different part with nothing
+reporting the change.
 
-From `human-work-item` step 6, the handoff gate. `agent-work-item` cannot invent
-any of these:
+Bead `domestique-3lf` is the open item on citation granularity. Both skills now
+prefer a label and fall back to paragraph numbers, so an item that carries no
+labels still works — it just cites less precisely.
 
-- a goal stating what is true when the work is done
-- the problem, and why now
-- a number wherever the raw item said scale, sprint, or patience
-- what must keep working
-- what is out of scope
-- a name against every open question
+## Superseded
 
-From the acceptance-criteria test: each bullet, applied to a case #158 never
-described, yields a yes or no without asking anyone. About five bullets. Past
-that, #158 holds more than one goal and the split gets proposed.
-
-## What blocks the content
-
-Findings against the raw item, highest verdict first. The first one has to be
-answered by a person before any content can be written.
-
-**conflict — `description#2`** — the Problem line names human patience as the
-binding constraint. The Goal line keeps a human approving every item before it
-freezes, which keeps a per-item patience cost. Three readings were put to the
-author and none is chosen yet:
-
-1. Every item still gets a human approval; the saving is that reading a draft is
-   faster than writing one.
-2. Only items the drafter could not settle reach a human; everything else freezes
-   without one.
-3. One approval covers a batch of drafted boundaries, not one item.
-
-**missing-goal — `description#2`** — "draft the boundary from the ticket" names
-an activity, not a condition. A drafter that reformats the ticket into the
-manifest schema satisfies it.
-
-**logic-problem — `description#2`** — no outcome defined for a human who does not
-approve.
-
-**logic-problem — whole item** — the input is "the ticket", and the item permits
-a ticket with no stated goal or two requirements in conflict. No outcome defined
-for that case. This is the requirement #158 omits and `human-work-item` exists to
-supply.
-
-**untestable-criterion — title and `description#1`** — "doesn't scale", "Fine for
-a couple, not for a sprint". No count, no time per item, no measure separating
-today from done.
-
-**missing-requirement — `description#2`** — "approves" undefined: what the human
-is shown, what they decide, what a rejection produces.
-
-**missing-requirement — whole item** — nothing states what must keep working. A
-drafter touches the linter, the manifest schema, and the boundaries already
-frozen.
-
-**missing-requirement — whole item** — nothing states what is out of scope.
-
-No implementation leak. The raw item names no technology, no mechanism, and no
-file.
-
-## A hazard for stage 2
-
-`body` splits into two paragraphs on the blank line, so the addressable parts are
-`description#1` and `description#2`. The Problem sentence and the Goal sentence
-are both inside `description#2`, separated by a single newline.
-
-A citation to `description#2` therefore cannot distinguish the problem from the
-goal, and four of the findings above land on that one id. Bead `domestique-3lf`
-is open on this: addressable-part granularity collapses on a short work item.
-Expect it to bite when `agent-work-item` writes `support` entries.
+The pass 1 finding list against generation 0 is in this file's git history. Eight
+findings, plus the addressable-part hazard where the Problem sentence and the
+Goal sentence shared `description#2` and four findings landed on that one id. It
+described a version of the issue that no longer exists.

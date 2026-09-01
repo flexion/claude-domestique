@@ -17,9 +17,21 @@ happened to produce.
 
 ## Procedure
 
-**1. Get the item's parts.** Address them `<field>#<n>`, one-based, paragraph-level
-within a field: `description#1`, `comment#4`. Do not invent parts, split sentences,
-or reorder them. Every claim you make will cite one of these.
+**1. Get the item's parts.** Cite a label the item carries where it has one:
+`Problem`, `Goal`, `AC4`. Where it has none, address parts `<field>#<n>`,
+one-based, paragraph-level within a field: `description#1`, `comment#4`. Do not
+invent parts, split sentences, or reorder them. Every claim you make will cite one
+of these.
+
+Prefer the label. A paragraph index shifts when anything above it is edited, so a
+frozen boundary can end up citing a different part with nothing reporting it. A
+label does not move. It also means something to a reader: `traces: [AC4]` names
+the criterion, `traces: [description#7]` names a position.
+
+A bullet list is one paragraph. Seven criteria in one list are one part, and every
+entry tracing to any of them cites the same id — a citation carrying no
+information. Where an item is laid out that way and you cannot get it labelled,
+say so. That is a defect in the item, not something to work around quietly.
 
 Read the whole item, not what someone pasted you. Description, acceptance-criteria
 field, comments. A tracker's UI and its API can return different content for the

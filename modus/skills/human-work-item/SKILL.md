@@ -35,7 +35,7 @@ lens's problem.
 | --- | --- |
 | goal | Is the outcome stated? What is true when this is done? |
 | problem | Is it stated why this is needed, and why now? |
-| missing | Requirements implied but never written down |
+| missing | Requirements implied but never written down. Four are absent more often than present, so check each by name: what must keep working, what is out of scope, what happens when it fails, and a number wherever the item says fast, slow, large, or often |
 | logic | Steps that cannot happen in the stated order. States the item allows but does not handle. Cases with no defined outcome. |
 | conflict | Two statements that cannot both be satisfied |
 | how-not-what | Implementation prescribed where behaviour belongs |
@@ -50,13 +50,17 @@ this order:
 <verdict> — <where it is in the item> — <the defect>
 ```
 
-Where it is uses the item's own structure: the title, paragraph 3, the last
-sentence of the description, comment 4. Quote the words when two sentences are in
-conflict.
+Where it is uses the item's own labels if it has them: `Problem`, `Goal`, `AC4`.
+Otherwise its structure: the title, paragraph 3, the last sentence of the
+description, comment 4. Quote the words when two sentences are in conflict.
 
 The defect states what is wrong, not how it reads. "Names two different
-outcomes", not "is unclear". One defect per finding — two defects in one line
-cannot be answered with one answer.
+outcomes", not "is unclear".
+
+One defect per finding, and the test is the answer rather than the sentence: if
+resolving it would take two answers, it is two findings. A finding reading "the
+job can fail, it can be started twice, and the data can change underneath it"
+names three undefined cases and takes three answers. Split it before asking.
 
 Give each finding one verdict. Where several apply, report the highest only:
 
@@ -69,6 +73,17 @@ A contradicted claim makes the item's own text unreliable, so everything read
 from it is suspect until the claim is corrected. A conflict makes everything
 below it undecidable. A missing goal makes the rest unjudgeable.
 
+**Then split them, and say which is which before asking anything.**
+
+| | |
+| --- | --- |
+| blocking | `contradicted`, `conflict`, a missing goal. The item cannot be written until these are answered. |
+| not blocking | everything else. Ask what the human can answer quickly. Record the rest as open questions and write the item. |
+
+Treating every finding as blocking is why an item with twelve findings never gets
+written. A person shown three blocking questions and five recorded gaps answers
+the three. A person given twelve questions in a row answers two and stops.
+
 `contradicted` is the item asserting something that is not so. It rarely appears
 in the lens pass, because the lenses read the item and this needs knowledge from
 outside it. It usually appears in step 4, when the human's answer contradicts
@@ -79,8 +94,8 @@ stating what is actually the case, and whether the correction changes what gets
 built. When it does, stop — the item is about something other than what it
 says, and that is a decision rather than a rewrite.
 
-**4. Resolve one finding with the human, then the next.** Never batch. Five
-questions in one message get one answer, about the easiest one.
+**4. Resolve one blocking finding with the human, then the next.** Never batch.
+Five questions in one message get one answer, about the easiest one.
 
 The form depends on what the item did.
 
@@ -113,6 +128,15 @@ Putting the picture in the item makes it a requirement nobody chose.
 **5. Rewrite.** Title, the problem, what is wanted, then the acceptance criteria.
 Nothing in it that the human did not settle. Nothing about how to build it.
 
+Label every separately falsifiable claim so the agent stage can cite one:
+`Problem`, `Goal`, then `AC1`, `AC2`, one per criterion. Put a blank line between
+them so each stands on its own.
+
+Unlabelled, the agent stage falls back to citing paragraph numbers — and a bullet
+list is one paragraph, so seven criteria collapse into a single citation meaning
+"somewhere in the seven". Labels also survive editing; a paragraph index does
+not.
+
 **6. Check it carries enough for the next stage.** `agent-work-item` prepares the
 same item for an autonomous agent. It needs things it cannot invent:
 
@@ -136,6 +160,25 @@ the tracker, the repository, any commit. It does not gate your working notes. Ke
 a local draft per attempt, including the ones that were rejected; a later reader
 can only see what changed by reading them side by side.
 
+## When it is done
+
+Not when you run out of findings. Done is when a fresh reader can say all five of
+these, and has no blocking question left:
+
+- what the item wants
+- what would make it done
+- what must keep working
+- what is out of scope
+- what is still unanswered, and who answers it
+
+Questions about how or where to build it do not block.
+
+Stop at the first version that passes. Structure added past that point is cost
+with no return.
+
+An unanswered finding that was not blocking does not hold this open. A recorded
+gap with a name against it is a finished part of the item, not an unfinished one.
+
 ## Placeholder items
 
 Some items are not underspecified. They are undefined. The item hints at the
@@ -145,10 +188,15 @@ define.
 
 This is common. Treat it as a normal state, not an exception.
 
-**How you know.** Not a judgment about quality. You asked, and the answer came
-back "it has not been decided" rather than "it is not written down", on a finding
-whose verdict was `conflict` or `missing-goal`. The goal or the measure of done
-is undecided.
+**How you know.** Two signals. Neither is a judgment about quality.
+
+**Count the findings.** More than about eight on a short item means it was never
+defined, or it holds more than one thing. Say which before you start asking. This
+one is free — it needs no question put to anyone.
+
+**Read the answer.** A finding whose verdict was `conflict` or `missing-goal`
+came back "it has not been decided" rather than "it is not written down". The goal
+or the measure of done is undecided.
 
 **What changes:**
 
@@ -239,6 +287,9 @@ Applies to everything written back.
 Write as a person writes. Short sentences. Say the thing and stop.
 
 - No opening or closing flourish, on any sentence or any paragraph.
+- No sentence explaining what you are about to do or why it is ordered that way.
+  "Findings first, because a rewrite now would carry my guesses" is that sentence.
+  Write the findings.
 - No "it is worth noting", no "in order to ensure".
 - No summarising restatement at the end of a section.
 - No metaphor, no analogy, no idiom. The reader may not be a native English
@@ -278,6 +329,8 @@ Stop if you are about to write, or have written:
 - a rewrite, before a single finding was answered
 - "assuming", or "I have taken the second reading"
 - more than one question in one message
+- a finding that would take two answers to resolve
+- a sentence explaining your procedure, ahead of the findings
 - a second or third item the human did not ask for
 - a list of candidate answers, for a finding where the item said nothing
 - a technology name, a data structure, or an API in the rewrite, or in a question
