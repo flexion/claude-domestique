@@ -1,0 +1,17 @@
+{
+    "author": {
+        "id": "MDQ6VXNlcjI1ODI2NjEw",
+        "is_bot": false,
+        "login": "dpuglielli",
+        "name": "David Puglielli"
+    },
+    "body": "Every ticket needs one written out before you can start. Fine for a couple, not for a sprint.\n\nProblem: the boundary is hand-written every time, so the discipline only survives while someone has the patience for it.\nGoal: draft the boundary from the ticket; a human still approves it before it freezes.",
+    "comments": [],
+    "createdAt": "2026-08-29T19:37:13Z",
+    "labels": [],
+    "number": 158,
+    "state": "OPEN",
+    "title": "Writing boundaries by hand doesn't scale",
+    "updatedAt": "2026-08-29T19:52:17Z",
+    "url": "https://github.com/flexion/claude-domestique/issues/158"
+}
