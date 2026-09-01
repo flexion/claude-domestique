@@ -1,6 +1,6 @@
 {
   "name": "@claude-domestique/mantra",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Behavioral rules for Claude Code and Codex sessions, auto-injected through hooks",
   "main": "index.js",
   "scripts": {

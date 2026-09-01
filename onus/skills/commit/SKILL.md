@@ -86,7 +86,6 @@ Never guess issue numbers - ask if unclear.
 - Lowercase description (except proper nouns)
 - Present tense verb: add, fix, update, remove, refactor
 - No emojis
-- No attribution, no co-authored-by
 - Use HEREDOC for multi-line messages
 
 **Single-line commit:**
