@@ -36,8 +36,8 @@ Each topic should have TWO files:
 companion: context/git.md
 
 branch: issue/feature-N/desc | chore/desc
-commit: HEREDOC format, no attribution
-no: emojis, co-authored-by
+commit: HEREDOC format, lowercase-after-dash
+no: emojis
 ---
 ```
 

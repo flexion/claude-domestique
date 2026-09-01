@@ -26,8 +26,8 @@ consequence: Skipping validation causes format violations
 ## CONVENTIONS (quick reference)
 branch-from: main (git-fetch-first, remote-main)
 branch: issue/feature-N/desc | chore/desc
-commit: "#N - verb desc" OR "chore - desc" (lowercase, HEREDOC, zero attribution)
-pr: title matches commit format, zero attribution
-no: emojis, co-authored-by, --amend (except pre-commit hooks)
+commit: "#N - verb desc" OR "chore - desc" (lowercase, HEREDOC)
+pr: title matches commit format
+no: emojis, --amend (except pre-commit hooks)
 ask-first: "Is this an issue or chore?" + get issue number (never guess)
 ---

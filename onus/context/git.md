@@ -52,8 +52,6 @@ fix bug                           # Too vague
 update code                       # Meaningless
 #42 - Updated stuff               # Uppercase, vague
 #42 - add feature :sparkles:      # No emojis
-Co-authored-by: Claude <...>      # No attribution
-Generated with Claude Code        # No AI mentions
 ```
 
 ## Branch Naming
@@ -149,8 +147,6 @@ Before every commit, verify:
 
 4. **No forbidden content**
    - No emojis
-   - No "Co-authored-by" lines
-   - No AI attribution ("Generated with...")
 
 ## Pre-PR Checklist
 
@@ -168,8 +164,6 @@ Before every PR, verify:
 
 3. **Body is clean**
    - No emojis
-   - No AI mentions
-   - No attribution lines
 
 4. **Base branch correct**
    ```bash
@@ -207,16 +201,3 @@ git commit -m "WIP"
 # GOOD
 git commit -m "#42 - fix login redirect loop"
 ```
-
-## Attribution Rules
-
-### Never Include
-
-- `Co-authored-by:` lines
-- `Generated with Claude Code`
-- AI/assistant mentions
-- Emojis in any form
-
-### Why
-
-Attribution clutters git history and provides no value. The commit message should describe *what* changed and *why*, not *who* or *how* it was written.

@@ -68,7 +68,7 @@ Before creating the PR, verify:
 - Must match commit format exactly
 - `#N - lowercase description` (for issues)
 - `chore - lowercase description` (for chores)
-- No emojis, no attribution
+- No emojis
 
 ### Locate PR Template
 
@@ -117,9 +117,7 @@ Use session file content to build the body:
 ```
 
 **IMPORTANT:**
-- No attribution (no "Generated with Claude", no co-authored-by)
 - No emojis
-- No AI mentions
 
 ### Create the PR
 
