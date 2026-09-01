@@ -61,7 +61,11 @@
       "classification": "public"
     },
     {
-      "name": "modus:refine",
+      "name": "modus:agent-work-item",
+      "classification": "public"
+    },
+    {
+      "name": "modus:human-work-item",
       "classification": "public"
     },
     {

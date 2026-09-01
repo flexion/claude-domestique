@@ -10,7 +10,7 @@ That is only answerable by running an agent and watching what it invokes.
 
 ## Why static checks are not enough
 
-modus shipped `skills/refine` with a description that passed `validate:plugins`
+modus shipped `skills/agent-work-item` with a description that passed `validate:plugins`
 and every manifest validator. On the first realistic prompt — a ticket, and "what
 should I do first" — it did not fire. `mantra:assess` won instead.
 
@@ -95,8 +95,8 @@ to win.
 ## What exists here now
 
 ```bash
-node scripts/probe-skill.js --plugin modus --expect modus:refine --prompt "..."
-node scripts/probe-skill.js --host codex --plugin modus --expect refine --prompt "..."
+node scripts/probe-skill.js --plugin modus --expect modus:agent-work-item --prompt "..."
+node scripts/probe-skill.js --host codex --plugin modus --expect agent-work-item --prompt "..."
 ```
 
 Launches a fresh instance, loads the plugin from source, prints which skills were

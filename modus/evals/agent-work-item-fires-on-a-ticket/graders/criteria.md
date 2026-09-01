@@ -1,4 +1,4 @@
-# Does refine fire, and does it change the answer
+# Does agent-work-item fire, and does it change the answer
 
 The ticket is the shape modus exists for: it states a symptom, asserts the code is
 dead without evidence, and names no way to tell when the work is finished.

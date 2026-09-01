@@ -1,13 +1,13 @@
 ---
-name: refine
+name: agent-work-item
 description: >-
   Use when about to write code for an issue, ticket, bug, or work item, or when
   asked what to do first, how to start, how to approach it, or where to begin.
-  Also use when acceptance criteria are missing, vague, or cannot be checked, or
-  when asked to write acceptance criteria or a definition of done.
+  Also use when an item has to be made ready for an autonomous agent to work
+  from, or when a definition of done has to be frozen before implementation.
 ---
 
-# refine
+# agent-work-item
 
 Produce one boundary: the per-item definition of done. Freeze it before writing code.
 
@@ -24,6 +24,10 @@ or reorder them. Every claim you make will cite one of these.
 Read the whole item, not what someone pasted you. Description, acceptance-criteria
 field, comments. A tracker's UI and its API can return different content for the
 same item.
+
+An item that has been through `human-work-item` already states its goal, its
+problem, and criteria a person can check. Cite that text the same way. It is still
+an item, and it can still be wrong about the repository.
 
 **2. Read what the item names.** This is the expensive step and it is the one that
 matters. Find what the item does not say: the consumer that breaks, the constant

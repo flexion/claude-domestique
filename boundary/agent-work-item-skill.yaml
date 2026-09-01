@@ -1,6 +1,7 @@
-# Boundary for domestique-5bl — a refine skill so modus changes agent behaviour.
+# Boundary for domestique-5bl — an agent-work-item skill so modus changes agent
+# behaviour. Drafted while the skill was named `refine`.
 #
-# Drafted by following modus/skills/refine/SKILL.md, which is the artifact this
+# Drafted by following modus/skills/agent-work-item/SKILL.md, which is the artifact this
 # boundary is about. The skill was written far enough to be followed, then used to
 # produce this. If this boundary is usable, the skill works.
 #
@@ -102,13 +103,13 @@ entries:
   # proved nothing. Registration is false on base; validation staying green is
   # true on both. Different baselines, so different entries.
   - id: AC-1
-    statement: "the skill catalog registers modus:refine"
+    statement: "the skill catalog registers modus:agent-work-item"
     verifier: mechanical
     verification_stage: pre_merge
     obligation: must
     mandate: [correctness]
     traces: [C1, CPL-1]
-    observation: "read metadata/skill-catalog.json and look for an entry named modus:refine"
+    observation: "read metadata/skill-catalog.json and look for an entry named modus:agent-work-item"
     decision: "the entry is present"
     quantitative: false
     test_role: change
@@ -125,7 +126,7 @@ entries:
     quantitative: false
     test_role: preservation
     baseline: pass
-  # Was an assertion about a symlink at .claude/skills/refine. The symlink is gone:
+  # Was an assertion about a symlink at .claude/skills/agent-work-item. The symlink is gone:
   # --plugin-dir loads the source directory on a fresh agent, so the property is
   # now guaranteed by the mechanism rather than by a link someone has to maintain.
   # The obligation still holds — what a run exercises must be the source — so it is
@@ -141,7 +142,7 @@ entries:
     # so asking it to expect a firing is the wrong check here: listing skills does
     # not invoke one. The response text is what carries the list.
     observation: "run the probe with a prompt asking the agent to list its skills; read the response"
-    decision: "modus:refine appears in the response"
+    decision: "modus:agent-work-item appears in the response"
     quantitative: false
     test_role: change
     baseline: assertion_fail

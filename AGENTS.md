@@ -107,8 +107,8 @@ fires, which is the only thing that decides whether an installed plugin changes
 any behaviour. Run a fresh agent on either host and see what it invokes:
 
 ```bash
-node scripts/probe-skill.js --plugin modus --expect modus:refine --prompt "..."
-node scripts/probe-skill.js --host codex --plugin modus --expect refine --prompt "..."
+node scripts/probe-skill.js --plugin modus --expect modus:agent-work-item --prompt "..."
+node scripts/probe-skill.js --host codex --plugin modus --expect agent-work-item --prompt "..."
 ```
 
 Exit 0 fired, 1 did not, 2 could not run. It loads the plugin from source with no
@@ -118,7 +118,7 @@ other installed plugin, and a skill that fires there has not been shown to fire 
 its own. `--cwd <dir>` overrides that when testing a procedure that needs a real
 repository to read.
 
-This is not optional polish. `modus:refine` passed every validator above and did
+This is not optional polish. `modus:agent-work-item` passed every validator above and did
 not fire on the first realistic prompt; a sibling skill won instead. See
 [`docs/plugin-evaluation.md`](docs/plugin-evaluation.md) for the host differences,
 which are not symmetric — notably Codex has no `Skill` tool and invokes a skill by

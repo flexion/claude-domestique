@@ -27,7 +27,7 @@
  * of the model, and the question is whether the SKILL fires — not whether the
  * repository's instructions can make it fire.
  *
- *   node scripts/probe-skill.js --plugin modus --prompt "..." --expect modus:refine
+ *   node scripts/probe-skill.js --plugin modus --prompt "..." --expect modus:agent-work-item
  *   node scripts/probe-skill.js --host codex --plugin modus --prompt "..."
  *
  * Exit 0 the expectation held, 1 it did not, 2 the run could not be made.
