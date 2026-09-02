@@ -104,6 +104,57 @@ looked for a named tool call and reported `DID NOT FIRE` for a run whose own
 transcript said *"I'm using the refine skill"* and then followed it. A harness
 that returns a false negative is worse than no harness.
 
+## Is a run stuck, or is it working
+
+A probe run gives no output until it exits, and an agent run spends almost all of
+its wall clock waiting on the model. So elapsed time and CPU percentage cannot
+tell the two apart: a working run and a hung one both sit near zero percent. One
+run here reached twenty-five minutes while healthily dispatching review subagents,
+and a different one hung at nineteen with the same numbers.
+
+Two signals work. The session transcript is the better one.
+
+**Read the session transcript.** Claude writes one JSONL file per session under
+`~/.claude/projects/<cwd-with-slashes-and-dots-as-dashes>/`. The newest file that
+is not your own session is the probe's, and it is written as the run proceeds.
+
+```bash
+D=~/.claude/projects/$(pwd | tr './' '--')
+ls -t "$D"/*.jsonl | head -3          # newest first; skip your own session id
+```
+
+Then read the tail of its tool calls:
+
+```bash
+python3 - "$D/<id>.jsonl" <<'EOF'
+import json, sys
+for line in open(sys.argv[1]):
+    try: e = json.loads(line)
+    except: continue
+    for b in (e.get('message') or {}).get('content') or []:
+        if b.get('type') != 'tool_use': continue
+        i = b.get('input') or {}
+        hint = i.get('skill') or i.get('file_path') or (i.get('command','') or '')[:60]
+        print(e.get('timestamp','')[11:19], b.get('name'), str(hint)[:60])
+EOF
+```
+
+That shows which tool it is on and when. It also answers the question the file
+sizes cannot: an `Agent` call is a review subagent and takes minutes, so a gap
+after one is expected rather than a stall.
+
+The same parse answers where a run wrote. Filter to `Write` and `Edit` and read
+the `file_path` values — `Read` calls carry a `file_path` too and will otherwise
+look like writes, which is a mistake worth not repeating.
+
+**Watch the artifacts.** For a skill that produces files, `ls -la` on its output
+directory shows which steps it has finished and when each was last touched. Less
+detail than the transcript, and quicker to read.
+
+**Look for child processes.** `pgrep -P <pid>` returning anything means MCP
+servers are starting, which is the failure `--strict-mcp-config` exists for. It
+should return nothing.
+
 ## Run somewhere neutral
 
 Both hosts run in a working directory. Run the probe in a temp directory, not in

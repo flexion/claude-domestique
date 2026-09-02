@@ -30,6 +30,12 @@
  *   node scripts/probe-skill.js --plugin modus --prompt "..." --expect modus:agent-work-item
  *   node scripts/probe-skill.js --host codex --plugin modus --prompt "..."
  *
+ * Is it stuck? On the claude host the raw event stream goes to a file, announced
+ * on stderr at startup, so `tail -f` on it shows tool calls as they happen. No new
+ * line for a minute or two is the signal. Elapsed-versus-CPU is not: an agent run
+ * spends almost all of its wall clock waiting on the model, so a working run and a
+ * hung one both sit near zero percent.
+ *
  * Exit 0 the expectation held, 1 it did not, 2 the run could not be made.
  */
 
@@ -105,6 +111,8 @@ function codexToolCalls(stdout) {
   return { calls, text };
 }
 
+const PASS_OUTPUT = 'docs/passes/';
+
 /**
  * A --cwd run writes into a real repository with permissions wide open, so git is
  * the only thing standing between a probe and the working tree. Commit first.
@@ -113,8 +121,6 @@ function codexToolCalls(stdout) {
  * after the damage, and exit 2 is the code for could-not-run per constraint 2 in
  * the modus README.
  */
-const PASS_OUTPUT = 'docs/passes/';
-
 function requireCleanTree(cwd) {
   const r = spawnSync('git', ['-C', cwd, 'status', '--porcelain'], { encoding: 'utf8' });
   if (r.status !== 0) return; // not a git repository, so nothing to protect
@@ -157,6 +163,28 @@ function runClaude(pluginDir, prompt, cwd) {
   //
   // What protects the working tree is git, not the permission system. See
   // requireCleanTree: a --cwd run refuses to start against uncommitted work.
+  //
+  // The child's stdout goes straight to a file descriptor, so the OS writes each
+  // event as it arrives. Buffering it in this process instead — which is what
+  // spawnSync does by default — means nothing is observable until the run exits,
+  // and a run in progress is indistinguishable from a hung one.
+  //
+  // That is not hypothetical. A probe sat for nineteen minutes and the only reason
+  // it was diagnosable was its child processes; once those were gone the same
+  // symptom had no signal at all. Elapsed-versus-CPU does not separate the two,
+  // because an agent run is almost entirely wall-clock spent waiting on the model.
+  const streamPath = arg('stream')
+    || path.join(os.tmpdir(), `probe-stream-${process.pid}.jsonl`);
+  process.stderr.write(`probe-skill: events streaming to ${streamPath}\n`);
+  process.stderr.write(`probe-skill: watch with  tail -f ${streamPath}\n`);
+  // Printed here rather than left in a document, because the moment you need it
+  // you are looking at a stalled terminal and not at docs/. The child writes its
+  // own session transcript under this directory as it goes; the newest file that
+  // is not the caller's own session is the run's, and its tool calls say which
+  // step it is on. docs/plugin-evaluation.md has the parse.
+  process.stderr.write('probe-skill: session transcripts in '
+    + `${path.join(os.homedir(), '.claude', 'projects', cwd.replace(/[/.]/g, '-'))}\n`);
+  const fd = fs.openSync(streamPath, 'w');
   const r = spawnSync('claude', [
     ...args,
     '--strict-mcp-config',
@@ -164,9 +192,10 @@ function runClaude(pluginDir, prompt, cwd) {
     '--output-format', 'stream-json',
     '--verbose',
     '-p', prompt,
-  ], { cwd, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  ], { cwd, stdio: ['ignore', fd, 'inherit'] });
+  fs.closeSync(fd);
   if (r.error) die(`could not run claude: ${r.error.message}`);
-  return claudeToolCalls(r.stdout || '');
+  return claudeToolCalls(fs.readFileSync(streamPath, 'utf8'));
 }
 
 function runCodex(pluginName, prompt, cwd) {
@@ -206,7 +235,7 @@ function main() {
   const plugin = arg('plugin');
   const prompt = arg('prompt');
   const expect = arg('expect');
-  if (!plugin || !prompt) die('usage: --plugin <name-or-dir> --prompt <text> [--host claude|codex] [--expect <skill>]');
+  if (!plugin || !prompt) die('usage: --plugin <name-or-dir> --prompt <text> [--host claude|codex] [--expect <skill>] [--stream <path>]');
 
   const pluginDir = path.resolve(REPO, plugin);
   if (!fs.existsSync(path.join(pluginDir, '.claude-plugin', 'plugin.json'))) {

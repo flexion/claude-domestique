@@ -187,6 +187,27 @@ then looks clean while its citations are unverified.
 Do not ask "would you implement from this". That invites answers about how and
 where to build, which is the next phase and will send you in circles.
 
+**Two rounds. Then stop, whatever the second one said.**
+
+Round one, fix what it named, round two. If round two returns an empty list and no
+blocking question, go to step 9. If it names anything, stop and hand the findings
+to a person, with the boundary as it stands.
+
+A third round is not worth running. Each reviewer is a fresh agent, so a round is
+a new sample rather than a converging opinion, and rounds do not reduce
+monotonically: pass 6's round two found a statement contradicting its own decision
+that had been equally present in round one and simply went unnoticed. So "still
+finding things" does not mean the boundary is getting worse, and it does not mean
+another round will settle it. A fourth reviewer is no more authoritative than the
+third.
+
+An unbounded loop is not a hypothetical. A probe run of this skill dispatched five
+review rounds in twenty-two minutes with no exit in sight, because the only stated
+exit was a clean review and nothing said what a run that never gets one should do.
+
+Stopping at two is a terminal like a `contradicted` claim that moves the surface:
+the right outcome, not a failure.
+
 **9. Stop by the rule, not by running out of findings.** Refinement is done when a
 fresh agent can say what must be true, how it would tell, what must keep working,
 what is out of scope, and what is handed off — and has no blocking question about
