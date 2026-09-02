@@ -113,15 +113,24 @@ function codexToolCalls(stdout) {
  * after the damage, and exit 2 is the code for could-not-run per constraint 2 in
  * the modus README.
  */
+const PASS_OUTPUT = 'docs/passes/';
+
 function requireCleanTree(cwd) {
   const r = spawnSync('git', ['-C', cwd, 'status', '--porcelain'], { encoding: 'utf8' });
   if (r.status !== 0) return; // not a git repository, so nothing to protect
-  const dirty = (r.stdout || '').trim();
-  if (!dirty) return;
-  const shown = dirty.split('\n').slice(0, 10).map((l) => `  ${l}`).join('\n');
-  const more = dirty.split('\n').length > 10 ? `\n  ... and more` : '';
-  die(`--cwd ${cwd} has uncommitted changes and this run writes into it with `
-    + `permissions open.\nCommit or stash first — git is what protects the tree.\n${shown}${more}`);
+  // The pass directory is where a run is supposed to write, and fetching the item
+  // into it is step 1 of the procedure. Checking it made the documented loop
+  // impossible: the first real use of this guard refused the run that created
+  // docs/passes/pass8/item.json a second earlier.
+  const dirty = (r.stdout || '')
+    .split('\n')
+    .filter((l) => l.trim() && !l.slice(3).startsWith(PASS_OUTPUT));
+  if (!dirty.length) return;
+  const shown = dirty.slice(0, 10).map((l) => `  ${l}`).join('\n');
+  const more = dirty.length > 10 ? `\n  ... and ${dirty.length - 10} more` : '';
+  die(`--cwd ${cwd} has uncommitted changes outside ${PASS_OUTPUT} and this run `
+    + `writes into it with permissions open.\nCommit or stash first — git is what `
+    + `protects the tree.\n${shown}${more}`);
 }
 
 /** pluginDir null runs the baseline arm: same prompt, same cwd, no plugin. */
