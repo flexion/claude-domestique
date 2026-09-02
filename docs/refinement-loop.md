@@ -16,7 +16,25 @@ raw item
   → agent-work-item    → criteria an autonomous agent can work from
   → the drafter (#158) → the boundary
   → assessment         → defects
+
+        ^                             |
+        |_____ blockers on the item __|
+              agent-work-item refuses
 ```
+
+The back edge is the part that took eight passes to find. Some gaps in a human
+item are only visible when something downstream tries to derive obligations from
+it and finds it cannot — you do not know what you need until you need it. So the
+chain is not one-way: `agent-work-item`'s gate writes one blocker per missing
+thing onto the item, and `human-work-item` has a mode for an item that arrives
+that way, which resolves what the blockers name and nothing else.
+
+That is the same mechanism #158 specifies for the drafter it describes. The
+process building it gets what it is building.
+
+It terminates on a rule rather than on patience: a condition that fails the gate
+twice means the answer did not land, and that is a conversation with a person
+rather than another lap.
 
 Today `agent-work-item` spans the last two arrows: a person follows the skill and
 writes the boundary manifest by hand. The drafter is what #158 delivers, so the

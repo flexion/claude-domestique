@@ -198,6 +198,26 @@ exists, find the highest-numbered `passN` inside it and write your findings and
 the item you were given there. Elsewhere, do nothing — the directory belongs to
 the repository you are in, not to this skill.
 
+## An item returned from the agent stage
+
+`agent-work-item` refuses an item it cannot derive obligations from, and writes one
+blocker per missing thing onto the item. An item arriving that way is not a raw
+item, and the procedure above is the wrong one for it.
+
+**Resolve what the blockers name. Nothing else.**
+
+- Do not re-run the six lenses. That text has been through them, and a full pass
+  over a refined item produces findings nobody asked for: one real run produced
+  nine on an item that needed one sentence.
+- Take one blocker at a time, by the rules in step 4. A contradiction gets 2-4
+  readings; something the item never said gets stated and asked.
+- Write the answer into the item, not into your reply. The gate refused because
+  the text did not say it, so a text that still does not say it is refused again.
+- Then run step 7 over what you changed, and only what you changed.
+
+Clear every blocker or clear none. A partly answered refusal fails the gate on the
+same condition it failed before, which is a conversation rather than another round.
+
 ## When it is done
 
 Not when you run out of findings. Done is when a fresh reader can say all five of

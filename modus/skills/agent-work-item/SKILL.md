@@ -42,7 +42,7 @@ problem, and criteria a person can check. Cite that text the same way. It is sti
 an item, and it can still be wrong about the repository.
 
 **1b. Refuse criteria that cannot yield a boundary.** Before reading anything
-else, check that the item states all four:
+else, check that the item states all five:
 
 - an outcome, so an entry has something to be true about
 - a criterion per obligation you would write, each able to be false
@@ -51,7 +51,8 @@ else, check that the item states all four:
 - no two criteria that contradict each other
 
 Any one of the first four missing and you cannot derive obligations, only invent
-them. Stop and say which is absent.
+them. Do not draft a partial boundary and do not fill the gap from the repository
+— the repository can supply a fact, and none of these four is a fact.
 
 The fifth is separate and easy to miss, because an item can hold all four and
 still be underivable. Two criteria that cannot both hold force you to choose which
@@ -62,14 +63,36 @@ current is a decision, not a drafting problem.
 contradict.** Your own inference is not a reconciliation. Two runs of this skill
 met the same pair on the same item: one stopped and named it, the other reconciled
 it with an unstated assumption, drafted, and recorded the assumption as though the
-item had stated it. Nothing in the manifest showed that a choice was made. Do not draft a partial boundary and do not fill the
-gap from the repository — the repository can supply a fact, and none of these four
-is a fact.
+item had stated it. Nothing in the manifest showed that a choice was made.
 
 This is the gate. An item whose goal is undecided produces a boundary whose
 entries were chosen by whoever drafted it, and it will lint clean:
 `boundary/gh-158.yaml` was drafted this way and five of its nine entries are about
 a design the item never mentions.
+
+**Hand the refusal back. Do not just report it.** Stopping is half the job. A
+refusal that names a gate condition and halts has told a transcript, and the
+person who can fix it is upstream and reads the item.
+
+Write one blocker per missing thing onto the item itself, each one the way the
+human stage will read it:
+
+- Name the labels, not the gate condition. "AC1 and AC5 do not say whether consent
+  is per item or per draft", not "the fifth condition failed".
+- Where a contradiction has more than one reading, give the readings and say what
+  each one changes. Someone choosing between two obligations needs to know that is
+  what they are choosing between.
+- One blocker per thing, resolvable on its own.
+
+That is the shape the item in front of you already specifies for the drafter it
+describes, so the process gets the mechanism it is building. Then stop. Do not
+draft against your own reading of the answer you expect.
+
+**A condition that fails twice is a conversation, not a round.** Record which
+conditions a refusal named. A returned item that fails the gate on a condition
+that already failed once means the answer did not land — say so to a person rather
+than refusing again. Failing on a different condition is progress, and the loop
+may continue.
 
 **2. Read what the item names.** This is the expensive step and it is the one that
 matters. Find what the item does not say: the consumer that breaks, the constant
