@@ -569,9 +569,23 @@ stage 1 — see step 2 of the procedure. Where the item actually has to be rewri
 and re-approved, that is an interactive session with somebody answering, not a
 probe run.
 
-**Stage 2 does not finish inside a foreground call.** With `--cwd` at the
-repository root the agent reads the repository, and pass 7's stage 2 passed ten
-minutes and was killed. Run it in the background and collect the file afterwards.
+**The probe declares its environment; it does not inherit one.** Pass 7's stage 2
+hung past nineteen minutes with 25 seconds of CPU, asleep on a socket. The cause
+was not the skill: the run had inherited `~/.claude` and booted `n8n-mcp`,
+`@azure/mcp` and `chrome-devtools-mcp`, two of which resolve `@latest` from the
+npm registry every run. `--strict-mcp-config` was added and the same run finished
+in four minutes.
+
+That was a wrong diagnosis before it was a right one. The hang was first written
+down here as the agent over-reading the repository, and `agent-work-item` step 2
+was bounded on that reasoning. The bound may still be worth having; the evidence
+offered for it was not evidence.
+
+**A `--cwd` run needs a clean tree.** Permissions are open, because
+`agent-work-item` step 7 lints a boundary file and a skill cannot lint a file it
+was not allowed to write — under inherited permissions a run got twelve Bash calls
+through and had Write denied. Git is what protects the tree, so `probe-skill.js`
+refuses to start a `--cwd` run against uncommitted work and exits 2.
 
 **One run is weak evidence.** The probe does one run and no repetition. Two
 passes disagreeing about the same defect is expected noise, not a finding about

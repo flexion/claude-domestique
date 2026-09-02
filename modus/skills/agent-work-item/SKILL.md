@@ -76,8 +76,12 @@ Stop when every named thing has been read once.
 Without a bound this is a search with no floor. Search questions have a near-zero
 found-nothing rate, which is why a reviewer asked what is wrong with this code
 manufactures findings; see constraint 3 in the modus README. The same shape
-applies here. A run of this step against a whole repository passed eighteen
-minutes and returned nothing.
+applies here.
+
+The bound is reasoned, not measured. A run that hung for nineteen minutes was
+first blamed on this step and turned out to be the harness starting inherited MCP
+servers; with those disabled the same run finished in four minutes. No run has yet
+been observed to over-read.
 
 **3. Write the interpretation.** Goal, problem, and one entry per claim. Declare
 provenance for each:

@@ -25,11 +25,38 @@ run surfaced that.
 ### Claude
 
 ```bash
-claude --plugin-dir <plugin-dir> -p "<prompt>"
+claude --plugin-dir <plugin-dir> --strict-mcp-config \
+  --permission-mode bypassPermissions -p "<prompt>"
 ```
 
 Reads the plugin from the source directory. No install, no version bump, no
 symlink, and the edit under test is the one that runs.
+
+The two extra flags are not optional, and both were found the same way — by a run
+behaving oddly rather than by reading anything.
+
+`--strict-mcp-config` with no `--mcp-config` means no MCP servers. Without it the
+run inherits `~/.claude`: one probe here booted `n8n-mcp`, `@azure/mcp` and
+`chrome-devtools-mcp`, two of which resolve `@latest` from the npm registry on
+every invocation. It sat asleep on a socket for nineteen minutes with 25 seconds
+of CPU and produced nothing; with the flag, four minutes. Speed is the smaller
+half — inherited MCP servers hand the agent under test dozens of unrelated tools,
+so the probe measures the developer's machine as much as the skill. The Codex arm
+had guarded against exactly this from the start by carrying `auth.json` and
+deliberately not `config.toml`. The Claude arm had no equivalent.
+
+`--permission-mode bypassPermissions` because a skill cannot complete a step that
+writes a file otherwise. `modus:agent-work-item` step 7 lints a boundary, and you
+cannot lint a file you were not allowed to write. Under inherited permissions a
+run got twelve `Bash` calls through and had `Write` denied — the developer's
+allowlist showing through, not a property of the harness.
+
+Scoping the writes instead of opening them was tried and does not survive contact.
+`Write(path)` is not a permission form at all; the CLI says so and names
+`Edit(path)` as the one that covers file-editing tools. `Edit(docs/passes/**)`
+does confine writes, and `Bash` then walks around it with a shell redirect. A
+symlinked output directory is not matched either. Git is what protects the tree:
+`probe-skill.js` refuses a `--cwd` run against uncommitted work and exits 2.
 
 There is also `claude plugin eval`, a first-party scored evaluator with a
 no-plugin baseline arm, repeated runs, and a CI threshold. **Deferred, not

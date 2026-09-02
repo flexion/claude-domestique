@@ -105,11 +105,53 @@ function codexToolCalls(stdout) {
   return { calls, text };
 }
 
+/**
+ * A --cwd run writes into a real repository with permissions wide open, so git is
+ * the only thing standing between a probe and the working tree. Commit first.
+ *
+ * Refuse rather than warn. A warning printed ahead of a four-minute run is read
+ * after the damage, and exit 2 is the code for could-not-run per constraint 2 in
+ * the modus README.
+ */
+function requireCleanTree(cwd) {
+  const r = spawnSync('git', ['-C', cwd, 'status', '--porcelain'], { encoding: 'utf8' });
+  if (r.status !== 0) return; // not a git repository, so nothing to protect
+  const dirty = (r.stdout || '').trim();
+  if (!dirty) return;
+  const shown = dirty.split('\n').slice(0, 10).map((l) => `  ${l}`).join('\n');
+  const more = dirty.split('\n').length > 10 ? `\n  ... and more` : '';
+  die(`--cwd ${cwd} has uncommitted changes and this run writes into it with `
+    + `permissions open.\nCommit or stash first — git is what protects the tree.\n${shown}${more}`);
+}
+
 /** pluginDir null runs the baseline arm: same prompt, same cwd, no plugin. */
 function runClaude(pluginDir, prompt, cwd) {
   const args = pluginDir ? ['--plugin-dir', pluginDir] : [];
+  // --strict-mcp-config with no --mcp-config means no MCP servers at all. Without
+  // it the run inherits ~/.claude, and a probe here booted n8n-mcp, @azure/mcp and
+  // chrome-devtools-mcp; two of them resolve @latest from the npm registry on every
+  // run. That run sat sleeping on a socket past twenty minutes with 25 seconds of
+  // CPU and produced nothing.
+  //
+  // Speed is the smaller half. The plugin under test is supposed to be the only
+  // thing added, and inherited MCP servers hand the agent dozens of unrelated
+  // tools, so the probe measures the developer's machine as much as the skill. The
+  // codex arm below already guards against exactly this by carrying auth.json and
+  // deliberately not config.toml; this is the missing half of that pairing.
+  //
+  // Permissions are open because the skills under test cannot finish otherwise.
+  // agent-work-item step 7 lints a boundary file, and you cannot lint a file you
+  // were not allowed to write; step 9b writes the run out. Under inherited
+  // permissions a real run got twelve Bash calls through and had Write denied,
+  // which is the developer's allowlist showing through rather than a property of
+  // the harness. That run could never have reached step 7.
+  //
+  // What protects the working tree is git, not the permission system. See
+  // requireCleanTree: a --cwd run refuses to start against uncommitted work.
   const r = spawnSync('claude', [
     ...args,
+    '--strict-mcp-config',
+    '--permission-mode', 'bypassPermissions',
     '--output-format', 'stream-json',
     '--verbose',
     '-p', prompt,
@@ -170,6 +212,7 @@ function main() {
   // point at a real repository when testing the procedure rather than the trigger.
   const cwd = arg('cwd') ? path.resolve(arg('cwd')) : fs.mkdtempSync(path.join(os.tmpdir(), 'probe-cwd-'));
   if (!fs.existsSync(cwd)) die(`--cwd ${cwd} does not exist`);
+  if (arg('cwd')) requireCleanTree(cwd);
   const { calls, text } = host === 'codex'
     ? runCodex(pluginName, prompt, cwd)
     : runClaude(pluginDir, prompt, cwd);

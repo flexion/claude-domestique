@@ -1,0 +1,97 @@
+host:   claude
+plugin: /Users/dpuglielli/.herdr/worktrees/claude-domestique/issue-feature-155-one-item-end-to-end/modus
+prompt: I need a boundary — a per-item definition of done — for this work item, before any code is written. The refined criteria are below.
+
+Title: Draft the boundary from the refined criteria
+
+Description:
+Every ticket needs a boundary before work starts, and today every one is written by hand. That holds for a couple of items and not for a sprint.
+
+Problem: producing a boundary is manual every time, so the practice lasts only while someone has the patience for it.
+
+Goal: a person receives a drafted boundary built from the refined criteria, and decides whether it freezes.
+
+## Acceptance criteria
+
+AC1. When the refined criteria become ready, a person is asked whether to draft the boundary, and nothing is drafted until they agree.
+
+AC2. A reviewer given a drafted boundary names no entry they had to write themselves.
+
+AC3. Refined criteria the drafter cannot produce a boundary from leave the issue recording each missing thing separately, and no boundary is produced.
+
+AC4. Each recorded blocker names the missing criterion or the undecided question, and can be resolved without resolving the others.
+
+AC5. Resolving the last blocker produces a new drafted boundary without anyone being asked again.
+
+AC6. A boundary written or edited by hand freezes without any step a drafted one does not require.
+
+AC7. Every frozen boundary carries a recorded approval by a person.
+
+## Out of scope
+
+- Reducing how much a person reviews. Separate item, blocked on measuring what review costs.
+- The boundary's shape. It may change to suit the agent stage; this item neither requires nor prevents that.
+- Producing the refined criteria. That is the upstream stage.
+
+invoked:
+  Skill:modus:agent-work-item
+  Bash
+  Bash
+  Bash
+  Read
+  Read
+  Read
+  Read
+  Read
+  Bash
+  Read
+  Bash
+  Bash
+  Read
+  Bash
+  Read
+  Bash
+  Read
+  Bash
+  Bash
+  Bash
+  Write
+
+--- with plugin ---
+The write needs your approval, so here's the result directly.
+
+## No boundary. The item fails the step 1b gate.
+
+Four of the five conditions hold: `Goal` gives the outcome, `AC1`–`AC7` give a falsifiable criterion per obligation, `AC6` says what must keep working, and the three bullets set scope. The fifth fails.
+
+**`AC1` and `AC5` cannot both hold until you say what the agreement covers.**
+
+> `AC1`. …nothing is drafted until they agree.
+> `AC5`. Resolving the last blocker produces a new drafted boundary without anyone being asked again.
+
+`AC3` routes into `AC5` — blockers recorded, last one resolved, a draft appears. Whether that draft respects `AC1` depends on the scope of the consent, which the item never states:
+
+| | Reading | `AC5`'s draft |
+| --- | --- | --- |
+| **A** | consent once per item | covered by the earlier agreement; both hold |
+| **B** | consent before every draft | drafts with no agreement; conflict |
+| **C** | consent once, re-asked if criteria change | resolving a blocker changes the criteria, so it re-asks; `AC5` fails |
+
+This is not cosmetic. Under A an entry asserts a draft appears with no request sent; under B that entry inverts; under C a third entry nobody has written is needed for the re-ask. Each is a `must` implementation would build to. Per the skill I stopped rather than pick one and draft a partial boundary — and the gap can't be filled from the repository, because which reading is current is a decision, not a fact.
+
+**One answer unblocks it, and reading A is very likely already yours.** It's written down twice, and neither record is the item:
+
+- `modus/evals/158-human-work-item/expected.md` lists "Consent is asked once per item" under *inferences drawn rather than asked* — separate from its human-decided table.
+- Pass 2 raised "no outcome after a blocker is resolved: whether drafting resumes on its own or has to be re-requested" against #158, and `AC5` was written to answer it.
+
+So the question is a confirmation. It needs to land in `AC1` or `AC5` on the issue, not in a notes file — pass 7's stage 1 finding 2 already recorded that this decision never reached the item text, and a later reader hit it again as a contradiction.
+
+**What this says about pass 6.** `docs/passes/pass6/boundary.yaml` was drafted from this same text and resolved the pair silently to A: `AC-11` asserts a person is asked before the first draft, `AC-8` asserts the post-blocker draft needs no request, and nothing records that a choice was made. It passed both lint forms, and its reviewer answered "no blocking question about what is wanted." Three checks passed an item with an undecided consent scope, which is what the fifth condition was added for.
+
+Attribution is the item, not either skill — stage 1 asked this correctly in passes 2 and 7 and no answer was written back. Steps 2–8 never ran, so step 2's new bound is still untested; the nineteen-minute hang it was written for remains unreproduced. I also read pass 6's boundary before the gate ran, so this wasn't a blind run.
+
+Tell me which reading is current and I'll draft the boundary in this session. If it's A, I need about one sentence of wording for `AC5` so the next pass fetches an item that states it. I'd also like to write the refusal to `docs/passes/pass7/stage2-gate-refusal.md` for the pass record — approve the write and I'll put it there. (`docs/passes/pass7/stage2-agent-work-item.txt` is still the empty untracked slot from the run that hung; I left it alone.)
+
+One thing you may want to settle at the same time, non-blocking: stage 1 called `AC2` untestable against out-of-scope bullet 2 — a reviewer who writes an entry can't tell whether the draft missed it or whether it was never part of a boundary. I can write a workable entry for `AC2` regardless, since the reviewer's returned list is falsifiable either way, so it doesn't gate the draft.
+
+expected modus:agent-work-item: FIRED
