@@ -1,0 +1,73 @@
+probe-skill: events streaming to /var/folders/bk/6vcq_v6n3bl6qb6m90vhhfcc0000gn/T/probe-stream-20621.jsonl
+probe-skill: watch with  tail -f /var/folders/bk/6vcq_v6n3bl6qb6m90vhhfcc0000gn/T/probe-stream-20621.jsonl
+probe-skill: session transcripts in /Users/dpuglielli/.claude/projects/-var-folders-bk-6vcq_v6n3bl6qb6m90vhhfcc0000gn-T-probe-cwd-Qdzbwe
+host:   claude
+plugin: /Users/dpuglielli/.herdr/worktrees/claude-domestique/issue-feature-155-one-item-end-to-end/modus
+prompt: Here is a ticket from our backlog. Help me tighten up the wording and write
+acceptance criteria for it.
+
+Title: Improve the export
+
+Description:
+Users have complained that the CSV export is slow and hard to use. We should add
+a background job so the export happens asynchronously and the user gets an email
+when it is ready. The export must complete within 5 seconds so the user is not
+left waiting on the page. Add a caching layer in Redis keyed on the filter set.
+Only admins should be able to export. Everyone who can see the report should be
+able to export it.
+
+invoked:
+  Skill:modus:human-work-item
+
+--- with plugin ---
+## Findings
+
+Fourteen findings on a six-sentence item. Past about eight means the item was never defined or it holds more than one thing. This one holds more than one thing: how the user waits for an export, how fast an export is, what is hard about using it, and who is allowed to run one. I am proposing the split, not making it — see the end.
+
+**Blocking**
+
+`conflict` — description sentences 2 and 3 — Sentence 2 says the export "happens asynchronously and the user gets an email when it is ready". Sentence 3 says it "must complete within 5 seconds so the user is not left waiting on the page". The reason given for the 5-second limit is the same waiting that sentence 2 removes. Both cannot hold.
+
+`conflict` — description sentences 5 and 6 — "Only admins should be able to export" and "Everyone who can see the report should be able to export it" name two different sets of people, unless every person who can see the report is an admin, which the item does not say.
+
+`missing-goal` — title and description — Nothing states what is true when this is done. "Improve the export" names no outcome, and the description names four changes without saying which one being finished ends the work.
+
+**Not blocking — recorded**
+
+`missing-requirement` — sentence 1 — "hard to use" is named as a complaint. Nothing in the item says what is hard about it, and nothing else in the item addresses it.
+
+`missing-requirement` — sentence 1 — "slow" has no number. The item gives no current duration and no target other than the disputed 5 seconds.
+
+`missing-requirement` — sentence 1 — No number for how large an export may be: no row count, no file size, no date range.
+
+`missing-requirement` — description as a whole — Nothing says which report or reports this covers, or whether there is one export or several. "The report" and "the filter set" both appear as though already defined.
+
+`missing-requirement` — description as a whole — Nothing says what must keep working: whether the current direct download stays available, and whether the file's columns and contents stay the same.
+
+`missing-requirement` — description as a whole — Nothing is out of scope. Other file formats, other reports, and scheduled or repeating exports are all left open.
+
+`logic-problem` — sentence 2 — The item allows an export to be produced later and does not say what happens when producing it fails.
+
+`logic-problem` — sentence 2 — No defined outcome for how long a finished export can be retrieved, or whether it can be retrieved more than once.
+
+`logic-problem` — sentence 2 — No defined outcome when the same person asks for the same export while one is already being produced.
+
+`implementation-leak` — sentence 4 — "Add a caching layer in Redis keyed on the filter set" names a technology and a key. It states no behaviour a reader could check.
+
+`implementation-leak` — sentence 2 — "a background job" and "an email" name the mechanism and the channel. The behaviour underneath is that the person is told when the export is ready.
+
+## First question
+
+The item says the export is produced in the background and the person is emailed when it is ready, and also that it must be finished within 5 seconds so nobody waits on the page. Which is the current decision?
+
+1. The export is produced in the background. The person can leave the page and is told when it is ready. The 5-second limit goes.
+2. The export stays a direct download and must be ready within 5 seconds. Nothing is produced in the background and nobody is notified.
+3. Exports below some size download directly; larger ones are produced in the background and the person is told when ready. This needs a number for the boundary.
+
+The permissions conflict and the missing goal are next, one at a time after this.
+
+## Split
+
+If the answer is that more than one of "not blocking the person", "faster exports", and "easier to use" has to ship together, this is more than one item and I would split it before writing criteria. That is your call, not mine.
+
+expected modus:human-work-item: FIRED

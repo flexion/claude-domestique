@@ -1,0 +1,98 @@
+host:   claude
+plugin: /Users/dpuglielli/.herdr/worktrees/claude-domestique/issue-feature-155-one-item-end-to-end/modus
+prompt: Here is a ticket from our backlog. Help me tighten up the wording and write
+acceptance criteria for it.
+
+Title: Improve the export
+
+Description:
+Users have complained that the CSV export is slow and hard to use. We should add
+a background job so the export happens asynchronously and the user gets an email
+when it is ready. The export must complete within 5 seconds so the user is not
+left waiting on the page. Add a caching layer in Redis keyed on the filter set.
+Only admins should be able to export. Everyone who can see the report should be
+able to export it.
+
+invoked:
+  Skill:modus:human-work-item
+
+--- with plugin ---
+## This item is a placeholder, not a vague item
+
+I read it six times, once per lens. Fourteen findings on six sentences. Past about eight on an item this short, the item was never defined — and this one also holds three separate goals: make the export faster, make the export easier to use, and decide who may export it.
+
+So I am not going to write acceptance criteria yet. You asked for them, and I can't give you honest ones. The item contradicts itself about who it is for and about what "done" looks like. Criteria written over an undecided goal read as agreed once they are in the tracker, and the next person builds against my guesses.
+
+What follows is the findings, what is actually decided, and what is not.
+
+## Findings
+
+**Blocking**
+
+`conflict` — Description, sentences 5 and 6 — "Only admins should be able to export" and "Everyone who can see the report should be able to export it" name two different sets of people.
+
+`conflict` — Description, sentences 2 and 3 — "the user gets an email when it is ready" and "The export must complete within 5 seconds" name two different outcomes for the same action.
+
+`missing-goal` — Title and description — nothing states what is true when the work is done. "Improve" names no outcome. Two problems are named, slow and hard to use, and nothing says which one this item finishes.
+
+**Not blocking — recorded**
+
+`logic-problem` — Description, sentence 2 — no outcome defined for an export that fails. The user is told a result arrives; nothing says what happens when it does not.
+
+`logic-problem` — Description, sentence 4 — no outcome defined when the data changes after a result has been stored for reuse. Nothing says whether a user may be given a result built from older data.
+
+`missing-requirement` — Description, sentence 1 — "hard to use" names no specific difficulty, and nothing in the item changes anything a user does.
+
+`missing-requirement` — Description, sentence 1 — no number for how slow the export is now.
+
+`missing-requirement` — Description, sentence 3 — "5 seconds" has no stated size attached. Without a row count or file size the number cannot be checked.
+
+`missing-requirement` — Description, sentence 2 — no stated lifetime for a finished export. Nothing says how long a user can still retrieve it.
+
+`missing-requirement` — Description, sentences 4 and 6 — "the report" and "the filter set" are never defined. The item does not name which report or which filters.
+
+`missing-requirement` — Whole item — nothing says what must keep working. The file's columns, contents, encoding, and anything that already reads it are not mentioned.
+
+`missing-requirement` — Whole item — nothing says what is out of scope.
+
+`implementation-leak` — Description, sentence 4 — "a caching layer in Redis keyed on the filter set" is a design, not a behaviour.
+
+`implementation-leak` — Description, sentence 2 — "add a background job" is a design.
+
+## What is decided
+
+There is a CSV export. Users have complained about it, on two counts: it is slow, and it is hard to use. Someone wants it to be faster.
+
+That is all the item settles.
+
+## What is not decided
+
+Each of these needs a name against it before the item can go anywhere. I have left the owners blank because I cannot invent them — tell me who answers each and I will write them in.
+
+| Question | Owner | What would settle it |
+| --- | --- | --- |
+| Who may export? | | A decision from whoever owns access rules for the report |
+| Does the user wait for the export, or is it delivered later? | | A product decision |
+| What does "hard to use" mean — what is a user doing today that they should not have to do? | | The complaints behind sentence 1 |
+| How slow is the export now, and at what size? | | Measurement |
+| What size of export does any speed target apply to? | | A product decision |
+| What happens when an export fails? | | A product decision |
+| May a user receive a result built from data that has since changed? | | A product decision |
+| How long can a user retrieve a finished export? | | A product decision |
+| Which report, and which filters? | | The person who wrote the item |
+| What must keep working — columns, contents, encoding, anything already consuming the file? | | Whoever owns the current export |
+| What is out of scope? | | A product decision |
+
+## One question
+
+Sentences 2 and 3 describe two different things happening after a user asks for an export. Which is it?
+
+1. The user asks for the export, the page comes back straight away, and the file is delivered to them later.
+2. The user asks for the export and gets the file on the page, within 5 seconds, every time.
+3. Small exports come back on the page; larger ones are delivered later. This needs a size, and the item does not give one.
+
+There is a fourth possibility worth naming: "so the user is not left waiting on the page" may be the reason for the work rather than a condition of being done. If the item would be finished without anyone measuring 5 seconds, then 5 seconds is motivation, not a requirement, and reading 1 has no conflict in it.
+
+Answer that one and I will take the permissions conflict next.
+
+expected modus:human-work-item: FIRED

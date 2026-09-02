@@ -1,0 +1,151 @@
+host:   claude
+plugin: /Users/dpuglielli/.herdr/worktrees/claude-domestique/issue-feature-155-one-item-end-to-end/modus
+prompt: I need a boundary — a per-item definition of done — for this work item, before any code is written. The refined criteria are below.
+
+Title: Draft the boundary from the refined criteria
+
+Description:
+Every ticket needs a boundary before work starts, and today every one is written by hand. That holds for a couple of items and not for a sprint.
+
+Problem: producing a boundary is manual every time, so the practice lasts only while someone has the patience for it.
+
+Goal: a person receives a drafted boundary built from the refined criteria, and decides whether it freezes.
+
+## Acceptance criteria
+
+AC1. When the refined criteria become ready, a person is asked whether to draft the boundary, and nothing is drafted until they agree.
+
+AC2. A reviewer given a drafted boundary names no entry they had to write themselves.
+
+AC3. Refined criteria the drafter cannot produce a boundary from leave the issue recording each missing thing separately, and no boundary is produced.
+
+AC4. Each recorded blocker names the missing criterion or the undecided question, and can be resolved without resolving the others.
+
+AC5. Resolving the last blocker produces a new drafted boundary without anyone being asked again.
+
+AC6. A boundary written or edited by hand freezes without any step a drafted one does not require.
+
+AC7. Every frozen boundary carries a recorded approval by a person.
+
+## Out of scope
+
+- Reducing how much a person reviews. Separate item, blocked on measuring what review costs.
+- The boundary's shape. It may change to suit the agent stage; this item neither requires nor prevents that.
+- Producing the refined criteria. That is the upstream stage.
+
+invoked:
+  Skill:modus:agent-work-item
+  Bash
+  Bash
+  Bash
+  Read
+  Read
+  Read
+  Bash
+  Bash
+  Bash
+  Bash
+  Read
+  Bash
+  Read
+  Read
+  Read
+  Bash
+  Bash
+  Bash
+  Bash
+  Bash
+  Bash
+  Bash
+  Write
+  Bash
+  Bash
+  Write
+  Bash
+  Read
+  Agent
+  Bash
+  Bash
+  Edit
+  Edit
+  Edit
+  Edit
+  Edit
+  Edit
+  Edit
+  Edit
+  Bash
+  Bash
+  Bash
+  Agent
+  Read
+  Edit
+  Edit
+  Edit
+  Edit
+  Edit
+  Edit
+  Edit
+  Bash
+  Edit
+  Bash
+  Agent
+  Read
+  Edit
+  Edit
+  Edit
+  Bash
+  Agent
+  Read
+  Edit
+  Bash
+  Agent
+  Read
+
+--- with plugin ---
+You are reviewing a boundary manifest — a per-item definition of done — that you did not write. Read it at `/tmp/pass8-r5.yaml`. The work item it was drafted from is below. Those two artifacts are all you get; do not read the rest of the repository.
+
+Answer exactly two questions. Nothing else.
+
+1. Which entries' `decision` could you not evaluate against that entry's own `observation`? Ids only, then a short reason per id. The test is narrow: holding only what that entry's `observation` produces, can you return true or false? Also count an entry whose `decision` cannot come out false at all — one that is true by construction of its own observation, or one where the failure the entry exists to exclude would read as a pass.
+
+2. Do you have a blocking question about WHAT IS WANTED that you cannot answer from the boundary and the item? Do not raise questions about how or where to build it — those are the next phase. A question is only blocking if proceeding under either answer would build materially different things and neither artifact chooses.
+
+If a finding is real, name it specifically. General dissatisfaction is not a finding. If you find nothing, say none. Do not hunt for findings to justify the review — none is an acceptable and expected answer, and a manufactured finding is worse than no finding.
+
+Field meanings you need: `statement` is the condition that holds when the work is done. `observation` names what is done and by whom, repeatably. `decision` is a predicate that is true or false after making that observation. `traces` anchors an entry to a claim (`C*`) or a coupling edge (`CPL-*`). `obligation: must` gates; `watch` does not. `entails` maps each coupling edge to the obligation covering it, or to the literal `uncovered`. `test_role: change` means the test fails or errors on the base revision; `preservation` means it passes on both base and head. `baseline: expected_error` declares the test cannot run on base at all. Provenance `stated` means the item says it; `stated_unverified` means the item says it and nothing settles it; `inferred` means the repository supplies it and the item is silent.
+
+=== THE WORK ITEM ===
+
+Title: Draft the boundary from the refined criteria
+
+Description:
+Every ticket needs a boundary before work starts, and today every one is written by hand. That holds for a couple of items and not for a sprint.
+
+Problem: producing a boundary is manual every time, so the practice lasts only while someone has the patience for it.
+
+Goal: a person receives a drafted boundary built from the refined criteria, and decides whether it freezes.
+
+## Acceptance criteria
+
+AC1. When the refined criteria become ready, a person is asked whether to draft the boundary, and nothing is drafted until they agree.
+
+AC2. A reviewer given a drafted boundary names no entry they had to write themselves.
+
+AC3. Refined criteria the drafter cannot produce a boundary from leave the issue recording each missing thing separately, and no boundary is produced.
+
+AC4. Each recorded blocker names the missing criterion or the undecided question, and can be resolved without resolving the others.
+
+AC5. Resolving the last blocker produces a new drafted boundary without anyone being asked again.
+
+AC6. A boundary written or edited by hand freezes without any step a drafted one does not require.
+
+AC7. Every frozen boundary carries a recorded approval by a person.
+
+## Out of scope
+
+- Reducing how much a person reviews. Separate item, blocked on measuring what review costs.
+- The boundary's shape. It may change to suit the agent stage; this item neither requires nor prevents that.
+- Producing the refined criteria. That is the upstream stage.
+
+expected modus:agent-work-item: FIRED

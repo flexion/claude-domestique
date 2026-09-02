@@ -1,0 +1,116 @@
+probe-skill: events streaming to docs/passes/pass9/stage2-stream.jsonl
+probe-skill: watch with  tail -f docs/passes/pass9/stage2-stream.jsonl
+probe-skill: session transcripts in /Users/dpuglielli/.claude/projects/-Users-dpuglielli--herdr-worktrees-claude-domestique-issue-feature-155-one-item-end-to-end
+host:   claude
+plugin: /Users/dpuglielli/.herdr/worktrees/claude-domestique/issue-feature-155-one-item-end-to-end/modus
+prompt: I need a boundary — a per-item definition of done — for this work item, before any code is written. The refined criteria are below.
+
+Title: Draft the boundary from the refined criteria
+
+Description:
+Every ticket needs a boundary before work starts, and today every one is written by hand. That holds for a couple of items and not for a sprint.
+
+Problem: producing a boundary is manual every time, so the practice lasts only while someone has the patience for it.
+
+Goal: a person receives a drafted boundary built from the refined criteria, and decides whether it freezes.
+
+## Acceptance criteria
+
+AC1. When the refined criteria become ready, a person is asked whether to draft the boundary, and nothing is drafted until they agree. The person is asked once per item; later drafts for the same item do not ask again.
+
+AC2. A reviewer given a drafted boundary names no entry they had to write themselves.
+
+AC3. Refined criteria the drafter cannot produce a boundary from leave the issue recording each missing thing separately, and no boundary is produced.
+
+AC4. Each recorded blocker names the missing criterion or the undecided question, and can be resolved without resolving the others.
+
+AC5. Resolving the last blocker produces a new drafted boundary without anyone being asked again.
+
+AC6. A boundary written or edited by hand freezes without any step a drafted one does not require.
+
+AC7. Every frozen boundary carries a recorded approval by a person, recorded at the freeze. Approval at merge is a different gate and does not satisfy this one.
+
+## Out of scope
+
+- Reducing how much a person reviews. Separate item, blocked on measuring what review costs.
+- The boundary's shape. It may change to suit the agent stage; this item neither requires nor prevents that.
+- Producing the refined criteria. That is the upstream stage.
+
+invoked:
+  Skill:modus:agent-work-item
+  Bash
+  Bash
+  Bash
+  Bash
+  Bash
+  Bash
+  Bash
+  Bash
+  Read
+  Read
+  Bash
+  Read
+  Read
+  Read
+  Bash
+  Bash
+  Read
+  Read
+  Read
+  Bash
+  Read
+  Bash
+  Read
+  Bash
+  Bash
+  Bash
+  Bash
+  Bash
+  Write
+  Bash
+  Bash
+  Bash
+  Agent
+  Read
+  Write
+  Bash
+  Bash
+  Edit
+  Bash
+  Edit
+  Bash
+  Agent
+  Read
+  Write
+  Edit
+
+--- with plugin ---
+Step 8 is spent — two rounds, per the cap. I have not fixed round two's findings and did not run a third round; that is the rule, and the decision is yours.
+
+## What exists
+
+| File | |
+| --- | --- |
+| `docs/passes/pass9/boundary.yaml` | 17 entries, 14 claims, 6 coupling edges. **NOT FROZEN** |
+| `docs/passes/pass9/coverage.md` | every criterion against the entry covering it |
+| `docs/passes/pass9/stage2-review.md` | both rounds, including what was rejected |
+
+Both lint forms: failures empty, `exempt` zero, `W_NO_FLOOR` only (no invariant registry exists here). Nothing committed.
+
+## Two known defects, handed over unfixed
+
+**`OB-7` counts the wrong unit.** The statement says "one blocker per missing thing" — AC3's wording. The decision says the blocker count equals the number of missing *gate conditions*, and those are `C13`'s five. A drafter that lumps three missing criteria into one blocker records one blocker against one failed condition and passes. Lumping is the exact failure AC3 and AC4 exist to exclude. The more serious of the two.
+
+**`OB-13`'s sensitivity probe is in a comment.** The entry's own comment says the probe is what stops `pass` on base and `pass` on head being satisfied by asserting nothing; the observation performs only the plain run. Round one saw this and declined to count it, round two counted it — the non-monotonicity step 8 warns about. One supporting argument in round two is weaker than it reads: it claims the linter is inside the change surface because `OB-17` requires a part list, but `lintBoundary` already takes `itemParts`, so `OB-17` constrains the caller. The finding stands without it.
+
+Round two confirmed the round-one fix to `OB-5` and had no blocking question about what is wanted.
+
+## The one interpretation call you should check before approving
+
+AC7 is recorded as **`contradicted` with a correction**, not as a gap. The specified freeze (`the-boundary-bundle.md`) appends `boundary_frozen` with the digest and commit SHA and names no approver; the workflow's one human approval is at merge. I read the item as wrong-as-description and current-as-requirement, set `moves_surface: false`, and did not stop the run — AC7's second sentence is a person having already chosen between the two. Pass 8 filed the same conflict under `gaps[]`, which left `corrections[]` empty. Both reviewers independently read the correction as settling it.
+
+Step 9's stopping rule is not met, so step 10 does not follow from here. If you want, I can file the two findings as beads, or fix them and re-run review as pass 10 — but neither is mine to decide.
+
+One incidental finding: `boundary-prose.md` claims word caps and banned words are "enforced by a script". No such script exists in the repo; I applied both by hand.
+
+expected modus:agent-work-item: FIRED

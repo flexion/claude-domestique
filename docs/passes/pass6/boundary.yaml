@@ -1,0 +1,308 @@
+# Boundary for gh-158 — "Draft the boundary from the refined criteria".
+#
+# Derived from generation 2 of the item: modus/evals/158-human-work-item/input-gen2.json.
+# Citations use the labels the item carries — Problem, Goal, AC1..AC7 — not
+# paragraph indices. Indices moved twice while this item was being defined and
+# broke every citation in the previous boundary without reporting it.
+#
+# Supersedes boundary/gh-158.yaml, which was authored against generation 0. That
+# item was a placeholder with no stated criteria, so its obligations were invented
+# against a chosen design: five of its nine entries are about a prompt template
+# with double-brace placeholders, which the item never mentions, and six of the
+# item's seven criteria had no obligation at all. The old file is kept, not edited.
+#
+# NOT FROZEN. Pass 6 of the refinement loop. No adversarial review yet.
+schema_version: 1
+tracker: github-issues
+item: gh-158
+registry_revision: "none"
+registry_selections: []
+mandates: [correctness, usability]
+non_goals:
+  - "reducing how much a person reviews — a separate item, blocked on measuring what review costs"
+  - "the boundary manifest's shape; it may change to suit the agent stage and this item neither requires nor prevents that"
+  - "producing the refined criteria — that is the upstream human and agent refinement stages"
+  - "fetching the item from any tracker; the drafter reads supplied criteria, and fetching is gh-156 adapter work"
+  - "approving or freezing on a person's behalf"
+  - "any change to lint-boundary.js or to the manifest schema"
+interpretation:
+  goal:
+    statement: >-
+      a person receives a boundary drafted from the refined criteria instead of writing one,
+      and still decides whether it freezes
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "Goal"
+  problem:
+    statement: >-
+      every boundary is written by hand, so producing one costs a person the whole effort each
+      time
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "Problem"
+      - kind: repo_path
+        ref: "boundary/agent-work-item-skill.yaml"
+  claim_provenance:
+    C1:
+      # Corroborated: modus has no lib/ and no drafter, and both boundaries in
+      # boundary/ were written by a person.
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "Problem"
+        - kind: repo_path
+          ref: "boundary/"
+    C2:
+      # The item gives patience as the reason the practice fails. Nothing measures
+      # it, and two hand-authored samples cannot establish it. Recorded, and it
+      # grounds no obligation below.
+      provenance: stated_unverified
+      support:
+        - kind: item_locator
+          ref: "Problem"
+    C3:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "AC6"
+        - kind: repo_path
+          ref: "modus/tests/fixtures/"
+  corrections: []
+  gaps:
+    # Neither is in the item. Both were found by reading the repository, and each
+    # one fails the build if missed.
+    - element: "that a drafted manifest has to satisfy the existing linter"
+      filled_from:
+        kind: repo_path
+        ref: "modus/scripts/lint-boundary.js"
+    - element: "that recording a blocker on the issue needs a tracker write modus does not have"
+      filled_from:
+        kind: repo_path
+        ref: "modus/README.md"
+claims:
+  - id: C1
+    text: "producing a boundary is manual for every item"
+  - id: C2
+    text: "PROVISIONAL: the practice lasts only while someone has the patience for it"
+  - id: C3
+    text: "boundaries written by hand are accepted today"
+coupling:
+  # None of the four is named in the item. CPL-4 is the expensive one: AC3 and AC4
+  # require writing to the issue, modus has no tracker write, and README
+  # constraint 1 forbids depending on onus for it.
+  - id: CPL-1
+    kind: consumer
+    target: "modus/scripts/lint-boundary.js — every drafted manifest is its input"
+  - id: CPL-2
+    kind: consumer
+    target: "modus/tests/fixtures/ — 32 hand-written manifests are the linter's corpus"
+  - id: CPL-3
+    kind: consumer
+    target: "boundary/agent-work-item-skill.yaml — a hand-written boundary the item requires to stay equal"
+  - id: CPL-4
+    kind: contract
+    target: "modus has no tracker write; recording a blocker on the issue needs one it must own itself"
+entails:
+  CPL-1: AC-1
+  CPL-2: PRES-2
+  CPL-3: PRES-1
+  CPL-4: AC-6
+entries:
+  # The item never says the drafted manifest has to be valid. Without this, a
+  # drafter emitting anything at all satisfies "a person receives a boundary".
+  - id: AC-1
+    statement: "a drafted boundary lints without failures"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1, CPL-1]
+    observation: "run lintBoundary on a drafted boundary and read the failures list"
+    decision: "the list is empty"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  # Split from AC-1. Zero failures with exempt checks reads as clean and is not:
+  # an exempt check declared it had no domain and did not run. That is what hid
+  # three dead citations in the superseded boundary.
+  - id: AC-2
+    statement: "every citation in a drafted boundary resolves to a label the item carries"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1, CPL-1]
+    observation: "lint the drafted boundary with the item's label list supplied and count the exempt checks"
+    decision: "the count is zero"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  - id: AC-3
+    statement: "no boundary exists for an item until a person has answered"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1]
+    observation: >-
+      make refined criteria ready for an item that has no boundary, answer nothing, and list the
+      boundaries for that item
+    decision: "the list is empty"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  # The item's own measure of done. A drafter that restates the criteria in
+  # manifest form passes AC-1 and AC-2 and saves nobody anything.
+  - id: AC-4
+    statement: "a reviewer writes no entry the drafter did not produce"
+    verifier: independent_review
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [usability]
+    traces: [C1]
+    observation: >-
+      give a drafted boundary and its refined criteria to a reviewer that did not draft it; ask
+      which entries they had to write themselves
+    decision: "the returned list is empty"
+    quantitative: false
+  - id: AC-5
+    statement: "criteria that cannot yield a boundary yield none"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1]
+    observation: "run the drafter on criteria whose goal is undecided and list the boundaries produced"
+    decision: "the list is empty"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  - id: AC-6
+    statement: "each thing missing from the criteria is recorded on the issue as its own blocker"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1, CPL-4]
+    observation: >-
+      run the drafter on criteria missing two separate things and count the blockers recorded on
+      the issue
+    decision: "the count equals the number of missing things"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  - id: AC-7
+    statement: "a recorded blocker names the missing criterion or the undecided question"
+    verifier: independent_review
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [usability]
+    traces: [C1]
+    observation: "read each blocker the drafter recorded and ask which criterion or question it names"
+    decision: "every blocker names one"
+    quantitative: false
+  - id: AC-8
+    statement: "resolving the last blocker yields a boundary with no further request"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1]
+    observation: >-
+      resolve every blocker on an item that has them, make no request, and list the boundaries for
+      that item
+    decision: "a boundary is present"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  - id: AC-9
+    statement: "a frozen boundary carries an approval naming a person"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1]
+    observation: "freeze a boundary and read its record for an approval"
+    decision: "an approval naming a person is present"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  # Added after review. AC-8 resolves every blocker at once, so it passes even
+  # where resolution is order-dependent. AC4's independence clause needs its own
+  # entry.
+  - id: AC-10
+    statement: "one blocker can be resolved while the others remain"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1, CPL-4]
+    observation: >-
+      on an item carrying three blockers, resolve one and read the state of all three
+    decision: "the resolved one is resolved and the other two are unchanged"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  # Added after review. AC-3 shows nothing is drafted while nothing is answered,
+  # which a drafter that never asks anyone also satisfies. The asking is a
+  # separate falsifiable claim.
+  - id: AC-11
+    statement: "a person is asked before the first boundary is drafted"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1]
+    observation: >-
+      make refined criteria ready for an item with no boundary and read what the person is sent
+    decision: "a request to draft is present"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  # Probe: a check that required drafter provenance on a manifest would fail this
+  # entry. Without such a probe, pass on base and head is satisfied by asserting
+  # nothing.
+  - id: PRES-1
+    statement: "a hand-written boundary requires no step a drafted one does not"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C3, CPL-3]
+    observation: >-
+      freeze boundary/agent-work-item-skill.yaml, which was written by hand, then freeze a drafted
+      boundary; list the steps each one required
+    decision: "every step the hand-written one required is also required for the drafted one"
+    quantitative: false
+    test_role: preservation
+    baseline: pass
+  # Probe: mutating one fixture changes its verdict, which shows the comparison
+  # can return unequal.
+  - id: PRES-2
+    statement: "the linter's verdicts on its fixture corpus do not change"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C3, CPL-2]
+    observation: >-
+      run lint-boundary.js over modus/tests/fixtures/ on base and on head and compare the failure
+      codes per file
+    decision: "the code sets are equal for every file"
+    quantitative: false
+    test_role: preservation
+    baseline: pass
+  - id: W-1
+    statement: "boundaries for new items are drafted rather than written by hand"
+    verifier: observation
+    verification_stage: production
+    obligation: watch
+    mandate: [usability]
+    traces: [C1]
+    observation: >-
+      for each item started in the window, record whether its boundary was drafted or written by
+      hand
+    decision: "no record in the window says written by hand"
+    quantitative: false

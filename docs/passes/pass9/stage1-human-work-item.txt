@@ -1,0 +1,95 @@
+probe-skill: events streaming to docs/passes/pass9/stage1-stream.jsonl
+probe-skill: watch with  tail -f docs/passes/pass9/stage1-stream.jsonl
+probe-skill: session transcripts in /Users/dpuglielli/.claude/projects/-var-folders-bk-6vcq_v6n3bl6qb6m90vhhfcc0000gn-T-probe-cwd-u4sW8G
+host:   claude
+plugin: /Users/dpuglielli/.herdr/worktrees/claude-domestique/issue-feature-155-one-item-end-to-end/modus
+prompt: Here is a ticket from our backlog. Help me tighten up the wording and write acceptance criteria for it.
+
+Title: Draft the boundary from the refined criteria
+
+Description:
+Every ticket needs a boundary before work starts, and today every one is written by hand. That holds for a couple of items and not for a sprint.
+
+Problem: producing a boundary is manual every time, so the practice lasts only while someone has the patience for it.
+
+Goal: a person receives a drafted boundary built from the refined criteria, and decides whether it freezes.
+
+## Acceptance criteria
+
+AC1. When the refined criteria become ready, a person is asked whether to draft the boundary, and nothing is drafted until they agree. The person is asked once per item; later drafts for the same item do not ask again.
+
+AC2. A reviewer given a drafted boundary names no entry they had to write themselves.
+
+AC3. Refined criteria the drafter cannot produce a boundary from leave the issue recording each missing thing separately, and no boundary is produced.
+
+AC4. Each recorded blocker names the missing criterion or the undecided question, and can be resolved without resolving the others.
+
+AC5. Resolving the last blocker produces a new drafted boundary without anyone being asked again.
+
+AC6. A boundary written or edited by hand freezes without any step a drafted one does not require.
+
+AC7. Every frozen boundary carries a recorded approval by a person, recorded at the freeze. Approval at merge is a different gate and does not satisfy this one.
+
+## Out of scope
+
+- Reducing how much a person reviews. Separate item, blocked on measuring what review costs.
+- The boundary's shape. It may change to suit the agent stage; this item neither requires nor prevents that.
+- Producing the refined criteria. That is the upstream stage.
+
+invoked:
+  Skill:modus:human-work-item
+  Bash
+  Bash
+  Bash
+  Bash
+  Bash
+  Bash
+  Bash
+  Bash
+  Bash
+  Bash
+
+--- with plugin ---
+I fetched the item from the tracker rather than working from the paste — it is issue #158, and the tracker text matches what you gave me. I found `modus/evals/158-human-work-item/expected.md` and did not open it; this run looks like a probe of the skill against that item, and reading the expected output would make the run worthless.
+
+## Findings
+
+Ten. That count usually means an item was never defined, but that is not the case here — the goal is decided and six of the ten are edge cases the criteria never reach. It is a defined item with holes, not a placeholder.
+
+**conflict — AC3 and AC5** — The two give opposite outcomes for the same state. AC5 says "Resolving the last blocker produces a new drafted boundary." AC3 says criteria the drafter cannot work from produce blockers "and no boundary is produced." When the answers to the blockers are themselves not enough, or answering them exposes a further gap, AC5 requires a boundary and AC3 forbids one.
+
+**logic-problem — Goal** — States an outcome the criteria make conditional. "A person receives a drafted boundary" is not what happens when the person declines under AC1, or when the criteria produce blockers under AC3.
+
+**logic-problem — AC1** — No defined outcome when the person says no. They are "asked once per item" and "later drafts for the same item do not ask again," so a decline appears to end drafting for that item permanently. The item does not say whether that is intended or how a person would start drafting later.
+
+**untestable-criterion — AC2** — Names no occasion and no population. It does not say whether it is checked once against one draft to accept the work, or holds for every draft the drafter ever produces. Under the second reading the item can never be closed, and it sits awkwardly against AC6, which treats a hand-edited boundary as a normal path.
+
+**missing-requirement — AC7** — Does not say whether approval at the freeze exists today. If it does, AC7 is something that must keep working. If it does not, AC7 is new work on the freeze step, which is a different mechanism from drafting.
+
+**missing-requirement — paragraph 1** — "That holds for a couple of items and not for a sprint" is not marked as a requirement or as motivation, and carries no number either way. If it is a requirement the item needs a volume and a criterion; if it is motivation it needs neither, and needs to say so.
+
+**missing-requirement — Problem** — Says why this is needed, not why now. Nothing states what changed.
+
+**missing-requirement — throughout** — Five terms a reader outside this repository cannot resolve from the item: boundary, freeze, refined criteria, the drafter, the agent stage. `modus/README.md` defines the first two, so these are gaps in the item rather than undecided things.
+
+**missing-requirement — AC3** — No defined outcome when a drafting attempt produces neither a boundary nor blockers. AC3 covers criteria the drafter cannot work from. It does not cover an attempt that does not finish, which is what pass 8 recorded.
+
+**implementation-leak — AC3** — Names the place and the component: "leave the issue recording each missing thing" and "the drafter."
+
+## Blocking and not
+
+Blocking: the AC3/AC5 conflict. One.
+
+Not blocking, and recorded rather than asked: the other nine. Two of them change what a criterion says, so I will come back to those after the conflict is settled.
+
+One thing to note without asking: seven criteria is past the point where an item usually holds one goal. AC6 and AC7 are about the freeze gate and a person's approval, not about drafting. They may belong in their own item. That is your call to make, not mine, and I am not acting on it.
+
+## Question
+
+AC5 says resolving the last blocker "produces a new drafted boundary." Which of these did you mean?
+
+1. Resolving the last blocker guarantees a boundary. The drafter must succeed once every recorded blocker is answered, and it cannot record new ones.
+2. Resolving the last blocker starts another drafting attempt. That attempt may record a fresh set of blockers, and the cycle repeats until a boundary comes out.
+3. Resolving the last blocker starts another drafting attempt. If that attempt records blockers again, the item stops and a person writes the boundary by hand.
+
+expected modus:human-work-item: FIRED

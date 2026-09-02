@@ -106,6 +106,32 @@ achieve, written down before the work starts, against which a finding is either 
    as an explicit request naming what a human is being asked to do — not silently dropped, and not
    papered over with a passing summary.
 
+## The skills
+
+Two, and they take the same item at different points. Both ship to Claude Code and
+to Codex from `skills/`.
+
+| Skill | Reader of its output | Produces |
+| --- | --- | --- |
+| `human-work-item` | a person | the item rewritten, plus acceptance criteria in bullets |
+| `agent-work-item` | an autonomous agent | a boundary manifest, linted and frozen |
+
+`human-work-item` runs first. It finds what the item does not say, settles each
+finding with a human one question at a time, and never guesses — an unanswered gap
+becomes an open question with a name against it. It adds no implementation and it
+does not split the item; it proposes the split and stops.
+
+`agent-work-item` takes it from there and derives the per-item definition of done.
+The handoff has one requirement, and `human-work-item` step 6 checks it: the
+rewritten item must carry a stated goal, a number wherever it said fast or slow,
+what must keep working, and what is out of scope. Those are the things the agent
+stage cannot invent.
+
+Neither skill fires reliably because its description reads well. Both were probed
+on both hosts — see `evals/` for the two cases and
+[`docs/plugin-evaluation.md`](../docs/plugin-evaluation.md) for why static
+validation cannot answer the question.
+
 ## The slices
 
 The design is seven vertical slices, each shippable and independently testable. Each document
@@ -124,7 +150,7 @@ carries YAML frontmatter declaring what it ships, its gating test, and what it d
 ## Running the checks
 
 ```
-npm test --workspace modus          # 183 tests
+npm test --workspace modus          # 187 tests
 node modus/scripts/lint-boundary.js modus/tests/fixtures/*.yaml
 node modus/scripts/lint-slice-headers.js
 ```
