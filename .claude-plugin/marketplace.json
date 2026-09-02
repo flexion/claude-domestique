@@ -15,13 +15,13 @@
       "name": "mantra",
       "source": "./mantra",
       "description": "Context refresh - periodic re-injection of behavioral guidance to prevent context drift",
-      "version": "0.6.0"
+      "version": "0.6.1"
     },
     {
       "name": "onus",
       "source": "./onus",
       "description": "Work-item automation - fetches issues, generates commits/PRs, syncs progress",
-      "version": "0.4.1"
+      "version": "0.4.2"
     },
     {
       "name": "agent-artifex",

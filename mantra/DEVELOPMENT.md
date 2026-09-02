@@ -65,4 +65,4 @@ mantra/
 
 Branches use `issue/feature-<N>/<desc>` or `chore/<desc>`.
 
-Commit and pull-request titles use `#N - lowercase description` for issue work or `chore - lowercase description` otherwise. Do not add AI attribution.
+Commit and pull-request titles use `#N - lowercase description` for issue work or `chore - lowercase description` otherwise.

@@ -61,7 +61,7 @@ If you need to read rule files directly, here's the notation:
 | `>` | Priority | `unit > integration > e2e` |
 | `\|` | Alternatives | `feature/N/desc \| chore/desc` |
 | `:` | Key-value | `language: typescript` |
-| `no:`, `skip:`, `never:` | Negation | `no: emojis, attribution` |
+| `no:`, `skip:`, `never:` | Negation | `no: emojis` |
 
 ## File Locations
 
@@ -99,7 +99,7 @@ test-workflow:
 commit:
   format: "PROJ-N: type: description"
   types: feat, fix, chore, docs, refactor
-  no: emojis, attribution
+  no: emojis
   example: "PROJ-123: feat: add user authentication"
 ```
 

@@ -203,9 +203,9 @@ If migrating from a single `CLAUDE.md`:
 ```markdown
 ## Git Conventions
 
-Always use HEREDOC format for commits. Never include attribution
-or Co-Authored-By tags. Commit messages should be lowercase after
-the issue number. Format: "#N - verb description"
+Always use HEREDOC format for commits. Never include emojis.
+Commit messages should be lowercase after the issue number.
+Format: "#N - verb description"
 ```
 
 ### After (rules/git.md)
@@ -216,6 +216,6 @@ companion: context/git.md
 
 commit-format: "#N - verb desc" | "chore - desc"
 commit-style: HEREDOC, lowercase-after-dash
-no: attribution, co-authored-by, emojis
+no: emojis
 ---
 ```

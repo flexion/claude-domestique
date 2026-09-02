@@ -1,6 +1,6 @@
 {
   "name": "onus",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Work-item, commit, and pull-request automation for coding agents",
   "author": {
     "name": "David Puglielli"
