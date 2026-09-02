@@ -14,10 +14,18 @@ passN/
   notes.md           the session's evaluation of the pass
 ```
 
-Raw `*.jsonl` event streams are gitignored. They are for watching a run in
-progress and run 200KB to 1.3MB a stage, against 49KB for everything readable in a
-pass. After a run finishes, the reports carry the conclusions and the session
-transcript under `~/.claude/projects` holds the fuller record.
+Raw `*.jsonl` event streams are committed, deliberately, and they are large —
+200KB to 1.3MB a stage against 49KB for everything readable in a pass. They are
+kept for forensics. A report says what a run concluded; the stream says what it
+actually did, in order, with every tool call and its input. Every question worth
+asking after the fact has turned out to need the second: which tool it was on when
+it stalled, whether it wrote outside its own directory, how many review rounds it
+dispatched and when.
+
+The richer record is the session transcript Claude writes under
+`~/.claude/projects`, which is not committed and not ours to commit. That is 19MB
+for nine sessions and it is per-machine, so the streams here are the portable half.
+`docs/plugin-evaluation.md` has the parse for both.
 
 Both skills write here themselves, conditional on this directory existing. The
 path belongs to this repository and not to either plugin, so the instruction is
