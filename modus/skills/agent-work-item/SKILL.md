@@ -41,9 +41,43 @@ An item that has been through `human-work-item` already states its goal, its
 problem, and criteria a person can check. Cite that text the same way. It is still
 an item, and it can still be wrong about the repository.
 
+**1b. Refuse criteria that cannot yield a boundary.** Before reading anything
+else, check that the item states all four:
+
+- an outcome, so an entry has something to be true about
+- a criterion per obligation you would write, each able to be false
+- what must keep working, not only what must change
+- what is out of scope
+- no two criteria that contradict each other
+
+Any one of the first four missing and you cannot derive obligations, only invent
+them. Stop and say which is absent.
+
+The fifth is separate and easy to miss, because an item can hold all four and
+still be underivable. Two criteria that cannot both hold force you to choose which
+one wins, and nothing records that you chose. Stop and name the pair. Which one is
+current is a decision, not a drafting problem. Do not draft a partial boundary and do not fill the
+gap from the repository — the repository can supply a fact, and none of these four
+is a fact.
+
+This is the gate. An item whose goal is undecided produces a boundary whose
+entries were chosen by whoever drafted it, and it will lint clean:
+`boundary/gh-158.yaml` was drafted this way and five of its nine entries are about
+a design the item never mentions.
+
 **2. Read what the item names.** This is the expensive step and it is the one that
 matters. Find what the item does not say: the consumer that breaks, the constant
 that must change, the test that does not exist. An item describes a symptom.
+
+**Bound it by the item, not by the repository.** Read the things the item names —
+its files, its components, its behaviours — and the direct consumers of those.
+Stop when every named thing has been read once.
+
+Without a bound this is a search with no floor. Search questions have a near-zero
+found-nothing rate, which is why a reviewer asked what is wrong with this code
+manufactures findings; see constraint 3 in the modus README. The same shape
+applies here. A run of this step against a whole repository passed eighteen
+minutes and returned nothing.
 
 **3. Write the interpretation.** Goal, problem, and one entry per claim. Declare
 provenance for each:
@@ -71,6 +105,18 @@ A `mechanical` + `pre_merge` + `must` also needs `test_role` and `baseline`: a
 
 A preservation entry needs a probe that would make it fail. Without one, `pass` on
 base and head is satisfied by `assert True`.
+
+**5b. Check coverage of the item.** List the item's criteria. Against each, name
+the entry that covers it. Then name every criterion with no entry.
+
+A criterion with no entry is one of two things, and you have to say which: out of
+scope, in which case it belongs in `non_goals`; or an obligation nobody wrote.
+
+This is the failure that has actually happened, twice, and a reviewer caught it
+both times. `boundary/gh-158.yaml` left six of the item's seven criteria with no
+obligation. `docs/passes/pass6/boundary.yaml` left two. Both linted clean first:
+the linter checks whether the manifest is internally consistent and never checks
+whether it covers the item.
 
 **6. Apply the prose rules** in `${CLAUDE_PLUGIN_ROOT}/prompts/boundary-prose.md`.
 Every `decision` must be able to be false. Word caps are enforced.
@@ -148,6 +194,15 @@ no return.
 A reviewer must name a specific undecidable requirement. General dissatisfaction is
 not a finding.
 
+**9b. Write the run out where it can be re-read.** If a `docs/passes/` directory
+exists, find the highest-numbered `passN` inside it and write your boundary and
+your review answers there. Elsewhere, do nothing — the directory is this
+repository's, not part of the plugin.
+
+A boundary that passed review holds no record of what review found. Pass 6's
+boundary passed both lint forms and then failed review on four counts, and the
+only account of that is the file it was written to.
+
 **10. A human approves, then freeze.** The freeze is the commit. After it, the
 boundary is the standard: if implementation makes it look wrong, stop and escalate
 rather than edit it.
@@ -164,6 +219,8 @@ Observed in real drafted boundaries. Check for each before review.
 | open list | a check that references "hedges and so on" and cannot return a definite answer |
 | gameable obligation | schema-valid output that ignores its input entirely |
 | a reason in a field | fields state the obligation; reasons go in a comment |
+| decision the observation cannot answer | the observation collects a population and the decision names one case, so nothing aggregates the two |
+| statement and decision disagree | one states containment in the opposite direction from the other; both read well alone |
 
 ## Out of scope
 

@@ -1,0 +1,74 @@
+host:   claude
+plugin: /Users/dpuglielli/.herdr/worktrees/claude-domestique/issue-feature-155-one-item-end-to-end/modus
+prompt: Here is a ticket from our backlog. Help me tighten up the wording and write acceptance criteria for it.
+
+Title: Draft the boundary from the refined criteria
+
+Description:
+Every ticket needs a boundary before work starts, and today every one is written by hand. That holds for a couple of items and not for a sprint.
+
+Problem: producing a boundary is manual every time, so the practice lasts only while someone has the patience for it.
+
+Goal: a person receives a drafted boundary built from the refined criteria, and decides whether it freezes.
+
+## Acceptance criteria
+
+AC1. When the refined criteria become ready, a person is asked whether to draft the boundary, and nothing is drafted until they agree.
+
+AC2. A reviewer given a drafted boundary names no entry they had to write themselves.
+
+AC3. Refined criteria the drafter cannot produce a boundary from leave the issue recording each missing thing separately, and no boundary is produced.
+
+AC4. Each recorded blocker names the missing criterion or the undecided question, and can be resolved without resolving the others.
+
+AC5. Resolving the last blocker produces a new drafted boundary without anyone being asked again.
+
+AC6. A boundary written or edited by hand freezes without any step a drafted one does not require.
+
+AC7. Every frozen boundary carries a recorded approval by a person.
+
+## Out of scope
+
+- Reducing how much a person reviews. Separate item, blocked on measuring what review costs.
+- The boundary's shape. It may change to suit the agent stage; this item neither requires nor prevents that.
+- Producing the refined criteria. That is the upstream stage.
+
+invoked:
+  Skill:modus:human-work-item
+
+--- with plugin ---
+Findings first.
+
+**Findings**
+
+1. `conflict` — AC1 and AC5 — AC1 says nothing is drafted until a person agrees. AC5 says resolving the last blocker produces a new draft with no one asked again. Read as a gate on each draft, the two cannot both hold.
+
+2. `logic-problem` — AC1 — the person can be asked and decline. That branch has no outcome. Nothing says whether the criteria sit unused, whether the person can be asked again later, or whether anything is recorded.
+
+3. `logic-problem` — AC3 — covers only refined criteria that no boundary can be built from. Drafting can also fail for reasons that are not about the criteria, or stop partway. Those cases have no outcome.
+
+4. `untestable-criterion` — AC2 against Out of scope, second bullet — AC2 judges a draft by whether the reviewer had to write an entry themselves. Out of scope declines to fix what entries a boundary has. A reviewer who writes an entry cannot tell whether the draft missed it or whether it was never part of a boundary.
+
+5. `missing-requirement` — Title, Description, Goal, AC3 — "boundary", "refined criteria", "freezes" and "the agent stage" are never explained. A reader who does not already work in this process cannot say what is being built or what would make it done.
+
+6. `missing-requirement` — Problem — says why this is needed. Does not say why now. The next stage cannot invent it.
+
+7. `missing-requirement` — Description, first sentence — "That holds for a couple of items and not for a sprint" reads as a condition about scale, and no criterion measures scale. Either it is a requirement and needs a number, or it is the reason for the work and needs none.
+
+8. `missing-requirement` — AC1, AC2, AC7 — three actors: the person asked before drafting, the reviewer of the draft, the person whose approval is recorded. Nothing says whether these are one role or three.
+
+9. `implementation-leak` — AC3 — names "the drafter" as a thing and "the issue" as where records go. Both are how, not what.
+
+Seven acceptance criteria is more than one goal's worth. AC1 to AC5 are about producing a boundary from refined criteria and recording blockers when it cannot be produced. AC6 and AC7 are about one freeze path with a recorded approval, and they apply to boundaries nobody drafted. I propose splitting those two apart. That is yours to decide, and it does not change the question below.
+
+**Blocking: one answer needed before the rewrite**
+
+Finding 1. When does a person get asked?
+
+- **A.** Asked once for the item. Every later draft, including the one after the last blocker is resolved, happens with no further asking.
+- **B.** Asked before every draft, including each redraft after a blocker is resolved.
+- **C.** Asked once for the item, and asked again only if the refined criteria change after they agreed.
+
+Pick one. Findings 2 through 9 are quick questions and recorded gaps; I will take them one at a time after this.
+
+expected modus:human-work-item: FIRED

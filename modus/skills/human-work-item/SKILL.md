@@ -35,7 +35,7 @@ lens's problem.
 | --- | --- |
 | goal | Is the outcome stated? What is true when this is done? |
 | problem | Is it stated why this is needed, and why now? |
-| missing | Requirements implied but never written down. Four are absent more often than present, so check each by name: what must keep working, what is out of scope, what happens when it fails, and a number wherever the item says fast, slow, large, or often |
+| missing | Requirements implied but never written down. Five are absent more often than present, so check each by name: what must keep working, what is out of scope, what happens when it fails, a number wherever a requirement depends on one, and any term the reader would have to look up |
 | logic | Steps that cannot happen in the stated order. States the item allows but does not handle. Cases with no defined outcome. |
 | conflict | Two statements that cannot both be satisfied |
 | how-not-what | Implementation prescribed where behaviour belongs |
@@ -78,11 +78,16 @@ below it undecidable. A missing goal makes the rest unjudgeable.
 | | |
 | --- | --- |
 | blocking | `contradicted`, `conflict`, a missing goal. The item cannot be written until these are answered. |
-| not blocking | everything else. Ask what the human can answer quickly. Record the rest as open questions and write the item. |
+| not blocking | everything else. Recorded, not asked. |
 
-Treating every finding as blocking is why an item with twelve findings never gets
-written. A person shown three blocking questions and five recorded gaps answers
-the three. A person given twelve questions in a row answers two and stops.
+**Not blocking means recorded.** Put it in Open Questions with a name against it
+and write the item. Ask a non-blocking question only where the answer would change
+what a criterion says — and then ask that one, not the eight around it.
+
+The default matters more than the split. A run that triages nine findings down to
+one blocking and then offers to take the other eight "one at a time" has moved the
+queue, not shortened it. A recorded gap is a finished part of the item, and a
+person answers better against a written item than against a list of abstractions.
 
 `contradicted` is the item asserting something that is not so. It rarely appears
 in the lens pass, because the lenses read the item and this needs knowledge from
@@ -128,6 +133,18 @@ Putting the picture in the item makes it a requirement nobody chose.
 **5. Rewrite.** Title, the problem, what is wanted, then the acceptance criteria.
 Nothing in it that the human did not settle. Nothing about how to build it.
 
+**And everything settled has to be visible in it.** A decision that changes how a
+sentence should be read goes into the text, not just into your working. That
+covers a reclassification, a scope call, and every inference you drew instead of
+asking.
+
+Applying a decision without writing it down leaves the next reader to derive it
+again, and they may derive it differently. Two real cases from this item: a
+sentence reclassified from requirement to motivation, which a later reader found
+again as an untestable criterion because the item never said which it was; and an
+inference that consent is asked once per item, carried by the single word "again",
+which a later reader read as a contradiction between two criteria.
+
 Label every separately falsifiable claim so the agent stage can cite one:
 `Problem`, `Goal`, then `AC1`, `AC2`, one per criterion. Put a blank line between
 them so each stands on its own.
@@ -159,6 +176,11 @@ it. This is a full second pass, not a re-read for typos.
 the tracker, the repository, any commit. It does not gate your working notes. Keep
 a local draft per attempt, including the ones that were rejected; a later reader
 can only see what changed by reading them side by side.
+
+**9. Write the run out where it can be re-read.** If a `docs/passes/` directory
+exists, find the highest-numbered `passN` inside it and write your findings and
+the item you were given there. Elsewhere, do nothing — the directory belongs to
+the repository you are in, not to this skill.
 
 ## When it is done
 
@@ -319,6 +341,8 @@ Each of these came out of a real run on a contradictory ticket.
 | "Options are easier for the human than an open question" | Where the item said nothing, the options are your guesses. The human picks one and it becomes theirs. |
 | "The goal is undecided, but I can write criteria against the likely one" | Criteria for an undecided goal read as agreed. Record the question instead. |
 | "The human gave me the format, so it belongs in the item" | They described how they picture it. The requirement is the behaviour underneath. Confirm that instead. |
+| "These eight are quick, I will just ask them" | Recorded is the default. Ask only where the answer changes what a criterion says. |
+| "I inferred it and said so, that is enough" | You said it to one person once. The item is what the next reader has. Write it in. |
 | "Nine bullets, but each one is needed" | Past about five, say the item holds more than one goal. |
 | "The reader will understand 'not left waiting indefinitely'" | Two readers get two answers. The bullet fails the test. |
 
@@ -331,6 +355,8 @@ Stop if you are about to write, or have written:
 - more than one question in one message
 - a finding that would take two answers to resolve
 - a sentence explaining your procedure, ahead of the findings
+- an offer to take the remaining findings one at a time
+- a decision you applied without writing it into the item
 - a second or third item the human did not ask for
 - a list of candidate answers, for a finding where the item said nothing
 - a technology name, a data structure, or an API in the rewrite, or in a question

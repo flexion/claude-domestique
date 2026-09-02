@@ -36,93 +36,143 @@ created.
 GitHub #158, "Draft the boundary from the refined criteria". It is the goal and
 the fixture at once: completing it requires running the process it describes.
 Pass 3 rewrote its title and body, so the placeholder wording that pass 1 and 2
-worked against is now only in `input-gen0.json`.
+worked against is now only in `docs/passes/pass1/item.json`.
 
 The GitHub issue is the item of record. Beads are derivative — `domestique-3z5`
 covers the same goal, and where the two disagree the issue wins. A reader outside
 this repository can see the issue; bead ids are hash-suffixed and mean nothing to
 them.
 
-### The fixture
+### Where the item lives
+
+`docs/passes/passN/item.json` is the GitHub API response as fetched at the start
+of pass N, stored verbatim rather than as pasted text. `agent-work-item` step 1
+warns that a tracker's UI and its API can return different content for the same
+item, and bead `domestique-2no` is open on it, so the fixture is what an adapter
+actually receives.
+
+The item advances by design. A pass may write an improved item back to the issue,
+and the next pass fetches it again — so the item converges alongside the skills.
+This is the bootstrapping period and several changes are expected before the
+drafter exists.
+
+There is one number, the pass number. An earlier version of this document kept a
+separate generation count and the two did not line up: generations 1 and 2 both
+came out of pass 3. The historical files are under `docs/passes/pass1/` and
+`docs/passes/pass3/`, which is where they belong.
+
+`modus/evals/158-human-work-item/expected.md` records what was decided, who
+decided it, the inferences drawn rather than asked, and the split proposed and not
+made. It does not copy the item text — the pass directories hold that, and two
+copies would drift.
+
+**An item is never at a fixed point while the skills are still changing.** What
+converges is the pair, not the item. A better skill finds more on the same text,
+so more findings after a skill edit is the expected result and is evidence the
+edit worked.
+
+An earlier version of this document said the opposite — that a pass over an
+unchanged item should find nothing. Pass 7 found nine findings on the text passes
+4 to 6 had run against, because passes 4 and 5 had improved `human-work-item` in
+between. The claim was wrong in its polarity: finding nothing is the exception.
+
+## How a pass runs
+
+Every pass writes into its own directory, so a pass can be re-read after the fact
+and compared with the one before it.
 
 ```
-modus/evals/158-human-work-item/input-gen0.json   the placeholder
-modus/evals/158-human-work-item/input-gen1.json   defined, criteria unlabelled
-modus/evals/158-human-work-item/input-gen2.json   the current raw item
-modus/evals/158-human-work-item/expected.md       the record of what was decided
+docs/passes/passN/
+  item.json          the issue as fetched at the start of the pass
+  stage1-*.txt       what human-work-item said about it
+  stage2-*.txt       what agent-work-item said about it
+  boundary.yaml      the boundary, where stage 2 produced one
+  stage2-review.md   what step 8 found
+  notes.md           this session's evaluation of the pass
 ```
 
-The highest-numbered generation is the input for the next pass. Each is the
-GitHub API response, stored verbatim rather than as pasted text. `agent-work-item` step 1 warns that a tracker's UI and its API can return
-different content for the same item, and bead `domestique-2no` is open on it. The
-fixture is what an adapter actually receives.
+Both skills write there themselves, conditional on the directory existing. The
+path is this repository's and not part of either plugin, so outside a checkout
+with `docs/passes/` the instruction is inert.
 
-It records `updatedAt`, and the fixture advances by design. A pass may write an
-improved item back to the issue, and that becomes the input for the next pass, so
-the item converges alongside the skills. This is the bootstrapping period and
-several fixture changes are expected before the drafter exists.
+**1. Make the directory and fetch the item.**
 
-Every superseded generation is kept, so the item's own improvement stays
-readable. A re-fetch matching no stored generation means somebody else edited the
-issue — which is the case this check exists for, and is not the same thing as a
-deliberate advance.
+```bash
+N=7; mkdir -p docs/passes/pass$N
+gh issue view 158 --json number,url,title,state,body,labels,comments,author,createdAt,updatedAt \
+  | python3 -m json.tool > docs/passes/pass$N/item.json
+```
 
-`expected.md` records what was decided, who decided it, the inferences drawn
-rather than asked, and the split proposed and not made. It does not copy the item
-text — the newest generation holds that, and two copies would drift.
+The fetched item is the pass's input. There is no separate generation numbering —
+one number, the pass number, and `docs/passes/passN/item.json` is what pass N ran
+against.
 
-**The fixture is now at a fixed point.** Generation 2 is both the next pass's
-input and pass 3's accepted output, so a pass over it should find nothing new
-unless a skill improved in between. Finding nothing is the expected result, not a
-failed pass.
+**2. Stage 1 — `human-work-item`. A check, not a gate.**
 
-## Stages and their gates
+```bash
+node scripts/probe-skill.js --plugin modus --expect modus:human-work-item \
+  --prompt "$(...)" --full > docs/passes/pass$N/stage1-human-work-item.txt
+```
 
-Run each gate before starting the next stage. A defect caught at its own stage
-costs one stage; the same defect caught at the assessment costs a whole pass.
+It reports whether the current item still generates findings, and which of them
+block. The pass continues either way. Runs in the neutral temporary directory,
+because stage 1 reads the item and nothing else.
 
-| Stage | Output | Gate |
-| --- | --- | --- |
-| 1 `human-work-item` | refined item + acceptance criteria | its own step 6: goal stated, a number wherever a requirement depends on one, what must keep working, what is out of scope, a name against every open question |
-| 2 `agent-work-item` | criteria an agent can work from, and today the boundary too | `lint-boundary.js`: `failures` empty **and** `exempt` zero, with the item's part list supplied |
-| 3 assessment | defect list | below |
+The probe is one-shot and `human-work-item` stops after one question, so a probe
+run reaches its findings and its first question and no further. As a check that
+does not matter. It cannot complete a refinement, so do not plan a pass that
+expects it to.
 
-`exempt` zero is not a formality. An exempt check declared it had no domain and
-did not run, which is not passing — see modus README constraint 2.
+**3. Stage 2 — `agent-work-item`. This one gates.**
 
-Stage 1's gate fails two ways and they need opposite responses. Something the
-human decided and the refined item omits is the skill underperforming. Something
-nobody has decided is a placeholder, and the skill did its job by recording it.
-Read the open questions to tell which.
+```bash
+node scripts/probe-skill.js --plugin modus --expect modus:agent-work-item \
+  --cwd "$(pwd)" --prompt "$(...)" --full > docs/passes/pass$N/stage2-agent-work-item.txt
+```
 
-### When stage 1 finds a placeholder
+`--cwd` is required. Step 2 of that skill reads the repository to find what the
+item does not say, and the probe's default temporary directory has nothing in it.
 
-The pass ends at stage 1. A placeholder has no decided goal, and `agent-work-item`
-derives obligations from the goal — given an undecided one it invents them. Stages
-2 and 3 do not run.
+No boundary can be produced without complete criteria from this stage, so this is
+where a pass stops. Its own step 1b refuses an item missing an outcome, a
+falsifiable criterion per obligation, what must keep working, or what is out of
+scope — and says which is absent rather than drafting a partial boundary.
 
-That is not a failed pass. It produced the thing worth having: the undecided
-questions named, with a route to an answer against each. Record it and stop.
+**3b. Route every stage-1 finding.** Stage 1 does not gate, and that is not the
+same as its output being advisory. Each finding goes to exactly one place, by the
+attribution rule below:
 
-The pass resumes when those are answered, which may need work outside this loop.
+| | |
+| --- | --- |
+| the item is wrong or incomplete | fix the item, and the next pass fetches it |
+| the skill missed it before and finds it now | nothing to fix — the skill edit worked |
+| the skill should have found it and did not | fix the skill |
+| nobody has decided it | record it, with a name against it |
+
+A finding left in a transcript is a finding nobody acts on. Pass 7 produced nine
+and this step did not exist, so all nine sat in a file.
+
+**4. Evaluate the pass.** Read all of it and look for what is missing. Write the
+result to `notes.md` in the pass directory, and add a row to the pass record at
+the end of this document. This step is a person and a session, not a script.
 
 ## The assessment
 
-Three checks. All three run every pass.
+One check, and it is the one `agent-work-item`'s own review questions do not ask.
 
-**A. The stopping rule from `agent-work-item` step 9.** A fresh agent reads the
-boundary and the refined item, and can say what must be true, how it would tell,
-what must keep working, what is out of scope, and what is handed off — with no
-blocking question about what is wanted. Questions about how or where to build do
-not block.
+**Does the boundary name what the item does not.** The value is in the consumer,
+the constant, or the missing test the item never mentions. A boundary that
+restates the item in manifest form lints clean and saves nobody anything. This is
+AC-9 in `boundary/agent-work-item-skill.yaml`.
 
-**B. Does it name what the item does not.** The value is in the consumer, the
-constant, or the missing test that the item never mentions. A boundary that
-restates the item in schema form passes the linter and saves nobody anything.
-This is AC-9 in `boundary/agent-work-item-skill.yaml`.
+Two other checks used to live here — whether a fresh reader can state what must be
+true, and whether every `decision` can be false. Both are already in the skill, as
+step 9 and as one of step 8's two questions, so they were a second copy that could
+drift. Run the skill's steps and read what step 8 returned.
 
-**C. Every `decision` can be false.** Ask of each one: what would make this
-false? An answer needing a judgment about quality is a defect.
+They were also declared to "run every pass", which was never true of any pass:
+passes 1 to 5 never reached stage 2, and pass 6 was the first to produce a
+boundary at all.
 
 ## The attribution rule
 
@@ -199,43 +249,40 @@ The freeze happens once, after the loop stops, on the boundary that a human
 approves. Editing a frozen boundary because a later pass disagreed with it is the
 failure modus exists to prevent.
 
-## Where a pass puts things
+## Proposed and unresolved
 
-A pass writes what it produced. The fixture holds what has been accepted. Two
-different things, and conflating them loses the ability to compare passes.
+Proposals a pass makes and nobody has settled. Without this they are re-proposed
+from scratch every pass, and the fact that they keep coming back is lost.
 
-```
-boundary/158-item-pass-N.md                    what pass N produced
-boundary/158-pass-N.yaml                       the boundary pass N produced
-modus/evals/158-human-work-item/expected.md    the accepted refined item
-```
+| Proposal | Raised | State |
+| --- | --- | --- |
+| split #158 in two | pass 6 along AC3/AC4, pass 7 along AC6/AC7 | unresolved. Two passes proposed different lines, which is itself evidence the item holds more than one goal and that nobody can say where the seam is |
+| make #156 the control item | pass 4 | unresolved. The synthetic export ticket is compromised for two behaviours after pass 4 drove edits from it |
+| reduce the two human touchpoints | pass 3 | deferred by decision, blocked on measuring what review costs |
 
-When a pass's refined item is approved, copy it into `expected.md`. From that
-point `expected.md` is an answer later passes are compared against, not only a
-contract on shape. Before the first approval it is shape only, and a pass cannot
-fail by disagreeing with it.
-
-Per-pass files are kept, not overwritten, and that includes the drafts a human
-rejected. A pass that regressed is only visible next to the one before it.
-
-`human-work-item` step 8 makes this consistent: approval gates the record — the
-tracker, the repository, any commit — and not the working draft. Before pass 2
-the skill said "wait for approval before writing it anywhere", which banned the
-per-pass file this document requires.
-
-Nothing is written to GitHub or to a tracker by a pass. `human-work-item` shows
-the rewritten item and waits; that rule holds here.
+A proposal that recurs with a different shape each time is not the same proposal
+twice. It is a signal that the question is wrong, or that the item is too broad to
+answer it.
 
 ## When the loop stops
 
-Both are required:
+Three conditions, and the third is the one that makes the other two mean
+anything:
 
-- The assessment passes A, B and C with no change to either skill.
+- The boundary names what the item does not.
 - The control item did not degrade.
+- **Neither the skills nor the item changed since the previous pass, and stage 1
+  still finds nothing new.**
 
-One pass that meets both ends the loop. A pass that meets both only because the
-previous pass edited a skill has not met the first condition — run one more with
-no edits and see.
+The third condition is why reaching a fixed point takes a deliberate act. While
+skills keep improving, each pass finds more on the same item, and "more findings"
+is indistinguishable from "the item got worse" if nothing was held still. Ending
+the loop means choosing one pass in which nothing is edited, and seeing what a
+frozen pair finds.
+
+An earlier version required "no change to either skill", which no pass can satisfy
+while the loop is doing its job — the loop's whole design is that skills improve
+every pass.
 
 ## When the loop is blocked
 
@@ -269,6 +316,7 @@ One row per pass, appended to this file.
 | 3 | 8 | `human-work-item` 2, this document 4, #158 itself 2 | 8 findings against 10 |
 | 4 | 3 | `human-work-item` 2, both skills 1 | **used to drive edits — see below** |
 | 5 | 4 | `human-work-item` 4 | n/a — verified on #156 |
+| 6 | 7 | `agent-work-item` 1, `lint-boundary.js` 1, the draft 5 | not re-run |
 
 ### Pass 1
 
@@ -420,6 +468,66 @@ One difference that is not an improvement: the title-versus-goal mismatch came o
 as `implementation-leak` where the previous run called it `conflict`. Both are
 defensible readings.
 
+### Pass 6
+
+**Stage 2 ran for the first time.** `docs/passes/pass6/boundary.yaml`, fourteen
+entries, derived from generation 2. Both lint forms clean: failures empty,
+warnings `W_NO_FLOOR` only, exempt zero.
+
+Stage 1 passed with one non-blocking finding — AC1 says "a person is asked" and
+never says which person.
+
+**The item rewrite had silently invalidated the existing boundary.**
+`boundary/gh-158.yaml` was authored in an earlier session against generation 0 and
+cites `description#1`, `#2` and `#3`. After the rewrite all three resolve to
+nothing. It is superseded rather than edited, and kept.
+
+Worse than the citations: six of the item's seven criteria had no obligation in it
+at all, and five of its nine entries are about a prompt template with double-brace
+placeholders that the item never mentions. It was derived from a placeholder, so
+its obligations were invented against a chosen design — which is exactly what
+`human-work-item` now forbids:
+
+> A placeholder does not go to the agent stage. That stage derives obligations
+> from the goal, and given an undecided goal it will invent them.
+
+That rule was written in pass 1 from reasoning. This is the same failure already
+committed to the repository before the rule existed.
+
+Findings:
+
+1. **`agent-work-item` step 1 is ambiguous about "paragraph".** The earlier author
+   counted lines, so `description#3` meant the Goal line; counting blank-line
+   blocks, generation 0 had only two parts and `description#3` named nothing. Two
+   readers, two answers, one sentence. Bead `domestique-3lf`.
+2. **`lint-boundary.js` prints `ok` while checks are exempt.** The CLI reported
+   `ok` on a boundary with three dead citations, and printed no exempt count. The
+   skill warns about this and the CLI's own output does not, which is modus README
+   constraint 2 inside modus's own linter: a check that could not run reporting
+   green. The fix belongs in the CLI, not in the skill.
+
+Five findings against the draft, all from step 8 and none catchable by the linter:
+
+3. `W-1`'s decision could not be evaluated against its own observation — the
+   observation collects a population across every item and the decision named one
+   boundary, with `quantitative: false` foreclosing a threshold. The same shape as
+   bead `domestique-dpi`.
+4. `PRES-1` demanded the two step lists be equal where AC6 states a subset, so it
+   also failed a hand-written boundary needing fewer steps — a case the item
+   permits.
+5. AC4's "can be resolved without resolving the others" had no entry. `AC-8`
+   resolves every blocker at once and passes even where resolution is
+   order-dependent. Added as `AC-10`.
+6. AC1's "a person is asked" had no entry. `AC-3` shows only that nothing is
+   drafted while nothing is answered, which a drafter that never asks anyone also
+   satisfies. Added as `AC-11`.
+7. `PRES-1`'s statement stated the containment in the opposite direction from its
+   own decision. Caught on the second review round.
+
+Two review rounds were needed, and the first found four defects in a boundary that
+had already passed both lint forms. That is the case for step 8 existing: linting
+is necessary and measures nothing about whether the boundary decides anything.
+
 The pass changed what #158 is. The item says "draft the boundary from the
 ticket"; the input is in fact the output of `agent-work-item`. That is the first
 `contradicted` finding this process has produced, and it moved the surface — one
@@ -456,13 +564,14 @@ Findings against this document, all fixed:
 
 ## Known harness limits
 
-**`probe-skill.js` cannot run stage 1.** It is one-shot (`claude -p`), and
-`human-work-item` is built to ask one question and stop. The probe reaches its
-findings and its first question. The resolution loop, the rewrite, step 6 and the
-second lens pass are all unreachable that way.
+**A refinement needs a person, a check does not.** The probe cannot complete
+stage 1 — see step 2 of the procedure. Where the item actually has to be rewritten
+and re-approved, that is an interactive session with somebody answering, not a
+probe run.
 
-So stage 1 is an interactive session with a person answering. Stages 2 and 3 run
-through the probe. Do not plan a pass that expects the probe to exercise stage 1.
+**Stage 2 does not finish inside a foreground call.** With `--cwd` at the
+repository root the agent reads the repository, and pass 7's stage 2 passed ten
+minutes and was killed. Run it in the background and collect the file afterwards.
 
 **One run is weak evidence.** The probe does one run and no repetition. Two
 passes disagreeing about the same defect is expected noise, not a finding about
