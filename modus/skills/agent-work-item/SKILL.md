@@ -56,7 +56,13 @@ them. Stop and say which is absent.
 The fifth is separate and easy to miss, because an item can hold all four and
 still be underivable. Two criteria that cannot both hold force you to choose which
 one wins, and nothing records that you chose. Stop and name the pair. Which one is
-current is a decision, not a drafting problem. Do not draft a partial boundary and do not fill the
+current is a decision, not a drafting problem.
+
+**If reconciling two criteria needs something the item does not say, they
+contradict.** Your own inference is not a reconciliation. Two runs of this skill
+met the same pair on the same item: one stopped and named it, the other reconciled
+it with an unstated assumption, drafted, and recorded the assumption as though the
+item had stated it. Nothing in the manifest showed that a choice was made. Do not draft a partial boundary and do not fill the
 gap from the repository — the repository can supply a fact, and none of these four
 is a fact.
 
@@ -97,7 +103,22 @@ A `contradicted` claim needs a correction saying what the repo shows instead, an
 `moves_surface: true` if correcting it changes what gets built. That is a terminal:
 the run stops and a human decides. It is the right outcome, not a failure.
 
+**A contradiction is not a gap, and the two are easy to swap.** A gap is an element
+the item omits, which the repository can fill. A contradiction is the item asserting
+something the repository refutes, which the repository cannot fill — only a person
+can say which is current. Putting one in `gaps` produces a manifest with an empty
+`corrections` list and a real conflict recorded as though it were an omission. That
+has happened: an item required an approval at freeze, the specified freeze records a
+digest and a commit and puts approval at merge, and the conflict went into `gaps`.
+
 A `stated_unverified` claim cannot ground a `must`.
+
+**For every `stated` claim, quote the item's words that state it.** If you cannot
+quote them, it is not `stated` — it is `inferred` at best. A claim labelled
+`stated` on the strength of what the item implies, or of a note recording your own
+earlier inference, is the one place a boundary can decide something nobody decided
+and leave no trace. The provenance field exists to make that visible, so
+mislabelling it is worse than the missing decision.
 
 **4. Find the coupling.** What consumes the thing being changed. Every coupling edge
 maps in `entails` to an obligation or the literal `uncovered`.

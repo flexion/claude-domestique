@@ -164,13 +164,29 @@ same item for an autonomous agent. It needs things it cannot invent:
 - what must keep working, not only what must change
 - what is out of scope
 - a name against every open question
+- no two criteria that need an unstated fact to reconcile
 
 Anything missing is a finding. Take it back through step 4. Do not write the
 agent's artifact here — different skill, different structure.
 
+The last one exists because this list and the agent stage's own gate were not the
+same test. An item passed this check and was then refused there, over two criteria
+that only agree if you already know something the item never says. Whatever you
+settled in step 4 has to be readable off the page, or the next stage either stops
+or invents it.
+
 **7. Run the six lenses again over the rewrite.** A rewrite creates new gaps: a
 requirement you changed in step 5 can leave a criterion that no longer matches
 it. This is a full second pass, not a re-read for typos.
+
+**Read it as someone who was not in the conversation.** You know what you meant,
+which is exactly what disqualifies you from reading it. An inference you drew is
+not in the text unless you wrote it there, and a conflict you settled in your head
+is still a conflict on the page.
+
+The `conflict` lens is where this bites. Two criteria on a real item read as
+agreeing only if you already knew the decision behind them; the author re-read
+them and saw agreement, and the next stage saw a contradiction and stopped.
 
 **8. Show the rewritten item and wait for approval.** Approval gates the record —
 the tracker, the repository, any commit. It does not gate your working notes. Keep
