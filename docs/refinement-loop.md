@@ -79,10 +79,18 @@ separate generation count and the two did not line up: generations 1 and 2 both
 came out of pass 3. The historical files are under `docs/passes/pass1/` and
 `docs/passes/pass3/`, which is where they belong.
 
-`modus/evals/158-human-work-item/expected.md` records what was decided, who
-decided it, the inferences drawn rather than asked, and the split proposed and not
-made. It does not copy the item text — the pass directories hold that, and two
-copies would drift.
+**There is no separate record of what was decided, deliberately.** One existed and
+was deleted: it went stale within two passes, listed generation files that had
+moved, claimed the item was at a fixed point after that was falsified, and
+recorded a split at a seam two later passes disagreed with. Pass 8's boundary then
+cited it as support for a claim marked `stated`, so a stale note supplied
+provenance for a decision nobody had made.
+
+The item is the record. `human-work-item` step 5 requires everything settled to be
+visible in the item's own text, which makes a second copy redundant by
+construction — and a second copy of a decision is a second copy that can drift.
+Where a decision needs its reasoning kept, that goes in the pass notes, which are
+dated and never claim to be current.
 
 **An item is never at a fixed point while the skills are still changing.** What
 converges is the pair, not the item. A better skill finds more on the same text,
@@ -369,7 +377,8 @@ decision moved out of the item into a separate one, and "doesn't scale" was
 reclassified from requirement to motivation. The measure was then replaced with
 an observable one — a reviewer names no entry they had to write themselves.
 
-#158 is defined and awaiting approval. It does not reach `expected.md` until then.
+#158 is defined and awaiting approval. Approval writes it to the issue, which is
+the only place it is recorded.
 
 Findings against `human-work-item`, both fixed:
 

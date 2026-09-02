@@ -14,6 +14,11 @@ passN/
   notes.md           the session's evaluation of the pass
 ```
 
+Raw `*.jsonl` event streams are gitignored. They are for watching a run in
+progress and run 200KB to 1.3MB a stage, against 49KB for everything readable in a
+pass. After a run finishes, the reports carry the conclusions and the session
+transcript under `~/.claude/projects` holds the fuller record.
+
 Both skills write here themselves, conditional on this directory existing. The
 path belongs to this repository and not to either plugin, so the instruction is
 inert in a checkout without it.

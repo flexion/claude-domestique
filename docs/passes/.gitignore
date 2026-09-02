@@ -1,0 +1,8 @@
+# Raw event streams are not committed. They run 200KB to 1.3MB per stage against
+# 49KB for everything readable in a pass, and their job is live diagnosis of a run
+# in progress — is it stuck, which tool is it on — not the archive.
+#
+# Once a run has finished, the readable artifacts carry the conclusions and the
+# session transcript under ~/.claude/projects holds the richer record, with full
+# tool inputs. See docs/plugin-evaluation.md for how to read one.
+*.jsonl
