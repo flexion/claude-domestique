@@ -268,6 +268,22 @@ questions were actually answered. A round whose reported digest does not match t
 file is void, not clean and not negative: a review of unknown questions has
 established nothing.
 
+**The round file carries these and nothing else:** the path to the boundary and the
+path to the item, the receipt line, the five questions, the rule that every answer
+names something specific, and what handed off means. Plus these four, which bound
+what the reviewer does rather than what it is asked:
+
+- Read the boundary and the item. Nothing else.
+- Do not edit either one, and do not propose replacement wording. Name the defect;
+  the drafter writes the fix.
+- Say plainly when a question has no finding. None is an expected answer.
+- Do not run the linter or report its output. It has already run, and it cannot see
+  what these questions ask about.
+
+Add nothing beyond that list. A reviewer told more than the file states is answering
+a different review from the one the receipt certifies, and the digest then attests to
+the wrong thing — which is worse than no receipt, because it looks like evidence.
+
 This matters most when the skill itself has just changed. An agent whose plugin was
 installed before the change reads the old step 8, dispatches the old questions, and
 returns a pass that says nothing about the new ones.
