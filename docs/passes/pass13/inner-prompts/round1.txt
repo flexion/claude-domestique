@@ -1,0 +1,109 @@
+You are reviewing a "boundary" manifest — a frozen, per-item definition of done drafted from a work item before any code is written. You did not write it. Do not edit anything, do not implement anything, do not write any files, and do not go looking for the code (there is no repository here — the working directory is empty on purpose). Everything you need is quoted below.
+
+How to read the manifest: each entry in `entries` is one obligation. Its `observation` is what someone will actually do or collect to check it. Its `decision` is the rule applied to that observation to return true or false. A `decision` is only usable if it can be evaluated purely against that same entry's own `observation` and can come out false.
+
+=== THE ITEM ===
+
+Title: Add a --quiet flag to the export command
+
+Description: The export command prints a progress line per record. In CI that fills
+the log with thousands of lines and the actual failure scrolls away.
+
+Problem: export has no way to suppress per-record output, so CI logs are unreadable.
+
+Goal: a CI run of export produces no per-record output and still reports failures.
+
+## Acceptance criteria
+
+AC1. `export --quiet` writes no per-record line.
+AC2. `export --quiet` still writes every error line.
+AC3. `export` without the flag writes what it writes today.
+
+## What must keep working
+
+- The exit status export returns for a failed record.
+
+## Out of scope
+
+- Changing what counts as an error. Separate item.
+
+=== THE BOUNDARY ===
+
+schema_version: 1
+tracker: github-issues
+item: gh-901
+registry_revision: "none"
+registry_selections: []
+mandates: [correctness]
+non_goals:
+  - "changing what counts as an error — separate item"
+interpretation:
+  goal:
+    statement: "a CI run of export produces no per-record output and still reports failures"
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "Goal"
+  problem:
+    statement: "export cannot suppress per-record output, so CI logs are unreadable"
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "Problem"
+  claim_provenance:
+    C1:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "AC1"
+    C2:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "AC2"
+  corrections: []
+  gaps: []
+claims:
+  - id: C1
+    text: "export --quiet writes no per-record line"
+  - id: C2
+    text: "export --quiet still writes every error line"
+coupling:
+  - id: CPL-1
+    kind: consumer
+    target: "the CI job that reads export's output"
+entails:
+  CPL-1: OB-1
+entries:
+  - id: OB-1
+    statement: "export --quiet writes no per-record line"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1, CPL-1]
+    observation: "run export --quiet over a three-record input and count the per-record lines"
+    decision: "the count is zero"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  - id: OB-2
+    statement: "export --quiet writes every error line"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C2]
+    observation: "run export --quiet over an input whose second record fails, then read the output"
+    decision: "the output is acceptable"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+
+=== ANSWER EXACTLY THESE TWO QUESTIONS ===
+
+Q1. Which entries' `decision` could you not evaluate against that entry's own `observation`? Answer with entry ids only (e.g. "OB-2", or "none"). For each id you name, add one short sentence saying what about it you could not evaluate.
+
+Q2. Do you have a blocking question about **what is wanted** that you cannot answer from the boundary and the item? A blocking question is one where two different readings of what is wanted would lead to two different obligations, and neither the item nor the boundary settles which. Questions about *how* or *where* to build it are NOT blocking — do not raise those. Answer "no blocking question", or state the question(s).
+
+Be specific and concrete. General dissatisfaction with the manifest is not a finding. Keep your answer short.

@@ -1,0 +1,167 @@
+probe-skill: events streaming to /tmp/pilot9.jsonl
+probe-skill: watch with  tail -f /tmp/pilot9.jsonl
+probe-skill: session transcripts in /Users/dpuglielli/.claude/projects/-var-folders-bk-6vcq_v6n3bl6qb6m90vhhfcc0000gn-T-probe-cwd-VRijLE
+host:   claude
+plugin: /Users/dpuglielli/.herdr/worktrees/claude-domestique/issue-feature-173-review-establishes-stopping-conditions/modus
+prompt: You are resuming an in-progress `modus:agent-work-item` run. Steps 1 through 8 are
+already done: the item below was read, the boundary below was drafted from it, it
+passes both lint forms with no failures, and the review returned an empty list of
+unevaluable decisions and no blocking question.
+
+Continue the procedure at step 9. Do what step 9 says, and stop when step 9 is done.
+Do not restart from step 1. Do not redraft or edit the boundary. Do not go past step 9.
+
+I am deliberately not telling you what step 9 requires, and not telling you what its
+result should be. Read it in the skill and reach your own conclusion.
+
+=== THE ITEM ===
+
+Title: Add a --quiet flag to the export command
+
+Description: The export command prints a progress line per record. In CI that fills
+the log with thousands of lines and the actual failure scrolls away.
+
+Problem: export has no way to suppress per-record output, so CI logs are unreadable.
+
+Goal: a CI run of export produces no per-record output and still reports failures.
+
+## Acceptance criteria
+
+AC1. `export --quiet` writes no per-record line.
+AC2. `export --quiet` still writes every error line.
+AC3. `export` without the flag writes what it writes today.
+
+## What must keep working
+
+- The exit status export returns for a failed record.
+
+## Out of scope
+
+- Changing what counts as an error. Separate item.
+
+=== THE BOUNDARY ===
+
+schema_version: 1
+tracker: github-issues
+item: gh-901
+registry_revision: "none"
+registry_selections: []
+mandates: [correctness]
+non_goals:
+  - "changing what counts as an error — separate item"
+  - "the structured log format the CI job will need once per-record output is suppressed; deferred"
+interpretation:
+  goal:
+    statement: "a CI run of export produces no per-record output and still reports failures"
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "Goal"
+  problem:
+    statement: "export cannot suppress per-record output, so CI logs are unreadable"
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "Problem"
+  claim_provenance:
+    C1:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "AC1"
+    C2:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "AC2"
+    C3:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "What must keep working"
+  corrections: []
+  gaps: []
+claims:
+  - id: C1
+    text: "export --quiet writes no per-record line"
+  - id: C2
+    text: "export --quiet still writes every error line"
+  - id: C3
+    text: "the exit status for a failed record does not change"
+coupling:
+  - id: CPL-1
+    kind: consumer
+    target: "the CI job that reads export's output"
+entails:
+  CPL-1: OB-1
+entries:
+  - id: OB-1
+    statement: "export --quiet writes no per-record line"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1, CPL-1]
+    observation: "run export --quiet over a three-record input and count the per-record lines"
+    decision: "the count is zero"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  - id: OB-2
+    statement: "export --quiet writes an error line for every failed record"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C2]
+    observation: "run export --quiet over an input whose second record fails, then count the error lines"
+    decision: "the count is one"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  - id: PRES-1
+    statement: "the exit status for a failed record does not change"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C3]
+    observation: "run export over an input whose second record fails, on base and on head, then read both exit statuses"
+    decision: "the two statuses are equal"
+    quantitative: false
+    test_role: preservation
+    baseline: pass
+
+invoked:
+  Skill:modus:agent-work-item
+
+--- with plugin ---
+## Step 9 — stopping rule
+
+Step 9 is not "the review came back empty, therefore done." It sets an independent bar: a fresh agent must be able to say **what must be true, how it would tell, what must keep working, what is out of scope, and what is handed off**, with no blocking question about what is wanted. I applied that bar to the boundary as it stands.
+
+**It does not pass.** One specific undecidable requirement:
+
+**AC3 has no entry, no claim, and no non-goal.**
+
+The item's acceptance criteria are AC1, AC2, AC3. The boundary's claims are C1←AC1, C2←AC2, C3←"What must keep working". AC3 — *`export` without the flag writes what it writes today* — appears nowhere: not in `claims`, not in `entries`, not in `non_goals`, and `gaps` is empty. Per step 5b, a criterion with no entry is either out of scope or an obligation nobody wrote, and the boundary has to say which. This one says neither.
+
+It is not implicitly covered. Every entry is conditioned on `--quiet` or on exit status:
+
+- OB-1: `export --quiet` → zero per-record lines
+- OB-2: `export --quiet` → one error line
+- PRES-1: exit status for a failed record unchanged
+
+An implementation that suppresses per-record output **unconditionally** — ignoring the flag entirely, or defaulting it on — satisfies all three entries and violates AC3. A fresh agent reading only the frozen boundary cannot tell whether unflagged output is protected or free to change, so a post-freeze finding about default output would be unclassifiable as blocking or noise. That is exactly what the freeze is supposed to prevent.
+
+AC3 is also the one criterion of the three that is a *preservation* requirement, which is why its absence matters more than a missing `change` entry would: the boundary currently declares only one thing that must keep working (exit status) when the item declares two.
+
+Secondary, non-blocking: the second non-goal — *"the structured log format the CI job will need once per-record output is suppressed"* — is not traceable to any part of the item. The item never mentions structured logs. As a `non_goal` it only excludes, so it does no damage, but it asserts a future need the item does not state.
+
+## Where that leaves the run
+
+Step 9 says stop at the first draft that passes; this draft does not, so the run does not advance to 9b/10. Per your instruction I have not edited the boundary and have not gone past step 9.
+
+What the fix requires is a decision I should not make on your behalf: AC3 becomes either a fourth entry (a preservation entry — run `export` without the flag on base and head, compare output, `test_role: preservation`, `baseline: pass`, traced to a new claim citing AC3) or an explicit `non_goal`. The item states AC3 as a criterion, so the first reading is the obvious one — but writing it is a redraft, which is outside what you asked for here.
+
+expected modus:agent-work-item: FIRED
