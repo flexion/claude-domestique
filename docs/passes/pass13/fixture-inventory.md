@@ -128,9 +128,39 @@ Two ways out, and neither is the drafter's to choose:
    OB-9's frozen text says "the reviewer reported", and step 10 forbids reinterpreting a
    frozen entry to suit the implementation.
 
-The boundary is frozen, so this is stopped and handed to the operator rather than
+The boundary is frozen, so this was stopped and handed to the operator rather than
 resolved here. OB-7 is unaffected: extracting the inner prompt and comparing its review
 instructions against head's satisfies it as written.
+
+**Operator ruling: satisfy it literally.** Option 1. The stream-pairing alternative is
+refused, and OB-9 stands as frozen.
+
+What "literally" requires, read off the frozen text word by word:
+
+> read the prompt digest **the reviewer reported**, then digest **the prompt file the
+> dispatcher recorded** for that round
+
+- *the reviewer reported* — step 8 must require each reviewer to report a digest with
+  its answers. Nothing does today.
+- *the prompt file the dispatcher recorded* — a **file** must exist, and the dispatcher
+  must be the one that records it. Under self-dispatch the dispatcher is the skill, so
+  **the skill must write each round's review prompt to a file before dispatching.**
+
+The second half is the larger consequence and it was not visible when the escalation was
+written. It changes step 8 from dispatching a review by value to dispatching it by
+reference — the same discipline pass 11 adopted for its own rounds, for the same reason:
+a reviewer that reconstructs prompt text in order to hash it will differ on whitespace,
+and a digest that cannot be reproduced is not a receipt.
+
+So the step 8 change carries four things, only the first of which gh-173 asked for:
+
+1. the three new questions;
+2. write the round's review prompt to a file;
+3. dispatch the reviewer with that path;
+4. require the reviewer to report that file's digest with its answers.
+
+Items 2 to 4 are OB-7 and OB-9's cost, and they are in scope because those entries are
+frozen musts.
 
 | # | Fixture | Serves | What it plants |
 | --- | --- | --- | --- |

@@ -221,15 +221,56 @@ which is not the same as passing.
 Omitting `itemParts` makes every `item_locator` check exempt itself. The boundary
 then looks clean while its citations are unverified.
 
-**8. Have it reviewed by someone who did not write it.** Ask exactly two questions:
+**8. Have it reviewed by someone who did not write it.** Ask exactly five questions,
+of every review, whatever the boundary is or how it is marked:
 
 - Which entries' `decision` could you not evaluate against that entry's own
   `observation`? Ids only.
 - Do you have a blocking question about **what is wanted** that you cannot answer
   from the boundary and the item?
+- Can you state what must keep working? If not, name what is missing.
+- Can you state what is out of scope? If not, name what is missing.
+- Can you state what is handed off, and to whom? If not, name the residual that
+  has nowhere to go.
 
 Do not ask "would you implement from this". That invites answers about how and
 where to build, which is the next phase and will send you in circles.
+
+The last three are step 9's conditions, asked here because step 9 is where they are
+required and nothing else asks them. Step 8 used to ask two questions, which
+established what must be true, how it would tell, and the absence of a blocking
+question — three of the six. The other three were checked by nothing, so a finding
+against them arrived after the rounds were spent, or not at all.
+
+**A condition the reviewer cannot state is a finding for that round**, handled like
+any other: round one returns it to the drafter, and a second round that names one
+stops the review.
+
+What is handed off means every live residual the boundary will not discharge, each
+with a named destination — a later-stage `handoff` object, an `uncovered` coupling
+edge that has been routed somewhere, or a `non_goal` that defers live work rather
+than excluding it. An `uncovered` edge is a finding until it names a destination.
+A `non_goal` that excludes work with no residual needs no destination and is
+answered completely by "out of scope".
+
+**Write each round's prompt to a file, and dispatch the reviewer with the path.**
+Not with the text. Then require the reviewer to open its answer with the digest of
+that file:
+
+```bash
+shasum -a 256 <round-prompt-file>
+```
+
+A reviewer handed text has nothing a third party can re-hash, and a reviewer that
+reconstructs its own prompt in order to hash it will differ on whitespace. The file
+is what makes the receipt reproducible, and the receipt is what establishes which
+questions were actually answered. A round whose reported digest does not match the
+file is void, not clean and not negative: a review of unknown questions has
+established nothing.
+
+This matters most when the skill itself has just changed. An agent whose plugin was
+installed before the change reads the old step 8, dispatches the old questions, and
+returns a pass that says nothing about the new ones.
 
 **Two rounds. Then stop, whatever the second one said.**
 
@@ -260,8 +301,11 @@ what is wanted. Questions about how or where to build do not block.
 Stop at the first draft that passes. Structure added past that point is cost with
 no return.
 
-A reviewer must name a specific undecidable requirement. General dissatisfaction is
-not a finding.
+A reviewer must name something specific on every question it answers: the entry
+whose decision it could not evaluate, the requirement it could not decide, the
+condition it could not state, the residual with nowhere to go. General
+dissatisfaction is not a finding, and that holds for all five questions and not
+only the first.
 
 **9b. Write the run out where it can be re-read.** If a `docs/passes/` directory
 exists, find the highest-numbered `passN` inside it and write your boundary and

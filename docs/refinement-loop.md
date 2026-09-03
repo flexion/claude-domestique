@@ -193,7 +193,7 @@ AC-9 in `boundary/agent-work-item-skill.yaml`.
 
 Two other checks used to live here — whether a fresh reader can state what must be
 true, and whether every `decision` can be false. Both are already in the skill, as
-step 9 and as one of step 8's two questions, so they were a second copy that could
+step 9 and as one of step 8's five questions, so they were a second copy that could
 drift. Run the skill's steps and read what step 8 returned.
 
 They were also declared to "run every pass", which was never true of any pass:
