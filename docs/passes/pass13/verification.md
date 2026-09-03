@@ -1,6 +1,10 @@
 # Pass 13 — verification of the frozen boundary against the implementation
 
-Boundary frozen at `44d9969`. Implementation at `8e61b1e`, modus 0.4.0.
+Boundary frozen at `44d9969`. Implementation at `8e61b1e`, repaired at `a502e85`,
+modus 0.4.0.
+
+**All 26 entries are accounted for: 24 must-entries verified, 2 watches that gate
+nothing.** The verifier called every entry the drafter could not.
 
 Every run is a `probe-skill.js` phase entry with `--plugin-dir` pointing at the
 worktree, so each exercises head's `SKILL.md` rather than the installed 0.3.0. Each
@@ -58,17 +62,54 @@ and no `non_goal`. That made all six variants red for an unplanted reason and vo
 This is exactly why the verifier required a control: without it the six reds would have
 been reported as PRESB-8 passing.
 
-## Not called by the drafter
+## OB-7: failed, repaired, then passed
 
-**OB-7.** Its decision is that the prompt's review instructions are *exactly* those
-extracted from head. The round prompt carries the five questions verbatim, the naming
-rule, the handed-off definition, the don't-ask-about-implementation rule and the
-receipt — all traceable to head. It also carries "Do not edit the boundary or the item.
-Do not write any files. Report only", which is not in head's step 8. That may be
-dispatch hygiene rather than a review instruction, or it may be exactly the
-extra-instruction case the exclusivity wording exists to catch. The drafter ruling on
-its own implementation is what this process exists to prevent, so it goes to the
-verifier.
+The drafter declined to call this one and sent it to the verifier. That was the right
+call, because **the verifier failed it.**
+
+Its decision is that the round prompt's review instructions are *exactly* those
+extracted from head. The recorded round file directed the reviewer not to edit, not to
+propose replacement wording, to say plainly when a question has no finding, and not to
+run the linter. Each governs reviewer action or output; none was in head. The
+verifier's ruling: *"hygiene is not an exception to exactness"*, and the file alone
+decides, so classifying the additions as transport could not save them.
+
+**The repair (`a502e85`).** Step 8 now states the round file's whole contents — the two
+paths, the receipt line, the five questions, the naming rule, what handed off means,
+and the four bounds above — then forbids anything beyond that list, because a reviewer
+told more than the file states is answering a different review from the one the receipt
+certifies, which is worse than no receipt since it looks like evidence.
+
+**Verified after repair.** Every imperative line in the re-run round file traces to
+head and nothing else appears. The verifier independently hashed both the saved file
+and the stream `Write` payload to
+`f6c9bc1fa93c6394fd5075878546fbf8f48e7b81c0a74d83cbcf7d6105c1474c`, matching the
+reviewer's receipt, and confirmed that headings and formatting add no instruction while
+the dispatch wrapper only names the file.
+
+Artifacts: `ob7-roundfile.md`, `streams/ob7-recheck.jsonl`.
+
+## The prose changed, so what was re-established on the new text
+
+The repair edited step 8, so entries resting on step 8's text could not simply be
+carried over. Re-run on the same F3 fixture: the round file still carries 5/5 questions
+and the receipt (PRESB-1), round one still returned findings on Q3, Q4 and Q5 with Q1
+none (OB-4), step 9's sentence is still untouched against `main` (PRES-2), validation is
+green (PRES-9), and `SKILL.md` is the only changed file (PRES-11).
+
+The verifier ruled no other fixture needs rerunning: the delta changes only the declared
+prompt projection, and the cap, question text, naming semantics, handed-off semantics
+and step 9 did not change.
+
+## One disclosed variance
+
+Q2 returned **yes** on the F3 re-run where the earlier F3 run returned **no** — same
+fixture, same prose for that question. Judgment variance on the blocking question.
+
+It touches no asserted verdict: OB-4 rests on Q3, Q4 and Q5, and PRESB-1 on the
+questions being asked rather than their answers. Recorded because the number moved and a
+later reader should know it can. One run is one sample, which is the limit stated
+throughout this pass and not repaired by it.
 
 ## Fixture defects found, all the drafter's
 
