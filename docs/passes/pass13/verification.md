@@ -124,6 +124,21 @@ verdict standing that no longer holds.**
 What the boundary would need, whenever it is next opened: `package-lock.json` in
 PRES-11's allowlist, and OB-8 widened from four files to five.
 
+**PRES-11 is violated a second time, also by operator decision.** After the
+post-mortem the operator directed folding two follow-up changes into this PR: the
+removal of the banned-word list and the author's tells from
+`modus/prompts/boundary-prose.md`, and seven proportionality changes to
+`SKILL.md`. The first touches a file this boundary's `non_goals` explicitly routes
+elsewhere — "correcting boundary-prose.md's enforcement table … `domestique-13n`" —
+so it is not merely outside the allowlist, it is inside a stated exclusion.
+
+Recorded rather than reconciled. The boundary said that work belonged to another
+item; the operator decided it ships here. Both are true and the record says so.
+
+`domestique-13n` is now half closed: the enforcement table no longer credits a
+script with the banned words, because the banned words are gone. It still credits
+one with the word caps, which nothing performs, and that row now says so.
+
 **The part worth keeping.** That gap survived the drafter's adversarial self-pass over
 every entry, eleven verifier blocks, four fresh reviewers across two passes, and a full
 26-entry verification. An allowlist checks that changed files are *in* the list; nothing
