@@ -1,0 +1,1013 @@
+# Boundary for gh-173 — "the review establishes all six conditions the stopping
+# rule names".
+#
+# Drafted by following modus/skills/agent-work-item/SKILL.md, which is also the
+# artifact this item changes. Same self-application as
+# boundary/agent-work-item-skill.yaml, and the same reason: if this boundary is
+# usable, the step it changes was followable while being changed.
+#
+# Citations use the labels the item carries — Problem, Goal, AC1..AC5, What must
+# keep working, Out of scope, Reference — and comment#1..#3 for the one comment,
+# which carries none.
+#
+# Step 1, the citation-collapse defect. "What must keep working" is a three-bullet
+# list, so it is one part and every preservation obligation cites the same id —
+# PRES-2, PRES-3 and PRESB-1 onward. Recorded rather than worked around: the item
+# cannot be labelled finer without an edit, and this item is not the place to edit
+# it.
+#
+# Step 1b passes on all five conditions. The item states an outcome, a falsifiable
+# criterion per obligation, what must keep working, what is out of scope, and holds
+# no contradicting pair.
+#
+# Step 9b is overridden. Its literal instruction is to write into the
+# highest-numbered passN, which is pass9 and belongs to gh-158 stage 2. Mixing two
+# items in one pass directory loses the record this step exists to keep, so the run
+# record goes to docs/passes/pass10/ after review.
+#
+# Step 7 found a fourth residual, unrelated to the item and recorded in non_goals:
+# modus/prompts/boundary-prose.md:137-144 credits a script with enforcing the word
+# caps and the banned-word list, and neither check exists in any script. The caps
+# and the banned words in this boundary were verified by hand. That table's stated
+# purpose is to make the difference between a rule and advice visible, so it
+# currently does the opposite. Third instance of one defect class in this
+# repository, with docs/refinement-loop.md's two.
+#
+# What "handed off" means was undefined by the item and is settled in C5. It is the
+# one reading this boundary takes that the item does not state, and it is recorded
+# as a claim rather than resolved inside a decision — the defect pass 6 was faulted
+# for.
+#
+# Round one of step 8 asked the two committed questions and four more: the three
+# conditions this item adds, and whether every decision can come out false. It
+# found no unevaluable decision among sixteen entries, no blocking question, and
+# nothing true by construction. Two findings, both from the four questions the
+# committed review does not ask:
+#
+#   - OB-4's decision could not be evaluated against its own observation, which
+#     produced the findings and not the set they had to be complete against.
+#   - the handed-off condition failed on this boundary itself. W-1 was a production
+#     watch with no owner, and three residuals said "a separate item" without
+#     naming one. Both are fixed rather than argued: W-1 carries a handoff object,
+#     and the residuals are domestique-37o, domestique-crl and domestique-13n.
+#
+# The second finding is C5 applied to the artifact that defines C5, and it is the
+# one the linter would never have raised: a handoff object is required on post_merge
+# and production MUSTS only, so nothing in the schema asks a watch for an owner.
+#
+# Round two of pass 10 named two more and the pass stopped at the cap, unfixed, as
+# step 8 requires. Both were insensitivity rather than unfailability: OB-4 could not
+# see a review that answered YES to conditions the input had omitted, and OB-6
+# proved cross-file version agreement while never asking for the increment CPL-4's
+# hazard names. The operator authorized pass 11 to repair them, with the cap
+# understood as a failsafe rather than a well-run pass.
+#
+# Pass 11 carries three repairs and adds one entry. OB-4's reference set is fixed by
+# its input. OB-6 is split into the increment and OB-8's cross-file agreement. C5's
+# annotation is relaxed to the scope its claim text already had. The pass 11 review
+# question set was frozen and digested before any of this was edited, at
+# docs/passes/pass11/review-questions.md, because pass 10's question set moved
+# between rounds and only its author could see that.
+#
+# Pass 11 ran two rounds under a frozen question set and ended negative at the cap
+# with eleven real findings, nine of them requirement-coverage mismatches. They
+# shared one cause: these entries verified a requirement by READING THE SKILL'S
+# TEXT, and a text-reading decision can always be satisfied while text placed
+# outside what it reads defeats the requirement. Record in
+# docs/passes/pass11/stage2-review.md.
+#
+# Pass 12 is that redraft, authorized by the operator, and it changes the strategy
+# rather than the eleven entries. PRES-1, PRES-4, PRES-5, PRES-6, PRES-7 and PRES-10
+# are gone. PRESB-1 onward replace them by RUNNING a review and reading what the run
+# did. A relabelling cannot survive that — a run that continues past two rounds has
+# continued whatever the third round is called.
+#
+# What a run does NOT do is exercise every branch. It exposes the branch its fixture
+# selects, so an unexercised qualifier still passes. Each PRESB fixture is therefore
+# chosen to select the branch a specific round-two witness used, and those eleven
+# witnesses are this redraft's test suite rather than its inspiration.
+#
+# The item's own criteria did not need re-refinement. AC1 to AC4 already say a review
+# RETURNS something, which is an event and not a property of a file — C12. An eval
+# obligation was drafted from that and WITHDRAWN: a review dispatched to a fresh
+# agent is already a run, and a reader reading its return is already the observation,
+# which is what independent_review means. The drafter's argument that AC1 to AC4 were
+# unverifiable without an eval was wrong, and it rested on a false claim about this
+# repository's machinery, corrected where CPL-8 used to stand.
+#
+# The residual is real and is stated rather than absorbed: every preservation entry
+# here is verified once, before the freeze, and nothing re-runs it when step 8 is next
+# edited. This boundary's whole what-must-keep-working half is inert after the freeze.
+# That is domestique-5y6, and naming it is what C5 requires of a residual.
+#
+# PRES-2 keeps a text form because it catches deletion and narrowing of step 9's
+# conditions, which is what the item's Out of scope is about. It cannot catch a
+# qualifier placed elsewhere, and PRESB-8 gates that half by running to a stop rather
+# than by reading.
+#
+# FROZEN. Approved by the operator (dpuglielli) on 2026-09-03 and frozen by the
+# commit that carries this line. After this, the boundary is the standard: if
+# implementation makes it look wrong, stop and escalate rather than edit it.
+#
+# What the approval rests on: both lint forms clean with exempt zero, the prose rules
+# verified by hand because nothing checks them, the pass-11 witness suite as far as
+# pass 12's six corrections carry it, and the verifier's sign-off on those six.
+#
+# What it does not rest on: a fresh reader finding nothing in THIS version. Pass 12
+# ran no review round, by instruction. Pass 11's boundary was also lint-clean and
+# signed off on its corrections, and a fresh round found eleven things. The operator
+# approved knowing that, having seen what further rounds cost.
+#
+# Four review rounds across two passes preceded this, all cap-stopped or superseded.
+schema_version: 1
+tracker: github-issues
+item: gh-173
+registry_revision: "none"
+# No registry/invariants.yaml exists in this repository, so the floor is empty and
+# W_NO_FLOOR fires. Every obligation below was authored for this item.
+registry_selections: []
+mandates: [correctness, usability]
+non_goals:
+  # From the item's own Out of scope.
+  - "changing what the stopping rule requires; this item makes the review read what step 9 already names"
+  # Live residuals. Each names where the work goes, per C5.
+  - "adding the decision-falsifiability check to the review — domestique-37o, which is the scope call comment#3 leaves open"
+  - "correcting which check docs/refinement-loop.md attributes to step 8 — domestique-crl; OB-5 fixes only the count this change falsifies"
+  - "changing the review's return shape or adding a per-entry verdict row — that is gh-172"
+  - "correcting boundary-prose.md's enforcement table, which credits a script with the word caps and the banned words and no script checks either — domestique-13n, found at step 7 of this run"
+  - "a standing regression net for the preservation entries, which are verified once before the freeze and re-run by nothing afterwards — domestique-5y6"
+  # Exclusions with no residual. Out of scope answers these completely.
+  - "changing the manifest schema or any verdict lint-boundary.js returns"
+  - "rebuilding, reversioning past the bump OB-6 requires, or reinstalling the modus plugin in this session"
+  - "changing human-work-item, whose own stopping rule names five conditions and is instrumented by its step 6"
+interpretation:
+  goal:
+    statement: >-
+      the review establishes whether a fresh reader can state each of the six conditions step 9
+      names
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "Goal"
+      - kind: repo_path
+        ref: "modus/skills/agent-work-item/SKILL.md"
+  problem:
+    statement: >-
+      three of the six conditions the stopping rule names are asked about by nothing
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "Problem"
+      - kind: repo_path
+        ref: "modus/skills/agent-work-item/SKILL.md"
+  claim_provenance:
+    C1:
+      # Corroborated at SKILL.md:224-229 for the two questions and :255-258 for the
+      # six conditions. Q1 establishes what must be true and how it would tell; Q2
+      # establishes the absence of a blocking question.
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "Problem"
+        - kind: repo_path
+          ref: "modus/skills/agent-work-item/SKILL.md"
+    C2:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "Problem"
+        - kind: repo_path
+          ref: "modus/skills/agent-work-item/SKILL.md"
+    C3:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "AC4"
+        - kind: item_locator
+          ref: "Goal"
+    C4:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "AC5"
+        - kind: repo_path
+          ref: "modus/skills/agent-work-item/SKILL.md"
+    C5:
+      # The item names "what is handed off" and never says what satisfies it. Read
+      # narrowly as the per-entry handoff object alone, the condition is vacuous for
+      # any boundary with no post_merge or production must entry — which is most of
+      # them, and which reproduces the defect this item exists to fix. The
+      # repository supplies three places a residual is recorded: the handoff object
+      # (lint-boundary.js:832-838), an entails edge mapped to `uncovered`, and a
+      # non_goal that defers live work rather than excluding it. An `uncovered` edge
+      # that represents live residual work is a finding until routed; pass 8's CPL-8
+      # discharges because it names domestique-3lf, not because it is declared. The
+      # literal `uncovered` is not itself proof of residual work, which is why the
+      # test is the residual and not the marker: CPL-6 below carries the marker and
+      # defers nothing, and requiring it to name a destination would manufacture a
+      # finding where there is no work to route.
+      # This boundary is its own instance: non_goals routes five live residuals —
+      # domestique-37o, domestique-crl, gh-172, domestique-13n and domestique-5y6 —
+      # and it has no post_merge or production must entry, so a narrow reading would
+      # report "nothing is handed off" while all five stood.
+      provenance: inferred
+      support:
+        - kind: repo_path
+          ref: "modus/scripts/lint-boundary.js"
+        - kind: repo_path
+          ref: "docs/passes/pass8/boundary.yaml"
+    C6:
+      # docs/refinement-loop.md:194-197 says two deleted checks are "already in the
+      # skill, as step 9 and as one of step 8's two questions". The count is a
+      # consumer of step 8 that this change falsifies. Which check it names is
+      # separately wrong today and is handed off in non_goals.
+      provenance: inferred
+      support:
+        - kind: repo_path
+          ref: "docs/refinement-loop.md"
+    C7:
+      # The installed copy at
+      # ~/.claude/plugins/cache/claude-domestique/modus/0.3.0/ is byte-identical to
+      # the worktree source now, so a review dispatched through the installed skill
+      # reads the same text. That stops being true the moment step 8 is edited, and
+      # a review of the change dispatched that way would verify the pre-change text
+      # and report a pass.
+      provenance: inferred
+      support:
+        - kind: repo_path
+          ref: "CLAUDE.md"
+    C8:
+      provenance: inferred
+      support:
+        - kind: repo_path
+          ref: "AGENTS.md"
+        - kind: repo_path
+          ref: "scripts/bump-version.js"
+    C9:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "What must keep working"
+        - kind: repo_path
+          ref: "modus/skills/agent-work-item/SKILL.md"
+    C10:
+      # The item's Out of scope does not say this. The repository requires it: the
+      # three conditions' data lives in schema-governed fields, so adding a field is
+      # an available way to make the review answerable, and it would change every
+      # existing manifest's verdict.
+      provenance: inferred
+      support:
+        - kind: repo_path
+          ref: "modus/scripts/lint-boundary.js"
+        - kind: repo_path
+          ref: "modus/tests/fixtures"
+    C12:
+      # Pass 12. AC1 to AC4 say a review RETURNS something, and a return is an
+      # event, not a property of a file. Nothing in the repository establishes what
+      # a review returned except a run of one. This is what eleven round-two
+      # findings were about — a decision that reads the skill's text can be
+      # satisfied while text placed outside what it reads defeats the requirement.
+      #
+      # The claim is about where the evidence lives, not about automation. A review
+      # dispatched to a fresh agent IS a run, and reading what it returned IS the
+      # observation, which is why the entries resting on this are
+      # independent_review. No committed command grades a return: per
+      # plugin-evaluation.md:174-193, probe-skill.js runs a skill from source and
+      # prints the response with no scoring, and modus/evals has never executed. An
+      # earlier version of this note asserted the opposite and an eval obligation
+      # was drafted from it; both are withdrawn.
+      #
+      # A run does not integrate all of the text. It exposes the branch its fixture
+      # selects, so an unexercised qualifier still passes — which is why several
+      # entries below pair a run with a text-side applicability check and why the
+      # ones that cannot be made universal say so.
+      provenance: inferred
+      support:
+        - kind: repo_path
+          ref: "docs/plugin-evaluation.md"
+        - kind: repo_path
+          ref: "docs/passes/pass11/round2-answers.md"
+    C11:
+      # The item asserts the cost. Nothing in the corpus measures it: no recorded
+      # review round has produced a finding against one of the three conditions, so
+      # "arrives late" has no instance to count. It grounds W-1 and nothing that
+      # gates.
+      provenance: stated_unverified
+      support:
+        - kind: item_locator
+          ref: "Problem"
+  corrections: []
+  gaps:
+    # None of the five is in the item. Each came out of reading what the item names
+    # and the direct consumers of those things.
+    - element: "what satisfies the handed-off condition, which the item names and never defines"
+      filled_from:
+        kind: repo_path
+        ref: "modus/scripts/lint-boundary.js"
+    - element: "that docs/refinement-loop.md states step 8's question count, which this change falsifies"
+      filled_from:
+        kind: repo_path
+        ref: "docs/refinement-loop.md"
+    - element: "that a skill edit needs the modus version bumped across four metadata files"
+      filled_from:
+        kind: repo_path
+        ref: "AGENTS.md"
+    - element: "that the installed plugin serves the pre-change skill text until it is reinstalled"
+      filled_from:
+        kind: repo_path
+        ref: "CLAUDE.md"
+    - element: "that no committed artifact holds the review prompt, so the skill text is its only authority"
+      filled_from:
+        kind: repo_path
+        ref: "docs/passes/pass9/stage2-review.md"
+claims:
+  - id: C1
+    text: "step 8 asks two questions, and they establish three of the six conditions step 9 names"
+  - id: C2
+    text: "nothing asks whether a reader can state what must keep working, what is out of scope, or what is handed off"
+  - id: C3
+    text: "a condition a reader cannot state is a finding for that round"
+  - id: C4
+    text: "a first round's findings return to the drafter, and a second round naming one hands off to a person"
+  - id: C5
+    text: "what is handed off is every live residual the boundary will not discharge, each with a named destination"
+  - id: C6
+    text: "docs/refinement-loop.md states how many questions step 8 asks, so adding questions falsifies its count"
+  - id: C7
+    text: "the installed modus plugin serves the pre-change skill text until it is rebuilt and reinstalled"
+  - id: C8
+    text: "a skill edit needs the modus version bumped across its package, both host manifests, and the marketplace entry"
+  - id: C9
+    text: "a reviewer names a specific requirement it could not decide"
+  - id: C10
+    text: "this item changes no manifest schema and no verdict the linter returns"
+  - id: C11
+    text: "PROVISIONAL: findings against the three conditions arrive late or after the review rounds are used up"
+  - id: C12
+    text: "what a review returned is established by running one, and not by reading the skill's text"
+coupling:
+  # None of the seven is named in the item. CPL-5 and CPL-7 are the ones that
+  # invalidate a verification rather than break a consumer, and neither is visible
+  # from the item's text.
+  - id: CPL-1
+    kind: consumer
+    target: "docs/refinement-loop.md:194-197 — states which checks step 8 asks and how many questions it has"
+  - id: CPL-2
+    kind: contract
+    target: "no committed artifact holds the review prompt; each pass assembles it from the skill text, so that text is the only authority"
+  - id: CPL-3
+    kind: consumer
+    target: "boundary/agent-work-item-skill.yaml AC-4 obliges the skill to state the stopping rule — marked NOT FROZEN, so it constrains nothing"
+  - id: CPL-4
+    kind: contract
+    target: "modus ships as a plugin, so a skill edit needs the version bumped across package.json, both plugin.json files, and marketplace.json"
+  - id: CPL-5
+    kind: contract
+    target: "the plugin cache serves modus 0.3.0, so a review dispatched through the installed skill reads the pre-change step 8 and passes it"
+  - id: CPL-6
+    kind: consumer
+    target: "modus/evals/agent-work-item-fires-on-a-ticket grades a ticket response and its criteria name nothing in step 8"
+  - id: CPL-7
+    kind: contract
+    target: "gh-172 changes step 8's return shape, so both items edit the same step — open as gh-172"
+  # A CPL-8 stood here claiming modus/evals was committed machinery that runs a
+  # skill and grades the run. That was false and the drafter wrote it: per
+  # plugin-evaluation.md:174-193, probe-skill.js loads the plugin from source and
+  # prints what fired with no baseline arm and no scoring — "judging the answer is
+  # still yours" — and modus/evals holds one prompt-and-rubric case against a
+  # deferred evaluator that has never been executed.
+  #
+  # Removed rather than reworded. The absence of grading machinery is not something
+  # this change touches, so it is not a coupling edge; it is why C12's entries rest
+  # on independent_review, and it is recorded in C12's note and in domestique-5y6.
+entails:
+  CPL-1: OB-5
+  CPL-2: PRESB-1
+  CPL-3: PRES-2
+  CPL-4: OB-6
+  CPL-5: OB-7
+  # No obligation is needed and none is omitted: the eval's criteria are about
+  # whether the skill fires on a ticket and what it does first, and no committed
+  # command runs it. Declared rather than left out.
+  CPL-6: uncovered
+  # A live residual with a destination. gh-172 owns the return shape; this item
+  # owns which conditions are asked about. The two repairs are independent, and the
+  # third non_goal names where this half stops.
+  CPL-7: uncovered
+
+entries:
+  # OB-1 to OB-3 are the item's AC1 to AC3, one per condition. Each is
+  # independent_review because the thing observed is what a review returned, and no
+  # script runs a review.
+
+  - id: OB-1
+    statement: "a review returns whether a fresh reader can state what must keep working"
+    verifier: independent_review
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C2]
+    observation: >-
+      run a review under head on a frozen-marked and an unfrozen-marked boundary, then read both
+      returns for that condition
+    decision: "both returns answer that condition yes or no"
+    quantitative: false
+  - id: OB-2
+    statement: "a review returns whether a fresh reader can state what is out of scope"
+    verifier: independent_review
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C2]
+    observation: >-
+      run a review under head on a frozen-marked and an unfrozen-marked boundary, then read both
+      returns for that condition
+    decision: "both returns answer that condition yes or no"
+    quantitative: false
+  # C5 is traced because the condition is vacuous without it: a reviewer reading
+  # "handed off" as the handoff object alone answers yes for any boundary that has
+  # no post_merge or production must entry, including this one.
+  - id: OB-3
+    statement: "a review returns whether a fresh reader can state what is handed off"
+    verifier: independent_review
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C2, C5]
+    observation: >-
+      run a review under head on a frozen-marked and an unfrozen-marked boundary, then read both
+      returns for that condition
+    decision: "both returns answer that condition yes or no"
+    quantitative: false
+  # The observation needs a boundary that states none of the three, or the finding
+  # has nothing to be about. A review of a boundary that states all three returns
+  # three yeses and passes OB-1 to OB-3 while AC4 goes unexercised.
+  #
+  # Two rounds of pass 10 landed on this entry and the second fix is the one that
+  # holds. Round one: reading the findings alone left the decision with no set to
+  # compare them against. Round two: comparing them against the reviewer's own NO
+  # answers let a review that wrongly answered YES three times pass, because no
+  # condition was answered no and the comparison was satisfied by an empty set.
+  #
+  # The reference set is fixed by the input rather than by the answers. An input
+  # stating none of the three has exactly three unstatable conditions, so the count
+  # is a constant the observation's own text supplies. A review answering YES to any
+  # of them names fewer than three and this returns false; a review answering NO
+  # without producing findings also returns false.
+  #
+  # Pass 11 pre-dispatch, third finding: the fixture was a BOUNDARY stating none of
+  # the three, and a reviewer answers from the boundary and the item together. This
+  # item states what must keep working and what is out of scope, so a correct
+  # reviewer answers YES to two of the three and honestly cannot produce three
+  # findings — the entry failed while AC4 was satisfied, which is a false negative
+  # and worse than the insensitivity it replaced. The fixture is now the pair.
+  #
+  # The pair is synthetic on purpose. An item stating neither what must keep working
+  # nor what is out of scope fails step 1b and would never reach a boundary, so no
+  # real item is this fixture. That is a property of the fixture and not a defect:
+  # the entry needs an input where all three conditions are genuinely unstatable,
+  # and only a constructed pair supplies one.
+  - id: OB-4
+    statement: "a condition the reviewer could not state appears in that round's findings"
+    verifier: independent_review
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C3]
+    observation: >-
+      run a review under head on a boundary and item that together state none of the three
+      conditions, then read that round's findings
+    decision: "the findings name all three conditions"
+    quantitative: false
+  # Pass 12, from round two: OB-4's fixture makes all three conditions LITERALLY
+  # absent, and a review can produce three findings there while answering YES to a
+  # condition present in form and empty in substance — an out-of-scope list that
+  # defers live work without naming where it goes. That vacuity is the case C5's own
+  # note calls the defect this item exists to fix, so it needs its own fixture rather
+  # than a wider decision on OB-4.
+  - id: OB-11
+    statement: "a condition present in form and empty in substance is a finding"
+    verifier: independent_review
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C3, C5]
+    # The fixture was live-work-without-a-destination, which is the wrong defect for
+    # this entry: an undestinated residual makes the HANDED-OFF condition unstatable,
+    # not the out-of-scope one, so the expected finding was misfiled. A genuinely
+    # empty out-of-scope is a non-goals list that exists — the linter requires
+    # non-empty — and addresses nothing the item raises, so a reader cannot say what
+    # is out of scope for this item.
+    observation: >-
+      run a review under head on a boundary whose non-goals address nothing the item raises, then
+      read that round's findings
+    decision: "the findings name what is out of scope"
+    quantitative: false
+  # Not in the item. The change breaks a sentence that counts step 8's questions,
+  # and the count is the only half this item owns: which check that sentence names
+  # is wrong today and is handed off.
+  - id: OB-5
+    statement: "docs/refinement-loop.md states the number of questions step 8 asks"
+    verifier: independent_review
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C6, CPL-1]
+    observation: >-
+      read the sentence in docs/refinement-loop.md that counts step 8's questions, then count the
+      questions step 8 asks at head
+    decision: "the two numbers are equal"
+    quantitative: false
+  # Not in the item. Split in pass 11 from one entry that proved synchronization and
+  # never asked for the increment: four files still reading 0.3.0 at head do agree,
+  # so a head that edits step 8 and never bumps modus passed the earlier form. That
+  # is the state C7 and CPL-5 say serves pre-change text to the next reviewer, so
+  # the entry meant to prevent it was insensitive to exactly it.
+  #
+  # This half is the increment, and it is `change` because it must not hold on base:
+  # base compared with itself is equal, not greater.
+  - id: OB-6
+    statement: "modus's version at head is greater than its version at base"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C8, CPL-4]
+    observation: >-
+      read modus's version in package.json on base and on head
+    decision: "the head value is greater"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  # The other half, and separately falsifiable: a bump that updates the package and
+  # leaves the marketplace entry behind satisfies OB-6 and fails this.
+  - id: OB-8
+    statement: "modus's version agrees across its package, both host manifests, and its marketplace entry"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C8, CPL-4]
+    observation: >-
+      read modus's version in package.json, both plugin.json files, and marketplace.json, on base
+      and on head
+    decision: "the four values are equal on each revision"
+    quantitative: false
+    test_role: preservation
+    baseline: pass
+  # Not in the item, and it invalidates the evidence for OB-1 to OB-4 rather than
+  # breaking a consumer. A reviewer dispatched through the installed plugin reads
+  # modus 0.3.0's step 8, which has two questions, and returns a pass that says
+  # nothing about the change.
+  - id: OB-7
+    statement: "the recorded prompt carries the review questions the skill states at head"
+    verifier: independent_review
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C7, CPL-5]
+    # Two pass-11 repairs landed here and the second is a split, because the entry
+    # conflated two parties. The self-pass fixed "the text the reviewer was given",
+    # which has no domain when a reviewer is dispatched a path. Round one then found
+    # the remaining defect: "the reviewer" was undefined, and the party that answers
+    # the questions is forbidden to read the skill at all, so it reads no skill file
+    # and reports no digest for one. The entry was unevaluable for the answering
+    # party and evaluable for a different party it never named.
+    #
+    # Two links, two entries, and the first version of the split left a gap in the
+    # middle: comparing head's skill digest with a recorded source digest says
+    # nothing about the prompt built from it, so an honest mistaken dispatcher could
+    # record the right skill and assemble the wrong prompt and pass both links. This
+    # link now compares question TEXT extracted from head against the recorded
+    # prompt, which is the middle of the chain rather than one end of it. OB-9
+    # carries prompt to reviewer.
+    #
+    # With both links closed, what remains is a reviewer that reports a receipt for
+    # a file it did not answer. That is the irreducible trust floor and not an
+    # escalation: guarding it would need an adversarial-reviewer threat model, which
+    # nothing in this item states.
+    # Question-set equality was still not exclusion. A prompt carrying head's exact
+    # questions PLUS pre-change instructions around them — a field-meaning gloss, a
+    # round rule, "step 8 asks two questions" — satisfied it while the reviewer read
+    # 0.3.0. The projection compared has to be every review instruction, not the
+    # questions alone.
+    observation: >-
+      extract the review instructions the skill states at head, then read every review instruction
+      in the prompt recorded for that round
+    decision: "the prompt's review instructions are exactly those extracted"
+    quantitative: false
+  # The second link. Without it, a dispatcher can record head's digest and still
+  # dispatch the answering reviewer through the installed 0.3.0 skill, which is the
+  # C7 and CPL-5 hazard exactly.
+  - id: OB-9
+    statement: "the reviewer answered the prompt the dispatcher recorded"
+    verifier: independent_review
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C7, CPL-5]
+    observation: >-
+      read the prompt digest the reviewer reported, then digest the prompt file the dispatcher
+      recorded for that round
+    decision: "the two digests are equal"
+    quantitative: false
+  # An eval obligation stood here and is withdrawn. The drafter argued AC1 to AC4
+  # were unverifiable without one; they are not. A review dispatched to a fresh
+  # agent is a run, and a reader reading its return is the observation, which is
+  # what independent_review means and what four rounds across passes 10 and 11 did.
+  #
+  # The argument also rested on a false claim about the repository, corrected at
+  # CPL-8. An eval would add repeatability rather than capability, and the machinery
+  # for it is deliberately deferred here. The residual — that these preservation
+  # checks are verified once and do not persist past the freeze — is real, is named
+  # in non_goals, and is domestique-5y6.
+  # The item's What must keep working. PRES-1, PRES-4, PRES-6, PRES-7 and PRES-10
+  # were text-reading entries and all five fell in pass 11's round two to one
+  # witness shape: keep the sentence and defeat the rule from outside what the
+  # decision reads. PRESB-1 to PRESB-5 replace them by running a review and reading
+  # what the run did.
+  #
+  # What a run buys is that relabelling cannot survive it: a run that continues
+  # after two rounds has continued whatever the third round is called, and a
+  # qualifier that changes behaviour on the sampled branch shows up in the
+  # behaviour.
+  #
+  # What a run does NOT buy is universality. It exposes only the branch its fixture
+  # selects, so a qualifier keyed to a property no fixture varies — the tracker, an
+  # entry class, any third thing — leaves every sample passing while the requirement
+  # fails. Each fixture below is chosen to select the branch a specific round-two
+  # witness used. Where a statement claims more than its samples establish, the
+  # entry says so and PRES-12 carries the text-side applicability check beside it.
+  # Neither half is sufficient alone: text catches a condition that is stated,
+  # behaviour catches one that is not.
+  #
+  # C12 is the claim: what a review returned is established by running one.
+  - id: PRESB-1
+    statement: "a review under head asks all five questions of a frozen and an unfrozen boundary"
+    verifier: independent_review
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1, C12]
+    # Two boundaries differing in freeze marking, because round two's witness made
+    # the three new questions conditional on NOT FROZEN and a single sample passed.
+    #
+    # The statement names the two samples rather than every boundary, which is all
+    # two fixtures establish. A qualifier keyed to a third property — the tracker, an
+    # entry class — leaves both samples passing, and no number of fixtures closes
+    # that. PRES-12 carries the universal claim from the text side; a condition
+    # neither stated nor exercised is uncovered by both, and that is the domain this
+    # entry does not reach.
+    observation: >-
+      run a review under head on a frozen-marked and an unfrozen-marked boundary, then list the
+      questions each run asked
+    decision: "both runs asked all five questions"
+    quantitative: false
+  # The second half of the item's first bullet: the two questions must still
+  # establish what they established. Round two defeated the wording check by
+  # redefining the field gloss the first question rests on, and defeated the
+  # unconditional check by qualifying what the questions are asked ABOUT rather
+  # than when. One fixture kills both: the unevaluable decision sits in an entry the
+  # round did not change, so a review scoped to changed entries misses it, and a
+  # review whose gloss no longer explains `observation` also misses it.
+  # Sample-scoped in the same way PRESB-1 is: the exact round-two witness dies here,
+  # and a scoping keyed to something this fixture does not vary survives. PRES-12 is
+  # the text-side complement.
+  - id: PRESB-2
+    statement: "a review under head evaluates an unchanged entry in the boundary"
+    verifier: independent_review
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1, C12]
+    observation: >-
+      run a review under head on a boundary whose unevaluable decision sits in an unchanged entry,
+      then read the returned id list
+    decision: "the id list names that entry"
+    quantitative: false
+  # Also the item's Out of scope. Adding questions to step 8 is one way to satisfy
+  # AC1 to AC3; rewriting step 9's conditions to match what step 8 asks is another,
+  # and it satisfies them by deleting the requirement.
+  - id: PRES-2
+    statement: "step 9 names the same six conditions after the change"
+    verifier: independent_review
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1, CPL-3]
+    # Round one: an equal list is not an equal requirement. Head can name the same
+    # six conditions and redefine one — step 9 gaining "handed off is satisfied by
+    # the per-entry handoff object" deletes the requirement by narrowing it, and
+    # that narrowing is the vacuous reading C5 exists to refuse. The definitions are
+    # read with the list because a condition is its meaning, not its label.
+    #
+    # Round two defeated this too, by qualifying step 9 from outside — "step 9 is
+    # advisory for a boundary marked NOT FROZEN" — or removing it from the sequence
+    # step 8 feeds. It is kept in text form anyway, and the limit is stated rather
+    # than repaired: reading step 9 catches DELETION and narrowing of the six
+    # conditions, which is what the item's Out of scope is about, and cannot catch a
+    # qualifier placed elsewhere. PRESB-8 gates that half by running a refinement to
+    # a stop, because unchanged stopping-rule semantics is what the item's Out of
+    # scope protects and an explicit must cannot rest on a watch. W-2 keeps only the
+    # production-side view of real stops.
+    observation: >-
+      read step 9's six conditions and any definition the skill gives for them, on base and on head
+    decision: "the conditions and their definitions are unchanged"
+    quantitative: false
+  # The second half of bullet one: the questions surviving as text is not the same
+  # as the review still returning what they establish.
+  - id: PRES-3
+    statement: "a review under head returns an entry-id list and a blocking-question answer"
+    verifier: independent_review
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1]
+    observation: >-
+      run a review under head, then read its return for the entry-id list and the blocking-question
+      answer
+    decision: "both are present"
+    quantitative: false
+  # The item's second bullet, the round behaviour, over one run rather than over the
+  # text. PRES-4 and PRES-6 fell to relabelling — "a new review may be opened" left
+  # both text checks true while the cap bound nothing and escalation was escapable.
+  # A run cannot be relabelled: it either stopped or it continued.
+  #
+  # One fixture serves all three. A boundary whose finding survives a first-round
+  # repair drives a review to a second round with a finding outstanding, which is the
+  # branch AC5's second half names and the only branch where the cap is observable.
+  - id: PRESB-3
+    statement: "no third round of a review runs"
+    verifier: independent_review
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C4, C12]
+    # The reopen must be ATTEMPTED, not merely unrequested. An ordinary safe-path run
+    # stops after two rounds without ever testing whether a third was available, so it
+    # passes while the escape clause sits unused.
+    observation: >-
+      run a review under head on a boundary whose finding survives a first-round repair, then
+      attempt a third round and read what happened
+    decision: "the third round did not run"
+    quantitative: false
+  - id: PRESB-4
+    statement: "a second round's finding sends the boundary to a person"
+    verifier: independent_review
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C4, C12]
+    # "and nowhere else" is the exclusion round two needed. An `or` offering the
+    # drafter a further review leaves "went to a person" true while escalation is
+    # escapable, so the destination has to be sole — and the reopen has to be
+    # attempted here too, because a permissive `or` can exist while the sampled run
+    # happens to go only to a person.
+    observation: >-
+      run a review under head on a boundary whose finding survives a first-round repair, attempt a
+      third round, then read where the boundary went
+    decision: "the boundary went to a person and nowhere else"
+    quantitative: false
+  # PRES-5 was clean in both of pass 11's rounds and is replaced anyway. It was the
+  # same text-reading shape as the four that fell, and no witness was found for it —
+  # which is not evidence that none exists. Converting it costs one fixture already
+  # built for PRESB-3 and PRESB-4.
+  - id: PRESB-5
+    statement: "a first round's findings go to the drafter"
+    verifier: independent_review
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C4, C12]
+    # The fixture forces a finding rather than hoping for one. "A boundary with a
+    # finding" is satisfied by a review that returns none, and an empty first round
+    # sends nothing anywhere while the decision reads true.
+    observation: >-
+      run a review under head on a boundary with an unevaluable decision, then read where the first
+      round's findings went
+    decision: "they went to the drafter and nowhere else"
+    quantitative: false
+  # Bullet three. usability rather than correctness: what it protects is a review
+  # whose findings a drafter can act on.
+  #
+  # PRES-7 read whether the rule APPLIES and never what it requires, so broadening it
+  # to every question while softening "names a specific requirement it could not
+  # decide" to "names its concern" left the decision true. Reading the findings a run
+  # actually returned is insensitive to where the rule is written and to how it is
+  # phrased: an unactionable finding is unactionable on the page.
+  - id: PRESB-6
+    statement: "each finding a review returns names a specific requirement"
+    verifier: independent_review
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [usability]
+    traces: [C9, C12]
+    # Per question, not over the returned set. "Every finding names a requirement" is
+    # vacuously true when the run returns none, and a softened rule produces vague
+    # findings rather than no findings — so the fixture is defective against each
+    # question and the decision requires a naming finding from each.
+    observation: >-
+      run a review under head on a boundary defective against each question the review asks, then
+      read every finding returned
+    decision: "each question yielded a finding naming a requirement"
+    quantitative: false
+  # Removing PRES-1 dropped the only protection for the SECOND original question.
+  # PRESB-1 counts that five questions were asked and PRESB-2 exercises the first
+  # one; nothing exercised the blocking-what-is-wanted question, so a head that keeps
+  # it in the list and weakens it passed everything.
+  - id: PRESB-7
+    statement: "a review raises an unresolved what-is-wanted choice as blocking"
+    verifier: independent_review
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1, C12]
+    observation: >-
+      run a review under head on a boundary and item leaving a what-is-wanted choice unresolved,
+      then read the blocking answer
+    decision: "the answer marks that choice blocking"
+    quantitative: false
+  # The behavioural half of PRES-2, and gating rather than a watch. Unchanged
+  # stopping-rule semantics is what the item's Out of scope protects, so it needs a
+  # run that can fail before merge and not only an observation afterwards. W-2 keeps
+  # the production-side view; this is the gate.
+  #
+  # A step 9 qualified from outside — advisory for an unfrozen boundary, or dropped
+  # from the sequence step 8 feeds — shows up here as a refinement that declares done
+  # with a condition unmet, which no reading of step 9's own text detects.
+  - id: PRESB-8
+    statement: "a refinement does not declare done while a step 9 condition fails"
+    verifier: independent_review
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1, C12, CPL-3]
+    # One controlled fixture per condition, because "one of the six" samples an
+    # unspecified one and the statement claims all six. Unfrozen-marked throughout,
+    # since that is the property the external-advisory witness keys on.
+    observation: >-
+      run a refinement under head on an unfrozen-marked boundary once per condition, each time with
+      only that condition failing
+    decision: "no run declared refinement done"
+    quantitative: false
+  # The text-side complement to PRESB-1 and PRESB-2, and the only entry that speaks
+  # for boundaries no fixture samples. Pass 11 showed a text check alone is
+  # insufficient — a qualifier can sit outside what it reads — so this is paired
+  # rather than relied on. Text catches a condition that is stated; behaviour catches
+  # one that is not; a condition neither stated nor exercised is reached by neither,
+  # and that gap is recorded rather than closed.
+  - id: PRES-12
+    statement: "the skill states no condition on asking the five questions"
+    verifier: independent_review
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1, CPL-2]
+    observation: >-
+      read the skill at head for any condition on which reviews or which boundaries the five
+      questions apply to
+    decision: "no such condition is present"
+    quantitative: false
+  # Not in the item. Probe: mutating one fixture changes its verdict, which shows
+  # the comparison can return unequal. The mutation sweep under modus/scripts/
+  # already does this.
+  - id: PRES-8
+    statement: "the linter's verdicts on its fixture corpus do not change"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C10]
+    observation: >-
+      run lint-boundary.js over modus/tests/fixtures/ on base and on head, then compare the failure
+      codes per file
+    decision: "the code sets are equal for every file"
+    quantitative: false
+    test_role: preservation
+    baseline: pass
+  # Round one, classified requirement-coverage mismatch: fixture verdict equality is
+  # narrower than what C10 claims. C10 has two halves, no schema change and no
+  # verdict change, and PRES-8 reads only the second.
+  #
+  # This entry read the set of returnable codes for one round and that was still
+  # short of the schema half: a field silently accepted, with no new code and no
+  # fixture carrying it, changes the schema while leaving both the code set and
+  # every fixture verdict identical. C10's own note names adding a field as an
+  # available way to satisfy this item, so the tempting route is the one needing a
+  # reader.
+  #
+  # Byte equality on lint-boundary.js was the pass-11 form and round two defeated it:
+  # a manifest field added to the AUTHORING schema — the boundary template, or
+  # boundary-prose.md's field semantics — falsifies C10's schema half while that one
+  # file stays byte-identical. The justification assumed the whole schema lives in
+  # one file, which the drafter asserted and no artifact establishes.
+  #
+  # An allowlist of changed files is the guard rather than an enumeration of schema
+  # owners, because enumerating them requires the same assumption that just failed.
+  # It is not mechanical until the paths are literal, so they are, exactly:
+  #
+  #   modus/skills/agent-work-item/SKILL.md
+  #   docs/refinement-loop.md
+  #   modus/package.json
+  #   modus/.claude-plugin/plugin.json
+  #   modus/.codex-plugin/plugin.json
+  #   .claude-plugin/marketplace.json
+  #   boundary/gh-173.yaml
+  #   docs/passes/**
+  #   .claude/sessions/issue-feature-173-review-establishes-stopping-conditions.md
+  #   .beads/issues.jsonl
+  #
+  # The last two are here because this repository's own policy requires them to
+  # change before completion — the branch session file is written at every step, and
+  # filing a bead re-exports the passive JSONL. Omitting them would make a correct
+  # run fail this entry, which is the false-negative shape that cost pass 11 a gate.
+  - id: PRES-11
+    statement: "the change modifies no file outside the ones this entry names"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C10]
+    observation: >-
+      list the files that differ between base and head, then compare that list with the paths this
+      entry names
+    decision: "every changed file matches a named path"
+    quantitative: false
+    test_role: preservation
+    baseline: pass
+  # Not in the item. Probe: setting one metadata file's version out of step fails
+  # the validator, which shows a green run can go red.
+  - id: PRES-9
+    statement: "repository plugin validation reports no error with the changed skill present"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C8, CPL-4]
+    observation: >-
+      run validate:plugins and the Claude manifest check for modus on base and on head, then read
+      each exit status
+    decision: "every status is zero on both revisions"
+    quantitative: false
+    test_role: preservation
+    baseline: pass
+  # The behavioural half of PRES-2, and a watch rather than a must because a
+  # refinement run is one sample and no fixture makes "stops by the rule" gate
+  # honestly. This is the entry that catches a step 9 qualified from outside, which
+  # PRES-2 cannot see.
+  - id: W-2
+    statement: "a refinement run stops when the six conditions hold"
+    verifier: observation
+    verification_stage: production
+    obligation: watch
+    mandate: [usability]
+    traces: [C12]
+    # Scoped to runs that DECLARED DONE. The earlier form fired on any stop, and a
+    # cap stop is precisely the case where unmet conditions are the correct reason to
+    # hand to a person — so demanding all six at every stop reported a failure on the
+    # skill working as designed. False-positive by construction, which a watch makes
+    # cheap and not harmless: a watch nobody trusts is a watch nobody reads.
+    observation: >-
+      for each refinement run after the change that declared refinement done, record which of the
+      six conditions held
+    decision: "all six held at every such stop"
+    quantitative: false
+    handoff:
+      owner: "whoever runs the next pass of agent-work-item"
+      trigger: "a refinement run declares refinement done"
+      verification_method: "read the run record for which of the six conditions held when it declared done"
+      evidence_destination: "docs/passes/<passN>/, beside that pass's review answers"
+      failure_transition: "a declared-done run with a condition unmet is filed as its own item against step 9"
+  # The item's own measure of the cost, and C11 is stated_unverified, so it grounds
+  # a watch and nothing that gates. A first-round finding is the outcome; the
+  # failure it names is a condition first raised after the cap, when no round is
+  # left to fix it.
+  #
+  # Round one: this is a live residual under C5 and it named no owner. The linter
+  # requires a handoff object on post_merge and production MUSTS only, so nothing
+  # would have asked. Carried here because C5 asks, which is the point of C5.
+  # Round one: "no condition is first named in a second round" is also true when a
+  # condition is first named after the cap, and true when none is ever named. The
+  # window is now the round that first named a condition, over conditions actually
+  # named. Never-named is deliberately excluded on zed's classification: the
+  # observation cannot tell the absence of a defect from a failure to detect one,
+  # and this repository's own linter refuses terminal conclusions drawn from an
+  # absence for the same reason.
+  - id: W-1
+    statement: "a condition named as a finding is first named in a first round"
+    verifier: observation
+    verification_stage: production
+    obligation: watch
+    mandate: [usability]
+    traces: [C11]
+    observation: >-
+      for each of the three conditions named as a finding after the change, record the pass and
+      round that first named it
+    decision: "each was first named in the item's first round"
+    quantitative: false
+    handoff:
+      owner: "whoever runs the next pass of agent-work-item"
+      trigger: "a review round completes under the changed step 8"
+      verification_method: "read that round's findings for which of the three conditions they name"
+      evidence_destination: "docs/passes/<passN>/, beside that pass's review answers"
+      failure_transition: "a condition first named in a second round is filed as its own item against step 8"

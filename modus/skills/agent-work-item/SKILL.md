@@ -15,6 +15,19 @@ The point is not documentation. It is that after the freeze, a finding is either
 blocking or noise, and the target cannot drift toward whatever the implementation
 happened to produce.
 
+**The freeze is the mechanism. The manifest is optional.** Writing down what done
+means, having a person approve it, committing it, and escalating rather than
+editing afterwards — that is the whole of what stops the target moving, and it
+costs a page. The YAML manifest below does a second job: making the definition
+itself machine-checkable. That is worth its cost on an item whose criteria are
+numerous or contested, and it is not worth it on a small one.
+
+For a small item, write the five things step 9 names into a `done.md`, get it
+approved, commit it, and skip to step 10. You keep the drift protection and lose
+the linting. One run of this skill produced a 26-entry manifest for a forty-line
+prose change; nine of those entries described obligations the item never mentioned.
+The manifest was longer than the thing it defined, and most of it was insurance.
+
 ## Procedure
 
 **1. Get the item's parts.** Cite a label the item carries where it has one:
@@ -154,6 +167,27 @@ A `mechanical` + `pre_merge` + `must` also needs `test_role` and `baseline`: a
 A preservation entry needs a probe that would make it fail. Without one, `pass` on
 base and head is satisfied by `assert True`.
 
+**An entry the item does not name needs one sentence saying what breaks without
+it.** Without that sentence it is insurance rather than an obligation, and step 9
+already calls structure past the first passing draft cost with no return. If the
+boundary is longer than the change it defines, that is the signal to cut, not to
+keep drafting.
+
+**A `must` needs a mechanical observable — something a script or a run produces.**
+Whether a rule written in prose still *binds* is not one. It is a property of how a
+reader reads the text, so a decision that reads the text can be satisfied while text
+placed somewhere else defeats the requirement. A preservation obligation over prose
+is a `watch` with a named owner, and saying so is more honest than a `must` resting
+on a proxy. One review round returned eleven findings that were all this single
+shape: keep the sentence, defeat the rule from outside what the decision reads.
+
+**Where an entry enumerates, derive the list rather than typing it.** Files, codes,
+paths. A hand-written enumeration checks that what changed is *in* the list and
+never that the list is *complete*, so it passes while missing whatever the author
+forgot. An allowlist of ten authorized paths, verified clean by a full review, was
+missing the lockfile — and the version bump it was written to police left that file
+stale.
+
 **5b. Check coverage of the item.** List the item's criteria. Against each, name
 the entry that covers it. Then name every criterion with no entry.
 
@@ -221,17 +255,89 @@ which is not the same as passing.
 Omitting `itemParts` makes every `item_locator` check exempt itself. The boundary
 then looks clean while its citations are unverified.
 
-**8. Have it reviewed by someone who did not write it.** Ask exactly two questions:
+**8. Have it reviewed by someone who did not write it.** Ask exactly five questions,
+of every review, whatever the boundary is or how it is marked:
 
 - Which entries' `decision` could you not evaluate against that entry's own
   `observation`? Ids only.
 - Do you have a blocking question about **what is wanted** that you cannot answer
   from the boundary and the item?
+- Can you state what must keep working? If not, name what is missing.
+- Can you state what is out of scope? If not, name what is missing.
+- Can you state what is handed off, and to whom? If not, name the residual that
+  has nowhere to go.
 
 Do not ask "would you implement from this". That invites answers about how and
 where to build, which is the next phase and will send you in circles.
 
+**Every question must be able to come back "none".** Before adding one, ask what a
+clean boundary's answer looks like; if you cannot picture the question returning
+nothing, it is a source of candidates and not a gate. A question of the shape "name
+an input where this passes while the failure occurs" cannot terminate against
+repairs, because every repair is new text and new text admits new witnesses. One
+run made exactly that a gate and spent ten drafter-and-reviewer cycles on it, each
+producing real findings, until a person stopped it. Constraint 3 in the modus README
+is the same rule: a reviewer asked what is wrong manufactures findings.
+
+The last three are step 9's conditions, asked here because step 9 is where they are
+required and nothing else asks them. Step 8 used to ask two questions, which
+established what must be true, how it would tell, and the absence of a blocking
+question — three of the six. The other three were checked by nothing, so a finding
+against them arrived after the rounds were spent, or not at all.
+
+**A condition the reviewer cannot state is a finding for that round**, handled like
+any other: round one returns it to the drafter, and a second round that names one
+stops the review.
+
+What is handed off means every live residual the boundary will not discharge, each
+with a named destination — a later-stage `handoff` object, an `uncovered` coupling
+edge that has been routed somewhere, or a `non_goal` that defers live work rather
+than excluding it. An `uncovered` edge is a finding until it names a destination.
+A `non_goal` that excludes work with no residual needs no destination and is
+answered completely by "out of scope".
+
+**Write each round's prompt to a file, and dispatch the reviewer with the path.**
+Not with the text. Then require the reviewer to open its answer with the digest of
+that file:
+
+```bash
+shasum -a 256 <round-prompt-file>
+```
+
+A reviewer handed text has nothing a third party can re-hash, and a reviewer that
+reconstructs its own prompt in order to hash it will differ on whitespace. The file
+is what makes the receipt reproducible, and the receipt is what establishes which
+questions were actually answered. A round whose reported digest does not match the
+file is void, not clean and not negative: a review of unknown questions has
+established nothing.
+
+**The round file carries these and nothing else:** the path to the boundary and the
+path to the item, the receipt line, the five questions, the rule that every answer
+names something specific, and what handed off means. Plus these four, which bound
+what the reviewer does rather than what it is asked:
+
+- Read the boundary and the item. Nothing else.
+- Do not edit either one, and do not propose replacement wording. Name the defect;
+  the drafter writes the fix.
+- Say plainly when a question has no finding. None is an expected answer.
+- Do not run the linter or report its output. It has already run, and it cannot see
+  what these questions ask about.
+
+Add nothing beyond that list. A reviewer told more than the file states is answering
+a different review from the one the receipt certifies, and the digest then attests to
+the wrong thing — which is worse than no receipt, because it looks like evidence.
+
+This matters most when the skill itself has just changed. An agent whose plugin was
+installed before the change reads the old step 8, dispatches the old questions, and
+returns a pass that says nothing about the new ones.
+
 **Two rounds. Then stop, whatever the second one said.**
+
+That cap is on the review. **Every other check-and-repair loop gets one too.** If a
+gate between the drafter and whoever checks its repairs has no fixed number of
+turns, it will not end on its own — the findings stay real the whole way down, so
+there is never a natural moment to stop. Name the number before starting, and hand
+to a person when it is spent.
 
 Round one, fix what it named, round two. If round two returns an empty list and no
 blocking question, go to step 9. If it names anything, stop and hand the findings
@@ -260,8 +366,11 @@ what is wanted. Questions about how or where to build do not block.
 Stop at the first draft that passes. Structure added past that point is cost with
 no return.
 
-A reviewer must name a specific undecidable requirement. General dissatisfaction is
-not a finding.
+A reviewer must name something specific on every question it answers: the entry
+whose decision it could not evaluate, the requirement it could not decide, the
+condition it could not state, the residual with nowhere to go. General
+dissatisfaction is not a finding, and that holds for all five questions and not
+only the first.
 
 **9b. Write the run out where it can be re-read.** If a `docs/passes/` directory
 exists, find the highest-numbered `passN` inside it and write your boundary and
@@ -275,6 +384,18 @@ only account of that is the file it was written to.
 **10. A human approves, then freeze.** The freeze is the commit. After it, the
 boundary is the standard: if implementation makes it look wrong, stop and escalate
 rather than edit it.
+
+**The drafter does not decide whether its own work satisfies the boundary.** That
+holds at step 8 for the boundary and it holds again at implementation for every
+entry: whoever wrote the thing being judged names what it found and hands the
+verdict to someone else. A drafter that grades itself will pass the entry it wrote
+loosely, because the loose reading is the one it had in mind while writing.
+
+This is the step with the clearest evidence behind it. On one run the drafter
+declined to call a single entry — the prompt's instructions must be exactly those
+the skill states — and sent it to a verifier, who failed it: the dispatch had
+quietly added four instructions of its own. Had the drafter ruled, it would have
+shipped as a pass, and the receipt would have certified a review nobody specified.
 
 ## Failure modes
 

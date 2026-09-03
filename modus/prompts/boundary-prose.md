@@ -13,24 +13,18 @@ the modus README.
 A predicate. After making the observation, it is true or false, and two readers
 get the same answer.
 
-Banned, because none of them can be false. **The list is closed.** A word not on
-it is not banned by this rule, and a checker reads exactly these:
+A closed list of banned words used to stand here — `usable`, `adequate`, `robust`
+and twenty more — on the grounds that none of them can be false. It is gone,
+because the list is a proxy for the rule and the rule works better unproxied.
 
-```
-usable reasonable appropriate sufficient adequate proper clean correct good
-sensible robust generally typically mostly usually largely better faster
-clearer simpler stronger
-```
+The instance that removed it: a boundary whose decision read "the output is
+acceptable". Genuinely unevaluable, exactly what the list existed to catch, and
+**`acceptable` was not on the list.** Two review rounds caught it anyway, by asking
+what would make it false. A list that misses the case a reader gets right is worse
+than no list once anything enforces it, because it certifies the wording rather
+than the predicate.
 
-Two-word forms, matched as phrases:
-
-```
-"as needed"  "where appropriate"  "as applicable"  "and so on"
-```
-
-An earlier version of this list ended "and so on, etc.", which read as an open
-list. A check against an open list returns no definite answer, so the rule could
-not be run.
+Ask the question instead. It is at the end of this file.
 
 If a number decides it, the number goes in `quantity`, not in the prose.
 
@@ -54,32 +48,6 @@ One claim per field. If an `and` joins two things that could be separately true
 or false, split the entry.
 
 No metaphor, no analogy, no rhetorical emphasis.
-
-## The author's tells
-
-If the author is a language model, the following patterns are a signal, not just
-a style problem. They appear when the model does not know the answer, or has
-drifted off the goal and is producing well-shaped text in place of content.
-
-- an aphorism, especially a two-part one with a semicolon or a comma pivot:
-  "files are not a change surface; behaviour is"
-- "not just X, but Y", and "X is not A. It is B."
-- a short punchy sentence closing a section
-- opening a reply by restating the reader's point as a revelation
-- "the real question is", "the honest answer is", "what matters here is"
-- three items in a list where two carry the content
-- an em dash inserted for emphasis rather than for grammar
-- a sentence explaining the importance of the document it is inside
-
-Treatment: when one appears, do not just delete the phrase. Stop and establish
-which of the two causes produced it. If the answer is not known, say so in the
-field or leave the entry unwritten. If the work has drifted, return to the item.
-Deleting the wording and keeping the sentence hides the signal and keeps the
-defect.
-
-Two of these were in this repository's first hand-authored boundary and in this
-file, written by the model that wrote the rules above and not noticed until a
-reader pointed at them.
 
 ## Length
 
@@ -136,12 +104,10 @@ than assumed.
 
 | Rule | Enforced by |
 | --- | --- |
-| word caps | a script |
-| banned words in `decision` | a script |
+| word caps | nobody yet — `domestique-13n` |
 | one claim per field | a reviewer |
 | `decision` is a predicate | a reviewer |
 | `observation` names an actor | a reviewer |
-| the author's tells | nobody |
 
 "One claim per field" is not scriptable. Detecting a conjunction is easy and
 wrong: `at least one of goal, problem, or a claim` is a single claim with a
@@ -149,7 +115,8 @@ disjunctive predicate, and a crude check would report it. Per constraint 2 in th
 modus README, a check that produces false findings is dismissed and then not read
 at all.
 
-The tells are unenforced. That is a limit, not a claim that they do not matter.
+The word caps are the one rule this table used to credit to a script that does not
+exist. `domestique-13n` is open on it. Until then the row says so.
 
 ## Check
 

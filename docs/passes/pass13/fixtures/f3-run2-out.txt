@@ -1,0 +1,144 @@
+probe-skill: events streaming to /tmp/fx/f3-run2.jsonl
+probe-skill: watch with  tail -f /tmp/fx/f3-run2.jsonl
+probe-skill: session transcripts in /Users/dpuglielli/.claude/projects/-var-folders-bk-6vcq_v6n3bl6qb6m90vhhfcc0000gn-T-probe-cwd-h3Azrb
+host:   claude
+plugin: /Users/dpuglielli/.herdr/worktrees/claude-domestique/issue-feature-173-review-establishes-stopping-conditions/modus
+prompt: You are resuming an in-progress `modus:agent-work-item` run. Steps 1 through 7 are
+already done: the item below was read, the boundary below was drafted from it, and it
+passes both lint forms with no failures.
+
+Continue the procedure at step 8. Do what step 8 says, and stop when step 8 is done.
+Do not restart from step 1. Do not go past step 8.
+Stop when round one is done and report what it returned. Do not run a second round.
+
+I am deliberately not telling you what step 8 requires. Read it in the skill.
+
+=== THE ITEM ===
+
+Title: Add a --quiet flag to the export command
+
+Description: The export command prints a progress line per record. In CI that fills
+the log with thousands of lines and the actual failure scrolls away.
+
+Problem: export has no way to suppress per-record output, so CI logs are unreadable.
+
+Goal: a CI run of export produces no per-record output and still reports failures.
+
+## Acceptance criteria
+
+AC1. `export --quiet` writes no per-record line.
+AC2. `export --quiet` still writes every error line.
+AC3. `export` without the flag writes what it writes today.
+
+
+=== THE BOUNDARY ===
+
+schema_version: 1
+tracker: github-issues
+item: gh-901
+registry_revision: "none"
+registry_selections: []
+mandates: [correctness]
+non_goals:
+  - "rewriting the installer in Rust"
+  - "the mobile client's offline cache"
+interpretation:
+  goal:
+    statement: "a CI run of export produces no per-record output and still reports failures"
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "Goal"
+  problem:
+    statement: "export cannot suppress per-record output, so CI logs are unreadable"
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "Problem"
+  claim_provenance:
+    C1:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "AC1"
+    C2:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "AC2"
+  corrections: []
+  gaps: []
+claims:
+  - id: C1
+    text: "export --quiet writes no per-record line"
+  - id: C2
+    text: "export --quiet still writes every error line"
+coupling:
+  - id: CPL-1
+    kind: consumer
+    target: "the CI job that reads export's output"
+entails:
+  CPL-1: OB-1
+entries:
+  - id: OB-1
+    statement: "export --quiet writes no per-record line"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1, CPL-1]
+    observation: "run export --quiet over a three-record input and count the per-record lines"
+    decision: "the count is zero"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  - id: OB-2
+    statement: "export --quiet writes an error line for every failed record"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C2]
+    observation: "run export --quiet over an input whose second record fails, then count the error lines"
+    decision: "the count is one"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+
+invoked:
+  Skill:modus:agent-work-item
+  Bash
+  Write
+  Write
+  Write
+  Bash
+  Agent
+  Read
+  Bash
+  Read
+  Read
+
+--- with plugin ---
+Round one is done. The digest the reviewer opened with — `79b8d51a2513ad463d01b60dfebb7d1bd0c6a971cff3c41837c09caf0459cfa0` — matches the file I hashed, so the round is valid.
+
+One setup note first: the working directory was empty, so the item and boundary existed only in the conversation. I wrote them to disk before dispatching, since a reviewer that did not write the boundary needs to read it, and the prompt has to be dispatched by path:
+
+- `item/gh-901.md`
+- `boundary/gh-901.yaml`
+- `review/gh-901-round1.md` (the round-one prompt, verbatim five questions)
+
+## What round one returned
+
+**Q1 — unevaluable decisions: none.** Both entries' decisions are predicates on exactly the count their own observation produces. The reviewer flagged `quantitative: false` on numeric counts as a nit, not a finding.
+
+**Q2 — blocking question about what is wanted: no.** Two candidates were raised and both resolved from the item: whether an error line counts as a "per-record line" (AC1 + AC2 against the Description settle it), and whether C2's "every" covers multiple failures (AC2 is unambiguous as a requirement; OB-2's single-failure input is a coverage weakness, not an open question).
+
+**Q3 — what must keep working: findings.** The reviewer can state the condition (AC3: unflagged `export` writes what it writes today) but the boundary does not carry it. AC3 has no claim, no entry, no `preservation` entry, and `gaps` is empty — so it is neither traced nor recorded as dropped. Also: "what it writes today" has no fixed referent anywhere in the boundary, so even an entry for it would have nothing to compare against.
+
+**Q4 — what is out of scope: findings.** Both `non_goals` are clean exclusions with no residual, but neither is adjacent to `export`, so they do no scoping work. The boundary never says whether `--quiet` is confined to the two named output classes or extends to other output, and neither "per-record line" nor "error line" is defined — nothing states the rule a mechanical verifier would use to classify a line.
+
+**Q5 — what is handed off: a finding.** No `handoff` objects, no `uncovered` edges, no deferring `non_goal`. The residual with nowhere to go is **AC3** — live work absent from all four places that could discharge or route it. Secondary (bookkeeping, not a residual): CPL-1 is entailed only by OB-1, so the "still reports failures" half of the goal that the CI consumer depends on isn't connected to OB-2 in `traces`/`entails`.
+
+Round one named findings on three of the five questions, so the boundary is not clean. Per step 8 the next move is to fix what it named and run round two — I'm stopping here as instructed and not running it.
+
+expected modus:agent-work-item: FIRED

@@ -1,0 +1,144 @@
+probe-skill: events streaming to /tmp/pilot.jsonl
+probe-skill: watch with  tail -f /tmp/pilot.jsonl
+probe-skill: session transcripts in /Users/dpuglielli/.claude/projects/-var-folders-bk-6vcq_v6n3bl6qb6m90vhhfcc0000gn-T-probe-cwd-fPrpHD
+host:   claude
+plugin: /Users/dpuglielli/.herdr/worktrees/claude-domestique/issue-feature-173-review-establishes-stopping-conditions/modus
+prompt: You are resuming an in-progress `modus:agent-work-item` run. Steps 1 through 7 are
+already done: the item below was read, the boundary below was drafted from it, and it
+passes both lint forms with no failures.
+
+Continue the procedure at step 8. Do what step 8 says, and stop when step 8 is done.
+Do not restart from step 1. Do not redraft or edit the boundary. Do not go past step 8.
+
+I am deliberately not telling you what step 8 requires. Read it in the skill.
+
+=== THE ITEM ===
+
+Title: Add a --quiet flag to the export command
+
+Description: The export command prints a progress line per record. In CI that fills
+the log with thousands of lines and the actual failure scrolls away.
+
+Problem: export has no way to suppress per-record output, so CI logs are unreadable.
+
+Goal: a CI run of export produces no per-record output and still reports failures.
+
+## Acceptance criteria
+
+AC1. `export --quiet` writes no per-record line.
+AC2. `export --quiet` still writes every error line.
+AC3. `export` without the flag writes what it writes today.
+
+## What must keep working
+
+- The exit status export returns for a failed record.
+
+## Out of scope
+
+- Changing what counts as an error. Separate item.
+
+=== THE BOUNDARY ===
+
+schema_version: 1
+tracker: github-issues
+item: gh-901
+registry_revision: "none"
+registry_selections: []
+mandates: [correctness]
+non_goals:
+  - "changing what counts as an error — separate item"
+interpretation:
+  goal:
+    statement: "a CI run of export produces no per-record output and still reports failures"
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "Goal"
+  problem:
+    statement: "export cannot suppress per-record output, so CI logs are unreadable"
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "Problem"
+  claim_provenance:
+    C1:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "AC1"
+    C2:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "AC2"
+  corrections: []
+  gaps: []
+claims:
+  - id: C1
+    text: "export --quiet writes no per-record line"
+  - id: C2
+    text: "export --quiet still writes every error line"
+coupling:
+  - id: CPL-1
+    kind: consumer
+    target: "the CI job that reads export's output"
+entails:
+  CPL-1: OB-1
+entries:
+  - id: OB-1
+    statement: "export --quiet writes no per-record line"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1, CPL-1]
+    observation: "run export --quiet over a three-record input and count the per-record lines"
+    decision: "the count is zero"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  - id: OB-2
+    statement: "export --quiet writes every error line"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C2]
+    observation: "run export --quiet over an input whose second record fails, then read the output"
+    decision: "the output is acceptable"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+
+invoked:
+  Skill:modus:agent-work-item
+  Bash
+  Agent
+  Agent
+
+--- with plugin ---
+Step 8 done. Two review rounds, two fresh agents, exactly the two questions each, and I stopped at two.
+
+## Round one (fresh reviewer)
+
+**Q1 — unevaluable decisions:** `OB-2`. Its `decision` is "the output is acceptable", which names no property of the collected output. The observation hands you the output of a run whose second record fails, but nothing says what makes that output pass — in particular it never requires that record 2's error line be present — so no specific output can return false.
+
+**Q2 — blocking question about what is wanted:** none. AC1 + AC2 settle the one reading that could have split obligations (whether `--quiet` also swallows a failing record's error line: it must not).
+
+## Round two (second fresh reviewer, blind, boundary unchanged)
+
+**Q1:** `OB-2`, independently and for the same reason — "acceptable" names no property, so there is nothing to check. This reviewer added the specific gap: neither *whether record 2's error line is present* nor *whether records 1 and 3 stayed silent* is specified.
+
+**Q2:** none. Same resolution — the item's description scopes "per-record line" to the progress line, so C1 and C2 don't compete for the same output line.
+
+Both rounds agree `OB-1` is fine: its observation yields a count, its decision compares that count to zero, and it can fail.
+
+## Where this leaves the run
+
+`OB-2` is the "unevaluable decision" failure mode from the skill's own table — the same shape as "judged usable" / "works correctly". Both rounds named it, so per step 8 the run stops here and the findings go to a person with the boundary as it stands. It is not a boundary that passed review.
+
+One thing I deliberately left out: step 8 calls for fixing what round one named *before* round two, and you told me not to edit the boundary. I didn't edit it. So round two was a second independent sample of the unchanged document rather than a re-check of a fix — which is why the two rounds converging on `OB-2` is corroboration, not the skill's intended fix-then-verify cycle. If you want the cycle as written, the minimal change is to give `OB-2` a decision its own observation can answer (something naming the presence of the failing record's error line and the absence of progress lines for the other two), and then round two is worth re-running against that. That's your call, not mine — I haven't touched the file.
+
+I did not proceed to step 9, and nothing has been approved or frozen.
+
+expected modus:agent-work-item: FIRED

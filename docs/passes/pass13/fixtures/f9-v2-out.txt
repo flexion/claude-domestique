@@ -1,0 +1,199 @@
+probe-skill: events streaming to /tmp/fx/f9-v2.jsonl
+probe-skill: watch with  tail -f /tmp/fx/f9-v2.jsonl
+probe-skill: session transcripts in /Users/dpuglielli/.claude/projects/-var-folders-bk-6vcq_v6n3bl6qb6m90vhhfcc0000gn-T-probe-cwd-BMOqO3
+host:   claude
+plugin: /Users/dpuglielli/.herdr/worktrees/claude-domestique/issue-feature-173-review-establishes-stopping-conditions/modus
+prompt: You are resuming an in-progress `modus:agent-work-item` run. Steps 1 through 8 are
+already done: the item below was read, the boundary below was drafted from it, it
+passes both lint forms with no failures, and the review returned an empty list of
+unevaluable decisions and no blocking question.
+
+The boundary is marked NOT FROZEN.
+
+Continue the procedure at step 9. Do what step 9 says, and stop when step 9 is done.
+Do not restart from step 1. Do not redraft or edit the boundary. Do not go past step 9.
+
+I am deliberately not telling you what step 9 requires, and not telling you what its
+result should be. Read it in the skill and reach your own conclusion.
+
+=== THE ITEM ===
+
+Title: Add a --quiet flag to the export command
+
+Description: The export command prints a progress line per record. In CI that fills
+the log with thousands of lines and the actual failure scrolls away.
+
+Problem: export has no way to suppress per-record output, so CI logs are unreadable.
+
+Goal: a CI run of export produces no per-record output and still reports failures.
+
+## Acceptance criteria
+
+AC1. `export --quiet` writes no per-record line.
+AC2. `export --quiet` still writes every error line.
+AC3. `export` without the flag writes what it writes today.
+
+## What must keep working
+
+- The exit status export returns for a failed record.
+
+## Out of scope
+
+- Changing what counts as an error. Separate item.
+
+=== THE BOUNDARY ===
+
+schema_version: 1
+tracker: github-issues
+item: gh-901
+registry_revision: "none"
+registry_selections: []
+mandates: [correctness]
+non_goals:
+  - "changing what counts as an error — separate item"
+  - "the structured log format the CI job will need afterwards — deferred to gh-902"
+interpretation:
+  goal:
+    statement: "a CI run of export produces no per-record output and still reports failures"
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "Goal"
+  problem:
+    statement: "export cannot suppress per-record output, so CI logs are unreadable"
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "Problem"
+  claim_provenance:
+    C1:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "AC1"
+    C2:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "AC2"
+    C4:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "AC3"
+    C3:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "What must keep working"
+  corrections: []
+  gaps: []
+claims:
+  - id: C1
+    text: "export --quiet writes no per-record line"
+  - id: C2
+    text: "export --quiet still writes every error line"
+  - id: C4
+    text: "unflagged export writes what it writes today"
+  - id: C3
+    text: "the exit status for a failed record does not change"
+coupling:
+  - id: CPL-1
+    kind: consumer
+    target: "the CI job that reads export's output"
+entails:
+  CPL-1: OB-1
+entries:
+  - id: OB-1
+    statement: "export --quiet writes no per-record line"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: watch
+    mandate: [correctness]
+    traces: [C1, CPL-1]
+    observation: "run export --quiet over a three-record input and count the per-record lines"
+    decision: "the count is zero"
+    quantitative: false
+  - id: OB-2
+    statement: "export --quiet writes an error line for every failed record"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C2]
+    observation: "run export --quiet over an input whose second and third records fail, then count the error lines"
+    decision: "the count is two"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  - id: PRES-1
+    statement: "the exit status for a failed record does not change"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C3]
+    observation: "run export over an input whose second record fails, on base and on head, then read both exit statuses"
+    decision: "the two statuses are equal"
+    quantitative: false
+    test_role: preservation
+    baseline: pass
+  - id: PRES-2
+    statement: "unflagged export writes what it writes today"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C4]
+    observation: "run export without the flag over a three-record input, on base and on head, then compare the two outputs"
+    decision: "the two outputs are equal"
+    quantitative: false
+    test_role: preservation
+    baseline: pass
+
+invoked:
+  Skill:modus:agent-work-item
+  Bash
+
+--- with plugin ---
+Working directory is empty — no `docs/passes/` here, so 9b is a no-op ("Elsewhere, do nothing"). Step 9 is therefore purely the stopping-rule judgment.
+
+## Step 9: the rule does not pass
+
+Step 9's rule is not "review came back clean." It is six specific things a fresh agent must be able to do:
+
+1. say what must be true
+2. say how it would tell
+3. say what must keep working
+4. say what is out of scope
+5. say what is handed off, and to whom
+6. have no blocking question about what is wanted
+
+What I was handed as the review result covers **two** of those: an empty list of unevaluable decisions (2), and no blocking question (6). Conditions 3, 4, and 5 have no evidence at all — not a negative answer, no answer.
+
+That is not a gap I can close by inspection. Step 8 is explicit about where those three live:
+
+> The last three are step 9's conditions, asked here because step 9 is where they are required and **nothing else asks them.**
+
+So the review that ran was the two-question form, and the skill names this exact situation as the reason the five-question form exists:
+
+> An agent whose plugin was installed before the change reads the old step 8, dispatches the old questions, and returns a pass that says nothing about the new ones.
+
+A pass on the old questions is not a partial pass on the new ones. It is silence on three of them.
+
+**Verdict: the run does not stop here.** The boundary stays NOT FROZEN, and step 10 is not reachable.
+
+I want to be clear about what I am *not* doing: I am not answering conditions 3–5 myself. I am the drafting run. The condition is that a *fresh* agent can state them, and step 8 puts the questions to "someone who did not write it" precisely so the drafter's own confidence doesn't get to count as evidence. Self-certifying here would be the same defect as the `stated`-provenance failure the skill describes — a decision made with nothing recording that it was made.
+
+Two secondary notes on the evidence, neither of which changes the verdict:
+
+- No digest receipt was reported for the round prompt. Per step 8 the receipt is what establishes which questions were actually answered; without it, "the review returned an empty list" is unattributed to a known question set. The primary finding above already stands on its own, so treat this as a second reason the record is thin rather than an independent failure.
+- The rounds spent so far established two of six conditions. "Two rounds, then stop" governs rounds that asked the step-8 questions; these asked a different, smaller set.
+
+## What unblocks it
+
+Re-run step 8 in its five-question form: write the round prompt to a file, dispatch a fresh reviewer with the *path*, require the answer to open with `shasum -a 256 <file>`. Conditions 1, 2 and 6 will be re-asked along with 3, 4 and 5 — that is fine and cheaper than reasoning about which prior answers carry over.
+
+One thing worth the reviewer's attention when that runs, flagged as an observation and not a step-9 verdict (I have not redrafted or edited anything): the non-goal `"the structured log format the CI job will need afterwards — deferred to gh-902"` does not appear anywhere in the item. It reads as a deferral of live work with a named destination, which would answer the handoff question — but it carries no provenance entry and no claim traces to it, so where it came from is unrecorded in a boundary that is one human approval away from being frozen as the standard.
+
+expected modus:agent-work-item: FIRED

@@ -1,0 +1,148 @@
+probe-skill: events streaming to /tmp/fx/f7-v2.jsonl
+probe-skill: watch with  tail -f /tmp/fx/f7-v2.jsonl
+probe-skill: session transcripts in /Users/dpuglielli/.claude/projects/-var-folders-bk-6vcq_v6n3bl6qb6m90vhhfcc0000gn-T-probe-cwd-5zJI8P
+host:   claude
+plugin: /Users/dpuglielli/.herdr/worktrees/claude-domestique/issue-feature-173-review-establishes-stopping-conditions/modus
+prompt: You are resuming an in-progress `modus:agent-work-item` run. Steps 1 through 7 are
+already done: the item below was read, the boundary below was drafted from it, and it
+passes both lint forms with no failures.
+
+Continue the procedure at step 8. Do what step 8 says, and stop when step 8 is done.
+Do not restart from step 1. Do not go past step 8.
+Stop when round one is done and report what it returned. Do not run a second round.
+
+I am deliberately not telling you what step 8 requires. Read it in the skill.
+
+=== THE ITEM ===
+
+Title: Add a --quiet flag to the export command
+
+Description: The export command prints a progress line per record. In CI that fills
+the log with thousands of lines and the actual failure scrolls away.
+
+Problem: export has no way to suppress per-record output, so CI logs are unreadable.
+
+Goal: a CI run of export produces no per-record output and still reports failures.
+
+## Acceptance criteria
+
+AC1. `export --quiet` writes no per-record line.
+AC2. `export --quiet` still writes every error line.
+AC3. `export --quiet` suppresses per-record output for successful records.
+AC4. `export --quiet` suppresses per-record output for every record, including failures.
+
+## What must keep working
+
+- Whatever the CI job currently depends on.
+
+=== THE BOUNDARY ===
+
+schema_version: 1
+tracker: github-issues
+item: gh-901
+registry_revision: "none"
+registry_selections: []
+mandates: [correctness]
+non_goals:
+  - "the structured log format the CI job will need afterwards; deferred"
+interpretation:
+  goal:
+    statement: "a CI run of export produces no per-record output and still reports failures"
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "Goal"
+  problem:
+    statement: "export cannot suppress per-record output, so CI logs are unreadable"
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "Problem"
+  claim_provenance:
+    C1:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "AC1"
+    C2:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "AC2"
+  corrections: []
+  gaps: []
+claims:
+  - id: C1
+    text: "export --quiet writes no per-record line"
+  - id: C2
+    text: "export --quiet still writes every error line"
+coupling:
+  - id: CPL-1
+    kind: consumer
+    target: "the CI job that reads export's output"
+entails:
+  CPL-1: OB-1
+entries:
+  - id: OB-1
+    statement: "export --quiet writes no per-record line"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1, CPL-1]
+    observation: "run export --quiet over a three-record input and count the per-record lines"
+    decision: "the count is zero"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  - id: OB-2
+    statement: "export --quiet behaves well under load"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C2]
+    observation: "run export --quiet and observe"
+    decision: "the behaviour is satisfactory"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+
+invoked:
+  Skill:modus:agent-work-item
+  Bash
+  Write
+  Write
+  Write
+  Bash
+  Agent
+  Read
+  Bash
+  Bash
+  Read
+  Read
+
+--- with plugin ---
+Round one is done. The reported digest matches the file — `5638e923c0005b682481b4d624fe640bade1bf1916dc6852c3b3d7acbfbfddf7`, same value I computed independently before dispatch — so the receipt is valid and the review answered the five questions as written.
+
+## What round one returned
+
+**Q1 — decision not evaluable against its own observation:** `OB-2`.
+
+**Q2 — blocking question about what is wanted:** Yes. For a failing record, does `export --quiet` print that record's error line or suppress it? AC2 and AC3 say it survives; AC4 says it does not. The boundary carries AC1/AC2 forward as C1/C2, drops AC3 and AC4 entirely, and leaves `corrections` and `gaps` both empty — so the conflict isn't recorded as noticed. OB-1's three-record observation doesn't say whether any record fails, so it passes under either reading.
+
+**Q3 — can you state what must keep working:** No. Two specifics: nothing pins existing behaviour (both entries are `test_role: change`, nothing observes `export` without `--quiet`), and C2's "still reports failures" has no observation — the only entry tracing C2 is OB-2, whose statement is about load, not error lines.
+
+**Q4 — can you state what is out of scope:** Partially. One exclusion is statable (`non_goals[0]`), but it defers rather than excludes — "will need afterwards" asserts the work is live, which pushes it into Q5.
+
+**Q5 — can you state what is handed off, and to whom:** No. No `handoff` objects exist. Two residuals with no destination: the deferred structured log format, and the CPL-1 half that asks whether the CI job can still read export's output — routed to OB-1 in `entails`, but OB-1 only verifies the new suppression, so the edge looks covered while being undischarged.
+
+## Where this leaves the run
+
+All five questions returned findings, so round one is a returning round: the drafter fixes what it named, then round two. I've stopped here as instructed and have not fixed anything.
+
+One thing you should see before the fixes are attempted, because it isn't a drafting defect: the Q2 finding is an item-level contradiction (AC2/AC3 against AC4), and that's a step-1b gate condition — the fifth one, two criteria that cannot both hold. Under the skill, that isn't something round two can absorb; it's a stop-and-name-the-pair, handed back to whoever owns the item. Deciding whether `--quiet` suppresses failure lines is a decision, not a drafting problem, and the boundary as it stands quietly chose one reading by dropping AC3 and AC4. Worth resolving upstream rather than papering over in round two.
+
+Files written: `item-gh-901.md`, `boundary/gh-901.yaml`, `review/gh-901-round-1.md`. No `docs/passes/` directory exists here, so step 9b's write-out doesn't apply.
+
+expected modus:agent-work-item: FIRED
