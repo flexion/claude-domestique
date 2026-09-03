@@ -26,7 +26,7 @@ number would have looked fine.
 | PRES-3 | F1 + F2 | entry-id list and blocking-question answer both present in both |
 | PRES-8 | artifact | `lint-boundary.js` and `modus/tests/fixtures` unchanged vs `main`, so per-file verdicts are identical by construction |
 | PRES-9 | artifact | `validate:plugins` green |
-| PRES-11 | artifact | seven changed files, all in the allowlist |
+| PRES-11 | artifact | ~~seven changed files, all in the allowlist~~ — **no longer holds, see below** |
 | PRES-12 | artifact | no conditional language on asking anywhere in the skill |
 | PRESB-1 | F1 + F2 | both round prompt files carry 5/5 questions and the receipt |
 | PRESB-2 | F5 | Q1 named `PRES-1`, the entry the round did not change. The run said so unprompted: "I did not narrow the review to OB-1 … PRES-1 being untouched is the case where a narrowed prompt would have let it through" |
@@ -100,6 +100,36 @@ green (PRES-9), and `SKILL.md` is the only changed file (PRES-11).
 The verifier ruled no other fixture needs rerunning: the delta changes only the declared
 prompt projection, and the cap, question text, naming semantics, handed-off semantics
 and step 9 did not change.
+
+## PRES-11 is knowingly violated, by operator decision
+
+Found by the operator after the PR was opened: `package-lock.json` still recorded modus
+at `0.3.0` while all four metadata files read `0.4.0`. `main` was consistent — both
+`0.3.0` — so the bump introduced the disagreement, and `npm ls` reported the stale
+version against a manifest that said otherwise.
+
+The frozen boundary made the correct fix a violation:
+
+- **OB-8 passes and is too narrow.** It names four files — package, both host manifests,
+  marketplace entry — and all four agreed. The lockfile is a fifth place the version
+  lives and the entry never mentions it.
+- **PRES-11's allowlist omits `package-lock.json`.** Changing the lockfile makes "the
+  change modifies no file outside the ones this entry names" false.
+
+This was escalated under step 10 rather than repaired, with a recommendation to unfreeze
+and correct both entries. The operator instead directed committing the fix. **PRES-11 is
+therefore false as of that commit, and this record says so rather than leaving a verified
+verdict standing that no longer holds.**
+
+What the boundary would need, whenever it is next opened: `package-lock.json` in
+PRES-11's allowlist, and OB-8 widened from four files to five.
+
+**The part worth keeping.** That gap survived the drafter's adversarial self-pass over
+every entry, eleven verifier blocks, four fresh reviewers across two passes, and a full
+26-entry verification. An allowlist checks that changed files are *in* the list; nothing
+checks the list is *complete*. It is the same defect class as the eleven findings of pass
+11 — a decision reading a proxy for its requirement — reproduced in the entry written to
+catch exactly that, and caught by a person reading the repository.
 
 ## One disclosed variance
 
