@@ -69,8 +69,9 @@ So the output is worse than uninformative. It carries an affirmative positive cl
 unenumerated remainder, and that claim was false three minutes before the run proved it. The human
 reading `stage2-review.md` was told a sweep had happened.
 
-**This matters for which precedent applies.** The companion document's §5 disanalogy table
-(`boundary-completion-freeze-evidence.md:230`–`:238`) turns on exactly this distinction:
+**This matters for which precedent applies.** The companion document's §5 disanalogy table turns on
+exactly this distinction — in `boundary-completion-freeze-evidence.md`, the paragraph beginning "A
+producer emitting a false value":
 
 > A producer emitting a false value has to be fixed at the producer; that is not optional and
 > `abstain` is the right shape for it. A producer emitting a true value that a consumer over-reads is
@@ -224,6 +225,18 @@ also the honest answer to the operator's actual worry.
 All four spot-checked citations hold: `lint-boundary.js:647`–`:651`, `README:87`–`:88`,
 `briefing:563` (the sentence runs to `:564`), `SKILL:247`–`:249`. No corrections.
 
+**Two of this review's own citations drifted, and the pattern is worth recording.** Both pointed into
+`boundary-completion-freeze-evidence.md`, which grew from 449 to 487 lines while this session was
+running: the disanalogy-table reference moved by 44 lines and the `abstain` precedent row by 12.
+Both are now quoted anchors instead. Roughly eighteen other line citations in this file — into
+`lint-boundary.js`, the two skills, the pass records, the briefing, and the frozen corpus text —
+did not move at all.
+
+So the force of the operator's no-bare-line-numbers rule is proportional to how *live* the target
+is. Citations into frozen source material held for the whole session; the only two that broke were
+into the one document two agents were editing concurrently. A line number is a claim about a file's
+current shape, and it decays at the rate the file is being written.
+
 ---
 
 ## 9. What I would keep out of the merge
@@ -259,7 +272,7 @@ The sentence:
 > cannot establish.
 
 "Ran and established nothing" is `abstain`, and this document already assigns it that way — the §5
-precedent table at `:212` reads "`abstain` outcome … distinguishes 'ran and refuted nothing' from
+precedent table reads "`abstain` outcome … distinguishes 'ran and refuted nothing' from
 'passed'." §5 then spends four paragraphs on why `abstain` and `exempt` are different states, and the
 withdrawn-canonicalization argument at `:221`–`:238` turns on that same producer-side distinction. A
 §2 that collapses the two undercuts the section that does the document's heaviest lifting.
