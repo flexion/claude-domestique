@@ -87,7 +87,45 @@ the exact artifact a freeze rationale would need, already computed, already addr
 JSON pointer — reaches the end of the run and is discarded at the only production consumer. The
 success line is one word, and one word is not evidence.
 
-The gap is not that the mechanical layer lacks positive evidence. It is that nothing reads it.
+### Measured, on every committed boundary
+
+The consequence is observable today, and it contradicts a rule the skill states in bold.
+`SKILL.md:217`:
+
+> `failures` must be empty. Warnings are recorded, not gating. **`exempt` must be zero** — a non-zero
+> count means a check declared it had no domain and did not run, which is not the same as passing.
+
+Running `lintBoundary` over every committed boundary and counting `exempt` records:
+
+| Boundary | `exempt` | CLI prints |
+| --- | --- | --- |
+| `boundary/agent-work-item-skill.yaml` | 4 | `ok`, exit 0 |
+| `boundary/gh-158.yaml` | 3 | `ok`, exit 0 |
+| `docs/passes/pass6/boundary.yaml` | 5 | `ok`, exit 0 |
+| `docs/passes/pass8/boundary.yaml` | 14 | `ok`, exit 0 |
+| `docs/passes/pass9/boundary.yaml` | 16 | `ok`, exit 0 |
+
+Five of five violate the stated rule, and the reader is told `ok` in every case. The rule is not
+wrong and the recorder is not broken — `main()` filters to `failures` and `warnings` (`:1112`), so
+the outcome that carries the violation never reaches the surface where the rule would be applied.
+
+**These exemptions are caller-induced, which forecloses the obvious objection.** All sixteen on
+pass 9 are `E_LOCATOR_UNRESOLVED`, and that branch fires on one condition — `if (parts === null)` at
+`:409`. The comment above it (`:405`–`:408`) says why: "The part list is supplied by the caller — by a
+fixture here, by the tracker adapter in production." The domain existed. The input needed to check it
+was withheld, because `main()` has no flag to supply a part list. So none of the sixteen is an
+exemption by necessity; each is an interface gap reported as success.
+
+Note what this is *not*, since §5 turns on the distinction and an earlier draft of this subsection got
+it backwards. `exempt` is not the "ran and established nothing" state — that is `abstain`, and
+`:240`–`:245` separates them explicitly: `abstain` is "distinct from `exempt`, which means there was
+nothing to compare." These sixteen checks did not run at all. The point stands on different and
+firmer ground: a check that never ran, for a reason the caller controls, is reported to the operator
+as a pass.
+
+The gap is not that the mechanical layer lacks positive evidence. It is that nothing reads it. This
+table is what that costs, before any change to the freeze at all. Measurement by emil; reproduced
+independently here.
 
 ---
 
