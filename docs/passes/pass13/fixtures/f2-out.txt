@@ -1,0 +1,162 @@
+probe-skill: events streaming to /tmp/fx/f2.jsonl
+probe-skill: watch with  tail -f /tmp/fx/f2.jsonl
+probe-skill: session transcripts in /Users/dpuglielli/.claude/projects/-var-folders-bk-6vcq_v6n3bl6qb6m90vhhfcc0000gn-T-probe-cwd-1AYXLy
+host:   claude
+plugin: /Users/dpuglielli/.herdr/worktrees/claude-domestique/issue-feature-173-review-establishes-stopping-conditions/modus
+prompt: You are resuming an in-progress `modus:agent-work-item` run. Steps 1 through 7 are
+already done: the item below was read, the boundary below was drafted from it, and it
+passes both lint forms with no failures.
+
+Continue the procedure at step 8. Do what step 8 says, and stop when step 8 is done.
+Do not restart from step 1. Do not redraft or edit the boundary. Do not go past step 8.
+
+I am deliberately not telling you what step 8 requires. Read it in the skill.
+
+=== THE ITEM ===
+
+Title: Add a --quiet flag to the export command
+
+Description: The export command prints a progress line per record. In CI that fills
+the log with thousands of lines and the actual failure scrolls away.
+
+Problem: export has no way to suppress per-record output, so CI logs are unreadable.
+
+Goal: a CI run of export produces no per-record output and still reports failures.
+
+## Acceptance criteria
+
+AC1. `export --quiet` writes no per-record line.
+AC2. `export --quiet` still writes every error line.
+AC3. `export` without the flag writes what it writes today.
+
+## What must keep working
+
+- The exit status export returns for a failed record.
+
+## Out of scope
+
+- Changing what counts as an error. Separate item.
+
+=== THE BOUNDARY ===
+
+schema_version: 1
+tracker: github-issues
+item: gh-901
+registry_revision: "none"
+registry_selections: []
+mandates: [correctness]
+non_goals:
+  - "changing what counts as an error — separate item"
+interpretation:
+  goal:
+    statement: "a CI run of export produces no per-record output and still reports failures"
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "Goal"
+  problem:
+    statement: "export cannot suppress per-record output, so CI logs are unreadable"
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "Problem"
+  claim_provenance:
+    C1:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "AC1"
+    C2:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "AC2"
+  corrections: []
+  gaps: []
+claims:
+  - id: C1
+    text: "export --quiet writes no per-record line"
+  - id: C2
+    text: "export --quiet still writes every error line"
+coupling:
+  - id: CPL-1
+    kind: consumer
+    target: "the CI job that reads export's output"
+entails:
+  CPL-1: OB-1
+entries:
+  - id: OB-1
+    statement: "export --quiet writes no per-record line"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1, CPL-1]
+    observation: "run export --quiet over a three-record input and count the per-record lines"
+    decision: "the count is zero"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  - id: OB-2
+    statement: "export --quiet writes every error line"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C2]
+    observation: "run export --quiet over an input whose second record fails, then read the output"
+    decision: "the output is acceptable"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+
+=== BOUNDARY MARKING ===
+
+This boundary is marked NOT FROZEN.
+
+invoked:
+  Skill:modus:agent-work-item
+  Bash
+  Bash
+  Write
+  Write
+  Write
+  Bash
+  Agent
+  Read
+  Bash
+  Read
+  Read
+  Write
+
+--- with plugin ---
+Round one is done and its receipt checks out. Stopping here, because the next move step 8 specifies is blocked by your instruction — details below.
+
+## What I did
+
+The working directory was empty, so I materialized the item and the boundary verbatim (no edits) to give the reviewer a path rather than text, as step 8 requires:
+
+- `boundary/gh-901.yaml`
+- `review/gh-901-item.md`
+- `review/gh-901-round-1.md` — the round prompt, exactly the five questions
+- `review/gh-901-round-1-answer.md` — the reviewer's answer
+
+**Receipt:** the reviewer opened with `de3de119324a7ed7e227b1a2d6ab51b59869d52c7a59fa1b6e5d1d0762425940`, which matches `shasum -a 256` on the round-one prompt file. The round is valid — the questions answered are the five that were asked.
+
+## Round one named three things
+
+**Q1 — unevaluable decision: OB-2.** Observation ends at "read the output"; decision is "the output is acceptable." The entry's own `statement` ("writes every error line") is checkable, but the decision doesn't carry it, so two people running the same observation can reach opposite verdicts. This is the first row of the skill's failure-mode table verbatim.
+
+**Q2 — no blocking question.** The reviewer flagged one candidate ambiguity (is a failing record's error line itself a "per-record line"?) and resolved it from the Goal sentence, which treats progress output and failure output as disjoint. Not blocking.
+
+**Q3/Q5 — two live requirements with no destination.** The item's "What must keep working" (exit status for a failed record) and AC3 (`export` without the flag behaves as today) have no claim, no entry, no `non_goal`, and are not in `gaps` — which is `[]`, alongside `corrections: []`. Both entries are `test_role: change`; nothing in the boundary is a guard. This is the step 5b coverage failure the skill says has already happened twice, and again it linted clean, because the linter checks internal consistency and never checks coverage of the item.
+
+**Q4 — out of scope is stateable.** The single `non_goal` matches the item with no drift and excludes rather than defers, so it leaves no residual.
+
+## Why I stopped instead of running round two
+
+Step 8's sequence is round one → fix what it named → round two. You told me not to edit the boundary. Round two against an unchanged boundary would be a fresh sample of the same defects, not a converging opinion — it would burn the second and final round and establish nothing.
+
+So I'm taking step 8's other terminal: hand the findings to a person with the boundary as it stands. The boundary is marked NOT FROZEN, so the fixes are permitted whenever you want them — OB-2 needs a decision its observation can answer, and AC3 plus the exit-status condition need either preservation entries (with probes that would make them fail) or an explicit `non_goal`. Say the word and I'll make those three changes and run round two.
+
+expected modus:agent-work-item: FIRED

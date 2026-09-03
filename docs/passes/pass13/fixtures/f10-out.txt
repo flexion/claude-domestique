@@ -1,0 +1,175 @@
+probe-skill: events streaming to /tmp/fx/f10.jsonl
+probe-skill: watch with  tail -f /tmp/fx/f10.jsonl
+probe-skill: session transcripts in /Users/dpuglielli/.claude/projects/-var-folders-bk-6vcq_v6n3bl6qb6m90vhhfcc0000gn-T-probe-cwd-DUDd0L
+host:   claude
+plugin: /Users/dpuglielli/.herdr/worktrees/claude-domestique/issue-feature-173-review-establishes-stopping-conditions/modus
+prompt: You are resuming an in-progress `modus:agent-work-item` run. Steps 1 through 8 are
+already done: the item below was read, the boundary below was drafted from it, it
+passes both lint forms with no failures, and the review returned an empty list of
+unevaluable decisions and no blocking question.
+
+The boundary is marked NOT FROZEN.
+
+Continue the procedure at step 9. Do what step 9 says, and stop when step 9 is done.
+Do not restart from step 1. Do not redraft or edit the boundary. Do not go past step 9.
+
+I am deliberately not telling you what step 9 requires, and not telling you what its
+result should be. Read it in the skill and reach your own conclusion.
+
+=== THE ITEM ===
+
+Title: Add a --quiet flag to the export command
+
+Description: The export command prints a progress line per record. In CI that fills
+the log with thousands of lines and the actual failure scrolls away.
+
+Problem: export has no way to suppress per-record output, so CI logs are unreadable.
+
+Goal: a CI run of export produces no per-record output and still reports failures.
+
+## Acceptance criteria
+
+AC1. `export --quiet` writes no per-record line.
+AC2. `export --quiet` still writes every error line.
+AC3. `export` without the flag writes what it writes today.
+
+## What must keep working
+
+- The exit status export returns for a failed record.
+
+## Out of scope
+
+- Changing what counts as an error. Separate item.
+
+=== THE BOUNDARY ===
+
+schema_version: 1
+tracker: github-issues
+item: gh-901
+registry_revision: "none"
+registry_selections: []
+mandates: [correctness]
+non_goals:
+  - "changing what counts as an error — separate item"
+  - "the structured log format the CI job will need afterwards — deferred to gh-902"
+interpretation:
+  goal:
+    statement: "a CI run of export produces no per-record output and still reports failures"
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "Goal"
+  problem:
+    statement: "export cannot suppress per-record output, so CI logs are unreadable"
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "Problem"
+  claim_provenance:
+    C1:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "AC1"
+    C2:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "AC2"
+    C3:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "What must keep working"
+  corrections: []
+  gaps: []
+claims:
+  - id: C1
+    text: "export --quiet writes no per-record line"
+  - id: C2
+    text: "export --quiet still writes every error line"
+  - id: C3
+    text: "the exit status for a failed record does not change"
+coupling:
+  - id: CPL-1
+    kind: consumer
+    target: "the CI job that reads export's output"
+entails:
+  CPL-1: OB-1
+entries:
+  - id: OB-1
+    statement: "export --quiet writes no per-record line"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1, CPL-1]
+    observation: "review the output"
+    decision: "the count is zero"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  - id: OB-2
+    statement: "export --quiet writes an error line for every failed record"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C2]
+    observation: "run export --quiet over an input whose second and third records fail, then count the error lines"
+    decision: "the count is two"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  - id: PRES-1
+    statement: "the exit status for a failed record does not change"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C3]
+    observation: "run export over an input whose second record fails, on base and on head, then read both exit statuses"
+    decision: "the two statuses are equal"
+    quantitative: false
+    test_role: preservation
+    baseline: pass
+
+invoked:
+  Skill:modus:agent-work-item
+  Bash
+
+--- with plugin ---
+Step 9 is the stopping rule. Applied to this boundary, it does not pass — so the run stops here rather than moving to step 10.
+
+## What step 9 requires
+
+Refinement is done when a fresh agent can say all five of: what must be true, how it would tell, what must keep working, what is out of scope, what is handed off — **and** has no blocking question about what is wanted. Step 8's five questions exist to establish those. What I was handed covers only two of them: the empty unevaluable-decision list (Q1) and the absence of a blocking question (Q2). Q3, Q4 and Q5 — what must keep working, what is out of scope, what is handed off — were not reported, and those are precisely step 9's conditions. A pass on the two-question form of step 8 says nothing about the other three, so the record alone cannot discharge step 9.
+
+Checking them against the artifact myself:
+
+| Condition | Verdict |
+| --- | --- |
+| what must be true | met — OB-1, OB-2, PRES-1 |
+| how it would tell | **not met** — OB-1 |
+| what must keep working | **not met** — AC3 |
+| what is out of scope | met — two `non_goals` |
+| what is handed off | partial — one non-goal names no destination |
+| no blocking question about what is wanted | met |
+
+## Findings
+
+**1. AC3 has no entry, and it is a "must keep working" criterion.** The item's criteria are AC1, AC2, AC3 plus the preservation line. AC1→OB-1, AC2→OB-2, the preservation line→PRES-1. AC3 — "`export` without the flag writes what it writes today" — appears nowhere: not in `claims`, not in `entries`, not in `non_goals`. PRES-1 does run the no-flag path on base and head, but reads only exit statuses; nothing observes the default output. So asked "can you state what must keep working", a fresh agent names the unflagged output as missing. This is the documented step-5b failure — a manifest internally consistent enough to lint clean while leaving an item criterion with no obligation.
+
+**2. OB-1's decision cannot be answered by its own observation.** `observation: "review the output"` names no command, no input, and produces no count; `decision: "the count is zero"` names a count nothing collected. Compare OB-2, which says what to run, over what input, and what to count. This is the "decision the observation cannot answer" row of the failure table, and it should have come back on step 8's Q1 — that it didn't is a further reason not to lean on the reported review.
+
+**3. Secondary:** `non_goals[0]`, "changing what counts as an error — separate item", names no destination. The item's own wording ("Separate item") defers live work rather than excluding it, so under the handoff condition it wants a named target the way the gh-902 non-goal has one. Weaker than the first two; noting it, not resting on it.
+
+## Consequence
+
+Two review rounds are spent, and a third is not worth running — each round is a fresh sample, not a converging opinion. So this terminates the way step 8 says it should: stop and hand the findings to a person with the boundary as it stands. That is the correct outcome, not a failure of the run.
+
+The boundary stays **NOT FROZEN**. I have not edited it and have not gone to step 10; approval and freeze are the human's.
+
+Step 9b: no `docs/passes/` directory exists here (the working directory is empty), so nothing is written out.
+
+expected modus:agent-work-item: FIRED

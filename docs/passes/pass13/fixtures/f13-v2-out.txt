@@ -1,0 +1,187 @@
+probe-skill: events streaming to /tmp/fx/f13-v2.jsonl
+probe-skill: watch with  tail -f /tmp/fx/f13-v2.jsonl
+probe-skill: session transcripts in /Users/dpuglielli/.claude/projects/-var-folders-bk-6vcq_v6n3bl6qb6m90vhhfcc0000gn-T-probe-cwd-1xlz8S
+host:   claude
+plugin: /Users/dpuglielli/.herdr/worktrees/claude-domestique/issue-feature-173-review-establishes-stopping-conditions/modus
+prompt: You are resuming an in-progress `modus:agent-work-item` run. Steps 1 through 8 are
+already done: the item below was read, the boundary below was drafted from it, it
+passes both lint forms with no failures, and the review returned an empty list of
+unevaluable decisions and no blocking question.
+
+The boundary is marked NOT FROZEN.
+
+Continue the procedure at step 9. Do what step 9 says, and stop when step 9 is done.
+Do not restart from step 1. Do not redraft or edit the boundary. Do not go past step 9.
+
+I am deliberately not telling you what step 9 requires, and not telling you what its
+result should be. Read it in the skill and reach your own conclusion.
+
+=== THE ITEM ===
+
+Title: Add a --quiet flag to the export command
+
+Description: The export command prints a progress line per record. In CI that fills
+the log with thousands of lines and the actual failure scrolls away.
+
+Problem: export has no way to suppress per-record output, so CI logs are unreadable.
+
+Goal: a CI run of export produces no per-record output and still reports failures.
+
+## Acceptance criteria
+
+AC1. `export --quiet` writes no per-record line.
+AC2. `export --quiet` still writes every error line.
+AC3. `export` without the flag writes what it writes today.
+
+## What must keep working
+
+- The exit status export returns for a failed record.
+
+## Out of scope
+
+- Changing what counts as an error. Separate item.
+
+=== THE BOUNDARY ===
+
+schema_version: 1
+tracker: github-issues
+item: gh-901
+registry_revision: "none"
+registry_selections: []
+mandates: [correctness]
+non_goals:
+  - "changing what counts as an error — separate item"
+  - "the structured log format the CI job will need afterwards"
+interpretation:
+  goal:
+    statement: "a CI run of export produces no per-record output and still reports failures"
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "Goal"
+  problem:
+    statement: "export cannot suppress per-record output, so CI logs are unreadable"
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "Problem"
+  claim_provenance:
+    C1:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "AC1"
+    C2:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "AC2"
+    C4:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "AC3"
+    C3:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "What must keep working"
+  corrections: []
+  gaps: []
+claims:
+  - id: C1
+    text: "export --quiet writes no per-record line"
+  - id: C2
+    text: "export --quiet still writes every error line"
+  - id: C4
+    text: "unflagged export writes what it writes today"
+  - id: C3
+    text: "the exit status for a failed record does not change"
+coupling:
+  - id: CPL-1
+    kind: consumer
+    target: "the CI job that reads export's output"
+entails:
+  CPL-1: OB-1
+entries:
+  - id: OB-1
+    statement: "export --quiet writes no per-record line"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1, CPL-1]
+    observation: "run export --quiet over a three-record input and count the per-record lines"
+    decision: "the count is zero"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  - id: OB-2
+    statement: "export --quiet writes an error line for every failed record"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C2]
+    observation: "run export --quiet over an input whose second and third records fail, then count the error lines"
+    decision: "the count is two"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  - id: PRES-1
+    statement: "the exit status for a failed record does not change"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C3]
+    observation: "run export over an input whose second record fails, on base and on head, then read both exit statuses"
+    decision: "the two statuses are equal"
+    quantitative: false
+    test_role: preservation
+    baseline: pass
+  - id: PRES-2
+    statement: "unflagged export writes what it writes today"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C4]
+    observation: "run export without the flag over a three-record input, on base and on head, then compare the two outputs"
+    decision: "the two outputs are equal"
+    quantitative: false
+    test_role: preservation
+    baseline: pass
+
+invoked:
+  Skill:modus:agent-work-item
+  Bash
+
+--- with plugin ---
+Step 9 is the stopping rule, so the work of step 9 is to test the current state against it and report the verdict. I did not redraft anything. (Step 9b: no `docs/passes/` here — the working directory is empty — so it says do nothing.)
+
+## Verdict: it does not stop. Do not carry this to step 10.
+
+The rule has six conditions. A fresh agent must be able to say **what must be true**, **how it would tell**, **what must keep working**, **what is out of scope**, and **what is handed off**, with **no blocking question about what is wanted**.
+
+What I was handed establishes two of them: an empty list of unevaluable decisions (conditions 1 and 2) and no blocking question (condition 6). Those are the results of the two questions step 8 used to ask. Conditions 3, 4, and 5 were checked by nothing. The skill names this exact case: step 8 asks the last three questions *because step 9 is where they are required and nothing else asks them*, and warns that otherwise "a finding against them arrived after the rounds were spent, or not at all."
+
+The rounds are spent. The finding arrived after.
+
+## And one of the three is not merely unasked — it fails
+
+Reading the boundary against the unchecked conditions:
+
+- **What must keep working** — statable. `PRES-1` (exit status for a failed record, C3) and `PRES-2` (unflagged output, C4), both tracing to item text.
+- **What is out of scope** — `non_goals[0]` is the item's own "Out of scope". `non_goals[1]`, *"the structured log format the CI job will need afterwards"*, appears nowhere in the item — not in Problem, Goal, the ACs, or Out of scope — and nothing in the boundary records where it came from: no `claim_provenance` entry, `corrections: []`, `gaps: []`.
+- **What is handed off** — nothing is. There is no `handoff`, and the one coupling edge `CPL-1` is discharged by `OB-1` rather than left `uncovered`. But `non_goals[1]` is worded as deferred live work, not exclusion: something the CI job *will need afterwards*. By step 8's own distinction, a non-goal that defers live work rather than excluding it is a residual that must name a destination, and this one names none.
+
+So condition 5 has a specific residual with nowhere to go, and condition 4 carries an unsourced exclusion — on precisely the questions the completed review never put.
+
+## Disposition
+
+Either reading lands in the same place. If the two reported rounds count as spent, step 8's rule for a condition the reviewer cannot state applies and the review stops. If they are treated as answering questions that do not cover step 9's conditions, they have established nothing about those conditions. Neither yields a pass.
+
+This is a terminal, not a failure — the same shape as stopping at two rounds. The boundary stays as it stands, unfrozen and unedited, and goes to a person with one thing to decide: whether `non_goals[1]` excludes work outright, in which case it needs the item to say so, or defers it, in which case it needs a named destination.
+
+expected modus:agent-work-item: FIRED

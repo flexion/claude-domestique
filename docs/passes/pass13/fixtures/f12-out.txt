@@ -1,0 +1,171 @@
+probe-skill: events streaming to /tmp/fx/f12.jsonl
+probe-skill: watch with  tail -f /tmp/fx/f12.jsonl
+probe-skill: session transcripts in /Users/dpuglielli/.claude/projects/-var-folders-bk-6vcq_v6n3bl6qb6m90vhhfcc0000gn-T-probe-cwd-d8I565
+host:   claude
+plugin: /Users/dpuglielli/.herdr/worktrees/claude-domestique/issue-feature-173-review-establishes-stopping-conditions/modus
+prompt: You are resuming an in-progress `modus:agent-work-item` run. Steps 1 through 8 are
+already done: the item below was read, the boundary below was drafted from it, it
+passes both lint forms with no failures, and the review returned an empty list of
+unevaluable decisions and no blocking question.
+
+The boundary is marked NOT FROZEN.
+
+Continue the procedure at step 9. Do what step 9 says, and stop when step 9 is done.
+Do not restart from step 1. Do not redraft or edit the boundary. Do not go past step 9.
+
+I am deliberately not telling you what step 9 requires, and not telling you what its
+result should be. Read it in the skill and reach your own conclusion.
+
+=== THE ITEM ===
+
+Title: Add a --quiet flag to the export command
+
+Description: The export command prints a progress line per record. In CI that fills
+the log with thousands of lines and the actual failure scrolls away.
+
+Problem: export has no way to suppress per-record output, so CI logs are unreadable.
+
+Goal: a CI run of export produces no per-record output and still reports failures.
+
+## Acceptance criteria
+
+AC1. `export --quiet` writes no per-record line.
+AC2. `export --quiet` still writes every error line.
+AC3. `export` without the flag writes what it writes today.
+
+## What must keep working
+
+- The exit status export returns for a failed record.
+
+
+=== THE BOUNDARY ===
+
+schema_version: 1
+tracker: github-issues
+item: gh-901
+registry_revision: "none"
+registry_selections: []
+mandates: [correctness]
+non_goals:
+  - "rewriting the installer in Rust"
+interpretation:
+  goal:
+    statement: "a CI run of export produces no per-record output and still reports failures"
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "Goal"
+  problem:
+    statement: "export cannot suppress per-record output, so CI logs are unreadable"
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "Problem"
+  claim_provenance:
+    C1:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "AC1"
+    C2:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "AC2"
+    C3:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "What must keep working"
+  corrections: []
+  gaps: []
+claims:
+  - id: C1
+    text: "export --quiet writes no per-record line"
+  - id: C2
+    text: "export --quiet still writes every error line"
+  - id: C3
+    text: "the exit status for a failed record does not change"
+coupling:
+  - id: CPL-1
+    kind: consumer
+    target: "the CI job that reads export's output"
+entails:
+  CPL-1: OB-1
+entries:
+  - id: OB-1
+    statement: "export --quiet writes no per-record line"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1, CPL-1]
+    observation: "run export --quiet over a three-record input and count the per-record lines"
+    decision: "the count is zero"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  - id: OB-2
+    statement: "export --quiet writes an error line for every failed record"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C2]
+    observation: "run export --quiet over an input whose second and third records fail, then count the error lines"
+    decision: "the count is two"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  - id: PRES-1
+    statement: "the exit status for a failed record does not change"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C3]
+    observation: "run export over an input whose second record fails, on base and on head, then read both exit statuses"
+    decision: "the two statuses are equal"
+    quantitative: false
+    test_role: preservation
+    baseline: pass
+
+invoked:
+  Skill:modus:agent-work-item
+
+--- with plugin ---
+## Step 9: apply the stopping rule
+
+Step 9 is a decision, not a drafting step. Refinement is done only when a fresh agent can state all five things — what must be true, how it would tell, what must keep working, what is out of scope, what is handed off — **and** has no blocking question about what is wanted.
+
+**Verdict: this boundary does not pass step 9. The run stops here and goes back to a person.**
+
+### Why
+
+What I was handed is exactly the pre-change step-8 exit: "an empty list of unevaluable decisions and no blocking question." That answers questions 1 and 2. Step 8 asks five, and it says why: *"The last three are step 9's conditions, asked here because step 9 is where they are required and nothing else asks them."* It also names this precise failure mode — *"An agent whose plugin was installed before the change reads the old step 8, dispatches the old questions, and returns a pass that says nothing about the new ones."*
+
+So three of step 9's six conditions have no answer. Not a negative answer — no answer. I can't clear them, and I won't invent reviewer findings for questions no reviewer was asked.
+
+### Two of the three would likely fail on inspection
+
+This is my own reading, not a reviewer's, and it does not substitute for a round. It matters because it means the missing answers aren't a formality.
+
+**"What is out of scope" — not statable from this boundary.** `non_goals` is `["rewriting the installer in Rust"]`. The item is a `--quiet` flag on `export`; nothing in it touches an installer or Rust. A fresh agent asked what is out of scope for *this* item can quote that line but cannot state a scope exclusion derived from the item. The item itself states no out-of-scope section at all.
+
+**"What must keep working" — statable but incomplete.** `PRES-1` covers the item's "What must keep working" section (exit status). But **AC3 — "`export` without the flag writes what it writes today" — has no claim and no entry**, and is not in `non_goals`. Walk the manifest: C1→AC1, C2→AC2, C3→the must-keep-working section. AC3 traces to nothing. That is step 5b's failure verbatim: a criterion that is either out of scope or an obligation nobody wrote, and the boundary says neither. It linted clean because, as the skill notes, the linter checks internal consistency and never checks coverage of the item.
+
+**"What is handed off"** looks answerable as *nothing*: `entails` routes CPL-1 to OB-1 with no `uncovered` edges, no `handoff` objects, and the one `non_goal` defers no live work.
+
+### What I did not do
+
+- No redraft, no edits to the boundary — correctly out of bounds here, and AC3 is a drafting fix, not a step-9 one.
+- No new review round. Dispatching reviewers is step 8, whose budget is two rounds and then stop regardless. I don't know how many of those rounds were spent; if both went to the old two questions, the budget is gone and the terminal is the same one I'm reporting.
+- Steps 9b and 10 not run. The boundary remains NOT FROZEN.
+
+### For the person picking this up
+
+1. AC3 has no obligation. Decide: preservation entry, or an explicit `non_goal`.
+2. `non_goals` names work unrelated to the item. Either the item states no scope exclusions — a step-1b gate condition — or the real ones were never carried across.
+3. Whoever reviewed answered two questions. The three that step 9 depends on remain unasked.
+
+expected modus:agent-work-item: FIRED

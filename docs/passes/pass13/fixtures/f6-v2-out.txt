@@ -1,0 +1,170 @@
+probe-skill: events streaming to /tmp/fx/f6-v2.jsonl
+probe-skill: watch with  tail -f /tmp/fx/f6-v2.jsonl
+probe-skill: session transcripts in /Users/dpuglielli/.claude/projects/-var-folders-bk-6vcq_v6n3bl6qb6m90vhhfcc0000gn-T-probe-cwd-VZKPZM
+host:   claude
+plugin: /Users/dpuglielli/.herdr/worktrees/claude-domestique/issue-feature-173-review-establishes-stopping-conditions/modus
+prompt: You are resuming an in-progress `modus:agent-work-item` run. Steps 1 through 7 are
+already done: the item below was read, the boundary below was drafted from it, and it
+passes both lint forms with no failures. You may edit the boundary if step 8 tells you to.
+
+Continue the procedure at step 8. Do what step 8 says, and stop when step 8 is done.
+Do not restart from step 1. Do not go past step 8.
+
+I am deliberately not telling you what step 8 requires. Read it in the skill.
+
+=== THE ITEM ===
+
+Title: Add a --quiet flag to the export command
+
+Description: The export command prints a progress line per record. In CI that fills
+the log with thousands of lines and the actual failure scrolls away.
+
+Problem: export has no way to suppress per-record output, so CI logs are unreadable.
+
+Goal: a CI run of export produces no per-record output and still reports failures.
+
+## Acceptance criteria
+
+AC1. `export --quiet` writes no per-record line.
+AC2. `export --quiet` still writes every error line.
+AC3. `export` without the flag writes what it writes today.
+
+## What must keep working
+
+- The exit status export returns for a failed record.
+
+## Out of scope
+
+- Changing what counts as an error. Separate item.
+
+=== THE BOUNDARY ===
+
+schema_version: 1
+tracker: github-issues
+item: gh-901
+registry_revision: "none"
+registry_selections: []
+mandates: [correctness]
+non_goals:
+  - "changing what counts as an error — separate item"
+interpretation:
+  goal:
+    statement: "a CI run of export produces no per-record output and still reports failures"
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "Goal"
+  problem:
+    statement: "export cannot suppress per-record output, so CI logs are unreadable"
+    provenance: stated
+    support:
+      - kind: item_locator
+        ref: "Problem"
+  claim_provenance:
+    C1:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "AC1"
+    C2:
+      provenance: stated
+      support:
+        - kind: item_locator
+          ref: "AC2"
+  corrections: []
+  gaps: []
+claims:
+  - id: C1
+    text: "export --quiet writes no per-record line"
+  - id: C2
+    text: "export --quiet still writes every error line"
+coupling:
+  - id: CPL-1
+    kind: consumer
+    target: "the CI job that reads export's output"
+entails:
+  CPL-1: OB-1
+entries:
+  - id: OB-1
+    statement: "export --quiet writes no per-record line"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C1, CPL-1]
+    observation: "run export --quiet over a three-record input and count the per-record lines"
+    decision: "the count is zero"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+  - id: OB-2
+    statement: "export --quiet keeps the log small enough for CI"
+    verifier: mechanical
+    verification_stage: pre_merge
+    obligation: must
+    mandate: [correctness]
+    traces: [C2]
+    observation: "run export --quiet over the CI corpus and measure the log size"
+    decision: "the log is under the CI limit"
+    quantitative: false
+    test_role: change
+    baseline: assertion_fail
+
+invoked:
+  Skill:modus:agent-work-item
+  Bash
+  Write
+  Write
+  Write
+  Bash
+  Agent
+  Read
+  Bash
+  Read
+  Read
+  Bash
+  Read
+  Bash
+  Read
+  Write
+  Bash
+  Bash
+  Write
+  Bash
+  Agent
+  Read
+  Bash
+  Read
+  Read
+
+--- with plugin ---
+Step 8 is done. Two rounds ran; the second named findings, so the run stops there and the findings go to you with the boundary as it stands.
+
+## Receipts
+
+| Round | Prompt file | Digest reviewer reported | Match |
+|---|---|---|---|
+| 1 | `boundary/review/gh-901-round-1.md` | `57758cc2f6b9392e2ba455ce1354627e2fffd36ea1bd139ac235ddc60c427083` | yes |
+| 2 | `boundary/review/gh-901-round-2.md` | `9604c56302b25018a142910442f27bcbd9e5c1eca37e541d9fd14fca3216f1b3` | yes |
+
+Each round was a fresh agent given the path only. The working directory was empty, so I wrote the boundary to `boundary/gh-901.yaml` and the item to `boundary/gh-901.item.md` first — a prompt file has to exist for the digest to be re-hashable by a third party.
+
+## Round one, and what I changed
+
+It named: OB-2's decision unevaluable (a "CI limit" that appears in no observation, no boundary field, and nowhere in the item); a blocking question about whether a log-size budget is wanted at all; AC3 and the exit-status keep-working line with no claim and no entry; and C2 traced by an entry whose statement, observation, and decision were all about log size.
+
+I replaced OB-2 with an entry that actually observes error lines, added C3/C4 and OB-3/OB-4/OB-5, and split the coupling into the three distinct dependencies the CI job has (per-record lines, error lines, exit status) since `entails` maps one edge to one obligation. Both lint forms re-run clean: failures empty, exempt zero, the same non-gating `W_NO_FLOOR`.
+
+## Round two — open findings, unfixed
+
+1. **OB-5's decision cannot be evaluated** (Q1). It compares against "the output recorded before the change," an artifact no entry produces and nothing owns.
+2. **The keep-working line is about the status, not its sign** (Q3). A build returning 1 where today it returns 2, in both modes, passes OB-3, OB-4 and OB-5 and breaks what the item names.
+3. **CPL-2 declares a consumer that reads error lines; OB-2 only requires presence** (Q3). Reformatting the error lines passes OB-2 and breaks that consumer. AC2's "still writes every error line" is the stronger reading and no entry carries it.
+4. **The CI job's adoption of the flag has nowhere to go** (Q5). The goal is a CI run producing no per-record output; every entry is about what export does when given `--quiet`. Nothing makes the CI job pass it — no entry, no non-goal, no handoff.
+5. **The pre-change output capture has no destination** (Q5) — same defect as finding 1, from the residual side.
+
+Findings 1, 2 and 3 look correct to me and are cheap to fix. Finding 4 is the one worth your judgment: it is either a scope decision (the item defines done at the command level, per AC1–AC3) or a real residual needing a handoff, and that is a call about what is wanted, not a drafting fix.
+
+Per the skill, a third round is not worth running — each reviewer is a new sample, not a converging opinion. Stopping at two is the specified terminal, not a failure. Nothing is frozen; step 9 onward is yours.
+
+expected modus:agent-work-item: FIRED
