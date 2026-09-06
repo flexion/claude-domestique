@@ -1,7 +1,7 @@
 {
   "name": "modus",
-  "version": "0.4.0",
-  "description": "Derives a frozen, per-item definition of done from a vague work item, then implements and verifies against exactly that",
+  "version": "0.5.0",
+  "description": "Carries a work item through to working behavior and judges when it is finished, with guidance on tests, checks, refactoring, and review",
   "author": {
     "name": "David Puglielli"
   },
@@ -9,29 +9,29 @@
   "homepage": "https://github.com/flexion/claude-domestique/tree/main/modus",
   "license": "MIT",
   "keywords": [
-    "definition-of-done",
-    "acceptance-criteria",
+    "completion",
+    "stopping-rule",
     "work-items",
     "verification",
-    "handoff",
-    "goal-drift"
+    "code-review",
+    "test-quality"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Modus",
-    "shortDescription": "Measure a work item before building it",
-    "longDescription": "Refines a vague work item into a definition of done derived for that item and frozen before implementation, implements against it, verifies against exactly that, and hands off whatever cannot be verified here.",
+    "shortDescription": "Know when a work item is finished",
+    "longDescription": "Carries the requested outcome through to working behavior, deciding what remains necessary from the request, the repository, and observed results. Covers what makes a test evidence, when to trust an executable check, when refactoring earns its place, and when a review has found enough to stop.",
     "developerName": "Flexion",
     "category": "Developer Tools",
     "capabilities": [
-      "Derive a definition of done",
-      "Freeze acceptance criteria",
-      "Verify against frozen criteria"
+      "Judge when requested work is finished",
+      "Write tests that distinguish correct from incorrect",
+      "Stop a review without leaving defects unresolved"
     ],
     "websiteURL": "https://github.com/flexion/claude-domestique/tree/main/modus",
     "defaultPrompt": [
-      "Reconstruct what this work item is actually asking for.",
-      "Freeze the definition of done for this item before I start."
+      "Implement this work item and tell me when it is actually done.",
+      "Is this finished, or is there a real gap left?"
     ]
   }
 }

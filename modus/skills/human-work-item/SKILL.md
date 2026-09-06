@@ -154,8 +154,8 @@ list is one paragraph, so seven criteria collapse into a single citation meaning
 "somewhere in the seven". Labels also survive editing; a paragraph index does
 not.
 
-**6. Check it carries enough for the next stage.** `agent-work-item` prepares the
-same item for an autonomous agent. It needs things it cannot invent:
+**6. Check it carries enough for the next stage.** An autonomous agent implements
+from this item. It needs things it cannot invent:
 
 - a goal stating what is true when the work is done
 - the problem, and why now
@@ -166,14 +166,13 @@ same item for an autonomous agent. It needs things it cannot invent:
 - a name against every open question
 - no two criteria that need an unstated fact to reconcile
 
-Anything missing is a finding. Take it back through step 4. Do not write the
-agent's artifact here — different skill, different structure.
+Anything missing is a finding. Take it back through step 4. Do not implement here
+— different skill, different job.
 
-The last one exists because this list and the agent stage's own gate were not the
-same test. An item passed this check and was then refused there, over two criteria
-that only agree if you already know something the item never says. Whatever you
-settled in step 4 has to be readable off the page, or the next stage either stops
-or invents it.
+The last one exists because an item passed this check and still could not be built
+from: two criteria that agree only if you already know something the item never
+says. Whatever you settled in step 4 has to be readable off the page, or the next
+reader either stops or invents it.
 
 **7. Run the six lenses again over the rewrite.** A rewrite creates new gaps: a
 requirement you changed in step 5 can leave a criterion that no longer matches
@@ -198,11 +197,12 @@ exists, find the highest-numbered `passN` inside it and write your findings and
 the item you were given there. Elsewhere, do nothing — the directory belongs to
 the repository you are in, not to this skill.
 
-## An item returned from the agent stage
+## An item returned with named blockers
 
-`agent-work-item` refuses an item it cannot derive obligations from, and writes one
-blocker per missing thing onto the item. An item arriving that way is not a raw
-item, and the procedure above is the wrong one for it.
+An item can come back with specific blockers written onto it — by a reviewer, by
+someone who tried to build it, or by an agent that could not proceed. An item
+arriving that way is not a raw item, and the procedure above is the wrong one for
+it.
 
 **Resolve what the blockers name. Nothing else.**
 
@@ -211,12 +211,12 @@ item, and the procedure above is the wrong one for it.
   nine on an item that needed one sentence.
 - Take one blocker at a time, by the rules in step 4. A contradiction gets 2-4
   readings; something the item never said gets stated and asked.
-- Write the answer into the item, not into your reply. The gate refused because
-  the text did not say it, so a text that still does not say it is refused again.
+- Write the answer into the item, not into your reply. It came back because the
+  text did not say it, so a text that still does not say it comes back again.
 - Then run step 7 over what you changed, and only what you changed.
 
-Clear every blocker or clear none. A partly answered refusal fails the gate on the
-same condition it failed before, which is a conversation rather than another round.
+Clear every blocker or clear none. A partly answered return blocks on the same
+thing it blocked on before, which is a conversation rather than another round.
 
 ## When it is done
 
@@ -297,10 +297,10 @@ Each move is a scope decision, so each one is the human's to make and none of
 them can be derived from evidence. That is what makes them available while the
 original question is not.
 
-Check any replacement measure against the prose rules before offering it.
-"Judged usable" is an evaluative adjective and "without being rewritten from
-scratch" has no threshold; `../../prompts/boundary-prose.md` has the worked
-example of both being rejected.
+Check any replacement measure before offering it. "Judged usable" is an
+evaluative adjective and "without being rewritten from scratch" has no threshold.
+Both fail the test in the next section: a reader cannot apply either to a case
+the item never described and get a yes or no.
 
 If none of the three moves works, the item stays blocked. Say so plainly.
 
@@ -332,8 +332,8 @@ Replace them with something countable. "The reviewer approves it" becomes "the
 reviewer names no entry they had to write themselves" — an empty list is
 checkable, and a non-empty one names the remaining work.
 
-`../../prompts/boundary-prose.md` carries the closed list of banned words and a
-worked example of each of these being rejected.
+The table is the whole test. A bullet that carries none of those three forms and
+still cannot be applied to an undescribed case is missing a threshold, not a word.
 
 Past about five bullets, the item probably holds more than one goal. Say so and
 propose the split.
@@ -356,10 +356,8 @@ Write as a person writes. Short sentences. Say the thing and stop.
   needed, explain it in the sentence that uses it.
 - Enough detail for a person to understand and act. No more.
 
-`../../prompts/boundary-prose.md` lists the author's tells: patterns a language
-model produces when it does not know the answer or has drifted off the goal.
-Those apply here. Its word caps and banned-word list do not — they govern a
-machine-read artifact.
+For the patterns a language model produces when it does not know the answer or has
+drifted off the goal, use `stilus:deslop`. Prose guidance lives in that plugin.
 
 ## Rationalizations
 

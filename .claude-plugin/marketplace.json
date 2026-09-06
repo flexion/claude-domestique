@@ -44,8 +44,8 @@
     {
       "name": "modus",
       "source": "./modus",
-      "description": "Definition of done - derive a frozen, per-item standard from a vague work item, then verify against exactly that",
-      "version": "0.4.0"
+      "description": "Completion - carry a work item through to working behavior and judge when it is finished, without a separate definition-of-done artifact",
+      "version": "0.5.0"
     }
   ]
 }

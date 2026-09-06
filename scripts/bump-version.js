@@ -110,20 +110,21 @@ function main() {
     throw new Error(`Plugin ${plugin} not found in marketplace.json`);
   }
 
-  // Read current version from package.json
-  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-  const currentVersion = packageJson.version;
+  // Read the current version from package.json where the plugin has one. A
+  // skills-only plugin ships none, so the Claude manifest is the source; it is
+  // required above, and validate-plugins keeps every manifest in agreement.
+  const hasPackageJson = fs.existsSync(packageJsonPath);
+  const versionSourcePath = hasPackageJson ? packageJsonPath : pluginJsonPath;
+  const currentVersion = JSON.parse(fs.readFileSync(versionSourcePath, 'utf8')).version;
   const newVersion = bumpVersion(currentVersion, versionType);
 
   console.log(`Bumping ${plugin}: ${currentVersion} → ${newVersion}`);
   console.log('');
 
   // Update package.json
-  updateJsonFile(packageJsonPath, (content) => {
-    content.version = newVersion;
-    return content;
-  });
-  console.log(`  ✓ ${plugin}/package.json`);
+  if (updateVersionIfPresent(packageJsonPath, newVersion)) {
+    console.log(`  ✓ ${plugin}/package.json`);
+  }
 
   // Update host manifests
   updateVersionIfPresent(pluginJsonPath, newVersion);
