@@ -1006,6 +1006,16 @@ describe('usage / --help', () => {
     expect(entry[0]).toMatch(/--run/);
     expect(entry[0]).toMatch(/refs|commit/);
   });
+  // run fanout-branch-naming. usage() is where an operator learns the surface
+  // exists, and the whole point of the flag is repositories that do NOT name
+  // branches task/<id> - so a usage text that only ever shows task/<id> tells
+  // exactly the reader who needs the flag that the kit does not fit them.
+  test('usage documents --task-branch and stops presenting task/<id> as the only shape', () => {
+    const u = h.usage();
+    expect(u).toMatch(/--task-branch/);
+    expect(u).toMatch(/--partition-sep/);
+  });
+
   // The prompt is the cost of the gate; a reader who does not know it is coming
   // reads it as a bug and reaches for --force or a blanket allow rule.
   test('usage says which verbs /herd-setup deliberately leaves prompting', () => {

@@ -251,6 +251,8 @@ describe('parseFanout', () => {
     expect(f.parseFanout(['--run', 'r7', '--partitions', 'auth,ui'])).toEqual({
       run: 'r7',
       partitions: ['auth', 'ui'],
+      taskBranch: 'task/r7',
+      partitionSep: '-',
       base: 'task/r7',
       kind: 'codex',
       selector: 'model=gpt-5.6-sol,effort=medium',
@@ -269,6 +271,64 @@ describe('parseFanout', () => {
   test('a duplicate partition name is refused: two worktrees would collide on one branch', () => {
     expect(() => f.parseFanout(['--run', 'r7', '--partitions', 'auth,auth']))
       .toThrow(/duplicate/);
+  });
+
+  // run fanout-branch-naming. A throw names nothing and prints no value, so a
+  // not-yet-supported flag is surfaced as a value the diff can show.
+  const attempt = (args) => {
+    try {
+      return f.parseFanout(args);
+    } catch (error) {
+      return { threw: error.message };
+    }
+  };
+
+  test('--task-branch becomes both the base and the partition branch stem', () => {
+    const cfg = attempt(['--run', 'r7', '--partitions', 'api', '--task-branch', 'chore/make-new-readme']);
+    expect(cfg.taskBranch).toBe('chore/make-new-readme');
+    expect(cfg.base).toBe('chore/make-new-readme');
+    expect(cfg.partitionSep).toBe('-');
+  });
+
+  // --base stays independent: fanning a partition off something other than the
+  // task branch is still legal, and naming the task branch must not silently
+  // repoint it.
+  test('an explicit --base still wins over --task-branch', () => {
+    const cfg = attempt(['--run', 'r7', '--partitions', 'api',
+      '--task-branch', 'chore/make-new-readme', '--base', 'origin/main']);
+    expect(cfg.base).toBe('origin/main');
+    expect(cfg.taskBranch).toBe('chore/make-new-readme');
+  });
+
+  test('a / separator is refused with git\'s reason, not accepted and failed later', () => {
+    const args = ['--run', 'r7', '--partitions', 'api', '--partition-sep', '/'];
+    expect(() => f.parseFanout(args)).toThrow(/cannot|refs are files|exists/i);
+  });
+});
+
+describe('fanoutCmd branch naming', () => {
+  test.each([
+    ['chore/make-new-readme', 'chore/make-new-readme-api', 'chore/make-new-readme-ui'],
+    ['76632-create-new-thing', '76632-create-new-thing-api', '76632-create-new-thing-ui'],
+  ])('%s: each partition worktree is created off the resolved branch', (taskBranch, apiBranch, uiBranch) => {
+    const cwd = worktreeWithRoles();
+    const herd = fakeHerd({ cwdOf: () => cwd });
+    let rows;
+    try {
+      rows = f.fanoutCmd(['--run', 'r7', '--partitions', 'api,ui', '--task-branch', taskBranch],
+        { run: herd.run, env: {}, sleep: () => {}, now: () => 0, cwd });
+    } catch (error) {
+      rows = [{ threw: error.message }];
+    }
+    expect(rows.map((r) => r.branch)).toEqual([apiBranch, uiBranch]);
+    const created = herd.calls
+      .filter((c) => c[1] === 'worktree' && c[2] === 'create')
+      .map((c) => c[c.indexOf('--branch') + 1]);
+    expect(created).toEqual([apiBranch, uiBranch]);
+    const bases = herd.calls
+      .filter((c) => c[1] === 'worktree' && c[2] === 'create')
+      .map((c) => c[c.indexOf('--base') + 1]);
+    expect(bases).toEqual([taskBranch, taskBranch]);
   });
 });
 

@@ -172,7 +172,7 @@ describe('stateCmd', () => {
 describe('parseSettled', () => {
   test('run and partitions in the order given', () => {
     expect(b.parseSettled(['--run', 'r7', '--partitions', 'ui,auth']))
-      .toEqual({ run: 'r7', partitions: ['ui', 'auth'] });
+      .toEqual({ run: 'r7', partitions: ['ui', 'auth'], taskBranch: 'task/r7', partitionSep: '-' });
   });
   test('--run is required', () => {
     expect(() => b.parseSettled(['--partitions', 'auth'])).toThrow(/--run is required/);
@@ -280,6 +280,182 @@ describe('settledCmd', () => {
 });
 
 // ---------------------------------------------------------------------------
+// run fanout-branch-naming: --task-branch / --partition-sep
+//
+// Every verb below used to build `task/${run}` itself. Six independent defaults
+// is the risk being removed: two of them disagreeing is a silent wrong-branch,
+// not an error, so these tests pin the RESOLVED name each verb actually asks
+// git about rather than the flag parsing alone.
+//
+// A throw is not an assertion. Until the flags exist these calls raise
+// `unknown flag: --task-branch`, which names nothing and prints no value, so
+// `outcome` converts a throw into a value the diff can show. It stays after the
+// fix for the same reason: a regression that throws reads as a diff naming the
+// message, not as a stack trace.
+// ---------------------------------------------------------------------------
+
+function outcome(fn) {
+  try {
+    return fn();
+  } catch (error) {
+    return { threw: error.message };
+  }
+}
+
+describe('--task-branch and --partition-sep', () => {
+  const CONVENTIONS = [
+    ['a slashed prefix that is not task/', 'chore/make-new-readme', 'chore/make-new-readme-api'],
+    ['a ticket number with no slash at all', '76632-create-new-thing', '76632-create-new-thing-api'],
+    ['the historical default, unchanged', 'task/r7', 'task/r7-api'],
+  ];
+
+  test.each(CONVENTIONS)('%s: settled asks git about the right branch', (_label, taskBranch, partitionBranch) => {
+    const herd = gitHerd({
+      [`git rev-parse --verify --quiet ${taskBranch}`]: 'abc123\n',
+      [`git rev-parse --verify --quiet ${partitionBranch}`]: 'def456\n',
+      [`git rev-list --count ${taskBranch}..${partitionBranch}`]: '2\n',
+      [`git ls-tree -r --name-only ${partitionBranch} -- .pipeline/runs/r7`]: '.pipeline/runs/r7/manifest.md\n',
+    });
+    expect(outcome(() => b.settledCmd(
+      ['--run', 'r7', '--task-branch', taskBranch, '--partitions', 'api'],
+      deps({ run: herd.run })))).toEqual([
+      { partition: 'api', branch: partitionBranch, status: 'done', commits: 2, blocked: undefined },
+    ]);
+  });
+
+  // The run id names the artifact directory and nothing else. A ticket-numbered
+  // branch must not force a ticket-numbered .pipeline/runs/<id>.
+  test('the run id and the branch name are independent', () => {
+    const herd = gitHerd({
+      'git rev-parse --verify --quiet 76632-create-new-thing': 'abc123\n',
+      'git rev-parse --verify --quiet 76632-create-new-thing-api': 'def456\n',
+      'git rev-list --count 76632-create-new-thing..76632-create-new-thing-api': '1\n',
+      'git ls-tree -r --name-only 76632-create-new-thing-api -- .pipeline/runs/readme-rewrite':
+        '.pipeline/runs/readme-rewrite/BLOCKED-api.md\n',
+    });
+    const rows = outcome(() => b.settledCmd(
+      ['--run', 'readme-rewrite', '--task-branch', '76632-create-new-thing', '--partitions', 'api'],
+      deps({ run: herd.run })));
+    expect(rows).toEqual([{
+      partition: 'api',
+      branch: '76632-create-new-thing-api',
+      status: 'blocked',
+      commits: 1,
+      blocked: 'BLOCKED-api.md',
+    }]);
+  });
+
+  // Verified against git, not assumed: refs are files, so refs/heads/chore/x and
+  // refs/heads/chore/x/api cannot coexist, and the task branch always exists here.
+  //   $ git branch chore/make-new-readme && git branch chore/make-new-readme/api
+  //   fatal: cannot lock ref 'refs/heads/chore/make-new-readme/api':
+  //          'refs/heads/chore/make-new-readme' exists
+  // Refusing at parse time beats failing at the second `worktree create`, which is
+  // after the first partition already exists.
+  test.each([
+    ['parseSettled', (args) => b.parseSettled(args)],
+    ['parseFanin', (args) => b.parseFanin(args)],
+    ['parseTeardown', (args) => b.parseTeardown(args)],
+  ])('%s rejects a / separator and says why git refuses it', (_name, parse) => {
+    const args = ['--run', 'r7', '--partitions', 'api', '--partition-sep', '/'];
+    expect(() => parse(args)).toThrow(/cannot|refs are files|exists/i);
+    expect(() => parse(args)).toThrow(/\//);
+  });
+
+  test('a flat separator other than - is honoured', () => {
+    expect(outcome(() => b.parseSettled(
+      ['--run', 'r7', '--partitions', 'api', '--partition-sep', '--'])))
+      .toEqual({ run: 'r7', partitions: ['api'], taskBranch: 'task/r7', partitionSep: '--' });
+  });
+
+  test('fan-in refuses when HEAD is not the RESOLVED task branch', () => {
+    const herd = gitHerd({
+      'git rev-parse --abbrev-ref HEAD': 'task/r7\n',
+    });
+    expect(() => b.faninCmd(
+      ['--run', 'r7', '--task-branch', 'chore/make-new-readme', '--partitions', 'api'],
+      deps({ run: herd.run })))
+      .toThrow(/chore\/make-new-readme/);
+    expect(herd.calls.filter(isWrite)).toEqual([]);
+  });
+
+  test('fan-in merges the resolved partition branch, not task/<run>-<p>', () => {
+    const herd = gitHerd({
+      'git rev-parse --abbrev-ref HEAD': 'chore/make-new-readme\n',
+      'git merge --no-edit chore/make-new-readme-api': 'Fast-forward\n',
+    }, { onCall: (file, args) => (file === 'herdr' ? AGENTS('idle') : undefined) });
+    const out = outcome(() => b.faninCmd(
+      ['--run', 'r7', '--task-branch', 'chore/make-new-readme', '--partitions', 'api'],
+      deps({ run: herd.run })));
+    expect(out).toEqual({ run: 'r7', merged: ['chore/make-new-readme-api'], conflict: undefined });
+  });
+
+  test('teardown plans the resolved partition branch', () => {
+    const herd = gitHerd({
+      'git branch --merged chore/make-new-readme --list chore/make-new-readme-* --format=%(refname:short)':
+        'chore/make-new-readme-api\n',
+      'git ls-tree -r --name-only chore/make-new-readme-api -- .pipeline/runs/r7': '',
+    }, {
+      onCall: (file) => (file === 'herdr' ? JSON.stringify({
+        result: { worktrees: [{ branch: 'chore/make-new-readme-api', path: '/wt/api', open_workspace_id: 'wX' }] },
+      }) : undefined),
+    });
+    expect(outcome(() => b.teardownCmd(
+      ['--run', 'r7', '--task-branch', 'chore/make-new-readme', '--partitions', 'api'],
+      deps({ run: herd.run })))).toEqual([
+      { partition: 'api', branch: 'chore/make-new-readme-api', workspace: 'wX', action: 'planned', reason: undefined },
+    ]);
+  });
+});
+
+describe('state under a non-default naming convention', () => {
+  test('discovers partitions by globbing the resolved task branch', () => {
+    const herd = gitHerd({
+      'git rev-parse --verify --quiet 76632-create-new-thing': 'abc123\n',
+      'git ls-tree -r --name-only 76632-create-new-thing -- .pipeline/runs/r7':
+        '.pipeline/runs/r7/manifest.md\n',
+      'git branch --list 76632-create-new-thing-* --format=%(refname:short)':
+        '76632-create-new-thing-api\n',
+      'git branch --merged 76632-create-new-thing --list 76632-create-new-thing-* --format=%(refname:short)': '',
+      'git ls-tree -r --name-only 76632-create-new-thing-api -- .pipeline/runs/r7':
+        '.pipeline/runs/r7/manifest.md\n',
+      'git show 76632-create-new-thing:.pipeline/log.md': '',
+    });
+    const out = outcome(() => b.stateCmd(
+      ['--run', 'r7', '--task-branch', '76632-create-new-thing'], deps({ run: herd.run })));
+    expect(out.partitions).toEqual([{
+      name: 'api',
+      branch: '76632-create-new-thing-api',
+      merged: false,
+      blocked: false,
+      probe: false,
+    }]);
+    expect(out.phase).toBe('fanned-out');
+  });
+
+  // `state` is the only verb that FINDS partitions instead of being told them, and
+  // freer branch names make the glob likelier to catch something a human made.
+  // `--partitions` constrains it to what the manifest actually declared.
+  test('--partitions constrains discovery, so a human sibling branch is not a partition', () => {
+    const herd = gitHerd({
+      'git rev-parse --verify --quiet 76632-create-new-thing': 'abc123\n',
+      'git ls-tree -r --name-only 76632-create-new-thing -- .pipeline/runs/r7':
+        '.pipeline/runs/r7/manifest.md\n',
+      'git branch --list 76632-create-new-thing-* --format=%(refname:short)':
+        '76632-create-new-thing-api\n76632-create-new-thing-v2\n',
+      'git branch --merged 76632-create-new-thing --list 76632-create-new-thing-* --format=%(refname:short)': '',
+      'git ls-tree -r --name-only 76632-create-new-thing-api -- .pipeline/runs/r7': '',
+      'git ls-tree -r --name-only 76632-create-new-thing-v2 -- .pipeline/runs/r7': '',
+      'git show 76632-create-new-thing:.pipeline/log.md': '',
+    });
+    const out = outcome(() => b.stateCmd(
+      ['--run', 'r7', '--task-branch', '76632-create-new-thing', '--partitions', 'api'],
+      deps({ run: herd.run })));
+    expect(out.partitions.map((p) => p.name)).toEqual(['api']);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // criterion 12, 13, 14: faninCmd
 // ---------------------------------------------------------------------------
 
@@ -288,6 +464,8 @@ describe('parseFanin', () => {
     expect(b.parseFanin(['--run', 'r7', '--partitions', 'auth,ui'])).toEqual({
       run: 'r7',
       partitions: ['auth', 'ui'],
+      taskBranch: 'task/r7',
+      partitionSep: '-',
       waitHandle: 'arch',
       timeout: 300000,
       dryRun: false,
@@ -412,6 +590,8 @@ describe('parseTeardown', () => {
     expect(b.parseTeardown(['--run', 'r7', '--partitions', 'auth,ui'])).toEqual({
       run: 'r7',
       partitions: ['auth', 'ui'],
+      taskBranch: 'task/r7',
+      partitionSep: '-',
       yes: false,
     });
     expect(b.parseTeardown(['--run', 'r7', '--partitions', 'auth', '--yes']).yes).toBe(true);
