@@ -247,7 +247,7 @@ describe('roleCmd', () => {
 // ---------------------------------------------------------------------------
 
 describe('parseFanout', () => {
-  test('defaults match the runbook: base task/<run>, codex, implementer, impl prefix', () => {
+  test('defaults match the runbook: base task/<run>, codex, implementer, impl tab tag', () => {
     expect(f.parseFanout(['--run', 'r7', '--partitions', 'auth,ui'])).toEqual({
       run: 'r7',
       partitions: ['auth', 'ui'],
@@ -257,7 +257,7 @@ describe('parseFanout', () => {
       kind: 'codex',
       selector: 'model=gpt-5.6-sol,effort=medium',
       role: 'implementer',
-      prefix: 'impl',
+      roleTag: 'impl',
       rolesDir: '.pipeline/roles',
       timeout: 45000,
     });
@@ -376,7 +376,10 @@ describe('fanoutCmd', () => {
 
     expect(out).toHaveLength(2);
     expect(out.map((r) => r.partition)).toEqual(['auth', 'ui']);
-    expect(out.map((r) => r.handle)).toEqual(['impl1', 'impl2']);
+    // Call-signs from the pool, not `impl1`/`impl2`: the handle is the
+    // addressable identity and stays type- and part-agnostic. `arch` is not in
+    // the pool, so the first two free names are claimed.
+    expect(out.map((r) => r.handle)).toEqual(['tim', 'jay']);
     expect(out.map((r) => r.branch)).toEqual(['task/r7-auth', 'task/r7-ui']);
 
     const creates = herd.calls.filter((c) => c[1] === 'worktree' && c[2] === 'create');
@@ -387,9 +390,18 @@ describe('fanoutCmd', () => {
       ['--branch', 'task/r7-ui', '--base', 'task/r7']));
 
     const starts = herd.calls.filter((c) => c[1] === 'agent' && c[2] === 'start');
-    expect(starts.map((c) => c[3])).toEqual(['impl1', 'impl2']);
+    expect(starts.map((c) => c[3])).toEqual(['tim', 'jay']);
     expect(starts[0]).toEqual(expect.arrayContaining(
       ['--kind', 'codex', '--', '--model', 'gpt-5.6-sol', '-c', 'model_reasoning_effort=medium']));
+
+    // The part rides on the TAB label, where a human scanning the sidebar sees
+    // it, and never on the handle. `role=` is label-only: it must not reach the
+    // agent's own CLI args above.
+    const labels = herd.calls
+      .filter((c) => c[1] === 'tab' && c[2] === 'create')
+      .map((c) => c[c.indexOf('--label') + 1]);
+    expect(labels).toEqual(['tim-impl ◇', 'jay-impl ◇']);
+    expect(starts[0]).not.toContain('role=impl');
   });
 
   test('each implementer is sent its own $PARTITION role line', () => {
@@ -414,18 +426,72 @@ describe('fanoutCmd', () => {
 
   // "claim each one against a live `herdr agent list`". A handle collision
   // surfaces only at agent start, after the tab and the worktree exist, so the
-  // preflight has to happen before the first create.
-  test('a taken handle throws before any worktree is created', () => {
+  // claim has to happen before the first create. With a pool, a name in use is
+  // skipped rather than collided with - the live list is the only authority on
+  // what is free, including handles this run did not launch.
+  test('a call-sign already in use is skipped, not collided with', () => {
     const herd = fakeHerd({
       agents: [
         { name: 'arch', agent: 'claude', pane_id: 'wA:p1', workspace_id: 'wA', agent_status: 'idle', cwd: '/wt/task-r7' },
-        { name: 'impl2', agent: 'codex', pane_id: 'wZ:p1', workspace_id: 'wZ', agent_status: 'idle', cwd: '/wt/stale' },
+        { name: 'tim', agent: 'codex', pane_id: 'wZ:p1', workspace_id: 'wZ', agent_status: 'idle', cwd: '/wt/stale' },
+        { name: 'sly', agent: 'codex', pane_id: 'wY:p1', workspace_id: 'wY', agent_status: 'idle', cwd: '/wt/other' },
+      ],
+      cwdOf: () => worktreeWithRoles(),
+    });
+    const out = f.fanoutCmd(['--run', 'r7', '--partitions', 'auth,ui'],
+      deps({ run: herd.run, env: { HERDR_PANE_ID: 'wA:p1' } }));
+    expect(out.map((r) => r.handle)).toEqual(['jay', 'gus']);
+  });
+
+  // The pool is finite and handles are globally unique, so exhaustion is a real
+  // end state. It has to land before the first worktree for the same reason a
+  // collision did: afterwards there are trees and tabs to clean up.
+  test('an exhausted pool throws before any worktree is created', () => {
+    const pool = f.handlePool();
+    const herd = fakeHerd({
+      agents: [
+        { name: 'arch', agent: 'claude', pane_id: 'wA:p1', workspace_id: 'wA', agent_status: 'idle', cwd: '/wt/task-r7' },
+        ...pool.slice(0, pool.length - 1).map((name, i) => ({
+          name, agent: 'codex', pane_id: `w${i}:p1`, workspace_id: `w${i}`, agent_status: 'idle', cwd: '/wt/x',
+        })),
       ],
     });
     expect(() => f.fanoutCmd(['--run', 'r7', '--partitions', 'auth,ui'],
       deps({ run: herd.run, env: { HERDR_PANE_ID: 'wA:p1' } })))
-      .toThrow(/impl2/);
+      .toThrow(/pool exhausted: need 2, 1 free/);
     expect(herd.calls.filter((c) => c[1] === 'worktree' && c[2] === 'create')).toHaveLength(0);
+  });
+
+  test('--handle-prefix is refused rather than silently renaming tabs', () => {
+    expect(() => f.parseFanout(['--run', 'r7', '--partitions', 'auth', '--handle-prefix', 'x']))
+      .toThrow(/--handle-prefix is gone.*--role-tag/);
+  });
+
+  test('--role-tag names the tab part for a non-implementer fan-out', () => {
+    const herd = fakeHerd({
+      agents: [{ name: 'arch', agent: 'claude', pane_id: 'wA:p1', workspace_id: 'wA', agent_status: 'idle', cwd: '/wt/task-r7' }],
+      cwdOf: () => worktreeWithRoles(['probe']),
+    });
+    f.fanoutCmd(['--run', 'r7', '--partitions', 'h1', '--role', 'probe', '--role-tag', 'prb'],
+      deps({ run: herd.run, env: { HERDR_PANE_ID: 'wA:p1' } }));
+    const labels = herd.calls
+      .filter((c) => c[1] === 'tab' && c[2] === 'create')
+      .map((c) => c[c.indexOf('--label') + 1]);
+    expect(labels).toEqual(['tim-prb ◇']);
+  });
+
+  // A bare --selector is a model id, not key=value. Appending the role tag to
+  // it verbatim would produce one unparseable model.
+  test('a bare model selector still launches once the role tag is added', () => {
+    const herd = fakeHerd({
+      agents: [{ name: 'arch', agent: 'claude', pane_id: 'wA:p1', workspace_id: 'wA', agent_status: 'idle', cwd: '/wt/task-r7' }],
+      cwdOf: () => worktreeWithRoles(),
+    });
+    const out = f.fanoutCmd(['--run', 'r7', '--partitions', 'auth', '--selector', 'gpt-5.6-sol'],
+      deps({ run: herd.run, env: { HERDR_PANE_ID: 'wA:p1' } }));
+    expect(out[0].error).toBeUndefined();
+    const start = herd.calls.find((c) => c[1] === 'agent' && c[2] === 'start');
+    expect(start).toEqual(expect.arrayContaining(['--model', 'gpt-5.6-sol']));
   });
 
   // Width 2 with one dead partition should still leave the operator the other
@@ -471,10 +537,10 @@ describe('fanoutCmd', () => {
 
     expect(row).toEqual(expect.objectContaining({
       partition: 'auth',
-      handle: 'impl1',
+      handle: 'tim',
       branch: 'task/r7-auth',
       worktree: { path: '/wt/task-r7-auth', workspace_id: 'w-task/r7-auth' },
-      agent: expect.objectContaining({ handle: 'impl1', kind: 'codex' }),
+      agent: expect.objectContaining({ handle: 'tim', kind: 'codex' }),
       error: expect.stringMatching(/implementer\.md/),
     }));
   });

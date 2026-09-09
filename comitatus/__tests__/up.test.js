@@ -6,12 +6,12 @@ describe('makeAgent', () => {
   // NOT an answer to "which model".
   test('claude with no selector: ◆ glyph, no extra args, model and effort null', () => {
     expect(makeAgent('claude', 'sly')).toEqual({
-      handle: 'sly', kind: 'claude', glyph: '◆', model: null, effort: null, extraArgs: [],
+      handle: 'sly', kind: 'claude', glyph: '◆', model: null, effort: null, role: null, extraArgs: [],
     });
   });
   test('codex with no selector: ◇ glyph, no extra args, model and effort null', () => {
     expect(makeAgent('codex', 'jay')).toEqual({
-      handle: 'jay', kind: 'codex', glyph: '◇', model: null, effort: null, extraArgs: [],
+      handle: 'jay', kind: 'codex', glyph: '◇', model: null, effort: null, role: null, extraArgs: [],
     });
   });
 
@@ -19,13 +19,13 @@ describe('makeAgent', () => {
   // own translator. Verified against the installed CLIs' own --help.
   test('claude model= and effort= become --model/--effort (both first-class flags)', () => {
     expect(makeAgent('claude', 'nell:model=opus,effort=high')).toEqual({
-      handle: 'nell', kind: 'claude', glyph: '◆', model: 'opus', effort: 'high',
+      handle: 'nell', kind: 'claude', glyph: '◆', model: 'opus', effort: 'high', role: null,
       extraArgs: ['--model', 'opus', '--effort', 'high'],
     });
   });
   test('codex effort= becomes a -c config override, not a flag', () => {
     expect(makeAgent('codex', 'jay:model=gpt-5.6-sol,effort=high')).toEqual({
-      handle: 'jay', kind: 'codex', glyph: '◇', model: 'gpt-5.6-sol', effort: 'high',
+      handle: 'jay', kind: 'codex', glyph: '◇', model: 'gpt-5.6-sol', effort: 'high', role: null,
       extraArgs: ['--model', 'gpt-5.6-sol', '-c', 'model_reasoning_effort=high'],
     });
   });
@@ -35,6 +35,20 @@ describe('makeAgent', () => {
     expect(makeAgent('codex', 'jay:model=gpt-5.6-sol').extraArgs).toEqual(['--model', 'gpt-5.6-sol']);
     expect(makeAgent('codex', 'jay:model=gpt-5.6-sol').effort).toBeNull();
   });
+  // `role=` decorates the TAB so a human can see which part a tab is playing.
+  // It is label-only: it must never reach the agent's own CLI args, and it must
+  // never become part of the handle, which stays the addressable identity.
+  test('role= is a label-only key and does not reach the CLI args', () => {
+    const a = makeAgent('codex', 'jay:model=gpt-5.6-sol,role=impl');
+    expect(a.role).toBe('impl');
+    expect(a.handle).toBe('jay');
+    expect(a.extraArgs).toEqual(['--model', 'gpt-5.6-sol']);
+  });
+
+  test('an unsafe role is refused like any other selector value', () => {
+    expect(() => makeAgent('codex', 'jay:role=impl ui')).toThrow(/unsafe characters/);
+  });
+
   test('named keys are order-independent', () => {
     expect(makeAgent('claude', 'nell:effort=high,model=opus').extraArgs)
       .toEqual(makeAgent('claude', 'nell:model=opus,effort=high').extraArgs);
@@ -46,7 +60,7 @@ describe('makeAgent', () => {
 
   test('opencode splits handle:model into a -m selector (model may contain colons)', () => {
     expect(makeAgent('opencode', 'bob:ollama/qwen2.5:7b')).toEqual({
-      handle: 'bob', kind: 'opencode', glyph: '⬨', model: 'ollama/qwen2.5:7b', effort: null,
+      handle: 'bob', kind: 'opencode', glyph: '⬨', model: 'ollama/qwen2.5:7b', effort: null, role: null,
       extraArgs: ['-m', 'ollama/qwen2.5:7b'],
     });
   });
@@ -297,6 +311,13 @@ describe('launchAgent', () => {
       ['herdr', 'agent', 'wait', 'jay', '--until', 'idle', '--timeout', '45000'],
     ]);
   });
+  test('a role decorates the tab as <handle>-<role>, keeping the kind glyph', () => {
+    const { run, calls } = fakeRunner(dynMatchers());
+    launchAgent(makeAgent('codex', 'jay:role=impl'), { workspace: 'wR', cwd: '/wt/x' }, { run });
+    expect(calls).toContainEqual(
+      ['herdr', 'tab', 'create', '--workspace', 'wR', '--cwd', '/wt/x', '--label', 'jay-impl ◇', '--no-focus']);
+  });
+
   test('label and timeout are overridable', () => {
     const { run, calls } = fakeRunner(dynMatchers());
     launchAgent(makeAgent('claude', 'sly'), { workspace: 'wR', cwd: '/wt/x', label: 'x', timeout: 9000 }, { run });
