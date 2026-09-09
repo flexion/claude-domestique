@@ -88,3 +88,19 @@ git status
 `bd dolt push` writes the issue database to `refs/dolt/data` on the git remote. It is a separate operation from `git push` — git's default refspec moves branches and tags only, so no amount of pushing code carries issue data with it.
 
 This section sits outside the managed markers deliberately. Editing the block above would be reverted the next time anything regenerates it.
+
+## Task tracking is on the filesystem, not in beads (current override)
+
+By operator instruction, 2026-09-09: **do not file beads.** Work items, todos, and
+deferred findings go to [`.pipeline/backlog.md`](.pipeline/backlog.md) and one file
+per item under `.pipeline/backlog/`. This overrides "Use `bd` for ALL task tracking"
+in the managed block above, and the `bd remember` line with it — persistent knowledge
+goes to the same place.
+
+`AGENTS.md` carries the full reasoning and the implementer rule. In short: run
+`orch-selfhost` filed seven beads for one task, four of them restating what
+`.pipeline/` or git already held, and two filed by implementers duplicating the
+orchestrator's. One system of record, or two that diverge silently.
+
+Like the section above, this sits outside the managed markers deliberately. To lift
+it, delete it; the backlog files name the bead ids they replaced.
