@@ -6,6 +6,7 @@ decision table is in `runs/*/fan-out-trial.md` under "What the log decides".
 | id | type | width | wall min | human min | conflicts | red-gate fails | scope violations | blocked | reviewer hits | escalations | $ opus | $ sonnet | $ haiku | $ codex | notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | orch-selfhost | feature | 2 | 38 | ~4 | 0 | 0 | 0 | 0 | 1 | 0 | ? | ? | — | ? | first run driven by an agent taking `orchestrator.md` rather than by hand. three defects, not the two in `task.md`: `fanout` was dead from the CLI, so fan-out ran on primitives. `fan-in` unusable by an orchestrator that is also the architect — bypassed, `DEFECT-fanin-selfwait.md`. models: opus/high arch+orch, 2× codex gpt-5.6-sol/medium impl, sonnet/high rev. |
+| fanout-branch-naming | feature | 1 | 32 | ~2 | 0 | 0 | 2 | 0 | 1 | 0 | ? | ? | — | ? | width **1 on purpose**: the two candidate partitions had disjoint files but had to agree on one resolver, and two copies of it is the defect being removed. runbook bug-fix path — implementer as a tab in the task worktree, no partition worktrees, no fan-in, so `settled` did not apply and completion was a commit past the manifest. branch `chore/fanout-branch-naming` with run id `fanout-branch-naming`, exercising its own decoupling. reviewer hit was real and destructive-adjacent: `--partition-sep` read raw accepted `--base` and composed `task/r7--baseapi`, on the path that feeds `git branch -D`. **2 scope violations, both operator-initiated mid-run and neither routed through the manifest** — see below. models: opus/high arch+orch, codex gpt-5.6-sol/**high** impl (raised from medium: the change touches `teardown`'s destructive path). |
 
 **wall min** is 05:50 → 06:28, from the `task.md` commit to the commit resolving the
 reviewer's finding, read off `git log`. Teardown is not in it.
@@ -43,6 +44,38 @@ the stage than the one the column was written to measure.
 they got. The `settled` tests needed typed stubs in `fanin.js` to get there; without
 them they would have failed on a missing export, which is a red-gate fail and not a
 red gate.
+
+## The two scope violations in `fanout-branch-naming`
+
+Counted as violations because the column asks what changed outside the owning
+partition's file list, and both did. Neither was a worker exceeding its brief — the
+operator initiated both directly in the implementer's session, which the column has
+no way to express, so it is said here instead.
+
+1. **`9fbd064` "chore - remove boundary artifacts"** — deletes 1559 lines across
+   `boundary/agent-work-item-skill.yaml`, `boundary/gh-158.sketch.md`,
+   `boundary/gh-158.yaml` and `boundary/gh-173.yaml`. Those four files exist on
+   `main`, so merging this branch removes them from `main`. It landed *after* the
+   review, so no reviewer saw it, and it is in no partition's file list.
+2. **the fan-out skill split** — `comitatus/skills/fan-out/SKILL.md` plus seven role
+   copies, `herdr/SKILL.md` cut by 84 lines, `comitatus/README.md`,
+   `metadata/skill-catalog.json`, and a second version bump to `0.13.0` on top of
+   this run's `0.12.0`. Uncommitted at the time this row was written. The
+   orchestrator had held it as out-of-manifest; the operator overrode that, which is
+   the operator's call to make.
+
+What this row measures is therefore narrower than the branch: criteria 1–14 are met
+and verified at `865e048` — comitatus 325/325, whole repo 776 tests across 19
+suites, `validate:plugins` green, and the two target conventions exercised against
+real refs rather than fakes. Everything after `865e048` on this branch is outside
+that verification.
+
+The process lesson is not "the operator broke the rules". It is that a frozen
+manifest has no channel for the operator to *amend* it — the roles give the
+orchestrator `fan-in` and `teardown` gates to ask permission upward, and nothing
+going the other way. So an operator with new scope has exactly two options: a new
+run, or typing into a worker's session. The second is faster, and it is why the run
+record and the branch now disagree.
 
 ## Missing row
 
