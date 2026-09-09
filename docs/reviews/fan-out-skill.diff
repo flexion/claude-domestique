@@ -1,0 +1,538 @@
+diff --git a/.claude-plugin/marketplace.json b/.claude-plugin/marketplace.json
+index c201931..bfaf590 100644
+--- a/.claude-plugin/marketplace.json
++++ b/.claude-plugin/marketplace.json
+@@ -33,7 +33,7 @@
+       "name": "comitatus",
+       "source": "./comitatus",
+       "description": "herdr workflows - packages the herdr agent-orchestration skill for claude and codex, auto-injected inside herdr",
+-      "version": "0.12.0"
++      "version": "0.13.0"
+     },
+     {
+       "name": "stilus",
+diff --git a/comitatus/.claude-plugin/plugin.json b/comitatus/.claude-plugin/plugin.json
+index ed3eda9..c80f03d 100644
+--- a/comitatus/.claude-plugin/plugin.json
++++ b/comitatus/.claude-plugin/plugin.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "comitatus",
+-  "version": "0.12.0",
++  "version": "0.13.0",
+   "description": "herdr workflows - packages the herdr agent-orchestration skill for claude and codex, auto-injected inside herdr",
+   "author": {
+     "name": "Flexion"
+diff --git a/comitatus/.codex-plugin/plugin.json b/comitatus/.codex-plugin/plugin.json
+index 58407c0..7a0babb 100644
+--- a/comitatus/.codex-plugin/plugin.json
++++ b/comitatus/.codex-plugin/plugin.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "comitatus",
+-  "version": "0.12.0",
++  "version": "0.13.0",
+   "description": "herdr worktree and coding-agent orchestration workflows",
+   "author": {
+     "name": "Flexion"
+diff --git a/comitatus/README.md b/comitatus/README.md
+index 8db5ba0..13f5078 100644
+--- a/comitatus/README.md
++++ b/comitatus/README.md
+@@ -25,6 +25,8 @@ belongs to comitatus.
+ - The `herdr` skill (invoked `comitatus:herdr`) for driving herdr from inside it:
+   worktrees, workspaces, tabs/panes, agents, messaging, and waiting on state —
+   all over the `herdr` CLI.
++- The `fan-out` skill (invoked `comitatus:fan-out`) for partitioning a task across
++  one architect and multiple implementers, with packaged pipeline role files.
+ - A SessionStart hook that is silent unless you are inside herdr (`HERDR_ENV=1`).
+   Inside herdr it injects a short orientation and, if codex is installed, syncs
+   the same skill into `~/.codex/skills/herdr/` so codex agents in the herd get it
+@@ -32,12 +34,9 @@ belongs to comitatus.
+ - `herd.js`, a Node helper exposing composite verbs (`status`, `members`, `wait`,
+   `send`, `send-wait-read`, `agent`, `up`) that each run `herdr` themselves — one
+   static command in place of a pipe or a poll loop.
+-- Fan-out verbs on the same helper (`role`, `fanout`, `wait-all`, `state`,
+-  `fan-in`, `teardown`) for running one architect and N implementers, each on its
+-  own branch: deliver a role file by path, launch a worktree per partition, wait
+-  on the set, merge in manifest order, and tear down without discarding the
+-  `BLOCKED` record. `state` reads the run's phase off git refs and stores
+-  nothing — there is no run journal to go stale.
++- The `herd.js` helper's fan-out verbs (`role`, `fanout`, `wait-all`, `state`,
++  `fan-in`, `teardown`) support the `fan-out` runbook. `state` reads the run's
++  phase off git refs and stores nothing — there is no run journal to go stale.
+ - `/herd-setup`, which merges a safe herdr/git allow-list into your settings to
+   cut permission prompts.
+ 
+diff --git a/comitatus/package.json b/comitatus/package.json
+index 99bfb0a..d131599 100644
+--- a/comitatus/package.json
++++ b/comitatus/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@claude-domestique/comitatus",
+-  "version": "0.12.0",
++  "version": "0.13.0",
+   "description": "herdr orchestration workflows for Claude Code and Codex",
+   "main": "hooks/herdr-orient.js",
+   "scripts": {
+diff --git a/comitatus/skills/fan-out/SKILL.md b/comitatus/skills/fan-out/SKILL.md
+new file mode 100644
+index 0000000..a264395
+--- /dev/null
++++ b/comitatus/skills/fan-out/SKILL.md
+@@ -0,0 +1,106 @@
++---
++name: fan-out
++description: >-
++  Use when coordinating a task as one architect and multiple implementers on
++  separate herdr branches, with durable run state and ordered fan-in.
++---
++
++# fan-out
++
++This is the runbook for partitioning one task across an architect and N
++implementers. Load `comitatus:herdr` first: it provides the herdr prerequisite,
++helper path, roster protocol, and worktree conventions. This skill supplies the
++fan-out workflow and its role files.
++
++The packaged role copies are in [`roles/`](roles/):
++[`architect.md`](roles/architect.md), [`hypotheses.md`](roles/hypotheses.md),
++[`implementer.md`](roles/implementer.md), [`mechanic.md`](roles/mechanic.md),
++[`orchestrator.md`](roles/orchestrator.md), [`probe.md`](roles/probe.md), and
++[`reviewer.md`](roles/reviewer.md). When the plugin is deployed, use that
++installed directory as `--roles-dir` for `role`; in a repository that has
++`.pipeline/roles`, the helper's default remains the repository-local roles.
++Deliver role files by path so the recipient reads the exact file; never paste a
++role into a prompt.
++
++## Run lifecycle
++
++Six helper verbs cover the mechanical steps: partition a task, launch one agent
++per partition on its own branch, wait on them together, inspect state, merge in
++order, and tear down without losing evidence.
++
++`--run <id>` names `.pipeline/runs/<id>`. By default it also names branches:
++`task/<id>` for the architect and `task/<id>-<partition>` for each implementer.
++The run id and task branch are independent:
++
++```text
++node HERD settled --run readme-rewrite \
++  --task-branch 76632-create-new-thing --partitions api
++```
++
++`--task-branch <name>` and `--partition-sep <sep>` are accepted by `fanout`,
++`state`, `settled`, `fan-in`, and `teardown`. They default to `task/<run>` and
++`-`; pass the same pair to every verb in a run. Partition branches are
++`<task-branch><separator><partition>`.
++
++The separator cannot be `/`: Git refs are files, so a branch cannot also be a
++directory. Use a flat separator (`-`, `--`, `.`, `_`). The option is rejected at
++parse time before any worktree is created.
++
++`state` is the only verb that finds partitions rather than receiving them. It
++globs `<task-branch><separator>*`; pass `--partitions` when a human-created
++sibling branch could otherwise look like a partition.
++
++## Deliver roles and launch
++
++```text
++node HERD role arch --role architect --run my-task
++node HERD role impl1 --role implementer --run my-task --partition auth
++node HERD fanout --run my-task --partitions auth,ui
++```
++
++The role path resolves against the recipient's cwd. A role file missing there is
++an error; `--roles-dir` overrides `.pipeline/roles`. `fanout` checks handle
++collisions before creating the first worktree and reports a failed partition in
++its own row so other partitions can still launch.
++
++## Wait and inspect
++
++Wait on all implementers together:
++
++```text
++node HERD wait-all impl1,impl2 --status idle,done --timeout 900000
++```
++
++An idle agent may still be between turns. `settled` uses Git refs instead: a
++partition is `done` when its branch is ahead of the task branch, `blocked` when
++it commits `BLOCKED-<partition>.md`, and `working` otherwise.
++
++`state` derives phase from refs and stores no journal:
++
++```text
++node HERD state --run my-task
++```
++
++Its phase is `absent | started | partitioned | fanned-out | fanned-in | finished`.
++
++## Fan-in and teardown
++
++Merge in manifest order from the task branch only:
++
++```text
++node HERD fan-in --run my-task --partitions auth,ui
++```
++
++It refuses unless `HEAD` is the resolved task branch and the architect is
++settled. At the first conflict it stops and reports the partition and paths;
++leave conflict resolution to the owning implementer.
++
++Teardown plans by default and requires `--yes` to remove anything:
++
++```text
++node HERD teardown --run my-task --partitions auth,ui
++node HERD teardown --run my-task --partitions auth,ui --yes
++```
++
++Uncommitted or unmerged `BLOCKED-*.md` and `probe-*.md` evidence causes a
++partition to be skipped. Removal order is worktree first, branch second.
+diff --git a/comitatus/skills/fan-out/roles/architect.md b/comitatus/skills/fan-out/roles/architect.md
+new file mode 100644
+index 0000000..94db269
+--- /dev/null
++++ b/comitatus/skills/fan-out/roles/architect.md
+@@ -0,0 +1,21 @@
++# architect
++
++Run as: `claude --model opus --effort high`
++
++Read `.pipeline/runs/$RUN/task.md`. Do not implement anything.
++
++Everything you write goes under `.pipeline/runs/$RUN/`. Never write to `.pipeline/` directly — those paths are shared across every task and would overwrite another run's record.
++
++1. Write `.pipeline/runs/$RUN/manifest.md` with:
++   - **spec**: at most 5 lines
++   - **criteria**: observable, testable statements
++   - **partitions**: name, files (exact paths, disjoint across partitions), tests (paths), `depends_on`
++   - **shared_files**: DI wiring, routing tables, migrations, lockfiles, generated code. Nobody edits these in a worktree. List the change needed; it is applied at fan-in.
++   - **risk notes**: auth, data, concurrency, money
++2. Write failing tests for each partition's criteria. They must fail on an assertion, not on import or syntax. Run them and paste the failing output at the bottom of `runs/$RUN/manifest.md`.
++3. If two partitions need the same file, merge them into one partition. Fewer, larger partitions beat conflicts.
++4. If the task is ambiguous, write 2-3 options with one line of tradeoff each and stop. Do not pick.
++
++You own the task branch. Implementers work on partition branches and do not merge; fan-in is yours.
++
++A test that passes the moment it is written has established nothing. Before handing off, confirm each failure names the assertion that failed and the value it got.
+diff --git a/comitatus/skills/fan-out/roles/hypotheses.md b/comitatus/skills/fan-out/roles/hypotheses.md
+new file mode 100644
+index 0000000..33307b3
+--- /dev/null
++++ b/comitatus/skills/fan-out/roles/hypotheses.md
+@@ -0,0 +1,16 @@
++# hypotheses
++
++Run as: `claude --model sonnet --effort high`
++
++Input: `.pipeline/runs/$RUN/task.md`, the repro test output, and the files named in the stack trace.
++
++List at most 5 root-cause hypotheses ranked by likelihood. For each:
++
++- one line stating it
++- one line describing a probe (test, log line, or assertion) that confirms or refutes it in under 5 minutes
++
++Write them to `.pipeline/runs/$RUN/hypotheses.md` and commit it. Then stop — do not fix anything and do not run the probes.
++
++A hypothesis whose probe cannot come back REFUTED is not a hypothesis. If you cannot name what would rule it out, drop it.
++
++Rank by likelihood, not by how easy the probe is. A cheap probe for an unlikely cause wastes a worktree.
+diff --git a/comitatus/skills/fan-out/roles/implementer.md b/comitatus/skills/fan-out/roles/implementer.md
+new file mode 100644
+index 0000000..ac5036b
+--- /dev/null
++++ b/comitatus/skills/fan-out/roles/implementer.md
+@@ -0,0 +1,20 @@
++# implementer
++
++Run as: `codex --model gpt-5.6-sol -c model_reasoning_effort=medium`
++High-risk partitions: `-c model_reasoning_effort=high`
++
++You own partition `$PARTITION` in `.pipeline/runs/$RUN/manifest.md`.
++
++- Edit only files listed under your partition. Never touch `shared_files` or another partition's files. If you must, stop and write `.pipeline/runs/$RUN/BLOCKED-$PARTITION.md` explaining why, then commit it.
++- Make only your partition's tests pass. Do not edit tests except fixtures and factories.
++- Run your partition's tests after every change. Max 3 fix cycles; on the 4th failure write BLOCKED with what you tried and stop.
++- Smallest diff that passes. No refactoring outside the partition. New dependencies must be named in the commit body.
++- When green: commit as `$PARTITION: <summary>`. Body: files touched, anything a reviewer should look at.
++
++Do not merge. Do not touch the task branch. Fan-in belongs to the architect.
++
++Commit the BLOCKED file. Uncommitted it is not state: the worktree is removed at teardown and takes the only record of your failure with it.
++
++Committing is still not the whole signal — nothing polls the filesystem. Also send one line to the lead saying you blocked and naming the file.
++
++A test you made pass by narrowing its assertion has not passed. If the only way through was to weaken the test, that is a BLOCKED, not a green.
+diff --git a/comitatus/skills/fan-out/roles/mechanic.md b/comitatus/skills/fan-out/roles/mechanic.md
+new file mode 100644
+index 0000000..8369aff
+--- /dev/null
++++ b/comitatus/skills/fan-out/roles/mechanic.md
+@@ -0,0 +1,18 @@
++# mechanic
++
++Run as: `claude --model claude-haiku-4-5-20251001 --effort low`
++
++Mechanical work only. Never change behavior.
++
++Allowed:
++
++- summarize a directory into `.pipeline/runs/$RUN/notes/<dir>.md`, at most 200 words (purpose, entry points, key types, how it is tested)
++- generate fixtures or factories copying an existing pattern in the repo
++- format and lint
++- write a commit message from a diff
++
++Output the artifact and nothing else.
++
++Where several mechanics run in one worktree, stay inside the directory you were given and do not format or lint. A formatter rewrites files the others are mid-read.
++
++If the task requires a judgment — which of two patterns is right, whether a test is adequate, what a function should do — it is not mechanical. Say so in one line and stop rather than guessing.
+diff --git a/comitatus/skills/fan-out/roles/orchestrator.md b/comitatus/skills/fan-out/roles/orchestrator.md
+new file mode 100644
+index 0000000..2423aca
+--- /dev/null
++++ b/comitatus/skills/fan-out/roles/orchestrator.md
+@@ -0,0 +1,67 @@
++# orchestrator
++
++Run as: `claude --model opus --effort high`
++
++You drive the run. You do not do the work.
++
++Taken by the same agent that just finished `architect.md`, in the task worktree, once
++the manifest is committed and its tests fail on assertions. You already own the task
++branch; this role is what you do with it.
++
++`$RUN` is the task id. `H` is the herd helper path from your herdr orientation — call
++it by that absolute path.
++
++## The loop
++
++1. **Read the state before acting.** `node H state --run $RUN` reports the phase off
++   git refs. Never assume the phase from what you remember doing; a run you resume
++   after a compaction or a restart has whatever git says it has.
++2. **Fan out.** `node H fanout --run $RUN --partitions <a,b>` — one worktree and one
++   codex implementer per partition, each sent the implementer role by path. Read the
++   result rows: a row carrying both `worktree` and `error` means the agent is live but
++   never got its role, so re-send it rather than creating anything.
++3. **Wait.** `node H wait-all impl<a>,impl<b>` in one call. Then confirm against git,
++   not against status: a partition is done when its branch has a commit or a committed
++   `BLOCKED-<p>.md`. An agent reading `idle` between its own turns is not a finished
++   agent, and this is the single most common way a run is declared complete early.
++4. **Fan in.** `node H fan-in --run $RUN --partitions <a,b>` in manifest order. On a
++   conflict it stops and names the partition and the unmerged paths; send that
++   partition's implementer the conflict and re-wait. Do not resolve it yourself.
++5. **Apply the shared files.** These are yours — the manifest listed them because no
++   partition may touch them. Then run the full suite.
++6. **Review.** Add one fresh agent to your workspace, never yourself and never an
++   implementer, and send it `reviewer.md`. Route each finding to the implementer whose
++   partition owns the file. The reviewer names defects; implementers write fixes; you
++   carry messages. Re-merge and re-run the suite after fixes land.
++7. **Record and tear down.** Append the `log.md` row and commit it. Then
++   `node H teardown --run $RUN` to see the plan, and `--yes` to execute.
++
++## What you never do
++
++Do not write production code, tests, or fixes. Do not resolve a conflict, grade a
++partition, or decide a finding is not worth acting on. If you find yourself editing a
++file inside a partition, you have stopped orchestrating.
++
++Do not merge from a partition worktree. Fan-in happens on the task branch, in your
++worktree.
++
++## Stop and ask the operator
++
++Two verbs are deliberately not pre-authorized, because baking them would grant
++`git merge`, `git branch -D`, and `herdr worktree remove --force` through a helper
++rule the allowlist otherwise refuses:
++
++- `fan-in` — you will be prompted. Say what you are about to merge and wait.
++- `teardown` — same, and it defaults to a plan. Never pass `--yes` without the
++  operator saying so in this run.
++
++Also stop and ask when: a partition returns BLOCKED and the manifest was wrong rather
++than the worker; the reviewer's finding contradicts a criterion; or the same partition
++blocks twice on the same cause. Those are decisions, not steps.
++
++## Reporting
++
++One line to the operator at each phase boundary — fanned out, all partitions settled,
++fanned in, suite green, review clean or N findings routed, torn down. Include the test
++counts you actually ran, not the counts you expect. A phase you did not verify is a
++phase you report as unverified.
+diff --git a/comitatus/skills/fan-out/roles/probe.md b/comitatus/skills/fan-out/roles/probe.md
+new file mode 100644
+index 0000000..2e22434
+--- /dev/null
++++ b/comitatus/skills/fan-out/roles/probe.md
+@@ -0,0 +1,15 @@
++# probe
++
++Run as: `codex --model gpt-5.6-sol -c model_reasoning_effort=medium`
++
++Take hypothesis `$HYPOTHESIS` from `.pipeline/runs/$RUN/hypotheses.md`.
++
++Write the probe. Run it. Write the result to `.pipeline/runs/$RUN/probe-$HYPOTHESIS.md` as `CONFIRMED` or `REFUTED` with the evidence, and commit it.
++
++Commit a REFUTED result too. Losing hypothesis worktrees get closed, and an uncommitted result is discarded with them — leaving no account of what was ruled out, so the next pass re-probes it.
++
++Do not fix anything. Stop.
++
++A probe that could not run is neither CONFIRMED nor REFUTED. Write `COULD NOT RUN` and name what stopped it — a missing fixture, an unreachable service, a test that errors on import. Reporting REFUTED for a probe that never executed sends the search down the wrong branch and nothing downstream can tell the difference.
++
++The evidence is the output, not your reading of it. Paste what the probe printed.
+diff --git a/comitatus/skills/fan-out/roles/reviewer.md b/comitatus/skills/fan-out/roles/reviewer.md
+new file mode 100644
+index 0000000..1bf65a7
+--- /dev/null
++++ b/comitatus/skills/fan-out/roles/reviewer.md
+@@ -0,0 +1,25 @@
++# reviewer
++
++Run as: `claude --model sonnet --effort high`
++
++Input: `.pipeline/runs/$RUN/manifest.md` and `.pipeline/runs/$RUN/diff.patch`. Read nothing else.
++
++Report only the following, one line each, most severe first. Output `NONE` if nothing applies.
++
++1. Files changed that are not in the owning partition's file list.
++2. Tests weakened, deleted, skipped, or made tautological.
++3. Concurrency, transactional, security, or input-validation defects in the diff. Cite the line.
++4. For bug fixes: does the change address the cause or the symptom? Cite the line.
++5. Behavior added that no criterion asked for.
++
++No praise, no restating the diff, no style comments.
++
++`NONE` is an expected answer, not a failure to find anything. Say it plainly when it is true.
++
++Every finding names something specific: the file outside the partition, the weakened assertion, the line with the defect. General dissatisfaction is not a finding.
++
++Do not propose replacement wording or edit either input. Name the defect; the implementer writes the fix.
++
++A finding needs a supported reason to act. It does not need an executable reproduction — an architectural defect can be real — but a reviewer's preferred implementation is not automatically an obligation.
++
++One escalation past this review, then stop. Reaching the cap does not turn an unresolved finding into a pass; an open finding at that point goes to a person.
+diff --git a/comitatus/skills/herdr/SKILL.md b/comitatus/skills/herdr/SKILL.md
+index 61d9b50..997d2bd 100644
+--- a/comitatus/skills/herdr/SKILL.md
++++ b/comitatus/skills/herdr/SKILL.md
+@@ -243,87 +243,11 @@ git worktree remove --force <old-wt-path>; git branch -D chore/old-slug   # opti
+ 
+ after a reassign the relaunched agents are **cold**: re-seed the protocol + roster (see below).
+ 
+-## fan-out (one architect, N implementers, one branch each)
++## fan-out
+ 
+-six verbs cover the mechanical steps of a fan-out: partition a task, launch one agent per partition on its own branch, wait on them together, merge in order, and tear down without losing the evidence.
+-
+-`--run <id>` names the artifact directory `.pipeline/runs/<id>`. by default it also names the branches - `task/<id>` for the architect and `task/<id>-<p>` per partition - but the two are **independent**, because a repository that names branches `chore/make-new-readme` or `76632-create-new-thing` still needs the kit:
+-
+-```bash
+-node HERD settled --run readme-rewrite --task-branch 76632-create-new-thing --partitions api
+-# -> [{"partition":"api","branch":"76632-create-new-thing-api",…}]
+-```
+-
+-`--task-branch <name>` and `--partition-sep <sep>` are accepted by `fanout`, `state`, `settled`, `fan-in` and `teardown`, and default to `task/<run>` and `-`, so every existing invocation is unchanged. pass the same pair to every verb in a run: they resolve independently, and two of them disagreeing is a silent wrong branch rather than an error.
+-
+-**the separator cannot be `/`.** git refs are files, so a branch cannot also be a directory - with `chore/make-new-readme` checked out, `git branch chore/make-new-readme/api` fails `cannot lock ref … 'refs/heads/chore/make-new-readme' exists`. the task branch always exists here, so `--partition-sep` refuses a `/` value at parse time rather than letting the second `worktree create` fail after the first partition is already up. use a flat separator (`-`, `--`, `.`, `_`).
+-
+-`state` is the only verb that **finds** partitions instead of being told them, by globbing `<task-branch><sep>*`. under a freer convention that glob can catch a branch a human made - `76632-create-new-thing-v2` would read as partition `v2` - so give it `--partitions` when you know what the manifest declared.
+-
+-**deliver a role by path, never by pasting it.** the file is named in the message; the recipient reads it itself:
+-
+-```bash
+-node HERD role arch --role architect --run my-task
+-node HERD role impl1 --role implementer --run my-task --partition auth
+-```
+-
+-the path resolves against the **recipient's** cwd, taken from the agent list. that is the check worth having: a role file committed only in your own checkout is a path the recipient cannot read, and `role` refuses instead of delivering a broken instruction. `--roles-dir` overrides the default `.pipeline/roles`.
+-
+-**launch every partition in one call.** one worktree and one agent each, branched off the task branch, each sent its own `$PARTITION` line:
+-
+-```bash
+-node HERD fanout --run my-task --partitions auth,ui
+-```
+-
+-handles are claimed against the live agent list **before** the first worktree, because a collision surfaces only at `agent start` - after the tab and the tree already exist. a partition that fails is reported in its own row and the others still come up, so one dead worktree does not cost you a good one.
+-
+-**wait on the set, not one at a time.** one `agent list` per round covers every handle:
+-
+-```bash
+-node HERD wait-all impl1,impl2 --status idle,done --timeout 900000
+-```
+-
+-a timeout returns a row per handle rather than throwing. that matters at width 2: an exception reports the first stuck handle and hides whether the other finished.
+-
+-**read where you are off git.** nothing is journalled - the phase is derived from refs on every call:
+-
+-```bash
+-node HERD state --run my-task
+-```
+-
+-```json
+-{ "run": "my-task", "started": true, "manifest": true,
+-  "partitions": [ { "name": "auth", "branch": "task/my-task-auth",
+-                    "merged": true, "blocked": false, "probe": false } ],
+-  "logRow": false, "phase": "fanned-out" }
+-```
+-
+-`phase` is one of `absent | started | partitioned | fanned-out | fanned-in | finished`. close every pane and come back tomorrow: `state` still answers, because the answer was never in a terminal.
+-
+-**check whether partitions have settled from refs.** an idle agent may still be between turns, so completion comes from commits rather than pane status:
+-
+-```bash
+-node HERD settled --run my-task --partitions auth,ui
+-```
+-
+-each row is `done` when its partition branch has a commit ahead of the task branch, `blocked` when that branch commits its own `BLOCKED-<partition>.md`, or `working` otherwise. a missing partition branch is reported as working; a missing task branch is an error.
+-
+-**merge in manifest order, from the task branch only.**
+-
+-```bash
+-node HERD fan-in --run my-task --partitions auth,ui        # add --dry-run to see the order
+-```
+-
+-it refuses unless `HEAD` is `task/<id>` and the architect is settled - merging under a running agent rewrites the tree that agent is living in. at the first conflict it stops, reports the partition and its conflicted paths, and leaves the merge in the tree; resolving it is the implementer's turn, and merging past it would bury which partition caused it.
+-
+-**tear down without discarding the record.**
+-
+-```bash
+-node HERD teardown --run my-task --partitions auth,ui         # plans only
+-node HERD teardown --run my-task --partitions auth,ui --yes   # actually removes
+-```
+-
+-`worktree remove --force` discards uncommitted files silently and `git branch -D` discards commits, so a partition whose `BLOCKED-*.md` is uncommitted, or committed but not yet merged into the task branch, is **skipped with a reason** rather than destroyed. order is fixed: remove the worktree, then delete the branch - `remove` does not delete the branch, and a branch still checked out cannot be deleted.
++For the architect/implementer runbook, branch naming, role delivery, and ordered
++fan-in, use the [`fan-out` skill](../fan-out/SKILL.md). It builds on this skill's
++herdr prerequisite, helper path, roster protocol, and worktree conventions.
+ 
+ ## agent-to-agent protocol (from/to)
+ 
+diff --git a/metadata/skill-catalog.json b/metadata/skill-catalog.json
+index 5f03f1b..54d9668 100644
+--- a/metadata/skill-catalog.json
++++ b/metadata/skill-catalog.json
+@@ -32,6 +32,10 @@
+       "name": "comitatus:herdr",
+       "classification": "public"
+     },
++    {
++      "name": "comitatus:fan-out",
++      "classification": "public"
++    },
+     {
+       "name": "mantra:assess",
+       "classification": "public"
+diff --git a/package-lock.json b/package-lock.json
+index eae3c49..14b4bee 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -32,7 +32,7 @@
+     },
+     "comitatus": {
+       "name": "@claude-domestique/comitatus",
+-      "version": "0.12.0",
++      "version": "0.13.0",
+       "license": "MIT",
+       "devDependencies": {
+         "jest": "^30.2.0",
