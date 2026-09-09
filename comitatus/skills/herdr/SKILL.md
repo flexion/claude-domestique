@@ -43,6 +43,8 @@ node HERD up --branch chore/my-slug --base origin/main \
 
 `kind` is the integration; `model` and `effort` are what was actually **selected**, and `null` means **inherited** - so a launch on a model you chose is visibly distinct from one on whatever the ambient config happened to resolve. Do not read `kind` as an answer to "which model is it on".
 
+the `git fetch` happens only when `--base` names a configured remote. `origin/main` does; `task/my-slug` does not - a slash is not what makes a base remote-tracking, and a base with no slash is a local ref. so a **local-only base creates the worktree with no fetch attempted**, which is what lets `fanout` branch each partition off a task branch that was never pushed.
+
 | flag | runs | glyph |
 |---|---|---|
 | `--claude <handle>[:<selector>]` | `claude` | ◆ |
