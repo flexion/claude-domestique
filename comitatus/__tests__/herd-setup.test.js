@@ -75,8 +75,10 @@ describe('bakedHerdRules', () => {
     const rules = s.bakedHerdRules('/Users/x');
     const base = '/Users/x/.claude/comitatus/skills/herdr/scripts/herd.js';
     // `fanout` is no more privileged than the `up` it calls, and `up` is baked;
-    // `state` only reads refs; `role` is a `send` with a composed body.
-    for (const verb of ['role', 'fanout', 'wait-all', 'state']) {
+    // `state` and `settled` only read refs; `role` is a `send` with a composed
+    // body. `settled` is polled in a loop between an implementer's turns, so a
+    // prompt on it would stall the very wait it exists to answer.
+    for (const verb of ['role', 'fanout', 'wait-all', 'state', 'settled']) {
       expect(rules).toContain(`Bash(node ${base} ${verb}:*)`);
     }
   });

@@ -162,6 +162,124 @@ describe('stateCmd', () => {
 });
 
 // ---------------------------------------------------------------------------
+// partition `settle` of run orch-selfhost: parseSettled + settledCmd
+//
+// `wait-all` reports agent status, and an agent reads `idle` between its own
+// turns. So a settled STATUS is not a finished partition; the only durable
+// evidence is a ref. These tests are the contract for asking git instead.
+// ---------------------------------------------------------------------------
+
+describe('parseSettled', () => {
+  test('run and partitions in the order given', () => {
+    expect(b.parseSettled(['--run', 'r7', '--partitions', 'ui,auth']))
+      .toEqual({ run: 'r7', partitions: ['ui', 'auth'] });
+  });
+  test('--run is required', () => {
+    expect(() => b.parseSettled(['--partitions', 'auth'])).toThrow(/--run is required/);
+  });
+  test('--partitions is required', () => {
+    expect(() => b.parseSettled(['--run', 'r7'])).toThrow(/--partitions is required/);
+  });
+  test('an unknown flag throws rather than being ignored', () => {
+    expect(() => b.parseSettled(['--run', 'r7', '--partitions', 'a', '--force']))
+      .toThrow(/unknown flag: --force/);
+  });
+  test('a flag missing its value throws', () => {
+    expect(() => b.parseSettled(['--run'])).toThrow(/--run is required/);
+  });
+});
+
+describe('settledCmd', () => {
+  // A commit on the partition branch that the task branch does not have. That
+  // is what "the implementer finished" looks like in refs.
+  const SETTLED = {
+    'git rev-parse --verify --quiet task/r7': 'abc123\n',
+    'git rev-parse --verify --quiet task/r7-auth': 'def456\n',
+    'git rev-parse --verify --quiet task/r7-ui': 'fed654\n',
+    'git rev-list --count task/r7..task/r7-auth': '2\n',
+    'git rev-list --count task/r7..task/r7-ui': '0\n',
+    'git ls-tree -r --name-only task/r7-auth -- .pipeline/runs/r7': '.pipeline/runs/r7/manifest.md\n',
+    'git ls-tree -r --name-only task/r7-ui -- .pipeline/runs/r7': '.pipeline/runs/r7/manifest.md\n',
+  };
+
+  test('a commit ahead of the task branch is done; no commit is still working', () => {
+    const herd = gitHerd(SETTLED);
+    expect(b.settledCmd(['--run', 'r7', '--partitions', 'auth,ui'], deps({ run: herd.run })))
+      .toEqual([
+        { partition: 'auth', branch: 'task/r7-auth', status: 'done', commits: 2, blocked: undefined },
+        { partition: 'ui', branch: 'task/r7-ui', status: 'working', commits: 0, blocked: undefined },
+      ]);
+  });
+
+  // A worker's verdict lives in a commit or a committed BLOCKED file, never in
+  // a message: blocked is an ANSWER, not a failure to answer, so it must not
+  // read as `working` and leave the orchestrator waiting on a finished agent.
+  test('a committed BLOCKED-<p>.md is blocked, and outranks the commit that carried it', () => {
+    const herd = gitHerd({
+      ...SETTLED,
+      'git rev-list --count task/r7..task/r7-ui': '1\n',
+      'git ls-tree -r --name-only task/r7-ui -- .pipeline/runs/r7':
+        '.pipeline/runs/r7/manifest.md\n.pipeline/runs/r7/BLOCKED-ui.md\n',
+    });
+    const rows = b.settledCmd(['--run', 'r7', '--partitions', 'ui'], deps({ run: herd.run }));
+    expect(rows).toEqual([
+      { partition: 'ui', branch: 'task/r7-ui', status: 'blocked', commits: 1, blocked: 'BLOCKED-ui.md' },
+    ]);
+  });
+
+  // Another partition's BLOCKED file merged in from the task branch says
+  // nothing about THIS partition. Only its own name counts.
+  test('a BLOCKED file naming a different partition does not block this one', () => {
+    const herd = gitHerd({
+      ...SETTLED,
+      'git ls-tree -r --name-only task/r7-auth -- .pipeline/runs/r7':
+        '.pipeline/runs/r7/manifest.md\n.pipeline/runs/r7/BLOCKED-ui.md\n',
+    });
+    const rows = b.settledCmd(['--run', 'r7', '--partitions', 'auth'], deps({ run: herd.run }));
+    expect(rows[0].status).toBe('done');
+    expect(rows[0].blocked).toBeUndefined();
+  });
+
+  // Fan-out reports a partition whose worktree failed to come up. Asking about
+  // it must answer "not done", not crash the poll loop.
+  test('a partition branch that does not exist yet is working, with a reason', () => {
+    const herd = gitHerd({
+      'git rev-parse --verify --quiet task/r7': 'abc123\n',
+      'git rev-parse --verify --quiet task/r7-auth': new Error('not a ref'),
+    });
+    expect(b.settledCmd(['--run', 'r7', '--partitions', 'auth'], deps({ run: herd.run })))
+      .toEqual([
+        { partition: 'auth', branch: 'task/r7-auth', status: 'working', commits: 0, reason: 'no branch' },
+      ]);
+  });
+
+  test('rows come back in the order asked, not alphabetical', () => {
+    const herd = gitHerd(SETTLED);
+    const rows = b.settledCmd(['--run', 'r7', '--partitions', 'ui,auth'], deps({ run: herd.run }));
+    expect(rows.map((r) => r.partition)).toEqual(['ui', 'auth']);
+  });
+
+  test('a missing task branch is an error, not a set of working partitions', () => {
+    const herd = gitHerd({
+      'git rev-parse --verify --quiet task/r7': new Error('not a ref'),
+    });
+    expect(() => b.settledCmd(['--run', 'r7', '--partitions', 'auth'], deps({ run: herd.run })))
+      .toThrow(/task\/r7/);
+  });
+
+  // The verb an orchestrator polls in a loop, sometimes while an implementer is
+  // mid-commit. Paired with the read assertion so a no-op stub cannot pass it.
+  test('answers from refs alone and issues no writing git command', () => {
+    const herd = gitHerd(SETTLED);
+    b.settledCmd(['--run', 'r7', '--partitions', 'auth'], deps({ run: herd.run }));
+    expect(herd.calls).toContainEqual(['git', 'rev-list', '--count', 'task/r7..task/r7-auth']);
+    expect(herd.calls.filter(isWrite)).toEqual([]);
+    expect(herd.calls.filter((c) => c[0] !== 'git')).toEqual([]); // no herdr call: status is not the signal
+    expect(herd.calls.filter((c) => c[1] === 'fetch')).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // criterion 12, 13, 14: faninCmd
 // ---------------------------------------------------------------------------
 

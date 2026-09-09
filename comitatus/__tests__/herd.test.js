@@ -103,7 +103,7 @@ describe('dispatch (self-contained verbs)', () => {
   // reachable only through dispatch, and a `case` that was never added makes a
   // fully tested verb unreachable while its own suite stays green.
   test('the fan-out verbs are routed, not silently unknown', () => {
-    for (const verb of ['role', 'fanout', 'wait-all', 'state', 'fan-in', 'teardown']) {
+    for (const verb of ['role', 'fanout', 'wait-all', 'state', 'settled', 'fan-in', 'teardown']) {
       expect(() => h.dispatch([verb], deps().deps)).not.toThrow(/unknown command/);
     }
   });
@@ -116,6 +116,7 @@ describe('dispatch (self-contained verbs)', () => {
       [['fanout'], /--run is required/],
       [['wait-all'], /at least one handle/],
       [['state'], /--run is required/],
+      [['settled'], /--run is required/],
       [['fan-in'], /--run is required/],
       [['teardown'], /--run is required/],
     ];
@@ -992,9 +993,18 @@ describe('usage / --help', () => {
   });
   test('usage lists every fan-out verb (the done-when for --help)', () => {
     const u = h.usage();
-    for (const verb of ['role', 'fanout', 'wait-all', 'state', 'fan-in', 'teardown']) {
+    for (const verb of ['role', 'fanout', 'wait-all', 'state', 'settled', 'fan-in', 'teardown']) {
       expect(u).toMatch(new RegExp(`^ {2}${verb.replace('-', '\\-')}\\b`, 'm'));
     }
+  });
+  // The distinction the verb exists for. A reader who takes `wait-all` for a
+  // completion check writes the bug this run is fixing, so usage has to say
+  // which of the two answers off refs.
+  test('usage says settled answers from refs, not from agent status', () => {
+    const entry = /^ {2}settled .*(\n {6}.*)*/m.exec(h.usage());
+    expect(entry).not.toBeNull();
+    expect(entry[0]).toMatch(/--run/);
+    expect(entry[0]).toMatch(/refs|commit/);
   });
   // The prompt is the cost of the gate; a reader who does not know it is coming
   // reads it as a bug and reaches for --force or a blanket allow rule.

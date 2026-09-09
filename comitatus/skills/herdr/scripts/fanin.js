@@ -127,6 +127,32 @@ function derivePhase(facts) {
   return PHASES[3];
 }
 
+// STUB — partition `settle` of run orch-selfhost. `parseSettled` and
+// `settledCmd` below are placeholders with the right return TYPES so the
+// contract tests in __tests__/fanin.test.js fail on an assertion that prints
+// what they got, rather than on a missing export. Replace both bodies.
+//
+// settled --run <id> --partitions a,b
+//
+// The question `wait-all` cannot answer. An agent reads `idle` between its own
+// turns, so a set of idle handles is not a set of finished partitions — it is
+// the single most common way a run is declared complete early. This asks git
+// instead: a commit on the partition branch, or a committed BLOCKED-<p>.md, is
+// durable evidence; a status is a sample of a pane.
+//
+// Read-only by the same rule as stateCmd, and for a stronger reason: this verb
+// is what a caller polls in a loop, so it must be safe to call at any moment
+// during a partition's own commit.
+// eslint-disable-next-line no-unused-vars
+function parseSettled(args) {
+  return { run: undefined, partitions: [] };
+}
+
+// eslint-disable-next-line no-unused-vars
+function settledCmd(args, deps) {
+  return [];
+}
+
 // fan-in --run <id> --partitions a,b [--wait-handle arch] [--timeout ms] [--dry-run]
 // eslint-disable-next-line no-unused-vars
 function parseFanin(args) {
@@ -287,6 +313,8 @@ module.exports = {
   parseState,
   stateCmd,
   derivePhase,
+  parseSettled,
+  settledCmd,
   parseFanin,
   faninCmd,
   parseTeardown,
