@@ -701,6 +701,9 @@ function usage() {
     '      absent|started|partitioned|fanned-out|fanned-in|finished, plus per-branch',
     '      merged/blocked/probe. derived on every call and stored nowhere - git is',
     '      the state machine, so there is no run journal to go stale',
+    '  settled --run <id> --partitions a,b',
+    '      partition completion from branch commits or committed BLOCKED files;',
+    '      reads git refs, never transient agent status',
     '  fan-in --run <id> --partitions a,b [--wait-handle arch] [--timeout ms] [--dry-run]',
     '      refuses unless HEAD is task/<id> and the architect is settled, then merges',
     '      in the order given (manifest order). stops at the FIRST conflict with its',
@@ -751,6 +754,8 @@ function dispatch(argv, deps) {
       return require('./fanout.js').waitAllCmd(rest, deps);
     case 'state':
       return require('./fanin.js').stateCmd(rest, deps);
+    case 'settled':
+      return require('./fanin.js').settledCmd(rest, deps);
     case 'fan-in':
       return require('./fanin.js').faninCmd(rest, deps);
     case 'teardown':
@@ -805,8 +810,6 @@ function main() {
   if (text) process.stdout.write(text + '\n');
 }
 
-if (require.main === module) main();
-
 module.exports = {
   pane,
   status,
@@ -843,3 +846,5 @@ module.exports = {
   format,
   usage,
 };
+
+if (require.main === module) main();
