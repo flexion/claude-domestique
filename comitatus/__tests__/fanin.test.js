@@ -362,6 +362,20 @@ describe('--task-branch and --partition-sep', () => {
     expect(() => parse(args)).toThrow(/\//);
   });
 
+  // Same reviewer finding, carried to the three parsers in this module. It
+  // matters most here: teardown composes the name it hands to `git branch -D`,
+  // so a separator that swallows the next flag deletes a branch nobody named.
+  test.each([
+    ['parseSettled', (args) => b.parseSettled(args)],
+    ['parseFanin', (args) => b.parseFanin(args)],
+    ['parseTeardown', (args) => b.parseTeardown(args)],
+  ])('%s rejects a flag-shaped or wordy separator', (_name, parse) => {
+    for (const sep of ['--dry-run', 'api', 'x-', '']) {
+      expect(() => parse(['--run', 'r7', '--partitions', 'api', '--partition-sep', sep]))
+        .toThrow(/--partition-sep/);
+    }
+  });
+
   test('a flat separator other than - is honoured', () => {
     expect(outcome(() => b.parseSettled(
       ['--run', 'r7', '--partitions', 'api', '--partition-sep', '--'])))

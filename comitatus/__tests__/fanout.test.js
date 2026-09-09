@@ -304,6 +304,35 @@ describe('parseFanout', () => {
     const args = ['--run', 'r7', '--partitions', 'api', '--partition-sep', '/'];
     expect(() => f.parseFanout(args)).toThrow(/cannot|refs are files|exists/i);
   });
+
+  // Reviewer finding, reproduced: `--partition-sep --base` was accepted verbatim
+  // and composed `task/r7--baseapi`, because this one flag read args[++i] raw
+  // while every other flag went through requiredText.
+  //
+  // The generic validator is not the fix, and that is why the hole existed:
+  // requiredText rejects anything matching /^--/, which would reject `--`, a
+  // separator `parseSettled` is required to accept. So the separator needs its
+  // own rule - punctuation git allows in a ref, and nothing else. `/` keeps its
+  // specific git-reason message, so that check runs first.
+  test.each([
+    ['--base', 'a flag name'],
+    ['api', 'a bare word'],
+    ['x-', 'punctuation mixed with letters'],
+    ['', 'empty'],
+  ])('--partition-sep rejects %s (%s)', (sep) => {
+    expect(() => f.parseFanout(['--run', 'r7', '--partitions', 'api', '--partition-sep', sep]))
+      .toThrow(/--partition-sep/);
+  });
+
+  test('--partition-sep with no value at all throws instead of silently defaulting', () => {
+    expect(() => f.parseFanout(['--run', 'r7', '--partitions', 'api', '--partition-sep']))
+      .toThrow(/--partition-sep/);
+  });
+
+  test.each([['-'], ['--'], ['.'], ['_']])('--partition-sep accepts the flat separator %s', (sep) => {
+    const cfg = f.parseFanout(['--run', 'r7', '--partitions', 'api', '--partition-sep', sep]);
+    expect(cfg.partitionSep).toBe(sep);
+  });
 });
 
 describe('fanoutCmd branch naming', () => {
