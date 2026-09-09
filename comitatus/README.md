@@ -28,9 +28,11 @@ belongs to comitatus.
 - The `fan-out` skill (invoked `comitatus:fan-out`) for partitioning a task across
   one architect and multiple implementers, with packaged pipeline role files.
 - A SessionStart hook that is silent unless you are inside herdr (`HERDR_ENV=1`).
-  Inside herdr it injects a short orientation and, if codex is installed, syncs
-  the same skill into `~/.codex/skills/herdr/` so codex agents in the herd get it
-  too.
+  Inside herdr it injects a short orientation and provisions a stable copy of the
+  `herdr` skill and the `fan-out` role files under `~/.claude/comitatus/`, so the
+  helper path and `--roles-dir` it prints survive a comitatus update. It writes
+  nothing into the Codex home — a codex agent gets the skill by installing the
+  plugin, and the orientation reports whether it has.
 - `herd.js`, a Node helper exposing composite verbs (`status`, `members`, `wait`,
   `send`, `send-wait-read`, `agent`, `up`) that each run `herdr` themselves — one
   static command in place of a pipe or a poll loop.
