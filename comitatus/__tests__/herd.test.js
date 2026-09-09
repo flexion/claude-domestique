@@ -1027,6 +1027,32 @@ describe('herd.js main wiring (child process)', () => {
     expect(err.status).toBe(1);
     expect(String(err.stderr)).toMatch(/^herd: unknown command/m);
   });
+  // Every test above this describe requires herd.js as a LIBRARY, where its
+  // module.exports is fully assigned before anything reads it. As the CLI entry
+  // it is not: `main()` runs at require time, so a verb in fanout.js/fanin.js
+  // that requires herd.js back gets the exports object as it stood mid-load.
+  // The whole fan-out surface is reachable only through this path, so a suite
+  // that never spawns the CLI cannot see it fail.
+  test('a verb that requires herd.js back reaches herdr, not a half-loaded exports object', () => {
+    // PATH without herdr: a correctly wired verb dies on spawn ENOENT at its
+    // FIRST herdr call, which is exactly as far as this needs to get.
+    for (const argv of [
+      ['wait-all', 'no-such-agent', '--timeout', '0'],
+      ['role', 'no-such-agent', '--role', 'implementer', '--run', 'r7'],
+    ]) {
+      let err;
+      try {
+        execFileSync(process.execPath, [HERD, ...argv], {
+          encoding: 'utf8', stdio: 'pipe', input: '',
+          env: { ...process.env, PATH: '/usr/bin:/bin' },
+        });
+      } catch (e) { err = e; }
+      expect(err).toBeDefined();
+      expect(String(err.stderr)).not.toMatch(/is not a function/);
+      expect(String(err.stderr)).toMatch(/^herd: /m);
+    }
+  });
+
   test('send --help exits 0 with usage on stdout', () => {
     const out = execFileSync('node', [HERD, 'send', '--help'], { encoding: 'utf8', stdio: 'pipe', input: '' });
     expect(out).toMatch(/usage: herd\.js/);

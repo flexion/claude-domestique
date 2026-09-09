@@ -35,8 +35,11 @@ actually done" from refs — a commit on the partition branch, or a committed
 13. `settled` is dispatchable from `herd.js`, documented in `usage()`, and baked by
     `/herd-setup` (read-only, and polled in a loop — a prompt there stalls the wait
     it exists to answer).
-14. No existing verb's output shape changes. `state`'s row shape is untouched.
-15. `cd comitatus && npm test` green; `npm run validate:plugins` green from the root.
+14. A verb in `fanout.js`/`fanin.js` that requires `herd.js` back works when
+    `herd.js` is the **CLI entry**, not only when it is required as a library. The
+    regression test spawns `node herd.js <verb>` in a child process.
+15. No existing verb's output shape changes. `state`'s row shape is untouched.
+16. `cd comitatus && npm test` green; `npm run validate:plugins` green from the root.
 
 ## partitions
 
@@ -63,7 +66,7 @@ exact-call-sequence test pins that position.
   section beside `state`)
 - tests: `comitatus/__tests__/fanin.test.js`, `comitatus/__tests__/herd.test.js`,
   `comitatus/__tests__/herd-setup.test.js`
-- criteria: 6–13
+- criteria: 6–14
 - depends_on: none
 
 SKILL.md is this partition's file, not a shared one: `herd-setup.test.js` holds the
@@ -71,6 +74,36 @@ skill's `helper verbs:` line equal to `DISPATCHABLE_VERBS`, so adding the verb t
 `HELPER_VERBS` turns that existing test red until the doc line is updated. That test
 is green right now and will go red the moment the implementer starts — expected, and
 part of this partition's green.
+
+Criterion 14 is a third defect, found by this run's own orchestrator when `fanout`
+died before it could reach defect 1:
+
+```
+$ node H fanout --run orch-selfhost --partitions up,settle
+herd: herd.fetchAgents is not a function
+```
+
+`herd.js` calls `main()` at require time, on the line **above** its `module.exports`
+assignment. `fanout.js` and `fanin.js` require `herd.js` back for `fetchAgents` and
+`waitCmd`, so as the CLI entry they read exports as it stood mid-load: `role`,
+`fanout`, `wait-all` and `fan-in` all fail. `state` and `teardown` survive only
+because neither reaches back.
+
+Run 1 shipped these five verbs at **275 passed / 275 total, 6 suites green**, with
+every one of them dead from the command line. The suite could not see it: every test
+requires `herd.js` as a library, where `module.exports` is fully assigned before
+anything reads it, and the CLI is the only path the fan-out surface is ever used
+through. That is why criterion 14 pins the child process specifically — a
+library-require test is what hid this, so repeating one would hide it again.
+
+The lazy `require('./herd.js')` inside each function, which run 1 added deliberately
+and documented in both modules' headers, is aimed at the wrong half of the problem.
+Lazy requires fix a load-order **cycle** — neither module holds a stale reference to
+the other at import time. They do nothing about an entry module that runs its main
+before it finishes exporting, because the function body still resolves
+`herd.fetchAgents` against exports that were never assigned. Moving
+`module.exports` above `if (require.main === module) main()` is the fix; the lazy
+requires can stay.
 
 ## shared_files
 
@@ -106,10 +139,10 @@ Nobody edits these in a worktree. Applied on the task branch at fan-in.
 
 ```
 Test Suites: 4 failed, 2 passed, 6 total
-Tests:       21 failed, 272 passed, 293 total
+Tests:       22 failed, 272 passed, 294 total
 ```
 
-Baseline before these tests: 275 passed, 275 total, 6 suites. The 21 failures are
+Baseline before these tests: 275 passed, 275 total, 6 suites. The 22 failures are
 the two partitions' criteria; the 3 that dropped out of "passed" are existing tests
 whose expectations moved (the `up` exact-call-sequence, and the two fan-out verb
 lists in `herd.test.js`).
@@ -166,7 +199,23 @@ dies on `couldn't find remote ref` for a branch that exists only locally.
 `Array []` and "did not throw" are the stub's typed placeholders in `fanin.js` doing
 their job: the assertion names the gap instead of the module failing to load.
 
-Full list of the 21:
+```
+● herd.js main wiring (child process) › a verb that requires herd.js back reaches
+  herdr, not a half-loaded exports object
+
+    expect(received).not.toMatch(expected)
+
+    Expected pattern: not /is not a function/
+    Received string:      "herd: herd.fetchAgents is not a function
+    "
+
+      at Object.toMatch (__tests__/herd.test.js:1051:38)
+```
+
+That received string is criterion 14's defect as the operator meets it: not a stack
+trace, the one line `herd.js` prints before exiting 1.
+
+Full list of the 22:
 
 ```
 ● bakedHerdRules › the read-only and launch fan-out verbs ARE baked
@@ -190,4 +239,5 @@ Full list of the 21:
 ● up › a non-origin remote base fetches from that remote
 ● usage / --help › usage lists every fan-out verb (the done-when for --help)
 ● usage / --help › usage says settled answers from refs, not from agent status
+● herd.js main wiring (child process) › a verb that requires herd.js back reaches herdr, not a half-loaded exports object
 ```
