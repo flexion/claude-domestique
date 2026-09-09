@@ -366,6 +366,29 @@ describe('fanoutCmd', () => {
     expect(out[1].error).toBeUndefined();
     expect(out[1].delivery).toBe('observed');
   });
+
+  test('a delivery failure preserves the worktree and agent that were launched', () => {
+    const recipient = tmpdir(); // launch succeeds, but this worktree has no role file
+    const herd = fakeHerd({
+      agents: [{
+        name: 'arch', agent: 'claude', pane_id: 'wA:p1', workspace_id: 'wA',
+        agent_status: 'idle', cwd: '/wt/task-r7',
+      }],
+      cwdOf: () => recipient,
+    });
+
+    const [row] = f.fanoutCmd(['--run', 'r7', '--partitions', 'auth'],
+      deps({ run: herd.run, env: { HERDR_PANE_ID: 'wA:p1' } }));
+
+    expect(row).toEqual(expect.objectContaining({
+      partition: 'auth',
+      handle: 'impl1',
+      branch: 'task/r7-auth',
+      worktree: { path: '/wt/task-r7-auth', workspace_id: 'w-task/r7-auth' },
+      agent: expect.objectContaining({ handle: 'impl1', kind: 'codex' }),
+      error: expect.stringMatching(/implementer\.md/),
+    }));
+  });
 });
 
 // ---------------------------------------------------------------------------
