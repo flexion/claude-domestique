@@ -1,7 +1,7 @@
 {
   "name": "modus",
-  "version": "0.4.0",
-  "description": "Derives a frozen, per-item definition of done from a vague work item, then implements and verifies against exactly that",
+  "version": "0.5.0",
+  "description": "Carries a work item through to working behavior and judges when it is finished, with guidance on tests, checks, refactoring, and review",
   "author": {
     "name": "David Puglielli"
   },
@@ -9,12 +9,12 @@
   "homepage": "https://github.com/flexion/claude-domestique/tree/main/modus",
   "license": "MIT",
   "keywords": [
-    "definition-of-done",
-    "acceptance-criteria",
+    "completion",
+    "stopping-rule",
     "work-items",
     "verification",
-    "handoff",
-    "goal-drift"
+    "code-review",
+    "test-quality"
   ],
   "skills": "./skills/"
 }

@@ -6,12 +6,12 @@ describe('makeAgent', () => {
   // NOT an answer to "which model".
   test('claude with no selector: ◆ glyph, no extra args, model and effort null', () => {
     expect(makeAgent('claude', 'sly')).toEqual({
-      handle: 'sly', kind: 'claude', glyph: '◆', model: null, effort: null, extraArgs: [],
+      handle: 'sly', kind: 'claude', glyph: '◆', model: null, effort: null, role: null, extraArgs: [],
     });
   });
   test('codex with no selector: ◇ glyph, no extra args, model and effort null', () => {
     expect(makeAgent('codex', 'jay')).toEqual({
-      handle: 'jay', kind: 'codex', glyph: '◇', model: null, effort: null, extraArgs: [],
+      handle: 'jay', kind: 'codex', glyph: '◇', model: null, effort: null, role: null, extraArgs: [],
     });
   });
 
@@ -19,13 +19,13 @@ describe('makeAgent', () => {
   // own translator. Verified against the installed CLIs' own --help.
   test('claude model= and effort= become --model/--effort (both first-class flags)', () => {
     expect(makeAgent('claude', 'nell:model=opus,effort=high')).toEqual({
-      handle: 'nell', kind: 'claude', glyph: '◆', model: 'opus', effort: 'high',
+      handle: 'nell', kind: 'claude', glyph: '◆', model: 'opus', effort: 'high', role: null,
       extraArgs: ['--model', 'opus', '--effort', 'high'],
     });
   });
   test('codex effort= becomes a -c config override, not a flag', () => {
     expect(makeAgent('codex', 'jay:model=gpt-5.6-sol,effort=high')).toEqual({
-      handle: 'jay', kind: 'codex', glyph: '◇', model: 'gpt-5.6-sol', effort: 'high',
+      handle: 'jay', kind: 'codex', glyph: '◇', model: 'gpt-5.6-sol', effort: 'high', role: null,
       extraArgs: ['--model', 'gpt-5.6-sol', '-c', 'model_reasoning_effort=high'],
     });
   });
@@ -35,6 +35,20 @@ describe('makeAgent', () => {
     expect(makeAgent('codex', 'jay:model=gpt-5.6-sol').extraArgs).toEqual(['--model', 'gpt-5.6-sol']);
     expect(makeAgent('codex', 'jay:model=gpt-5.6-sol').effort).toBeNull();
   });
+  // `role=` decorates the TAB so a human can see which part a tab is playing.
+  // It is label-only: it must never reach the agent's own CLI args, and it must
+  // never become part of the handle, which stays the addressable identity.
+  test('role= is a label-only key and does not reach the CLI args', () => {
+    const a = makeAgent('codex', 'jay:model=gpt-5.6-sol,role=impl');
+    expect(a.role).toBe('impl');
+    expect(a.handle).toBe('jay');
+    expect(a.extraArgs).toEqual(['--model', 'gpt-5.6-sol']);
+  });
+
+  test('an unsafe role is refused like any other selector value', () => {
+    expect(() => makeAgent('codex', 'jay:role=impl ui')).toThrow(/unsafe characters/);
+  });
+
   test('named keys are order-independent', () => {
     expect(makeAgent('claude', 'nell:effort=high,model=opus').extraArgs)
       .toEqual(makeAgent('claude', 'nell:model=opus,effort=high').extraArgs);
@@ -46,7 +60,7 @@ describe('makeAgent', () => {
 
   test('opencode splits handle:model into a -m selector (model may contain colons)', () => {
     expect(makeAgent('opencode', 'bob:ollama/qwen2.5:7b')).toEqual({
-      handle: 'bob', kind: 'opencode', glyph: '⬨', model: 'ollama/qwen2.5:7b', effort: null,
+      handle: 'bob', kind: 'opencode', glyph: '⬨', model: 'ollama/qwen2.5:7b', effort: null, role: null,
       extraArgs: ['-m', 'ollama/qwen2.5:7b'],
     });
   });
@@ -159,7 +173,7 @@ const WL = JSON.stringify({ result: { source: { source_workspace_id: 'wMain' }, 
 // Dynamic tab/pane ids so multi-agent sequences stay distinguishable:
 // tab create -> t2/p2, t3/p4, ...; agent start takes over the tab's root pane
 // (the --pane it is handed) and reports that same pane back.
-function dynMatchers(listResp = AGENT_LIST()) {
+function dynMatchers(listResp = AGENT_LIST(), remotes = 'origin\n') {
   let t = 1;
   let p = 1;
   return [
@@ -173,6 +187,9 @@ function dynMatchers(listResp = AGENT_LIST()) {
         const paneIdx = a.indexOf('--pane') + 1;
         return JSON.stringify({ result: { agent: { pane_id: a[paneIdx], name: a[2] } } });
       }],
+    // Appended last on purpose: tests override matchers BY INDEX, so a new
+    // matcher at the front would silently repoint one of theirs.
+    [(f, a) => f === 'git' && a[0] === 'remote' && a.length === 1, remotes],
   ];
 }
 
@@ -294,6 +311,13 @@ describe('launchAgent', () => {
       ['herdr', 'agent', 'wait', 'jay', '--until', 'idle', '--timeout', '45000'],
     ]);
   });
+  test('a role decorates the tab as <handle>-<role>, keeping the kind glyph', () => {
+    const { run, calls } = fakeRunner(dynMatchers());
+    launchAgent(makeAgent('codex', 'jay:role=impl'), { workspace: 'wR', cwd: '/wt/x' }, { run });
+    expect(calls).toContainEqual(
+      ['herdr', 'tab', 'create', '--workspace', 'wR', '--cwd', '/wt/x', '--label', 'jay-impl ◇', '--no-focus']);
+  });
+
   test('label and timeout are overridable', () => {
     const { run, calls } = fakeRunner(dynMatchers());
     launchAgent(makeAgent('claude', 'sly'), { workspace: 'wR', cwd: '/wt/x', label: 'x', timeout: 9000 }, { run });
@@ -331,6 +355,7 @@ describe('up', () => {
     });
     expect(calls).toEqual([
       ['herdr', 'agent', 'list'],
+      ['git', 'remote'], // is the base's first segment a configured remote?
       ['git', 'fetch', 'origin', 'main'],
       ['herdr', 'worktree', 'list', '--cwd', '/wt/here', '--json'], // resolve source workspace
       ['herdr', 'worktree', 'create', '--branch', 'chore/x', '--base', 'origin/main', '--no-focus', '--json',
@@ -394,6 +419,54 @@ describe('up', () => {
     const { run, calls } = fakeRunner(dynMatchers());
     up(['--branch', 'b', '--base', 'origin/dev', '--claude', 'sly'], { run });
     expect(calls).toContainEqual(['git', 'fetch', 'origin', 'dev']);
+  });
+
+  // The fan-out runbook's own named failure: `fanout` bases every partition
+  // worktree on `task/<id>`, a branch that exists only locally. An
+  // unconditional `git fetch origin task/<id>` dies on `couldn't find remote
+  // ref` and no partition worktree is ever created. The base names a remote or
+  // it does not, and only the first case has anything to fetch.
+  const fetches = (calls) => calls.filter((c) => c[0] === 'git' && c[1] === 'fetch');
+
+  test('a local-only base creates the worktree with no fetch attempted', () => {
+    const { run, calls } = fakeRunner(dynMatchers());
+    const result = up(['--branch', 'task/r7-auth', '--base', 'task/r7', '--claude', 'sly'], { run });
+    expect(fetches(calls)).toEqual([]);
+    expect(calls).toContainEqual(
+      ['herdr', 'worktree', 'create', '--branch', 'task/r7-auth', '--base', 'task/r7', '--no-focus', '--json',
+        '--workspace', 'wMain']);
+    expect(result.worktree).toEqual({ path: '/wt/x', workspace_id: 'wR' });
+  });
+
+  test('a base with no slash is a local ref, not shorthand for origin/<base>', () => {
+    const { run, calls } = fakeRunner(dynMatchers());
+    up(['--branch', 'b', '--base', 'main', '--claude', 'sly'], { run });
+    expect(fetches(calls)).toEqual([]);
+  });
+
+  // "remote-tracking" is decided against `git remote`, not against the literal
+  // prefix `origin/`: a repo whose upstream is named something else must still
+  // get its fetch, and a base like `task/r7` must not be mistaken for one
+  // because it happens to contain a slash.
+  test('a non-origin remote base fetches from that remote', () => {
+    const { run, calls } = fakeRunner(dynMatchers(AGENT_LIST(), 'origin\nupstream\n'));
+    up(['--branch', 'b', '--base', 'upstream/main', '--claude', 'sly'], { run });
+    expect(fetches(calls)).toEqual([['git', 'fetch', 'upstream', 'main']]);
+  });
+
+  test('a remote base with slashes in the branch fetches the whole branch name', () => {
+    const { run, calls } = fakeRunner(dynMatchers());
+    up(['--branch', 'b', '--base', 'origin/release/2.0', '--claude', 'sly'], { run });
+    expect(fetches(calls)).toEqual([['git', 'fetch', 'origin', 'release/2.0']]);
+  });
+
+  test('the fetch happens before worktree create resolves the base', () => {
+    const { run, calls } = fakeRunner(dynMatchers());
+    up(['--branch', 'b', '--base', 'origin/dev', '--claude', 'sly'], { run });
+    const fetchAt = calls.findIndex((c) => c[0] === 'git' && c[1] === 'fetch');
+    const createAt = calls.findIndex((c) => c[1] === 'worktree' && c[2] === 'create');
+    expect(fetchAt).toBeGreaterThan(-1);
+    expect(createAt).toBeGreaterThan(fetchAt);
   });
 
   test('--timeout flows into the readiness wait', () => {

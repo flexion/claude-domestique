@@ -13,7 +13,8 @@ describe('SAFE_ALLOW', () => {
       'Bash(herdr agent start:*)', 'Bash(sleep:*)',
       'Bash(herdr agent send:*)', 'Bash(herdr wait:*)', // removed in herdr 0.7.5
       'Bash(git branch:*)', 'Bash(git reset:*)', 'Bash(git checkout:*)',
-      'Bash(git push:*)', 'Bash(git worktree remove:*)']) {
+      'Bash(git push:*)', 'Bash(git worktree remove:*)',
+      'Bash(git merge:*)']) { // fan-in shells to it; the verb is gated instead
       expect(s.SAFE_ALLOW).not.toContain(bad);
     }
   });
@@ -41,9 +42,10 @@ describe('bakedHerdRules', () => {
   });
 
   // An agent that hits a permission prompt mid-protocol stalls the herd, and a
-  // stalled lead strands everyone downstream. A verb the helper dispatches but
-  // /herd-setup never allows is exactly that trap, so the two lists must agree.
-  test('every dispatchable verb has an allow rule', () => {
+  // stalled lead strands everyone downstream. A verb the helper dispatches that
+  // appears in NEITHER list is exactly that trap, so the union must agree with
+  // usage(). Being in GATED_VERBS is a decision; being in neither is an omission.
+  test('every dispatchable verb is accounted for as allowed or gated', () => {
     const herd = require('../skills/herdr/scripts/herd.js');
     const dispatchable = herd.usage()
       .split('\n')
@@ -51,11 +53,39 @@ describe('bakedHerdRules', () => {
       .filter(Boolean)
       .map((m) => m[1]);
     expect(dispatchable.length).toBeGreaterThan(0);
-    expect([...s.HELPER_VERBS].sort()).toEqual(dispatchable.sort());
+    expect([...s.DISPATCHABLE_VERBS].sort()).toEqual(dispatchable.sort());
+  });
+
+  // The exception, stated as a test rather than only as a comment. A baked rule
+  // allows whatever the verb shells out to, and these two reach `git merge`,
+  // `git branch -D`, and `worktree remove --force` - the commands SAFE_ALLOW
+  // withholds directly. Baking them would route around that list.
+  test('the destructive verbs dispatch but are NOT baked into the allowlist', () => {
+    const rules = s.bakedHerdRules('/Users/x');
+    const base = '/Users/x/.claude/comitatus/skills/herdr/scripts/herd.js';
+    expect([...s.GATED_VERBS].sort()).toEqual(['fan-in', 'teardown']);
+    for (const verb of s.GATED_VERBS) {
+      expect(s.DISPATCHABLE_VERBS).toContain(verb);
+      expect(s.HELPER_VERBS).not.toContain(verb);
+      expect(rules).not.toContain(`Bash(node ${base} ${verb}:*)`);
+    }
+  });
+
+  test('the read-only and launch fan-out verbs ARE baked', () => {
+    const rules = s.bakedHerdRules('/Users/x');
+    const base = '/Users/x/.claude/comitatus/skills/herdr/scripts/herd.js';
+    // `fanout` is no more privileged than the `up` it calls, and `up` is baked;
+    // `state` and `settled` only read refs; `role` is a `send` with a composed
+    // body. `settled` is polled in a loop between an implementer's turns, so a
+    // prompt on it would stall the very wait it exists to answer.
+    for (const verb of ['role', 'fanout', 'wait-all', 'state', 'settled']) {
+      expect(rules).toContain(`Bash(node ${base} ${verb}:*)`);
+    }
   });
 
   // The skill's verb line is what an agent reads to learn the surface exists.
-  // A verb missing there is invisible in practice however well it is allowed.
+  // A verb missing there is invisible in practice however well it is allowed,
+  // so it advertises the whole dispatch surface - gated verbs included.
   test('SKILL.md advertises exactly the verbs the helper dispatches', () => {
     const fs = require('fs');
     const path = require('path');
@@ -64,7 +94,7 @@ describe('bakedHerdRules', () => {
     const line = skill.split('\n').find((l) => l.startsWith('helper verbs:'));
     expect(line).toBeDefined();
     const advertised = /`([^`]+)`/.exec(line)[1].split('|').map((v) => v.trim());
-    expect(advertised.sort()).toEqual([...s.HELPER_VERBS].sort());
+    expect(advertised.sort()).toEqual([...s.DISPATCHABLE_VERBS].sort());
   });
 });
 

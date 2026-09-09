@@ -98,6 +98,54 @@ describe('dispatch (self-contained verbs)', () => {
       expect(() => h.dispatch([verb], deps().deps)).not.toThrow(/unknown command/);
     }
   });
+
+  // Registration is the whole point of this arm: the two fan-out modules are
+  // reachable only through dispatch, and a `case` that was never added makes a
+  // fully tested verb unreachable while its own suite stays green.
+  test('the fan-out verbs are routed, not silently unknown', () => {
+    for (const verb of ['role', 'fanout', 'wait-all', 'state', 'settled', 'fan-in', 'teardown']) {
+      expect(() => h.dispatch([verb], deps().deps)).not.toThrow(/unknown command/);
+    }
+  });
+
+  test('each fan-out verb reaches its own module, and argument errors come from there', () => {
+    // Every one of these fails on its own required-argument check, which only
+    // the module can raise - so the case arm is wired to the right function.
+    const cases = [
+      [['role'], /role needs a handle/],
+      [['fanout'], /--run is required/],
+      [['wait-all'], /at least one handle/],
+      [['state'], /--run is required/],
+      [['settled'], /--run is required/],
+      [['fan-in'], /--run is required/],
+      [['teardown'], /--run is required/],
+    ];
+    for (const [argv, pattern] of cases) {
+      expect(() => h.dispatch(argv, deps().deps)).toThrow(pattern);
+    }
+  });
+
+  test('state dispatches to the read-only git verb, not to a herdr call', () => {
+    const calls = [];
+    const d = {
+      run: (f, a) => {
+        calls.push([f, ...a]);
+        if (f === 'git' && a[0] === 'rev-parse') throw new Error('not a ref');
+        return '';
+      },
+    };
+    expect(h.dispatch(['state', '--run', 'r7'], d)).toEqual({
+      run: 'r7', started: false, manifest: false, partitions: [], logRow: false, phase: 'absent',
+    });
+    expect(calls).toEqual([['git', 'rev-parse', '--verify', '--quiet', 'task/r7']]);
+  });
+
+  // format() decides how a verb prints. The fan-out verbs that return arrays
+  // return arrays OF OBJECTS, which must not degrade to [object Object].
+  test('teardown plan rows format as JSON, not newline-joined objects', () => {
+    const rows = [{ partition: 'auth', branch: 'task/r7-auth', action: 'planned' }];
+    expect(h.format(rows)).toBe(JSON.stringify(rows));
+  });
 });
 
 describe('parseWait', () => {
@@ -943,6 +991,36 @@ describe('usage / --help', () => {
     expect(h.usage()).toMatch(/effort=/);
     expect(h.usage()).toMatch(/inherit/i);
   });
+  test('usage lists every fan-out verb (the done-when for --help)', () => {
+    const u = h.usage();
+    for (const verb of ['role', 'fanout', 'wait-all', 'state', 'settled', 'fan-in', 'teardown']) {
+      expect(u).toMatch(new RegExp(`^ {2}${verb.replace('-', '\\-')}\\b`, 'm'));
+    }
+  });
+  // The distinction the verb exists for. A reader who takes `wait-all` for a
+  // completion check writes the bug this run is fixing, so usage has to say
+  // which of the two answers off refs.
+  test('usage says settled answers from refs, not from agent status', () => {
+    const entry = /^ {2}settled .*(\n {6}.*)*/m.exec(h.usage());
+    expect(entry).not.toBeNull();
+    expect(entry[0]).toMatch(/--run/);
+    expect(entry[0]).toMatch(/refs|commit/);
+  });
+  // run fanout-branch-naming. usage() is where an operator learns the surface
+  // exists, and the whole point of the flag is repositories that do NOT name
+  // branches task/<id> - so a usage text that only ever shows task/<id> tells
+  // exactly the reader who needs the flag that the kit does not fit them.
+  test('usage documents --task-branch and stops presenting task/<id> as the only shape', () => {
+    const u = h.usage();
+    expect(u).toMatch(/--task-branch/);
+    expect(u).toMatch(/--partition-sep/);
+  });
+
+  // The prompt is the cost of the gate; a reader who does not know it is coming
+  // reads it as a bug and reaches for --force or a blanket allow rule.
+  test('usage says which verbs /herd-setup deliberately leaves prompting', () => {
+    expect(h.usage()).toMatch(/NOT baked/);
+  });
 });
 
 describe('herd.js main wiring (child process)', () => {
@@ -959,6 +1037,32 @@ describe('herd.js main wiring (child process)', () => {
     expect(err.status).toBe(1);
     expect(String(err.stderr)).toMatch(/^herd: unknown command/m);
   });
+  // Every test above this describe requires herd.js as a LIBRARY, where its
+  // module.exports is fully assigned before anything reads it. As the CLI entry
+  // it is not: `main()` runs at require time, so a verb in fanout.js/fanin.js
+  // that requires herd.js back gets the exports object as it stood mid-load.
+  // The whole fan-out surface is reachable only through this path, so a suite
+  // that never spawns the CLI cannot see it fail.
+  test('a verb that requires herd.js back reaches herdr, not a half-loaded exports object', () => {
+    // PATH without herdr: a correctly wired verb dies on spawn ENOENT at its
+    // FIRST herdr call, which is exactly as far as this needs to get.
+    for (const argv of [
+      ['wait-all', 'no-such-agent', '--timeout', '0'],
+      ['role', 'no-such-agent', '--role', 'implementer', '--run', 'r7'],
+    ]) {
+      let err;
+      try {
+        execFileSync(process.execPath, [HERD, ...argv], {
+          encoding: 'utf8', stdio: 'pipe', input: '',
+          env: { ...process.env, PATH: '/usr/bin:/bin' },
+        });
+      } catch (e) { err = e; }
+      expect(err).toBeDefined();
+      expect(String(err.stderr)).not.toMatch(/is not a function/);
+      expect(String(err.stderr)).toMatch(/^herd: /m);
+    }
+  });
+
   test('send --help exits 0 with usage on stdout', () => {
     const out = execFileSync('node', [HERD, 'send', '--help'], { encoding: 'utf8', stdio: 'pipe', input: '' });
     expect(out).toMatch(/usage: herd\.js/);

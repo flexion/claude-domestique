@@ -18,7 +18,9 @@ herdr owns its own command surface: run `herdr <family> --help` (e.g. `herdr age
 1. **prefer native `herdr` verbs, addressed by handle.** `herdr agent prompt|read|get|wait <handle>` all resolve handles directly - no pane-id lookups, no JSON parsing. the helper exists only for what the natives don't cover.
 2. **call the herd.js helper by the absolute path from your orientation** (the `node /abs/.../herd.js ...` line). the path is stable across comitatus updates and `/herd-setup` allowlists it once; a path built any other way (variables, relative, or a guessed Codex cache path) fails the permission matcher or targets the wrong install. every helper verb is self-contained - it runs `herdr` itself; nothing is piped and stdin is never read.
 
-helper verbs: `status | members | wait | send | send-wait-read | seed | broadcast | sync | withdraw | agent | up`.
+helper verbs: `status | members | wait | send | send-wait-read | seed | broadcast | sync | withdraw | agent | up | role | fanout | wait-all | state | settled | fan-in | teardown`.
+
+`fan-in` and `teardown` are the two verbs `/herd-setup` does **not** pre-authorize, because they reach `git merge`, `git branch -D`, and `worktree remove --force`. Expect one permission prompt each; nothing is waiting on you at either step.
 
 The message and membership contract is in [reference/protocol.md](reference/protocol.md).
 
@@ -40,6 +42,8 @@ node HERD up --branch chore/my-slug --base origin/main \
 ```
 
 `kind` is the integration; `model` and `effort` are what was actually **selected**, and `null` means **inherited** - so a launch on a model you chose is visibly distinct from one on whatever the ambient config happened to resolve. Do not read `kind` as an answer to "which model is it on".
+
+the `git fetch` happens only when `--base` names a configured remote. `origin/main` does; `task/my-slug` does not - a slash is not what makes a base remote-tracking, and a base with no slash is a local ref. so a **local-only base creates the worktree with no fetch attempted**, which is what lets `fanout` branch each partition off a task branch that was never pushed.
 
 | flag | runs | glyph |
 |---|---|---|
@@ -238,6 +242,12 @@ git worktree remove --force <old-wt-path>; git branch -D chore/old-slug   # opti
 ```
 
 after a reassign the relaunched agents are **cold**: re-seed the protocol + roster (see below).
+
+## fan-out
+
+For the architect/implementer runbook, branch naming, role delivery, and ordered
+fan-in, use the [`fan-out` skill](../fan-out/SKILL.md). It builds on this skill's
+herdr prerequisite, helper path, roster protocol, and worktree conventions.
 
 ## agent-to-agent protocol (from/to)
 

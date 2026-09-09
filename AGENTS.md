@@ -324,3 +324,28 @@ bd prime                # Refresh Beads context
 
 **Architecture in one line:** issues live in a local Dolt DB; sync uses `refs/dolt/data` on your git remote; `.beads/issues.jsonl` is a passive export. See https://github.com/gastownhall/beads/blob/main/docs/SYNC_CONCEPTS.md for details and anti-patterns.
 <!-- END BEADS CODEX SETUP -->
+
+## Task tracking is on the filesystem, not in beads (current override)
+
+By operator instruction, 2026-09-09: **do not file beads.** Work items, todos, and
+deferred findings go to [`.pipeline/backlog.md`](.pipeline/backlog.md) and one file
+per item under `.pipeline/backlog/`. This overrides "Use `bd` for all task tracking"
+in the managed blocks above. Those blocks stay as written, for when the override is
+lifted.
+
+The reason is measured, not stylistic. Run `orch-selfhost` filed seven beads for one
+task: four restated something `.pipeline/` or git already held — the task bead
+restated `runs/<id>/task.md`, two partition beads restated their own commits, and a
+defect bead restated a manifest criterion — and only three named work that outlived
+the run. Both implementers filed their own bead for work the orchestrator had already
+filed, because the managed rule addresses every agent in the repository and no role
+file says who files. `bd` keys on git identity, so all three showed the same owner and
+the duplication was invisible until someone listed the label.
+
+**If you are an implementer**: your record is your commit, and on failure a committed
+`BLOCKED-<partition>.md`. Nothing else. A finding you cannot act on goes to the
+orchestrator in one line; the orchestrator decides whether it becomes a backlog file.
+
+The existing carve-out above still holds for the same underlying reason: one system of
+record, or two that diverge silently. To lift this, delete this section — the backlog
+files are the migration source, and each names the bead id it replaced.

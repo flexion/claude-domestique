@@ -66,7 +66,7 @@ describe('no orphaned test files', () => {
   test('the guard can actually fail', () => {
     // A reachability check that cannot report unreachable is the thing it is guarding against.
     expect(reachable(path.join('some-removed-plugin', '__tests__', 'x.test.js'))).toBe(false);
-    expect(reachable(path.join('modus', 'scripts', '__tests__', 'lint-boundary.test.js'))).toBe(true);
+    expect(reachable(path.join('comitatus', '__tests__', 'herd.test.js'))).toBe(true);
     expect(reachable(path.join('scripts', '__tests__', 'validate-plugins.test.js'))).toBe(true);
   });
 });

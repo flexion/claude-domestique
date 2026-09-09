@@ -8,10 +8,11 @@ const crypto = require('crypto');
 
 const PLUGIN_ROOT = path.resolve(__dirname, '..');
 const SKILL_DIR = path.join(PLUGIN_ROOT, 'skills', 'herdr');
+const FANOUT_SKILL_DIR = path.join(PLUGIN_ROOT, 'skills', 'fan-out');
 const HERD_JS = path.join(SKILL_DIR, 'scripts', 'herd.js');
 const EXCLUDE = new Set(['__tests__', 'node_modules']);
 
-function buildOrientation(herdJsPath, { codexPlugin } = {}) {
+function buildOrientation(herdJsPath, { codexPlugin, rolesDir } = {}) {
   return [
     '# herdr (comitatus)',
     '',
@@ -28,6 +29,19 @@ function buildOrientation(herdJsPath, { codexPlugin } = {}) {
     'This path is STABLE across comitatus updates; allowlist it once with',
     '`/herd-setup` and always call it by this absolute path so the permission',
     'matcher can match it.',
+    // Only emitted when the copy is actually on disk. An orientation that named
+    // a roles directory nothing had written would send `role` at a missing file,
+    // which is the failure this line exists to prevent.
+    ...(rolesDir ? [
+      '',
+      'Fan-out role files (architect, implementer, reviewer, ...) are provisioned',
+      'to the same stable location:',
+      '',
+      `    ${rolesDir}`,
+      '',
+      'Pass that absolute path as `--roles-dir` to `role` when the repository does',
+      'not carry a roles directory of its own.',
+    ] : []),
     '',
     codexPlugin === true
       ? 'comitatus is installed as a Codex plugin, so codex agents in this herd load the same `herdr` skill from their own plugin install.'
@@ -76,9 +90,9 @@ function readHash(hashFile) {
   }
 }
 
-function provisionInto({ skillDir, home }) {
+function provisionInto({ skillDir, home, name = 'herdr' }) {
   const skillsDir = path.join(home, 'skills');
-  const destSkills = path.join(skillsDir, 'herdr');
+  const destSkills = path.join(skillsDir, name);
   const srcHash = hashDir(skillDir);
 
   const curHash = readHash(path.join(destSkills, HASH_FILE));
@@ -94,7 +108,7 @@ function provisionInto({ skillDir, home }) {
   // byte-identical content.
   fs.mkdirSync(skillsDir, { recursive: true });
   tmpCounter += 1;
-  const tmpDir = path.join(skillsDir, `.herdr.tmp.${process.pid}.${tmpCounter}`);
+  const tmpDir = path.join(skillsDir, `.${name}.tmp.${process.pid}.${tmpCounter}`);
   fs.rmSync(tmpDir, { recursive: true, force: true });
   try {
     copyDir(skillDir, tmpDir);
@@ -151,15 +165,19 @@ function codexPluginInstalled({ codexHome }) {
   );
 }
 
-function provisionStable({ skillDir, home }) {
+function provisionStable({ skillDir, home, name }) {
   fs.mkdirSync(home, { recursive: true });
-  return provisionInto({ skillDir, home });
+  return provisionInto({ skillDir, home, name });
 }
 
 function stableHome(homedir) { return path.join(homedir, '.claude', 'comitatus'); }
 function stableHerdJs(home) { return path.join(home, 'skills', 'herdr', 'scripts', 'herd.js'); }
+function stableRolesDir(home) { return path.join(home, 'skills', 'fan-out', 'roles'); }
 
-function processSessionStart({ env, skillDir, herdJsPath, codexHome, stableHome: stableHomeDir, directCodex = false }) {
+function processSessionStart({
+  env, skillDir, herdJsPath, codexHome, stableHome: stableHomeDir,
+  fanoutSkillDir, directCodex = false,
+}) {
   if (env.HERDR_ENV !== '1') return null;
 
   // Report-only: comitatus never writes into the Codex home. A codex agent gets
@@ -176,18 +194,33 @@ function processSessionStart({ env, skillDir, herdJsPath, codexHome, stableHome:
   // fails. Skipped when we are the Codex-installed copy: there is no Claude
   // permission matcher to keep stable in that case.
   let helperPath = herdJsPath;
+  let rolesDir;
   if (stableHomeDir && !directCodex) {
     try {
       provisionStable({ skillDir, home: stableHomeDir });
       helperPath = stableHerdJs(stableHomeDir);
     } catch { /* keep fallback */ }
+
+    // Provisioned separately from the herdr skill, and separately caught: the
+    // fan-out roles failing to copy must not cost herdr its stable helper path.
+    // The packaged roles are the only copy a deployed user has when the
+    // repository carries no roles of its own, and `role` resolves --roles-dir
+    // against the recipient's cwd - so without a stable absolute path to name,
+    // the deployed fan-out runbook has no role files it can reach.
+    if (fanoutSkillDir) {
+      try {
+        provisionStable({ skillDir: fanoutSkillDir, home: stableHomeDir, name: 'fan-out' });
+        const provisioned = stableRolesDir(stableHomeDir);
+        if (fs.existsSync(provisioned)) rolesDir = provisioned;
+      } catch { /* orientation omits the roles line */ }
+    }
   }
 
   return {
     systemMessage: `📍 Comitatus: herdr${codexPlugin === undefined ? '' : codexPlugin ? ' (codex: installed)' : ' (codex: not installed)'}`,
     hookSpecificOutput: {
       hookEventName: 'SessionStart',
-      additionalContext: buildOrientation(helperPath, { codexPlugin }),
+      additionalContext: buildOrientation(helperPath, { codexPlugin, rolesDir }),
     },
   };
 }
@@ -215,6 +248,7 @@ async function main() {
     herdJsPath: HERD_JS,
     codexHome,
     stableHome: stableHome(os.homedir()),
+    fanoutSkillDir: FANOUT_SKILL_DIR,
     directCodex: isCodexInstall({ pluginRoot: PLUGIN_ROOT, codexHome }),
   });
   if (result) console.log(JSON.stringify(result));
@@ -233,9 +267,11 @@ module.exports = {
   resolveCodexHome,
   stableHome,
   stableHerdJs,
+  stableRolesDir,
   processSessionStart,
   EXCLUDE,
   PLUGIN_ROOT,
   SKILL_DIR,
+  FANOUT_SKILL_DIR,
   HERD_JS,
 };

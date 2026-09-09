@@ -50,9 +50,15 @@ const KINDS = {
 // anyway so a selector token can never smuggle metacharacters into any surface
 // that later renders or re-quotes it. Model ids carry dots, slashes and colons
 // (`ollama/qwen2.5:7b`); an effort level is a bare word.
+// `role` is a LABEL-only selector: it decorates the tab as `<handle>-<role>` so
+// a human scanning the sidebar can see which part a tab is playing. It never
+// reaches the agent's CLI args, and it is deliberately not part of the handle -
+// the handle stays a bare pool call-sign, because it is the addressable
+// identity and must survive an agent being relaunched in a different part.
 const SELECTORS = {
   model: /^[\w./:-]+$/,
   effort: /^[\w-]+$/,
+  role: /^[\w-]+$/,
 };
 
 // `<handle>`, `<handle>:<model>`, or `<handle>:key=value[,key=value]`.
@@ -68,7 +74,7 @@ const SELECTORS = {
 function parseSelector(kind, spec) {
   const text = String(spec);
   const colon = text.indexOf(':');
-  const out = { handle: colon >= 0 ? text.slice(0, colon) : text, model: null, effort: null };
+  const out = { handle: colon >= 0 ? text.slice(0, colon) : text, model: null, effort: null, role: null };
   if (colon < 0) return out;
 
   const rest = text.slice(colon + 1);
@@ -117,6 +123,7 @@ function makeAgent(kind, spec) {
     glyph: def.glyph,
     model: sel.model,
     effort: sel.effort,
+    role: sel.role,
     extraArgs: def.extraArgs(sel),
   };
 }
@@ -209,7 +216,11 @@ function startAgent(a, rootPane, timeout, deps) {
 // caller depends on.
 function launchAgent(a, opts, deps) {
   const run = deps.run;
-  const label = opts.label || `${a.handle} ${a.glyph}`;
+  // `<handle>-<role> <glyph>` when a part was named, `<handle> <glyph>` when it
+  // was not. The glyph still carries the agent KIND, so the decorated label
+  // answers both "who is this" and "what is it doing here" at a glance.
+  const label = opts.label
+    || `${a.role ? `${a.handle}-${a.role}` : a.handle} ${a.glyph}`;
   const timeout = String(Number(opts.timeout || 45000));
   const tc = JSON.parse(run('herdr', ['tab', 'create', '--workspace', opts.workspace,
     '--cwd', opts.cwd, '--label', label, '--no-focus']));
@@ -245,9 +256,17 @@ function up(argv, deps) {
     if (taken.includes(a.handle)) throw new Error(`handle already taken: ${a.handle}`);
   }
 
-  // refresh the local base ref before worktree create resolves it
-  const baseBranch = cfg.base.replace(/^origin\//, '');
-  run('git', ['fetch', 'origin', baseBranch]);
+  // Refresh a remote-tracking base before worktree create resolves it. A slash
+  // alone does not make a base remote-tracking: task branches commonly contain
+  // one and exist only locally, so match the first segment against configured
+  // remotes. Bases without a slash are local refs even when their name happens
+  // to equal a remote.
+  const slash = cfg.base.indexOf('/');
+  const remote = slash > 0 ? cfg.base.slice(0, slash) : null;
+  const remotes = String(run('git', ['remote'])).split(/\r?\n/).filter(Boolean);
+  if (remote && remotes.includes(remote)) {
+    run('git', ['fetch', remote, cfg.base.slice(slash + 1)]);
+  }
 
   // `worktree create` must originate from the repo's PARENT (main-checkout)
   // workspace; run from inside a linked worktree it errors `linked_worktree_source`.

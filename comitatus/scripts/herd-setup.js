@@ -41,10 +41,33 @@ const SAFE_ALLOW = Object.freeze([
 // The herd-lifecycle verbs belong here for the same reason as `send`: an agent
 // that hits a permission prompt mid-protocol stalls the herd, and a lead that
 // stalls while seeding or withdrawing strands everyone downstream of it.
+// `fanout` is no more privileged than `up`, which it calls; `state` only reads
+// refs; `role` is a `send` with a composed body.
 const HELPER_VERBS = Object.freeze([
   'status', 'members', 'wait', 'send', 'send-wait-read',
   'seed', 'broadcast', 'sync', 'withdraw', 'agent', 'up',
+  'role', 'fanout', 'wait-all', 'state', 'settled',
 ]);
+
+// Dispatchable, deliberately NOT baked.
+//
+// A baked rule reads `Bash(node <helper> <verb>:*)`, which allows whatever that
+// verb shells out to - the matcher sees the helper invocation, never its child
+// processes. `fan-in` runs `git merge` and `teardown` runs `git branch -D` plus
+// `herdr worktree remove --force`, and SAFE_ALLOW withholds `git branch:*`,
+// `git checkout:*`, `git reset:*`, and `git push:*` on purpose. Baking these two
+// would route an agent straight around that list through the helper.
+//
+// So they prompt, once per invocation. Nothing downstream stalls on it: these
+// are the two steps that destroy work, and neither sits on a path where a
+// waiting peer is stranded by the pause - which is the whole reason `send` and
+// the seeding verbs are baked and these are not.
+const GATED_VERBS = Object.freeze(['fan-in', 'teardown']);
+
+// The full dispatch surface. `herd-setup.test.js` holds this equal to the verbs
+// parsed out of `herd.js`'s own usage(), so a verb that dispatches but appears
+// in neither list fails the suite rather than becoming an invisible trap.
+const DISPATCHABLE_VERBS = Object.freeze([...HELPER_VERBS, ...GATED_VERBS]);
 
 function bakedHerdRules(homedir) {
   const base = stableHerdJs(stableHome(homedir));
@@ -121,4 +144,13 @@ function main() {
 
 if (require.main === module) main();
 
-module.exports = { SAFE_ALLOW, HELPER_VERBS, bakedHerdRules, mergeAllow, findConflicts, applySettings };
+module.exports = {
+  SAFE_ALLOW,
+  HELPER_VERBS,
+  GATED_VERBS,
+  DISPATCHABLE_VERBS,
+  bakedHerdRules,
+  mergeAllow,
+  findConflicts,
+  applySettings,
+};

@@ -46,10 +46,10 @@ had guarded against exactly this from the start by carrying `auth.json` and
 deliberately not `config.toml`. The Claude arm had no equivalent.
 
 `--permission-mode bypassPermissions` because a skill cannot complete a step that
-writes a file otherwise. `modus:agent-work-item` step 7 lints a boundary, and you
-cannot lint a file you were not allowed to write. Under inherited permissions a
-run got twelve `Bash` calls through and had `Write` denied — the developer's
-allowlist showing through, not a property of the harness.
+writes a file otherwise. `modus:agent-work-item` implements a change and runs
+checks over it, and neither happens if the write is refused. Under inherited
+permissions a run got twelve `Bash` calls through and had `Write` denied — the
+developer's allowlist showing through, not a property of the harness.
 
 Scoping the writes instead of opening them was tried and does not survive contact.
 `Write(path)` is not a permission form at all; the CLI says so and names
@@ -185,9 +185,11 @@ invoked and the response, and exits 0 fired / 1 did not / 2 could not run.
 What it does not do: one run rather than three, no baseline arm, no scoring. It
 answers "did it fire, and what did it say". Judging the answer is still yours.
 
-`modus/evals/` holds one case in the `prompt.md` + `graders/*.md` shape, written
-against the deferred evaluator. **It has never been executed.** No `case.yaml`
-schema and no grader frontmatter is invented there — a suite that looks correct
-and does not parse is worse than an empty directory, and nothing here can tell the
-difference. Its `graders/criteria.md` is useful on its own as a written statement
-of what a good answer looks like, whatever ends up running it.
+modus carried two cases under `evals/` in the `prompt.md` + `graders/*.md` shape,
+written against the deferred evaluator. They were never executed, and they were
+removed in modus 0.5.0 along with the boundary workflow they graded. Nothing
+replaced them: `agent-work-item` currently has no eval of any kind.
+
+The shape is still the one to use. No `case.yaml` schema and no grader frontmatter
+should be invented — a suite that looks correct and does not parse is worse than an
+empty directory, and nothing here can tell the difference.
