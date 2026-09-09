@@ -114,6 +114,18 @@ Nobody edits these in a worktree. Applied on the task branch at fan-in.
   bump, all four written by `node scripts/bump-version.js comitatus minor` (minor:
   `settled` is a new verb). Both partitions would otherwise touch the same four
   files for one bump.
+- `package-lock.json` — the lockfile's `comitatus` version entry, synced with
+  `npm install --package-lock-only` after the bump. **Added after the review.** The
+  reviewer's one finding was that this file is modified in the diff and named
+  nowhere in the manifest, which was correct: `bump-version.js` moves
+  `comitatus/package.json`, so the lock goes stale the moment it runs, and the
+  architect role's own shared_files definition lists lockfiles first. Naming the
+  four manifests and not the fifth file the same command implies is the omission,
+  not the edit.
+- `.gitignore` — `.pipeline/runs/*/diff.patch`, which the runbook's setup step 5
+  calls for and this repository never had. Written after `diff.patch` was generated,
+  so it is not in the diff the reviewer read; recorded here for the same reason as
+  the lockfile.
 - `comitatus/skills/herdr/SKILL.md`, prose only — the line describing `up` as doing
   "`git fetch`, `worktree create`, …" needs a clause for the local-base case. Applied
   after `settle` merges, so its verb-line edit is not disturbed.
