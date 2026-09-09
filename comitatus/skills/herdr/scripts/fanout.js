@@ -3,7 +3,11 @@
 
 const fs = require('fs');
 const path = require('path');
-const { resolveBranchNaming, partitionBranch } = require('./branch-naming.js');
+const {
+  partitionSeparator,
+  resolveBranchNaming,
+  partitionBranch,
+} = require('./branch-naming.js');
 
 // This module owns the launch/message side of fan-out-trial.md: composing a role
 // line, standing up one worktree+implementer per partition, and observing them
@@ -134,7 +138,7 @@ function parseFanout(args) {
     if (flag === '--run') out.run = need();
     else if (flag === '--partitions') out.partitions = need().split(',').filter(Boolean);
     else if (flag === '--task-branch') out.taskBranch = need();
-    else if (flag === '--partition-sep') out.partitionSep = args[++i];
+    else if (flag === '--partition-sep') out.partitionSep = partitionSeparator(args[++i]);
     else if (flag === '--base') out.base = need();
     else if (flag === '--kind') out.kind = need();
     else if (flag === '--selector') out.selector = need();

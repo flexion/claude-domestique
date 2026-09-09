@@ -19,7 +19,11 @@
 // Require ./herd.js LAZILY (for waitCmd), inside the function that needs it:
 // herd.js requires this module back from its dispatch.
 
-const { resolveBranchNaming, partitionBranch } = require('./branch-naming.js');
+const {
+  partitionSeparator,
+  resolveBranchNaming,
+  partitionBranch,
+} = require('./branch-naming.js');
 
 const PHASES = Object.freeze(
   ['absent', 'started', 'partitioned', 'fanned-out', 'fanned-in', 'finished']);
@@ -63,7 +67,7 @@ function parseState(args) {
     const value = () => args[++i];
     if (flag === '--run') out.run = value();
     else if (flag === '--task-branch') out.taskBranch = value();
-    else if (flag === '--partition-sep') out.partitionSep = value();
+    else if (flag === '--partition-sep') out.partitionSep = partitionSeparator(value());
     else if (flag === '--partitions') out.partitions = parsePartitions(value());
     else throw new Error(`unknown flag: ${flag}`);
   }
@@ -174,7 +178,7 @@ function parseSettled(args) {
     if (flag === '--run') out.run = value();
     else if (flag === '--partitions') out.partitions = parsePartitions(value());
     else if (flag === '--task-branch') out.taskBranch = value();
-    else if (flag === '--partition-sep') out.partitionSep = value();
+    else if (flag === '--partition-sep') out.partitionSep = partitionSeparator(value());
     else throw new Error(`unknown flag: ${flag}`);
   }
   const naming = resolveBranchNaming(out);
@@ -239,7 +243,7 @@ function parseFanin(args) {
     if (flag === '--run') out.run = value();
     else if (flag === '--partitions') out.partitions = parsePartitions(value());
     else if (flag === '--task-branch') out.taskBranch = value();
-    else if (flag === '--partition-sep') out.partitionSep = value();
+    else if (flag === '--partition-sep') out.partitionSep = partitionSeparator(value());
     else if (flag === '--wait-handle') out.waitHandle = value();
     else if (flag === '--timeout') out.timeout = positiveNumber(value(), flag);
     else if (flag === '--dry-run') out.dryRun = true;
@@ -319,7 +323,7 @@ function parseTeardown(args) {
     if (flag === '--run') out.run = value();
     else if (flag === '--partitions') out.partitions = parsePartitions(value());
     else if (flag === '--task-branch') out.taskBranch = value();
-    else if (flag === '--partition-sep') out.partitionSep = value();
+    else if (flag === '--partition-sep') out.partitionSep = partitionSeparator(value());
     else if (flag === '--yes') out.yes = true;
     else throw new Error(`unknown flag: ${flag}`);
   }
