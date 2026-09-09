@@ -245,7 +245,20 @@ after a reassign the relaunched agents are **cold**: re-seed the protocol + rost
 
 ## fan-out (one architect, N implementers, one branch each)
 
-six verbs cover the mechanical steps of a fan-out: partition a task, launch one agent per partition on its own branch, wait on them together, merge in order, and tear down without losing the evidence. `<id>` is the task id and the branch name both - `task/<id>` for the architect, `task/<id>-<p>` per partition.
+six verbs cover the mechanical steps of a fan-out: partition a task, launch one agent per partition on its own branch, wait on them together, merge in order, and tear down without losing the evidence.
+
+`--run <id>` names the artifact directory `.pipeline/runs/<id>`. by default it also names the branches - `task/<id>` for the architect and `task/<id>-<p>` per partition - but the two are **independent**, because a repository that names branches `chore/make-new-readme` or `76632-create-new-thing` still needs the kit:
+
+```bash
+node HERD settled --run readme-rewrite --task-branch 76632-create-new-thing --partitions api
+# -> [{"partition":"api","branch":"76632-create-new-thing-api",…}]
+```
+
+`--task-branch <name>` and `--partition-sep <sep>` are accepted by `fanout`, `state`, `settled`, `fan-in` and `teardown`, and default to `task/<run>` and `-`, so every existing invocation is unchanged. pass the same pair to every verb in a run: they resolve independently, and two of them disagreeing is a silent wrong branch rather than an error.
+
+**the separator cannot be `/`.** git refs are files, so a branch cannot also be a directory - with `chore/make-new-readme` checked out, `git branch chore/make-new-readme/api` fails `cannot lock ref … 'refs/heads/chore/make-new-readme' exists`. the task branch always exists here, so `--partition-sep` refuses a `/` value at parse time rather than letting the second `worktree create` fail after the first partition is already up. use a flat separator (`-`, `--`, `.`, `_`).
+
+`state` is the only verb that **finds** partitions instead of being told them, by globbing `<task-branch><sep>*`. under a freer convention that glob can catch a branch a human made - `76632-create-new-thing-v2` would read as partition `v2` - so give it `--partitions` when you know what the manifest declared.
 
 **deliver a role by path, never by pasting it.** the file is named in the message; the recipient reads it itself:
 

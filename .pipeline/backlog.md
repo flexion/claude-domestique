@@ -19,7 +19,7 @@ run's `task.md`; this file just says which run has it.
 | --- | --- | --- | --- |
 | [fan-in's settle gate cannot be satisfied by its own caller](backlog/fanin-selfwait-gate.md) | open | comitatus | orch-selfhost |
 | [stale STUB headers survive the runs that implement them](backlog/stale-stub-headers.md) | open | comitatus | orch-selfhost |
-| [fan-out verbs hardcode one branch naming convention](backlog/branch-naming-conventions.md) | in run `fanout-branch-naming` | comitatus | orch-selfhost |
+| [fan-out verbs hardcode one branch naming convention](backlog/branch-naming-conventions.md) | done in run `fanout-branch-naming` | comitatus | orch-selfhost |
 
 ## Why these are files and not beads
 

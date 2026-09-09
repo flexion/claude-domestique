@@ -1,6 +1,6 @@
 # fan-out verbs hardcode one branch naming convention
 
-- **status**: in run `fanout-branch-naming`
+- **status**: done in run `fanout-branch-naming` (commit a02def2)
 - **type**: feature
 - **area**: comitatus — `skills/herdr/scripts/fanin.js`, `fanout.js`, `herd.js`
 - **found in**: run `orch-selfhost`, raised by the operator at handoff
