@@ -18,7 +18,9 @@ herdr owns its own command surface: run `herdr <family> --help` (e.g. `herdr age
 1. **prefer native `herdr` verbs, addressed by handle.** `herdr agent prompt|read|get|wait <handle>` all resolve handles directly - no pane-id lookups, no JSON parsing. the helper exists only for what the natives don't cover.
 2. **call the herd.js helper by the absolute path from your orientation** (the `node /abs/.../herd.js ...` line). the path is stable across comitatus updates and `/herd-setup` allowlists it once; a path built any other way (variables, relative, or a guessed Codex cache path) fails the permission matcher or targets the wrong install. every helper verb is self-contained - it runs `herdr` itself; nothing is piped and stdin is never read.
 
-helper verbs: `status | members | wait | send | send-wait-read | seed | broadcast | sync | withdraw | agent | up`.
+helper verbs: `status | members | wait | send | send-wait-read | seed | broadcast | sync | withdraw | agent | up | role | fanout | wait-all | state | fan-in | teardown`.
+
+`fan-in` and `teardown` are the two verbs `/herd-setup` does **not** pre-authorize, because they reach `git merge`, `git branch -D`, and `worktree remove --force`. Expect one permission prompt each; nothing is waiting on you at either step.
 
 The message and membership contract is in [reference/protocol.md](reference/protocol.md).
 
@@ -238,6 +240,67 @@ git worktree remove --force <old-wt-path>; git branch -D chore/old-slug   # opti
 ```
 
 after a reassign the relaunched agents are **cold**: re-seed the protocol + roster (see below).
+
+## fan-out (one architect, N implementers, one branch each)
+
+six verbs cover the mechanical steps of a fan-out: partition a task, launch one agent per partition on its own branch, wait on them together, merge in order, and tear down without losing the evidence. `<id>` is the task id and the branch name both - `task/<id>` for the architect, `task/<id>-<p>` per partition.
+
+**deliver a role by path, never by pasting it.** the file is named in the message; the recipient reads it itself:
+
+```bash
+node HERD role arch --role architect --run my-task
+node HERD role impl1 --role implementer --run my-task --partition auth
+```
+
+the path resolves against the **recipient's** cwd, taken from the agent list. that is the check worth having: a role file committed only in your own checkout is a path the recipient cannot read, and `role` refuses instead of delivering a broken instruction. `--roles-dir` overrides the default `.pipeline/roles`.
+
+**launch every partition in one call.** one worktree and one agent each, branched off the task branch, each sent its own `$PARTITION` line:
+
+```bash
+node HERD fanout --run my-task --partitions auth,ui
+```
+
+handles are claimed against the live agent list **before** the first worktree, because a collision surfaces only at `agent start` - after the tab and the tree already exist. a partition that fails is reported in its own row and the others still come up, so one dead worktree does not cost you a good one.
+
+**wait on the set, not one at a time.** one `agent list` per round covers every handle:
+
+```bash
+node HERD wait-all impl1,impl2 --status idle,done --timeout 900000
+```
+
+a timeout returns a row per handle rather than throwing. that matters at width 2: an exception reports the first stuck handle and hides whether the other finished.
+
+**read where you are off git.** nothing is journalled - the phase is derived from refs on every call:
+
+```bash
+node HERD state --run my-task
+```
+
+```json
+{ "run": "my-task", "started": true, "manifest": true,
+  "partitions": [ { "name": "auth", "branch": "task/my-task-auth",
+                    "merged": true, "blocked": false, "probe": false } ],
+  "logRow": false, "phase": "fanned-out" }
+```
+
+`phase` is one of `absent | started | partitioned | fanned-out | fanned-in | finished`. close every pane and come back tomorrow: `state` still answers, because the answer was never in a terminal.
+
+**merge in manifest order, from the task branch only.**
+
+```bash
+node HERD fan-in --run my-task --partitions auth,ui        # add --dry-run to see the order
+```
+
+it refuses unless `HEAD` is `task/<id>` and the architect is settled - merging under a running agent rewrites the tree that agent is living in. at the first conflict it stops, reports the partition and its conflicted paths, and leaves the merge in the tree; resolving it is the implementer's turn, and merging past it would bury which partition caused it.
+
+**tear down without discarding the record.**
+
+```bash
+node HERD teardown --run my-task --partitions auth,ui         # plans only
+node HERD teardown --run my-task --partitions auth,ui --yes   # actually removes
+```
+
+`worktree remove --force` discards uncommitted files silently and `git branch -D` discards commits, so a partition whose `BLOCKED-*.md` is uncommitted, or committed but not yet merged into the task branch, is **skipped with a reason** rather than destroyed. order is fixed: remove the worktree, then delete the branch - `remove` does not delete the branch, and a branch still checked out cannot be deleted.
 
 ## agent-to-agent protocol (from/to)
 

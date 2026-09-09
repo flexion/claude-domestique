@@ -98,6 +98,53 @@ describe('dispatch (self-contained verbs)', () => {
       expect(() => h.dispatch([verb], deps().deps)).not.toThrow(/unknown command/);
     }
   });
+
+  // Registration is the whole point of this arm: the two fan-out modules are
+  // reachable only through dispatch, and a `case` that was never added makes a
+  // fully tested verb unreachable while its own suite stays green.
+  test('the fan-out verbs are routed, not silently unknown', () => {
+    for (const verb of ['role', 'fanout', 'wait-all', 'state', 'fan-in', 'teardown']) {
+      expect(() => h.dispatch([verb], deps().deps)).not.toThrow(/unknown command/);
+    }
+  });
+
+  test('each fan-out verb reaches its own module, and argument errors come from there', () => {
+    // Every one of these fails on its own required-argument check, which only
+    // the module can raise - so the case arm is wired to the right function.
+    const cases = [
+      [['role'], /role needs a handle/],
+      [['fanout'], /--run is required/],
+      [['wait-all'], /at least one handle/],
+      [['state'], /--run is required/],
+      [['fan-in'], /--run is required/],
+      [['teardown'], /--run is required/],
+    ];
+    for (const [argv, pattern] of cases) {
+      expect(() => h.dispatch(argv, deps().deps)).toThrow(pattern);
+    }
+  });
+
+  test('state dispatches to the read-only git verb, not to a herdr call', () => {
+    const calls = [];
+    const d = {
+      run: (f, a) => {
+        calls.push([f, ...a]);
+        if (f === 'git' && a[0] === 'rev-parse') throw new Error('not a ref');
+        return '';
+      },
+    };
+    expect(h.dispatch(['state', '--run', 'r7'], d)).toEqual({
+      run: 'r7', started: false, manifest: false, partitions: [], logRow: false, phase: 'absent',
+    });
+    expect(calls).toEqual([['git', 'rev-parse', '--verify', '--quiet', 'task/r7']]);
+  });
+
+  // format() decides how a verb prints. The fan-out verbs that return arrays
+  // return arrays OF OBJECTS, which must not degrade to [object Object].
+  test('teardown plan rows format as JSON, not newline-joined objects', () => {
+    const rows = [{ partition: 'auth', branch: 'task/r7-auth', action: 'planned' }];
+    expect(h.format(rows)).toBe(JSON.stringify(rows));
+  });
 });
 
 describe('parseWait', () => {
@@ -942,6 +989,17 @@ describe('usage / --help', () => {
     expect(h.usage()).toMatch(/model=/);
     expect(h.usage()).toMatch(/effort=/);
     expect(h.usage()).toMatch(/inherit/i);
+  });
+  test('usage lists every fan-out verb (the done-when for --help)', () => {
+    const u = h.usage();
+    for (const verb of ['role', 'fanout', 'wait-all', 'state', 'fan-in', 'teardown']) {
+      expect(u).toMatch(new RegExp(`^ {2}${verb.replace('-', '\\-')}\\b`, 'm'));
+    }
+  });
+  // The prompt is the cost of the gate; a reader who does not know it is coming
+  // reads it as a bug and reaches for --force or a blanket allow rule.
+  test('usage says which verbs /herd-setup deliberately leaves prompting', () => {
+    expect(h.usage()).toMatch(/NOT baked/);
   });
 });
 

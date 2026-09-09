@@ -679,6 +679,38 @@ function usage() {
     '      opencode has no effort selector and refuses effort= rather than',
     '      dropping it. the result reports model/effort as null when inherited.',
     '  up [...]                         one-shot worktree + herd launcher',
+    '',
+    'fan-out verbs - the mechanical steps of the fan-out runbook:',
+    '  role <handle> --role <name> --run <id> [--partition p] [--hypothesis n] [--roles-dir d]',
+    '      deliver a role BY PATH: "read <roles-dir>/<role>.md and follow it. $RUN',
+    '      is <id>, $PARTITION is <p>". resolved against the RECIPIENT cwd from the',
+    '      agent list, so a role file present only in your own checkout fails here',
+    '      instead of silently arriving as an unreadable path',
+    '  fanout --run <id> --partitions a,b [--base task/<id>] [--kind codex]',
+    '         [--selector model=..,effort=..] [--role r] [--handle-prefix p] [--timeout ms]',
+    '      one worktree + one agent per partition off task/<id>, each sent its own',
+    '      $PARTITION role line. every handle is claimed against the live agent list',
+    '      BEFORE the first worktree, because a collision surfaces only at agent',
+    '      start - after the tab and the tree exist. a partition that fails is',
+    '      reported and the rest still launch',
+    '  wait-all <h1,h2,...> [--status idle,done] [--timeout ms] [--interval ms]',
+    '      one `agent list` per round for the whole set, not one wait per handle. a',
+    '      timeout returns a row per handle rather than throwing, so a stuck handle',
+    '      does not hide the ones that settled',
+    '  state --run <id>                 which step the run is on, read off git refs',
+    '      absent|started|partitioned|fanned-out|fanned-in|finished, plus per-branch',
+    '      merged/blocked/probe. derived on every call and stored nowhere - git is',
+    '      the state machine, so there is no run journal to go stale',
+    '  fan-in --run <id> --partitions a,b [--wait-handle arch] [--timeout ms] [--dry-run]',
+    '      refuses unless HEAD is task/<id> and the architect is settled, then merges',
+    '      in the order given (manifest order). stops at the FIRST conflict with its',
+    '      --diff-filter=U paths and leaves the merge in the tree to resolve.',
+    '      NOT baked by /herd-setup - it runs `git merge`, so it prompts',
+    '  teardown --run <id> --partitions a,b [--yes]',
+    '      `worktree remove --force` then `git branch -D`, in that order, per',
+    '      partition. plans only without --yes, and skips a partition whose BLOCKED',
+    '      file is uncommitted or committed-but-unmerged - --force discards both',
+    '      without warning. NOT baked by /herd-setup - it destroys work, so it prompts',
   ].join('\n');
 }
 
@@ -708,6 +740,21 @@ function dispatch(argv, deps) {
       return withdrawCmd(rest, deps);
     case 'agent':
       return agentCmd(rest, deps);
+    // Lazy, like `agent` and `defaultDeps` above: both modules require this one
+    // back for sendCmd/waitCmd, and a top-level require either way would leave
+    // whichever side loaded second holding a half-initialised exports object.
+    case 'role':
+      return require('./fanout.js').roleCmd(rest, deps);
+    case 'fanout':
+      return require('./fanout.js').fanoutCmd(rest, deps);
+    case 'wait-all':
+      return require('./fanout.js').waitAllCmd(rest, deps);
+    case 'state':
+      return require('./fanin.js').stateCmd(rest, deps);
+    case 'fan-in':
+      return require('./fanin.js').faninCmd(rest, deps);
+    case 'teardown':
+      return require('./fanin.js').teardownCmd(rest, deps);
     default:
       throw new Error(`unknown command: ${cmd}`);
   }

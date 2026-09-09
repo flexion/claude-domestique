@@ -32,6 +32,12 @@ belongs to comitatus.
 - `herd.js`, a Node helper exposing composite verbs (`status`, `members`, `wait`,
   `send`, `send-wait-read`, `agent`, `up`) that each run `herdr` themselves — one
   static command in place of a pipe or a poll loop.
+- Fan-out verbs on the same helper (`role`, `fanout`, `wait-all`, `state`,
+  `fan-in`, `teardown`) for running one architect and N implementers, each on its
+  own branch: deliver a role file by path, launch a worktree per partition, wait
+  on the set, merge in manifest order, and tear down without discarding the
+  `BLOCKED` record. `state` reads the run's phase off git refs and stores
+  nothing — there is no run journal to go stale.
 - `/herd-setup`, which merges a safe herdr/git allow-list into your settings to
   cut permission prompts.
 
@@ -163,7 +169,8 @@ near zero:
 1. **Composite verbs.** `herd.js` exposes `status`, `members`, `wait`, `send`,
    `send-wait-read`, and `agent` verbs that run `herdr` themselves - one static
    command instead of a pipe or a `while` loop. (`up` already does this for
-   spinning up a whole worktree.)
+   spinning up a whole worktree.) The fan-out verbs `role`, `fanout`,
+   `wait-all`, and `state` are the same shape.
 2. **`/herd-setup`.** Run it once to merge a safe allow-list into your
    `settings.json` (user scope by default; `--local` or `--project` to change).
    It allows the safe herdr verbs, `git fetch`, read-only `git status`/`branch`,
@@ -178,11 +185,20 @@ the variable.
 **What stays prompting, on purpose.** `/herd-setup` never allows `herdr pane run`
 or `herdr pane send-keys` (raw shell / keystroke injection - the composite verbs
 cover their safe uses), nor `git branch -D`, `git reset`, `git checkout`,
-`git push`, or `git worktree remove`. It never bakes a blanket `herd.js:*` rule
-(so a future verb is not auto-allowed), and it keeps the machine-specific baked
-rules out of committed (`--project`) settings. (`herdr worktree remove` *is*
-allowed: it tears down a herdr worktree, not git history.) Re-running is
-idempotent and warns on `deny`/`ask` conflicts.
+`git push`, `git merge`, or `git worktree remove`. It never bakes a blanket
+`herd.js:*` rule (so a future verb is not auto-allowed), and it keeps the
+machine-specific baked rules out of committed (`--project`) settings.
+(`herdr worktree remove` *is* allowed: it tears down a herdr worktree, not git
+history.) Re-running is idempotent and warns on `deny`/`ask` conflicts.
+
+Two helper verbs are **gated** for the same reason: `fan-in` and `teardown`. A
+baked rule reads `Bash(node <helper> <verb>:*)` and so allows whatever that verb
+shells out to — the matcher sees the helper invocation, never its children — and
+these two reach `git merge`, `git branch -D`, and `worktree remove --force`.
+Baking them would route straight around the list above, so they dispatch but
+prompt once per call. `herd-setup.js` keeps them in `GATED_VERBS` rather than
+`HELPER_VERBS`, and a test holds the union of the two equal to the verbs
+`herd.js --help` prints: a verb in neither list is an omission, not a decision.
 
 ## Single source of truth
 
