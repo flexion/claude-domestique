@@ -167,6 +167,7 @@ function fanoutCmd(args, deps) {
 
   const { up } = require('./up.js');
   return requests.map((request) => {
+    let launched;
     try {
       const launch = up([
         '--branch', request.branch,
@@ -174,6 +175,11 @@ function fanoutCmd(args, deps) {
         `--${cfg.kind}`, `${request.handle}:${cfg.selector}`,
         '--timeout', String(cfg.timeout),
       ], deps);
+      launched = {
+        ...request,
+        worktree: launch.worktree,
+        agent: launch.agents[0],
+      };
       const delivery = roleCmd([
         request.handle,
         '--role', cfg.role,
@@ -182,13 +188,11 @@ function fanoutCmd(args, deps) {
         '--roles-dir', cfg.rolesDir,
       ], deps);
       return {
-        ...request,
-        worktree: launch.worktree,
-        agent: launch.agents[0],
+        ...launched,
         delivery: delivery.delivery,
       };
     } catch (error) {
-      return { ...request, error: error.message };
+      return { ...(launched || request), error: error.message };
     }
   });
 }
