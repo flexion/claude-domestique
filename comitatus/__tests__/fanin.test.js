@@ -180,6 +180,14 @@ describe('parseFanin', () => {
     expect(() => b.parseFanin(['--partitions', 'a'])).toThrow(/--run/);
     expect(() => b.parseFanin(['--run', 'r7'])).toThrow(/--partitions/);
   });
+
+  test('--timeout rejects non-finite and negative values', () => {
+    for (const timeout of ['wat', 'Infinity', '-1']) {
+      expect(() => b.parseFanin(
+        ['--run', 'r7', '--partitions', 'auth', '--timeout', timeout]))
+        .toThrow(/--timeout.*non-negative/);
+    }
+  });
 });
 
 describe('faninCmd', () => {

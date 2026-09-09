@@ -31,6 +31,14 @@ function required(value, flag) {
   return value;
 }
 
+function positiveNumber(value, flag) {
+  const number = Number(required(value, flag));
+  if (!Number.isFinite(number) || number < 0) {
+    throw new Error(`${flag} must be a non-negative number`);
+  }
+  return number;
+}
+
 function parsePartitions(value) {
   return required(value, '--partitions').split(',').map((part) => part.trim()).filter(Boolean);
 }
@@ -139,7 +147,7 @@ function parseFanin(args) {
     if (flag === '--run') out.run = value();
     else if (flag === '--partitions') out.partitions = parsePartitions(value());
     else if (flag === '--wait-handle') out.waitHandle = value();
-    else if (flag === '--timeout') out.timeout = Number(value());
+    else if (flag === '--timeout') out.timeout = positiveNumber(value(), flag);
     else if (flag === '--dry-run') out.dryRun = true;
     else throw new Error(`unknown flag: ${flag}`);
   }
