@@ -1,6 +1,6 @@
 # probe
 
-Run as: `codex --model gpt-5.6-sol -c model_reasoning_effort=medium`
+Run as: `codex --model gpt-5.6-sol -c model_reasoning_effort=high`
 
 Take hypothesis `$HYPOTHESIS` from `.pipeline/runs/$RUN/hypotheses.md`.
 

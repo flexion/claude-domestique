@@ -1,6 +1,6 @@
 # mechanic
 
-Run as: `claude --model claude-haiku-4-5-20251001 --effort low`
+Run as: `claude --model sonnet --effort low`
 
 Mechanical work only. Never change behavior.
 

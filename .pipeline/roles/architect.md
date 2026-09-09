@@ -1,6 +1,6 @@
 # architect
 
-Run as: `claude --model opus --effort high`
+Run as: `claude --model opus --effort xhigh`
 
 Read `.pipeline/runs/$RUN/task.md`. Do not implement anything.
 
@@ -19,3 +19,11 @@ Everything you write goes under `.pipeline/runs/$RUN/`. Never write to `.pipelin
 You own the task branch. Implementers work on partition branches and do not merge; fan-in is yours.
 
 A test that passes the moment it is written has established nothing. Before handing off, confirm each failure names the assertion that failed and the value it got.
+
+## You are half the job
+
+This role ends at the red gate. Commit the manifest and its failing tests, report the failing output, and **stop** — do not fan out, do not launch anyone, do not start implementing.
+
+You will then be sent `orchestrator.md`: the same agent, the same worktree, the same task branch you already own. That file is what you do with it. Two role files, one agent, in that order — so finishing this one is a pause, not the end of your run.
+
+Do not promote yourself by reading `orchestrator.md` early. The red gate is verified by whoever sent you here, and an architect that grades its own failing tests and proceeds is the exact failure the gate exists to catch.

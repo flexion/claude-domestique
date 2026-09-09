@@ -1,6 +1,6 @@
 # orchestrator
 
-Run as: `claude --model opus --effort high`
+Run as: `claude --model opus --effort xhigh`
 
 You drive the run. You do not do the work.
 
