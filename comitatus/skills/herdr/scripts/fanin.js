@@ -19,14 +19,36 @@
 // Require ./herd.js LAZILY (for waitCmd), inside the function that needs it:
 // herd.js requires this module back from its dispatch.
 
-// STUB: the ordered vocabulary derivePhase draws from, lowest step first.
-// __tests__/fanin.test.js names the six values.
-const PHASES = Object.freeze([]);
+const PHASES = Object.freeze(
+  ['absent', 'started', 'partitioned', 'fanned-out', 'fanned-in', 'finished']);
+
+function lines(value) {
+  return String(value || '').split('\n').map((line) => line.trim()).filter(Boolean);
+}
+
+function required(value, flag) {
+  if (!value) throw new Error(`${flag} is required`);
+  return value;
+}
+
+function parsePartitions(value) {
+  return required(value, '--partitions').split(',').map((part) => part.trim()).filter(Boolean);
+}
+
+function regexpEscape(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 // state --run <id>
 // eslint-disable-next-line no-unused-vars
 function parseState(args) {
-  return {};
+  const out = { run: undefined };
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--run') out.run = args[++i];
+    else throw new Error(`unknown flag: ${args[i]}`);
+  }
+  required(out.run, '--run');
+  return out;
 }
 
 // Read-only by construction. `stateCmd` must issue no merge, branch -D,
@@ -34,20 +56,96 @@ function parseState(args) {
 // cannot be a verb that moves them.
 // eslint-disable-next-line no-unused-vars
 function stateCmd(args, deps) {
-  return {};
+  const cfg = parseState(args);
+  const taskBranch = `task/${cfg.run}`;
+  try {
+    deps.run('git', ['rev-parse', '--verify', '--quiet', taskBranch]);
+  } catch {
+    const absent = {
+      run: cfg.run,
+      started: false,
+      manifest: false,
+      partitions: [],
+      logRow: false,
+    };
+    return { ...absent, phase: derivePhase(absent) };
+  }
+
+  const runPath = `.pipeline/runs/${cfg.run}`;
+  const taskFiles = lines(deps.run(
+    'git', ['ls-tree', '-r', '--name-only', taskBranch, '--', runPath]));
+  const manifest = taskFiles.includes(`${runPath}/manifest.md`);
+  const branches = lines(deps.run(
+    'git', ['branch', '--list', `${taskBranch}-*`, '--format=%(refname:short)']));
+  const merged = new Set(lines(deps.run(
+    'git', ['branch', '--merged', taskBranch, '--list', `${taskBranch}-*`, '--format=%(refname:short)'])));
+  const partitions = branches.map((branch) => {
+    const branchFiles = lines(deps.run(
+      'git', ['ls-tree', '-r', '--name-only', branch, '--', runPath]));
+    return {
+      name: branch.slice(`${taskBranch}-`.length),
+      branch,
+      merged: merged.has(branch),
+      blocked: branchFiles.some((file) => /\/BLOCKED-[^/]+\.md$/.test(file)),
+      probe: branchFiles.some((file) => /\/probe-[^/]+\.md$/.test(file)),
+    };
+  });
+  let log = '';
+  try {
+    log = deps.run('git', ['show', `${taskBranch}:.pipeline/log.md`]);
+  } catch {
+    // A task may be active before the cumulative log exists.
+  }
+  const row = new RegExp(`^\\|\\s*${regexpEscape(cfg.run)}\\s*\\|`, 'm');
+  const facts = {
+    run: cfg.run,
+    started: true,
+    manifest,
+    partitions,
+    logRow: row.test(String(log || '')),
+  };
+  return { ...facts, phase: derivePhase(facts) };
 }
 
 // The single derived answer to "which step am I on", from the facts stateCmd
 // already collected. Separate so it is testable without a git mock.
 // eslint-disable-next-line no-unused-vars
 function derivePhase(facts) {
-  return '';
+  if (!facts.started) return PHASES[0];
+  if (!facts.manifest) return PHASES[1];
+  if (facts.logRow) return PHASES[5];
+  if (!facts.partitions || facts.partitions.length === 0) return PHASES[2];
+  if (facts.partitions.every((partition) => partition.merged)) return PHASES[4];
+  return PHASES[3];
 }
 
 // fan-in --run <id> --partitions a,b [--wait-handle arch] [--timeout ms] [--dry-run]
 // eslint-disable-next-line no-unused-vars
 function parseFanin(args) {
-  return {};
+  const out = {
+    run: undefined,
+    partitions: undefined,
+    waitHandle: 'arch',
+    timeout: 300000,
+    dryRun: false,
+  };
+  for (let i = 0; i < args.length; i++) {
+    const flag = args[i];
+    const value = () => {
+      const next = args[++i];
+      if (next === undefined) throw new Error(`missing value for ${flag}`);
+      return next;
+    };
+    if (flag === '--run') out.run = value();
+    else if (flag === '--partitions') out.partitions = parsePartitions(value());
+    else if (flag === '--wait-handle') out.waitHandle = value();
+    else if (flag === '--timeout') out.timeout = Number(value());
+    else if (flag === '--dry-run') out.dryRun = true;
+    else throw new Error(`unknown flag: ${flag}`);
+  }
+  required(out.run, '--run');
+  if (!out.partitions) throw new Error('--partitions is required');
+  return out;
 }
 
 // Two refusals before the first merge, both from the runbook:
@@ -61,13 +159,63 @@ function parseFanin(args) {
 // merging past a conflict buries which partition caused it.
 // eslint-disable-next-line no-unused-vars
 function faninCmd(args, deps) {
-  return {};
+  const cfg = parseFanin(args);
+  const taskBranch = `task/${cfg.run}`;
+  const currentBranch = String(
+    deps.run('git', ['rev-parse', '--abbrev-ref', 'HEAD'])).trim();
+  if (currentBranch !== taskBranch) {
+    throw new Error(`fan-in must run on ${taskBranch}; found ${currentBranch || '(detached HEAD)'}`);
+  }
+
+  const { waitCmd } = require('./herd.js');
+  try {
+    waitCmd([cfg.waitHandle, '--status', 'idle,done', '--timeout', String(cfg.timeout)], deps);
+  } catch (error) {
+    throw new Error(`cannot fan in while ${cfg.waitHandle} is unsettled: ${error.message}`);
+  }
+
+  const plan = cfg.partitions.map((partition) => `${taskBranch}-${partition}`);
+  if (cfg.dryRun) return { run: cfg.run, plan, dryRun: true };
+
+  const merged = [];
+  for (let i = 0; i < cfg.partitions.length; i++) {
+    const partition = cfg.partitions[i];
+    const branch = plan[i];
+    try {
+      deps.run('git', ['merge', '--no-edit', branch]);
+      merged.push(branch);
+    } catch (error) {
+      const files = lines(deps.run('git', ['diff', '--name-only', '--diff-filter=U']));
+      if (files.length === 0) throw error;
+      return {
+        run: cfg.run,
+        merged,
+        conflict: { partition, branch, files },
+      };
+    }
+  }
+  return { run: cfg.run, merged, conflict: undefined };
 }
 
 // teardown --run <id> --partitions a,b [--yes]
 // eslint-disable-next-line no-unused-vars
 function parseTeardown(args) {
-  return {};
+  const out = { run: undefined, partitions: undefined, yes: false };
+  for (let i = 0; i < args.length; i++) {
+    const flag = args[i];
+    const value = () => {
+      const next = args[++i];
+      if (next === undefined) throw new Error(`missing value for ${flag}`);
+      return next;
+    };
+    if (flag === '--run') out.run = value();
+    else if (flag === '--partitions') out.partitions = parsePartitions(value());
+    else if (flag === '--yes') out.yes = true;
+    else throw new Error(`unknown flag: ${flag}`);
+  }
+  required(out.run, '--run');
+  if (!out.partitions) throw new Error('--partitions is required');
+  return out;
 }
 
 // Destroys nothing without --yes. `herdr worktree remove --force` discards
@@ -80,7 +228,50 @@ function parseTeardown(args) {
 // does not delete the branch, and a branch still checked out cannot be deleted.
 // eslint-disable-next-line no-unused-vars
 function teardownCmd(args, deps) {
-  return [];
+  const cfg = parseTeardown(args);
+  const taskBranch = `task/${cfg.run}`;
+  const data = JSON.parse(deps.run('herdr', ['worktree', 'list', '--json']));
+  const worktrees = (data && data.result && data.result.worktrees) || [];
+  const merged = new Set(lines(deps.run(
+    'git', ['branch', '--merged', taskBranch, '--list', `${taskBranch}-*`, '--format=%(refname:short)'])));
+  const runPath = `.pipeline/runs/${cfg.run}`;
+
+  return cfg.partitions.map((partition) => {
+    const branch = `${taskBranch}-${partition}`;
+    const worktree = worktrees.find((item) => item && item.branch === branch);
+    const workspace = worktree && worktree.open_workspace_id;
+    const result = { partition, branch, workspace, action: 'skipped', reason: undefined };
+    if (!worktree || !workspace) {
+      result.reason = 'no live worktree';
+      return result;
+    }
+
+    const dirty = lines(deps.run(
+      'git', ['-C', worktree.path, 'status', '--porcelain', '--', '.pipeline']));
+    const dirtyBlocked = dirty.map((line) => line.slice(3).trim())
+      .find((file) => /(^|\/)BLOCKED-[^/]+\.md$/.test(file));
+    if (dirtyBlocked) {
+      result.reason = `uncommitted ${dirtyBlocked.split('/').pop()}`;
+      return result;
+    }
+
+    const branchFiles = lines(deps.run(
+      'git', ['ls-tree', '-r', '--name-only', branch, '--', runPath]));
+    const blocked = branchFiles.find((file) => /\/BLOCKED-[^/]+\.md$/.test(file));
+    if (blocked && !merged.has(branch)) {
+      result.reason = `unmerged ${blocked.split('/').pop()}`;
+      return result;
+    }
+
+    if (!cfg.yes) {
+      result.action = 'planned';
+      return result;
+    }
+    deps.run('herdr', ['worktree', 'remove', '--workspace', workspace, '--force', '--json']);
+    deps.run('git', ['branch', '-D', branch]);
+    result.action = 'removed';
+    return result;
+  });
 }
 
 module.exports = {
