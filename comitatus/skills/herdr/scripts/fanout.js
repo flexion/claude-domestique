@@ -3,6 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { resolveBranchNaming, partitionBranch } = require('./branch-naming.js');
 
 // This module owns the launch/message side of fan-out-trial.md: composing a role
 // line, standing up one worktree+implementer per partition, and observing them
@@ -117,6 +118,8 @@ function parseFanout(args) {
   const out = {
     run: undefined,
     partitions: undefined,
+    taskBranch: undefined,
+    partitionSep: undefined,
     base: undefined,
     kind: 'codex',
     selector: 'model=gpt-5.6-sol,effort=medium',
@@ -130,6 +133,8 @@ function parseFanout(args) {
     const need = () => requiredText(args[++i], flag);
     if (flag === '--run') out.run = need();
     else if (flag === '--partitions') out.partitions = need().split(',').filter(Boolean);
+    else if (flag === '--task-branch') out.taskBranch = need();
+    else if (flag === '--partition-sep') out.partitionSep = args[++i];
     else if (flag === '--base') out.base = need();
     else if (flag === '--kind') out.kind = need();
     else if (flag === '--selector') out.selector = need();
@@ -143,8 +148,9 @@ function parseFanout(args) {
   if (!out.partitions || out.partitions.length === 0) throw new Error('--partitions is required');
   const duplicate = out.partitions.find((partition, i) => out.partitions.indexOf(partition) !== i);
   if (duplicate) throw new Error(`duplicate partition: ${duplicate}`);
-  out.base = out.base || `task/${out.run}`;
-  return out;
+  const naming = resolveBranchNaming(out);
+  out.base = out.base || naming.taskBranch;
+  return { ...out, ...naming };
 }
 
 // Sequential per partition on purpose: `herdr worktree create` resolves its
@@ -158,7 +164,7 @@ function fanoutCmd(args, deps) {
   const requests = cfg.partitions.map((partition, i) => ({
     partition,
     handle: `${cfg.prefix}${i + 1}`,
-    branch: `task/${cfg.run}-${partition}`,
+    branch: partitionBranch(cfg, partition),
   }));
 
   const taken = new Set(agents(fetchAgents(deps)).map((agent) => agent && agent.name).filter(Boolean));
