@@ -245,9 +245,17 @@ function up(argv, deps) {
     if (taken.includes(a.handle)) throw new Error(`handle already taken: ${a.handle}`);
   }
 
-  // refresh the local base ref before worktree create resolves it
-  const baseBranch = cfg.base.replace(/^origin\//, '');
-  run('git', ['fetch', 'origin', baseBranch]);
+  // Refresh a remote-tracking base before worktree create resolves it. A slash
+  // alone does not make a base remote-tracking: task branches commonly contain
+  // one and exist only locally, so match the first segment against configured
+  // remotes. Bases without a slash are local refs even when their name happens
+  // to equal a remote.
+  const slash = cfg.base.indexOf('/');
+  const remote = slash > 0 ? cfg.base.slice(0, slash) : null;
+  const remotes = String(run('git', ['remote'])).split(/\r?\n/).filter(Boolean);
+  if (remote && remotes.includes(remote)) {
+    run('git', ['fetch', remote, cfg.base.slice(slash + 1)]);
+  }
 
   // `worktree create` must originate from the repo's PARENT (main-checkout)
   // workspace; run from inside a linked worktree it errors `linked_worktree_source`.
