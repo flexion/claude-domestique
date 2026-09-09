@@ -25,6 +25,8 @@ belongs to comitatus.
 - The `herdr` skill (invoked `comitatus:herdr`) for driving herdr from inside it:
   worktrees, workspaces, tabs/panes, agents, messaging, and waiting on state —
   all over the `herdr` CLI.
+- The `fan-out` skill (invoked `comitatus:fan-out`) for partitioning a task across
+  one architect and multiple implementers, with packaged pipeline role files.
 - A SessionStart hook that is silent unless you are inside herdr (`HERDR_ENV=1`).
   Inside herdr it injects a short orientation and, if codex is installed, syncs
   the same skill into `~/.codex/skills/herdr/` so codex agents in the herd get it
@@ -32,12 +34,9 @@ belongs to comitatus.
 - `herd.js`, a Node helper exposing composite verbs (`status`, `members`, `wait`,
   `send`, `send-wait-read`, `agent`, `up`) that each run `herdr` themselves — one
   static command in place of a pipe or a poll loop.
-- Fan-out verbs on the same helper (`role`, `fanout`, `wait-all`, `state`,
-  `fan-in`, `teardown`) for running one architect and N implementers, each on its
-  own branch: deliver a role file by path, launch a worktree per partition, wait
-  on the set, merge in manifest order, and tear down without discarding the
-  `BLOCKED` record. `state` reads the run's phase off git refs and stores
-  nothing — there is no run journal to go stale.
+- The `herd.js` helper's fan-out verbs (`role`, `fanout`, `wait-all`, `state`,
+  `fan-in`, `teardown`) support the `fan-out` runbook. `state` reads the run's
+  phase off git refs and stores nothing — there is no run journal to go stale.
 - `/herd-setup`, which merges a safe herdr/git allow-list into your settings to
   cut permission prompts.
 

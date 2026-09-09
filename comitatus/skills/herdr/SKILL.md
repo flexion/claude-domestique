@@ -243,87 +243,11 @@ git worktree remove --force <old-wt-path>; git branch -D chore/old-slug   # opti
 
 after a reassign the relaunched agents are **cold**: re-seed the protocol + roster (see below).
 
-## fan-out (one architect, N implementers, one branch each)
+## fan-out
 
-six verbs cover the mechanical steps of a fan-out: partition a task, launch one agent per partition on its own branch, wait on them together, merge in order, and tear down without losing the evidence.
-
-`--run <id>` names the artifact directory `.pipeline/runs/<id>`. by default it also names the branches - `task/<id>` for the architect and `task/<id>-<p>` per partition - but the two are **independent**, because a repository that names branches `chore/make-new-readme` or `76632-create-new-thing` still needs the kit:
-
-```bash
-node HERD settled --run readme-rewrite --task-branch 76632-create-new-thing --partitions api
-# -> [{"partition":"api","branch":"76632-create-new-thing-api",…}]
-```
-
-`--task-branch <name>` and `--partition-sep <sep>` are accepted by `fanout`, `state`, `settled`, `fan-in` and `teardown`, and default to `task/<run>` and `-`, so every existing invocation is unchanged. pass the same pair to every verb in a run: they resolve independently, and two of them disagreeing is a silent wrong branch rather than an error.
-
-**the separator cannot be `/`.** git refs are files, so a branch cannot also be a directory - with `chore/make-new-readme` checked out, `git branch chore/make-new-readme/api` fails `cannot lock ref … 'refs/heads/chore/make-new-readme' exists`. the task branch always exists here, so `--partition-sep` refuses a `/` value at parse time rather than letting the second `worktree create` fail after the first partition is already up. use a flat separator (`-`, `--`, `.`, `_`).
-
-`state` is the only verb that **finds** partitions instead of being told them, by globbing `<task-branch><sep>*`. under a freer convention that glob can catch a branch a human made - `76632-create-new-thing-v2` would read as partition `v2` - so give it `--partitions` when you know what the manifest declared.
-
-**deliver a role by path, never by pasting it.** the file is named in the message; the recipient reads it itself:
-
-```bash
-node HERD role arch --role architect --run my-task
-node HERD role impl1 --role implementer --run my-task --partition auth
-```
-
-the path resolves against the **recipient's** cwd, taken from the agent list. that is the check worth having: a role file committed only in your own checkout is a path the recipient cannot read, and `role` refuses instead of delivering a broken instruction. `--roles-dir` overrides the default `.pipeline/roles`.
-
-**launch every partition in one call.** one worktree and one agent each, branched off the task branch, each sent its own `$PARTITION` line:
-
-```bash
-node HERD fanout --run my-task --partitions auth,ui
-```
-
-handles are claimed against the live agent list **before** the first worktree, because a collision surfaces only at `agent start` - after the tab and the tree already exist. a partition that fails is reported in its own row and the others still come up, so one dead worktree does not cost you a good one.
-
-**wait on the set, not one at a time.** one `agent list` per round covers every handle:
-
-```bash
-node HERD wait-all impl1,impl2 --status idle,done --timeout 900000
-```
-
-a timeout returns a row per handle rather than throwing. that matters at width 2: an exception reports the first stuck handle and hides whether the other finished.
-
-**read where you are off git.** nothing is journalled - the phase is derived from refs on every call:
-
-```bash
-node HERD state --run my-task
-```
-
-```json
-{ "run": "my-task", "started": true, "manifest": true,
-  "partitions": [ { "name": "auth", "branch": "task/my-task-auth",
-                    "merged": true, "blocked": false, "probe": false } ],
-  "logRow": false, "phase": "fanned-out" }
-```
-
-`phase` is one of `absent | started | partitioned | fanned-out | fanned-in | finished`. close every pane and come back tomorrow: `state` still answers, because the answer was never in a terminal.
-
-**check whether partitions have settled from refs.** an idle agent may still be between turns, so completion comes from commits rather than pane status:
-
-```bash
-node HERD settled --run my-task --partitions auth,ui
-```
-
-each row is `done` when its partition branch has a commit ahead of the task branch, `blocked` when that branch commits its own `BLOCKED-<partition>.md`, or `working` otherwise. a missing partition branch is reported as working; a missing task branch is an error.
-
-**merge in manifest order, from the task branch only.**
-
-```bash
-node HERD fan-in --run my-task --partitions auth,ui        # add --dry-run to see the order
-```
-
-it refuses unless `HEAD` is `task/<id>` and the architect is settled - merging under a running agent rewrites the tree that agent is living in. at the first conflict it stops, reports the partition and its conflicted paths, and leaves the merge in the tree; resolving it is the implementer's turn, and merging past it would bury which partition caused it.
-
-**tear down without discarding the record.**
-
-```bash
-node HERD teardown --run my-task --partitions auth,ui         # plans only
-node HERD teardown --run my-task --partitions auth,ui --yes   # actually removes
-```
-
-`worktree remove --force` discards uncommitted files silently and `git branch -D` discards commits, so a partition whose `BLOCKED-*.md` is uncommitted, or committed but not yet merged into the task branch, is **skipped with a reason** rather than destroyed. order is fixed: remove the worktree, then delete the branch - `remove` does not delete the branch, and a branch still checked out cannot be deleted.
+For the architect/implementer runbook, branch naming, role delivery, and ordered
+fan-in, use the [`fan-out` skill](../fan-out/SKILL.md). It builds on this skill's
+herdr prerequisite, helper path, roster protocol, and worktree conventions.
 
 ## agent-to-agent protocol (from/to)
 

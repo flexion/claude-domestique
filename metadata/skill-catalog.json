@@ -33,6 +33,10 @@
       "classification": "public"
     },
     {
+      "name": "comitatus:fan-out",
+      "classification": "public"
+    },
+    {
       "name": "mantra:assess",
       "classification": "public"
     },
