@@ -57,6 +57,9 @@ no way to express, so it is said here instead.
    `boundary/gh-158.yaml` and `boundary/gh-173.yaml`. Those four files exist on
    `main`, so merging this branch removes them from `main`. It landed *after* the
    review, so no reviewer saw it, and it is in no partition's file list.
+   **Confirmed intentional by the operator, and meant to reach `main`.** It counts in
+   the column because the column measures what changed outside the owning partition's
+   file list, which is a fact about the diff and not a judgement about the change.
 2. **the fan-out skill split** — `comitatus/skills/fan-out/SKILL.md` plus seven role
    copies, `herdr/SKILL.md` cut by 84 lines, `comitatus/README.md`,
    `metadata/skill-catalog.json`, and a second version bump to `0.13.0` on top of
