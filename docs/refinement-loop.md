@@ -240,9 +240,10 @@ Without it, each pass adds instructions that happen to help #158. The skills
 improve on #158 and get no better — possibly worse — on anything else. #158's own
 results cannot show that, because #158 is improving the whole time.
 
-The item: the CSV export ticket in
-`modus/evals/human-work-item-resolves-before-rewriting/prompt.md`. Synthetic,
-written to carry one defect per lens.
+The item was a synthetic CSV export ticket carrying one defect per lens, held in
+`modus/evals/`. That directory was removed in modus 0.5.0, so the guard described
+here has no held-out item and does not currently run. Reinstating it means writing
+a new one — the requirement is that it never be edited in response to a pass.
 
 Read its result every pass. Change nothing on its account. If it degrades while
 #158 improves, the last edit fitted #158.
@@ -387,8 +388,9 @@ Findings against `human-work-item`, both fixed:
    the comparison would be lost. Step 8 now gates the record rather than the
    notes.
 2. The acceptance-criteria test said a bullet needing judgment fails but named no
-   forms, and a draft bullet used "approves" — which `boundary-prose.md` rejects
-   as a state of mind. The three failing forms are now named with replacements.
+   forms, and a draft bullet used "approves" — which the then-current prose rules
+   rejected as a state of mind. The three failing forms are now named in the skill
+   itself, with replacements.
 
 Findings against #158, carried to its open questions rather than fixed here:
 

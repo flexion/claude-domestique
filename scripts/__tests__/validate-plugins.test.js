@@ -118,11 +118,23 @@ test('reports invalid semver', () => {
   expect(validate(root)).toContain('example-plugin: package has invalid semver latest');
 });
 
-test('reports missing required package and host manifest files', () => {
-  const packageFixture = fixture();
-  fs.rmSync(path.join(packageFixture.root, packageFixture.plugin, 'package.json'));
-  expect(validate(packageFixture.root)).toContain('example-plugin: missing package.json');
+// A skills-only plugin ships no JavaScript, so it has nothing to declare a
+// dependency on and no test script to run. Requiring package.json of it forced
+// an empty manifest whose only job was to satisfy this validator.
+test('accepts a skills-only plugin that ships no package.json', () => {
+  const { root, plugin } = fixture();
+  fs.rmSync(path.join(root, plugin, 'package.json'));
+  expect(validate(root)).toEqual([]);
+});
 
+test('still checks package.json against the manifests when one is present', () => {
+  const { root } = fixture({ packageName: 'example-plugin', packageVersion: '9.9.9' });
+  const errors = validate(root);
+  expect(errors).toContain('example-plugin: package name example-plugin must be @claude-domestique/example-plugin');
+  expect(errors).toContain('example-plugin: package version 9.9.9 does not match 1.2.3');
+});
+
+test('reports missing required host manifest files', () => {
   const manifestFixture = fixture();
   fs.rmSync(path.join(
     manifestFixture.root,

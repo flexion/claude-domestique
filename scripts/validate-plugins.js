@@ -293,29 +293,32 @@ function validate(root = ROOT) {
     const claudeManifestPath = path.join(pluginRoot, '.claude-plugin', 'plugin.json');
     const codexManifestPath = path.join(pluginRoot, '.codex-plugin', 'plugin.json');
 
-    if (!fs.existsSync(packagePath)) {
-      errors.push(`${entry.name}: missing package.json`);
-      continue;
-    }
     if (!fs.existsSync(claudeManifestPath)) {
       errors.push(`${entry.name}: missing .claude-plugin/plugin.json`);
       continue;
     }
 
-    const packageJson = readJson(packagePath, errors, `${entry.name} package.json`);
+    // A skills-only plugin ships no JavaScript, so it has no dependencies to
+    // declare and no test script to run, and package.json would carry nothing
+    // the host manifests do not already state. Where one exists it is still the
+    // npm workspace entry, so it stays subject to every check below.
+    const hasPackage = fs.existsSync(packagePath);
+    const packageJson = hasPackage
+      ? readJson(packagePath, errors, `${entry.name} package.json`)
+      : null;
     const claudeManifest = readJson(claudeManifestPath, errors, `${entry.name} Claude manifest`);
-    if (!packageJson || !claudeManifest) continue;
+    if (!claudeManifest || (hasPackage && !packageJson)) continue;
 
-    const expectedPackageName = `@claude-domestique/${entry.name}`;
-    if (packageJson.name !== expectedPackageName) {
-      errors.push(`${entry.name}: package name ${String(packageJson.name)} must be ${expectedPackageName}`);
+    if (packageJson) {
+      const expectedPackageName = `@claude-domestique/${entry.name}`;
+      if (packageJson.name !== expectedPackageName) {
+        errors.push(`${entry.name}: package name ${String(packageJson.name)} must be ${expectedPackageName}`);
+      }
     }
 
-    const versions = [
-      ['marketplace', entry.version],
-      ['package', packageJson.version],
-      ['Claude manifest', claudeManifest.version],
-    ];
+    const versions = [['marketplace', entry.version]];
+    if (packageJson) versions.push(['package', packageJson.version]);
+    versions.push(['Claude manifest', claudeManifest.version]);
 
     if (!fs.existsSync(codexManifestPath)) {
       errors.push(`${entry.name}: missing .codex-plugin/plugin.json`);
