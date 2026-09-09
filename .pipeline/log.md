@@ -19,11 +19,25 @@ session cannot reach them. A zero here would be a false entry in the one column 
 "one model dominates spend" decision depends on, so it stays `?` until someone reads
 the dashboards for this window. `$ haiku` is `—` because no Haiku agent ran.
 
+That `?` is not a special case for this table. It is the same three-valued rule the
+rest of the repository already applies wherever a check might not have run:
+`scripts/probe-skill.js` exits `0` fired, `1` did not, `2` **could not run**
+(`AGENTS.md`), and `herd.js send` reports `observed | accepted | undeliverable`,
+where `accepted` means *unknown* and is documented as neither a success nor a
+failure. Collapsing "did not happen" and "was not measured" into one value is what
+each of those exists to prevent, and a spend column is the same shape: `0` says the
+model cost nothing, `?` says nobody looked. Fill it in rather than clearing it.
+
 **reviewer hits: 1.** The Sonnet reviewer, reading only the manifest and the diff,
 found that `package-lock.json` was modified and named nowhere in the manifest — an
 orchestrator omission in `shared_files`, not a Codex defect. Cross-lineage review
-earned its place on the first agent-driven run, though not against the diff it was
-aimed at.
+earned its place on the first agent-driven run, and earned it on the one file no
+partition could have flagged: an implementer only ever sees its own file list, so a
+file belonging to nobody is invisible from inside a partition and invisible to the
+orchestrator who forgot it. The table's `reviewer hits` column asks what a Sonnet
+reviewer found in a Codex diff; the honest answer for this row is that it found
+something in the orchestrator's own diff instead, which is a stronger reason to keep
+the stage than the one the column was written to measure.
 
 **red-gate fails: 0.** All 22 new tests failed on assertions that printed the value
 they got. The `settled` tests needed typed stubs in `fanin.js` to get there; without
