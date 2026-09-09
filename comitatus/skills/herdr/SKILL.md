@@ -18,7 +18,7 @@ herdr owns its own command surface: run `herdr <family> --help` (e.g. `herdr age
 1. **prefer native `herdr` verbs, addressed by handle.** `herdr agent prompt|read|get|wait <handle>` all resolve handles directly - no pane-id lookups, no JSON parsing. the helper exists only for what the natives don't cover.
 2. **call the herd.js helper by the absolute path from your orientation** (the `node /abs/.../herd.js ...` line). the path is stable across comitatus updates and `/herd-setup` allowlists it once; a path built any other way (variables, relative, or a guessed Codex cache path) fails the permission matcher or targets the wrong install. every helper verb is self-contained - it runs `herdr` itself; nothing is piped and stdin is never read.
 
-helper verbs: `status | members | wait | send | send-wait-read | seed | broadcast | sync | withdraw | agent | up | role | fanout | wait-all | state | fan-in | teardown`.
+helper verbs: `status | members | wait | send | send-wait-read | seed | broadcast | sync | withdraw | agent | up | role | fanout | wait-all | state | settled | fan-in | teardown`.
 
 `fan-in` and `teardown` are the two verbs `/herd-setup` does **not** pre-authorize, because they reach `git merge`, `git branch -D`, and `worktree remove --force`. Expect one permission prompt each; nothing is waiting on you at either step.
 
@@ -284,6 +284,14 @@ node HERD state --run my-task
 ```
 
 `phase` is one of `absent | started | partitioned | fanned-out | fanned-in | finished`. close every pane and come back tomorrow: `state` still answers, because the answer was never in a terminal.
+
+**check whether partitions have settled from refs.** an idle agent may still be between turns, so completion comes from commits rather than pane status:
+
+```bash
+node HERD settled --run my-task --partitions auth,ui
+```
+
+each row is `done` when its partition branch has a commit ahead of the task branch, `blocked` when that branch commits its own `BLOCKED-<partition>.md`, or `working` otherwise. a missing partition branch is reported as working; a missing task branch is an error.
 
 **merge in manifest order, from the task branch only.**
 

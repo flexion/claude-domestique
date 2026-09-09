@@ -46,7 +46,7 @@ const SAFE_ALLOW = Object.freeze([
 const HELPER_VERBS = Object.freeze([
   'status', 'members', 'wait', 'send', 'send-wait-read',
   'seed', 'broadcast', 'sync', 'withdraw', 'agent', 'up',
-  'role', 'fanout', 'wait-all', 'state',
+  'role', 'fanout', 'wait-all', 'state', 'settled',
 ]);
 
 // Dispatchable, deliberately NOT baked.

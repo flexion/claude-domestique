@@ -145,12 +145,52 @@ function derivePhase(facts) {
 // during a partition's own commit.
 // eslint-disable-next-line no-unused-vars
 function parseSettled(args) {
-  return { run: undefined, partitions: [] };
+  const out = { run: undefined, partitions: undefined };
+  for (let i = 0; i < args.length; i++) {
+    const flag = args[i];
+    const value = () => args[++i];
+    if (flag === '--run') out.run = value();
+    else if (flag === '--partitions') out.partitions = parsePartitions(value());
+    else throw new Error(`unknown flag: ${flag}`);
+  }
+  required(out.run, '--run');
+  if (!out.partitions) throw new Error('--partitions is required');
+  return out;
 }
 
 // eslint-disable-next-line no-unused-vars
 function settledCmd(args, deps) {
-  return [];
+  const cfg = parseSettled(args);
+  const taskBranch = `task/${cfg.run}`;
+  try {
+    deps.run('git', ['rev-parse', '--verify', '--quiet', taskBranch]);
+  } catch {
+    throw new Error(`task branch does not exist: ${taskBranch}`);
+  }
+
+  const runPath = `.pipeline/runs/${cfg.run}`;
+  return cfg.partitions.map((partition) => {
+    const branch = `${taskBranch}-${partition}`;
+    try {
+      deps.run('git', ['rev-parse', '--verify', '--quiet', branch]);
+    } catch {
+      return { partition, branch, status: 'working', commits: 0, reason: 'no branch' };
+    }
+
+    const commits = Number(String(
+      deps.run('git', ['rev-list', '--count', `${taskBranch}..${branch}`])).trim());
+    const branchFiles = lines(deps.run(
+      'git', ['ls-tree', '-r', '--name-only', branch, '--', runPath]));
+    const blocked = `BLOCKED-${partition}.md`;
+    const isBlocked = branchFiles.includes(`${runPath}/${blocked}`);
+    return {
+      partition,
+      branch,
+      status: isBlocked ? 'blocked' : commits > 0 ? 'done' : 'working',
+      commits,
+      blocked: isBlocked ? blocked : undefined,
+    };
+  });
 }
 
 // fan-in --run <id> --partitions a,b [--wait-handle arch] [--timeout ms] [--dry-run]
