@@ -56,6 +56,16 @@ function readFrontmatter(filePath, errors, label) {
   }
 }
 
+// Error labels are repository paths quoted back to a reader, and every other
+// label in this file is written with forward slashes - `hooks/hooks.json`,
+// `skills/<name>/SKILL.md`, `skill-catalog`. path.relative follows the host
+// separator, so on Windows the same error reads `skills\review\SKILL.md` and no
+// longer matches the path anyone would grep for. The separator is a property of
+// the filesystem API, not of the repository being described.
+function repoLabel(from, to) {
+  return path.relative(from, to).split(path.sep).join('/');
+}
+
 function markdownFiles(dirPath) {
   if (!fs.existsSync(dirPath)) return [];
   return fs.readdirSync(dirPath, { withFileTypes: true })
@@ -65,7 +75,7 @@ function markdownFiles(dirPath) {
 }
 
 function validatePromptFile(filePath, pluginRoot, errors) {
-  const label = path.relative(pluginRoot, filePath);
+  const label = repoLabel(pluginRoot, filePath);
   const frontmatter = readFrontmatter(filePath, errors, label);
   if (!frontmatter) return;
   if (typeof frontmatter.description !== 'string' || !frontmatter.description.trim()) {
@@ -82,14 +92,14 @@ function validateSkills(pluginRoot, errors) {
     if (entry.name.startsWith('.')) continue;
 
     if (entry.isFile() && entry.name.endsWith('.md')) {
-      const label = path.relative(pluginRoot, path.join(skillsRoot, entry.name));
+      const label = repoLabel(pluginRoot, path.join(skillsRoot, entry.name));
       errors.push(`${label}: flat skill files are unsupported; use skills/<name>/SKILL.md`);
       continue;
     }
     if (!entry.isDirectory()) continue;
 
     const skillPath = path.join(skillsRoot, entry.name, 'SKILL.md');
-    const label = path.relative(pluginRoot, skillPath);
+    const label = repoLabel(pluginRoot, skillPath);
 
     if (!KEBAB_CASE.test(entry.name)) {
       errors.push(`${label}: skill directory must be kebab-case`);
@@ -116,7 +126,7 @@ function validateSkills(pluginRoot, errors) {
 // POSIX reads the shebang; Windows reads the `.js` file association, and on a
 // stock Windows 11 that association is Windows Script Host. WSH cannot parse the
 // shebang, fails at line 1 character 1, and reports it in a dialog rather than on
-// stderr — so the host receives no output at all and eventually reports a timeout,
+// stderr - so the host receives no output at all and eventually reports a timeout,
 // which names neither the interpreter nor the file. Naming the interpreter in the
 // manifest is the part of this the repository controls, and it is invisible on the
 // hosts where the association happens to be correct, so only a check keeps it true.

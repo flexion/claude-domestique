@@ -565,3 +565,22 @@ test('reports a command hook with no command string', () => {
   });
   expect(validate(root)).toContain('hooks/hooks.json: SessionStart command must be a non-empty string');
 });
+
+// Error labels name repository paths, and the rest of this validator writes them
+// with forward slashes. path.relative follows the host separator, so before this
+// was normalized every nested-path error read `skills\review\SKILL.md` on
+// Windows - a string that matches nothing a reader would search for. The bug was
+// invisible until the suite ran on a Windows runner, which is the same reason
+// the hook-command bug survived: the repository only ever tested one separator.
+test('labels nested paths with forward slashes on every platform', () => {
+  const { plugin, root } = fixture();
+  write(root, `${plugin}/skills/legacy.md`, '# Legacy skill\n');
+  const errors = validate(root);
+
+  expect(errors).toContain(
+    'skills/legacy.md: flat skill files are unsupported; use skills/<name>/SKILL.md'
+  );
+  for (const error of errors) {
+    expect(error).not.toContain('\\');
+  }
+});
