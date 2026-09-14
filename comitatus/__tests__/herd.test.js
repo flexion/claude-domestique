@@ -632,9 +632,45 @@ describe('per-recipient send lock', () => {
 
   // A shared tmpdir root created by one user is unwritable by the next, which
   // would fail every send on an EACCES from mkdir.
-  test('the default lock root is per-uid, so one user cannot wedge another', () => {
-    expect(h.lockRoot({})).toBe(path.join(os.tmpdir(), `herd-send-locks-${process.getuid()}`));
+  test('the default lock root is per-user, so one user cannot wedge another', () => {
+    const root = h.lockRoot({});
+    expect(path.dirname(root)).toBe(os.tmpdir());
+    expect(path.basename(root)).toMatch(/^herd-send-locks-(?!shared$).+/);
     expect(h.lockRoot({ lockDir: '/given' })).toBe('/given'); // explicit root still wins
+  });
+
+  test('the Windows lock root stays per-user when process.getuid is unavailable', () => {
+    const windows = {
+      platform: 'win32',
+      path: path.win32,
+      tmpdir: () => 'C:\\Windows\\Temp',
+    };
+    const alice = h.lockRoot({
+      ...windows,
+      userInfo: () => ({ username: 'alice', homedir: 'C:\\Users\\alice' }),
+    });
+    const bob = h.lockRoot({
+      ...windows,
+      userInfo: () => ({ username: 'bob', homedir: 'C:\\Users\\bob' }),
+    });
+
+    expect(path.win32.dirname(alice)).toBe('C:\\Windows\\Temp');
+    expect(path.win32.basename(alice)).toMatch(/^herd-send-locks-/);
+    expect(alice).not.toBe(bob);
+  });
+
+  test('lock cleanup asks Node to retry transient Windows removal failures', () => {
+    let removal;
+    const fileSystem = {
+      rmSync: (dir, options) => { removal = { dir, options }; },
+    };
+
+    h.releaseLock('C:\\Temp\\herd-send-locks-user\\jay.lock', { fs: fileSystem });
+
+    expect(removal).toEqual({
+      dir: 'C:\\Temp\\herd-send-locks-user\\jay.lock',
+      options: { recursive: true, force: true, maxRetries: 5, retryDelay: 100 },
+    });
   });
 
   test('holderAlive: this process is alive, an unallocated pid is not', () => {
@@ -645,9 +681,9 @@ describe('per-recipient send lock', () => {
 
   test('a handle that would escape the lock directory is hashed, not interpolated', () => {
     const root = '/tmp/locks';
-    expect(h.lockPath(root, '../../etc/passwd').startsWith(`${root}/`)).toBe(true);
+    expect(path.dirname(h.lockPath(root, '../../etc/passwd'))).toBe(path.normalize(root));
     expect(h.lockPath(root, '../../etc/passwd')).not.toMatch(/\.\./);
-    expect(h.lockPath(root, 'jay')).toBe('/tmp/locks/jay.lock');
+    expect(h.lockPath(root, 'jay')).toBe(path.join(root, 'jay.lock'));
   });
 });
 
@@ -670,6 +706,18 @@ describe('seed', () => {
     expect(line).toMatch(/working lead: jay/);
     expect(line).toMatch(/node \/abs\/herd\.js send <handle>/);
     expect(line).toMatch(/YOUR TASK: fix the parser/);
+  });
+
+  test('it quotes a Windows helper path as one native-command argument', () => {
+    const line = h.seedLine({
+      ...LINE,
+      platform: 'win32',
+      helper: 'C:\\Users\\Jay Doe\\.codex\\plugins\\comitatus\\herd.js',
+    });
+
+    expect(line).toContain(
+      'node "C:\\Users\\Jay Doe\\.codex\\plugins\\comitatus\\herd.js" send <handle> "<body>" --reply'
+    );
   });
 
   test('it tells a self-leading agent that it drives the work', () => {
@@ -755,7 +803,8 @@ describe('seed', () => {
       fs.mkdirSync(dir, { recursive: true });
       fs.writeFileSync(path.join(dir, 'herd.js'), '');
     }
-    expect(h.codexHelper(home)).toMatch(/comitatus\/0\.10\.0\/skills\/herdr\/scripts\/herd\.js$/);
+    expect(h.codexHelper(home)).toBe(path.join(home, '.codex', 'plugins', 'cache',
+      'claude-domestique', 'comitatus', '0.10.0', 'skills', 'herdr', 'scripts', 'herd.js'));
   });
 
   test('no codex install at all resolves to nothing rather than a fabricated path', () => {

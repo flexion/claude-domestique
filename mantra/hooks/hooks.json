@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/behavior.js",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/behavior.js\"",
             "timeout": 3
           }
         ]
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/behavior.js",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/behavior.js\"",
             "timeout": 3
           }
         ]

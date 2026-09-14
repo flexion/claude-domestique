@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/session-startup.js",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/session-startup.js\"",
             "timeout": 5
           }
         ]
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/session-startup.js",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/session-startup.js\"",
             "timeout": 5
           }
         ]
@@ -29,7 +29,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/checkpoint.js",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/checkpoint.js\"",
             "timeout": 5
           }
         ]
@@ -41,7 +41,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/checkpoint.js",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/checkpoint.js\"",
             "timeout": 5
           }
         ]

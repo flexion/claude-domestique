@@ -63,3 +63,42 @@ jobs:
             plugin=${manifest%%/*}
             npx --yes @openai/codex@0.147.0 plugin add "${plugin}@${marketplace}"
           done
+
+  # The bug this guards against is invisible on Linux. A hook command that names
+  # no interpreter runs fine here — the shebang and the executable bit are enough
+  # — and is dispatched through the `.js` file association on Windows, which is
+  # Windows Script Host by default. WSH fails on the shebang and reports it in a
+  # dialog, so the host reads no output and times out. Linux cannot reproduce
+  # that, so the invocation suite has to actually run on Windows to mean anything.
+  #
+  # Scoped to the two suites that exercise hook startup. The rest of the chain,
+  # the plugin schema checks, and the Codex smoke test assume a POSIX shell and
+  # are already covered by the job above.
+  hooks-windows:
+    runs-on: windows-latest
+
+    strategy:
+      matrix:
+        node-version: [24]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies
+        run: npm run install:all
+
+      - name: Run each hook registration through the Windows command path
+        run: npx jest scripts/__tests__/hook-invocation.test.js scripts/__tests__/validate-plugins.test.js --runInBand
+
+      # The herdr helper is the other half of the same class of defect: a seed
+      # path that only quotes correctly on POSIX, a lock root that falls back to
+      # a shared directory wherever getuid is absent — which is every Windows
+      # user — and a cleanup that asks for no retries on an OS that raises
+      # transient EPERM. None of it fails on Linux, so Linux cannot hold it.
+      - name: Run the herdr helper suite on Windows
+        run: npx jest comitatus/__tests__/herd.test.js --runInBand
