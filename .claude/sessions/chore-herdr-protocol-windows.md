@@ -31,6 +31,7 @@ herdr skill docs.
 - 2026-09-14: Tim's review found operational explanations lost while converting POSIX-flavored command blocks to neutral text. Restored every removed command comment as adjacent prose and reran the full repository suite, metadata validation, and `git diff --check` successfully.
 - 2026-09-14: Tim's second review passed. Replaced the two newly introduced em dashes with the files' established spaced-hyphen style; metadata validation and `git diff --check` still pass.
 - 2026-09-14: Tim integrated both partitions and independently passed the full branch gate: 624 tests, plugin metadata validation, strict Claude validation for all four affected plugins, isolated Codex installation for all seven manifests, syntax checks, `git diff --check`, and the style check. Branch work is complete but remains uncommitted pending operator approval.
+- 2026-09-14: PR #179's Windows job exposed one ambient-platform test fixture: the POSIX seed-path assertion inherited `process.platform` and expected an unquoted path on Windows. Reproduced by forcing `process.platform=win32`, pinned the shared POSIX fixture to `linux`, retained the explicit `win32` quoted-path case, and swept the rest of `herd.test.js` for ambient platform/separator assumptions. Fresh local gate passes with 625 tests.
 
 ## Files Changed
 
@@ -60,6 +61,5 @@ putting arbitrary protocol message bodies through `cmd.exe` parsing.
 
 ## Residual risk
 
-Every check run on this branch ran on macOS. The `hooks-windows` CI job is the
-only thing that exercises the actual Windows failure paths for either partition,
-and it cannot run until this branch is a pull request.
+The production Windows paths have run in PR #179's Windows job. The deterministic
+fixture correction still needs that job to rerun after the follow-up commit is pushed.

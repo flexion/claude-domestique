@@ -692,7 +692,7 @@ describe('per-recipient send lock', () => {
 describe('seed', () => {
   const LINE = {
     handle: 'pip', roster: ['pip', 'jay'], lead: 'jay',
-    cwd: '/wt/x', helper: '/abs/herd.js', brief: 'fix the parser',
+    platform: 'linux', cwd: '/wt/x', helper: '/abs/herd.js', brief: 'fix the parser',
   };
 
   test('the seed is one line - a newline would submit the turn early', () => {
