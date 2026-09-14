@@ -109,14 +109,34 @@ function resolveSelf(data, override, env = process.env) {
 const LOCK_WAIT_MS = 20000;
 const LOCK_POLL_MS = 100;
 
-// Per-uid, because a shared tmpdir root created by one user is unwritable by
-// the next: a herd would fail every send on an EACCES from mkdir. Senders that
-// must exclude each other are the same user's agents, so per-uid still covers
-// every pair that can address one recipient.
+// Per-user, because a shared tmpdir root created by one user is unwritable by
+// the next: a herd would fail every send on an EACCES from mkdir. POSIX gives
+// us a uid; Windows does not, so hash its username + home rather than exposing
+// either in the temp-directory name. Senders that must exclude each other are
+// the same user's agents, so this still covers every relevant pair.
 function lockRoot(deps) {
   if (deps && deps.lockDir) return deps.lockDir;
-  const uid = typeof process.getuid === 'function' ? process.getuid() : 'shared';
-  return path.join(os.tmpdir(), `herd-send-locks-${uid}`);
+  deps = deps || {};
+  const platform = deps.platform || process.platform;
+  const pathImpl = deps.path || path;
+  const tmpdir = (deps.tmpdir || os.tmpdir)();
+  let identity;
+  if (platform !== 'win32' && typeof process.getuid === 'function') {
+    identity = String(process.getuid());
+  } else {
+    try {
+      const info = (deps.userInfo || os.userInfo)();
+      identity = crypto.createHash('sha1')
+        .update(`${info.username || ''}\0${info.homedir || ''}`)
+        .digest('hex')
+        .slice(0, 16);
+    } catch {
+      // os.tmpdir() is normally user-scoped on Windows. Keep a usable fallback
+      // for stripped-down environments where os.userInfo() cannot resolve.
+      identity = 'shared';
+    }
+  }
+  return pathImpl.join(tmpdir, `herd-send-locks-${identity}`);
 }
 
 // A handle reaches us from argv, so it can be any string. Keep readable names
@@ -148,9 +168,12 @@ function readHolder(dir) {
   }
 }
 
-function releaseLock(dir) {
+function releaseLock(dir, deps) {
   try {
-    fs.rmSync(dir, { recursive: true, force: true });
+    const fileSystem = (deps && deps.fs) || fs;
+    // Windows can report EBUSY/EPERM briefly while handles or virus scanners
+    // release a directory. Recursive rm only retries when maxRetries is set.
+    fileSystem.rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   } catch { /* the lock is advisory; a failed cleanup must not fail the send */ }
 }
 
@@ -178,7 +201,7 @@ function acquireLock(handle, deps, timeoutMs = LOCK_WAIT_MS) {
       if (e.code !== 'EEXIST') throw e;
       const holder = readHolder(dir);
       if (holder && !holderAlive(holder.pid)) {
-        releaseLock(dir); // the holder is provably gone — reclaim, then retry
+        releaseLock(dir, deps); // the holder is provably gone — reclaim, then retry
         if (!fs.existsSync(dir)) continue;
       }
       if (now() >= deadline || waited >= timeoutMs) return undefined;
@@ -368,7 +391,7 @@ function sendCmd(args, deps) {
       out = { ...out, delivery: 'observed', evidence: 'echo', reason: undefined };
     }
   } finally {
-    releaseLock(lock);
+    releaseLock(lock, deps);
   }
 
   return {
@@ -450,6 +473,22 @@ function helperFor(kind, override, self = __filename, home = os.homedir()) {
   return self;
 }
 
+// seedLine crosses from argv-safe Node code into prose that an agent will run
+// through its shell. A Windows helper path commonly contains spaces; cmd.exe
+// and PowerShell both keep a double-quoted path as one native-command argument.
+// POSIX keeps its existing readable form for ordinary paths and single-quotes
+// only paths that need protection.
+function shellPath(value, platform = process.platform) {
+  const text = String(value);
+  if (/[\r\n]/.test(text)) throw new Error('helper path must be one line');
+  if (platform === 'win32') {
+    if (text.includes('"')) throw new Error('Windows helper path cannot contain a double quote');
+    return `"${text}"`;
+  }
+  if (/^[A-Za-z0-9_@%+=:,./-]+$/.test(text)) return text;
+  return `'${text.replace(/'/g, `'"'"'`)}'`;
+}
+
 // A cold agent knows neither the protocol nor its own handle. This composes
 // the whole orientation as ONE line (a newline submits the turn early), so
 // seeding is a repeatable command rather than prose retyped per herd.
@@ -459,7 +498,7 @@ function seedLine(cfg) {
     `you are ${cfg.handle}, a member of a herd working on ${cfg.cwd}`,
     `roster: ${cfg.roster.join(', ')} (your teammates: ${peers.join(', ') || 'none yet'})`,
     `working lead: ${cfg.lead}${cfg.lead === cfg.handle ? ' (that is you - you drive the work)' : ''}`,
-    `PROTOCOL: message a teammate with exactly ONE line by RUNNING this as a real shell command, never printing it: node ${cfg.helper} send <handle> "<body>" --reply (use --fyi instead when no reply is wanted)`,
+    `PROTOCOL: message a teammate with exactly ONE line by RUNNING this as a real shell command, never printing it: node ${shellPath(cfg.helper, cfg.platform)} send <handle> "<body>" --reply (use --fyi instead when no reply is wanted)`,
     'an incoming "[from X reply]" needs a one-line answer back to X; "[from X fyi]" needs no answer and no ack; "[herd +H]" and "[herd -H]" are roster updates you apply idempotently without replying or rebroadcasting',
     'a "#id" in the header is a delivery id - ignore it, except that the same id arriving twice is a duplicate to ignore',
     'keep every message to one line because a newline submits the turn',
@@ -841,6 +880,7 @@ module.exports = {
   seedCmd,
   codexHelper,
   helperFor,
+  shellPath,
   broadcastCmd,
   syncCmd,
   announce,

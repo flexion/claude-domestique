@@ -1,6 +1,6 @@
 {
   "name": "@claude-domestique/memento",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Branch-based session persistence for Claude Code and Codex",
   "main": "index.js",
   "scripts": {

@@ -56,6 +56,16 @@ function readFrontmatter(filePath, errors, label) {
   }
 }
 
+// Error labels are repository paths quoted back to a reader, and every other
+// label in this file is written with forward slashes - `hooks/hooks.json`,
+// `skills/<name>/SKILL.md`, `skill-catalog`. path.relative follows the host
+// separator, so on Windows the same error reads `skills\review\SKILL.md` and no
+// longer matches the path anyone would grep for. The separator is a property of
+// the filesystem API, not of the repository being described.
+function repoLabel(from, to) {
+  return path.relative(from, to).split(path.sep).join('/');
+}
+
 function markdownFiles(dirPath) {
   if (!fs.existsSync(dirPath)) return [];
   return fs.readdirSync(dirPath, { withFileTypes: true })
@@ -65,7 +75,7 @@ function markdownFiles(dirPath) {
 }
 
 function validatePromptFile(filePath, pluginRoot, errors) {
-  const label = path.relative(pluginRoot, filePath);
+  const label = repoLabel(pluginRoot, filePath);
   const frontmatter = readFrontmatter(filePath, errors, label);
   if (!frontmatter) return;
   if (typeof frontmatter.description !== 'string' || !frontmatter.description.trim()) {
@@ -82,14 +92,14 @@ function validateSkills(pluginRoot, errors) {
     if (entry.name.startsWith('.')) continue;
 
     if (entry.isFile() && entry.name.endsWith('.md')) {
-      const label = path.relative(pluginRoot, path.join(skillsRoot, entry.name));
+      const label = repoLabel(pluginRoot, path.join(skillsRoot, entry.name));
       errors.push(`${label}: flat skill files are unsupported; use skills/<name>/SKILL.md`);
       continue;
     }
     if (!entry.isDirectory()) continue;
 
     const skillPath = path.join(skillsRoot, entry.name, 'SKILL.md');
-    const label = path.relative(pluginRoot, skillPath);
+    const label = repoLabel(pluginRoot, skillPath);
 
     if (!KEBAB_CASE.test(entry.name)) {
       errors.push(`${label}: skill directory must be kebab-case`);
@@ -108,6 +118,64 @@ function validateSkills(pluginRoot, errors) {
     }
     if (typeof frontmatter.description !== 'string' || !frontmatter.description.trim()) {
       errors.push(`${label}: frontmatter description must be a non-empty string`);
+    }
+  }
+}
+
+// A hook command is handed to the operating system, which decides what runs it.
+// POSIX reads the shebang; Windows reads the `.js` file association, and on a
+// stock Windows 11 that association is Windows Script Host. WSH cannot parse the
+// shebang, fails at line 1 character 1, and reports it in a dialog rather than on
+// stderr - so the host receives no output at all and eventually reports a timeout,
+// which names neither the interpreter nor the file. Naming the interpreter in the
+// manifest is the part of this the repository controls, and it is invisible on the
+// hosts where the association happens to be correct, so only a check keeps it true.
+const BARE_JS_COMMAND = /^(?:"[^"]*\.js"|'[^']*\.js'|[^\s"']*\.js)$/;
+
+function validateHookCommand(label, event, hook, errors) {
+  if (!hook || typeof hook !== 'object' || hook.type !== 'command') return;
+
+  if (typeof hook.command !== 'string' || !hook.command.trim()) {
+    errors.push(`${label}: ${event} command must be a non-empty string`);
+    return;
+  }
+
+  const command = hook.command.trim();
+  if (BARE_JS_COMMAND.test(command)) {
+    errors.push(
+      `${label}: ${event} command ${command} must name its interpreter; ` +
+      'a bare .js path runs under the Windows file association'
+    );
+  }
+}
+
+function validateHookCommands(pluginRoot, errors) {
+  const manifestPath = path.join(pluginRoot, 'hooks', 'hooks.json');
+  if (!fs.existsSync(manifestPath)) return;
+
+  const label = 'hooks/hooks.json';
+  const manifest = readJson(manifestPath, errors, label);
+  if (!manifest) return;
+
+  const events = manifest.hooks;
+  if (!events || typeof events !== 'object' || Array.isArray(events)) {
+    errors.push(`${label}: hooks must be an object keyed by event name`);
+    return;
+  }
+
+  for (const [event, matchers] of Object.entries(events)) {
+    if (!Array.isArray(matchers)) {
+      errors.push(`${label}: ${event} must be an array`);
+      continue;
+    }
+    for (const matcher of matchers) {
+      if (!matcher || typeof matcher !== 'object' || !Array.isArray(matcher.hooks)) {
+        errors.push(`${label}: ${event} entry must declare a hooks array`);
+        continue;
+      }
+      for (const hook of matcher.hooks) {
+        validateHookCommand(label, event, hook, errors);
+      }
     }
   }
 }
@@ -347,6 +415,7 @@ function validate(root = ROOT) {
 
     validateSkills(pluginRoot, errors);
     validatePromptFrontmatter(pluginRoot, errors);
+    validateHookCommands(pluginRoot, errors);
   }
 
   validateSkillCatalog(root, marketplace.plugins, errors);

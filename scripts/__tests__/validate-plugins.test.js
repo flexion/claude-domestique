@@ -504,3 +504,83 @@ test.each([
     'example-plugin: marketplace source must be ./example-plugin'
   );
 });
+
+// Windows resolves a bare `.js` command through the file association rather than
+// the shebang. Where that association is Windows Script Host — the default on a
+// stock Windows 11 — the hook dies on the shebang's `#` before it reads stdin,
+// and the host sees a timeout rather than an error. Naming the interpreter in
+// the manifest is the only part of this the repository controls.
+function writeHooks(root, plugin, command) {
+  writeJson(root, `${plugin}/hooks/hooks.json`, {
+    hooks: {
+      SessionStart: [{ hooks: [{ type: 'command', command, timeout: 5 }] }],
+    },
+  });
+}
+
+test('accepts a hook command that names node explicitly', () => {
+  const { plugin, root } = fixture();
+  writeHooks(root, plugin, 'node "${CLAUDE_PLUGIN_ROOT}/hooks/behavior.js"');
+  expect(validate(root)).toEqual([]);
+});
+
+test.each([
+  '${CLAUDE_PLUGIN_ROOT}/hooks/behavior.js',
+  '"${CLAUDE_PLUGIN_ROOT}/hooks/behavior.js"',
+  '  ${CLAUDE_PLUGIN_ROOT}/hooks/behavior.js  ',
+])('rejects a bare .js hook command: %s', command => {
+  const { plugin, root } = fixture();
+  writeHooks(root, plugin, command);
+  expect(validate(root)).toContain(
+    `hooks/hooks.json: SessionStart command ${command.trim()} must name its interpreter; ` +
+    'a bare .js path runs under the Windows file association'
+  );
+});
+
+test('leaves non-command and non-JavaScript hook entries alone', () => {
+  const { plugin, root } = fixture();
+  writeJson(root, `${plugin}/hooks/hooks.json`, {
+    hooks: {
+      SessionStart: [{
+        hooks: [
+          { type: 'command', command: '${CLAUDE_PLUGIN_ROOT}/hooks/orient.sh' },
+          { type: 'prompt', prompt: 'remember the branch' },
+        ],
+      }],
+    },
+  });
+  expect(validate(root)).toEqual([]);
+});
+
+test('reports a hooks manifest whose shape it cannot check', () => {
+  const { plugin, root } = fixture();
+  writeJson(root, `${plugin}/hooks/hooks.json`, { hooks: { SessionStart: {} } });
+  expect(validate(root)).toContain('hooks/hooks.json: SessionStart must be an array');
+});
+
+test('reports a command hook with no command string', () => {
+  const { plugin, root } = fixture();
+  writeJson(root, `${plugin}/hooks/hooks.json`, {
+    hooks: { SessionStart: [{ hooks: [{ type: 'command', timeout: 5 }] }] },
+  });
+  expect(validate(root)).toContain('hooks/hooks.json: SessionStart command must be a non-empty string');
+});
+
+// Error labels name repository paths, and the rest of this validator writes them
+// with forward slashes. path.relative follows the host separator, so before this
+// was normalized every nested-path error read `skills\review\SKILL.md` on
+// Windows - a string that matches nothing a reader would search for. The bug was
+// invisible until the suite ran on a Windows runner, which is the same reason
+// the hook-command bug survived: the repository only ever tested one separator.
+test('labels nested paths with forward slashes on every platform', () => {
+  const { plugin, root } = fixture();
+  write(root, `${plugin}/skills/legacy.md`, '# Legacy skill\n');
+  const errors = validate(root);
+
+  expect(errors).toContain(
+    'skills/legacy.md: flat skill files are unsupported; use skills/<name>/SKILL.md'
+  );
+  for (const error of errors) {
+    expect(error).not.toContain('\\');
+  }
+});
