@@ -7,6 +7,8 @@
 
 const path = require('node:path');
 const http = require('node:http');
+const fs = require('node:fs');
+const os = require('node:os');
 const readline = require('node:readline');
 const { once } = require('node:events');
 const { spawn, spawnSync } = require('node:child_process');
@@ -168,6 +170,23 @@ describe('tool surface', () => {
     }
   });
 
+  test('draft tool schemas require complete telemetry', () => {
+    const gen = tools().find((t) => t.name === 'ollama_generate');
+    const refine = tools().find((t) => t.name === 'ollama_refine');
+    const telemetry = gen.outputSchema.properties.telemetry;
+    expect(gen.outputSchema.required).toContain('telemetry');
+    expect(refine.outputSchema.required).toContain('telemetry');
+    expect(telemetry.required).toEqual([
+      'call', 'round', 'done_reason', 'timing_ms', 'input_tokens_estimate',
+    ]);
+    expect(telemetry.properties.timing_ms.required).toEqual([
+      'wall', 'ollama_total', 'model_load', 'prompt_eval', 'generation',
+    ]);
+    expect(telemetry.properties.input_tokens_estimate.required).toEqual([
+      'spec', 'inline_context', 'files', 'history', 'diagnosis', 'total',
+    ]);
+  });
+
   test('refine requires a session, which only generate can mint', () => {
     const refine = tools().find((t) => t.name === 'ollama_refine');
     expect(refine.inputSchema.required).toEqual(expect.arrayContaining(['session', 'diagnosis']));
@@ -191,6 +210,119 @@ describe('tool surface', () => {
 });
 
 describe('Ollama contract', () => {
+  test('generation and refinement return telemetry for their rendered inputs', async () => {
+    const generateReply = {
+      message: { role: 'assistant', content: '```js\nmodule.exports = 1;\n```' },
+      done_reason: 'stop',
+      total_duration: 9000000,
+      load_duration: 2000000,
+      prompt_eval_duration: 3000000,
+      eval_duration: 4000000,
+      prompt_eval_count: 7,
+      eval_count: 5,
+    };
+    const refineReply = {
+      message: { role: 'assistant', content: '```js\nmodule.exports = 2;\n```' },
+      done_reason: 'stop',
+      prompt_eval_count: 12,
+      eval_count: 5,
+    };
+    const contextDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vernaculus-'));
+    const contextFile = path.join(contextDir, 'context.js');
+    fs.writeFileSync(contextFile, 'const retainedContext = true;\n');
+    const fake = await startFakeOllama([generateReply, refineReply]);
+    const client = startRpc({ OLLAMA_HOST: fake.url });
+    try {
+      await client.call('initialize', INIT.params);
+      const response = await client.call('tools/call', {
+        name: 'ollama_generate',
+        arguments: {
+          spec: 'Return one CommonJS assignment.',
+          inline_context: 'Use CommonJS.',
+          files: [contextFile],
+          model: 'qwen3-coder:30b',
+        },
+      });
+      const generated = response.result.structuredContent;
+      expect(generated.telemetry).toMatchObject({
+        call: 'generate',
+        round: 0,
+        done_reason: 'stop',
+        timing_ms: {
+          ollama_total: 9,
+          model_load: 2,
+          prompt_eval: 3,
+          generation: 4,
+        },
+      });
+      expect(typeof generated.telemetry.timing_ms.wall).toBe('number');
+      expect(generated.telemetry.input_tokens_estimate.total).toBe(
+        Object.entries(generated.telemetry.input_tokens_estimate)
+          .filter(([name]) => name !== 'total')
+          .reduce((sum, [, value]) => sum + value, 0),
+      );
+      expect(generated.telemetry.input_tokens_estimate).toMatchObject({
+        history: 0,
+        diagnosis: 0,
+      });
+      for (const component of ['spec', 'inline_context', 'files']) {
+        expect(generated.telemetry.input_tokens_estimate[component]).toBeGreaterThan(0);
+      }
+
+      const refinement = await client.call('tools/call', {
+        name: 'ollama_refine',
+        arguments: {
+          session: generated.session,
+          diagnosis: 'The assignment needs the next value.',
+          files: [contextFile],
+        },
+      });
+      const refined = refinement.result.structuredContent;
+      expect(refined.telemetry).toMatchObject({
+        call: 'refine',
+        round: 1,
+        done_reason: 'stop',
+        timing_ms: {
+          ollama_total: null,
+          model_load: null,
+          prompt_eval: null,
+          generation: null,
+        },
+        input_tokens_estimate: {
+          spec: 0,
+          inline_context: 0,
+        },
+      });
+      for (const component of ['history', 'diagnosis', 'files']) {
+        expect(refined.telemetry.input_tokens_estimate[component]).toBeGreaterThan(0);
+      }
+    } finally {
+      await client.close();
+      await fake.close();
+      fs.rmSync(contextDir, { recursive: true, force: true });
+    }
+  });
+
+  test.each([
+    ['empty', { message: { role: 'assistant', content: '' }, done_reason: 'stop' }, 'empty', true],
+    ['truncated', { message: { role: 'assistant', content: 'partial reply' }, done_reason: 'length' }, 'truncated', true],
+  ])('generation retains %s success shape with telemetry', async (_name, reply, field, expected) => {
+    const fake = await startFakeOllama([reply]);
+    const client = startRpc({ OLLAMA_HOST: fake.url });
+    try {
+      await client.call('initialize', INIT.params);
+      const response = await client.call('tools/call', {
+        name: 'ollama_generate', arguments: { spec: 'Return one assignment.', model: 'qwen3-coder:30b' },
+      });
+      const generated = response.result.structuredContent;
+      expect(generated[field]).toBe(expected);
+      expect(generated.telemetry).toMatchObject({ call: 'generate', round: 0, done_reason: reply.done_reason });
+    } finally {
+      await client.close();
+      await fake.close();
+    }
+  });
+
   test('generation sends the established Ollama request unchanged', async () => {
     const fake = await startFakeOllama([{
       message: { role: 'assistant', content: '```js\nmodule.exports = 1;\n```' },

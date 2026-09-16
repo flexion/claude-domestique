@@ -67,6 +67,21 @@ const MAX_TURNS = 12;
 // number is prompt_eval_count, which every response now carries.
 const estimateTokens = (s) => Math.ceil(s.length / 3.6);
 
+function nsToMs(value) {
+  return typeof value === 'number' ? value / 1e6 : null;
+}
+
+function estimateInput(parts = {}) {
+  const values = {
+    spec: estimateTokens(parts.spec || ''),
+    inline_context: estimateTokens(parts.inlineContext || ''),
+    files: estimateTokens(parts.files || ''),
+    history: estimateTokens(parts.history || ''),
+    diagnosis: estimateTokens(parts.diagnosis || ''),
+  };
+  return { ...values, total: Object.values(values).reduce((sum, value) => sum + value, 0) };
+}
+
 function send(msg) {
   process.stdout.write(JSON.stringify(msg) + '\n');
 }
@@ -209,9 +224,11 @@ function newSessionId() {
   return `s${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 }
 
-function rememberSession(id, model, messages, digest) {
+function rememberSession(id, model, messages, digest, round) {
   if (SESSIONS.size >= MAX_SESSIONS) SESSIONS.delete(SESSIONS.keys().next().value);
-  SESSIONS.set(id, { model, digest, messages: messages.slice(-MAX_TURNS * 2), at: Date.now() });
+  SESSIONS.set(id, {
+    model, digest, messages: messages.slice(-MAX_TURNS * 2), round, at: Date.now(),
+  });
 }
 
 async function generate({ messages, model, numCtx, numPredict, digest }) {
@@ -234,6 +251,12 @@ async function generate({ messages, model, numCtx, numPredict, digest }) {
     promptTokens: data.prompt_eval_count,
     evalTokens: data.eval_count,
     doneReason: data.done_reason,
+    timingMs: {
+      ollama_total: nsToMs(data.total_duration),
+      model_load: nsToMs(data.load_duration),
+      prompt_eval: nsToMs(data.prompt_eval_duration),
+      generation: nsToMs(data.eval_duration),
+    },
   };
 }
 
@@ -248,7 +271,9 @@ function extractCode(text) {
   return fences.sort((a, b) => b.length - a.length)[0];
 }
 
-function renderResult({ model, result, sessionId, manifest, numCtx, numPredict }) {
+function renderResult({
+  model, result, sessionId, manifest, numCtx, numPredict, call, round, wallStarted, inputEstimate,
+}) {
   const head = [
     `[unverified draft from ${model}, ${result.secs.toFixed(1)}s - review and test before use]`,
     `session: ${sessionId}   (pass this to ollama_refine with a diagnosis if the draft is wrong)`,
@@ -279,6 +304,16 @@ function renderResult({ model, result, sessionId, manifest, numCtx, numPredict }
     verified: false,
     context_files: manifest || [],
     budget: { num_ctx: numCtx, num_predict: numPredict, input_budget: numCtx - numPredict - 1 },
+    telemetry: {
+      call,
+      round,
+      done_reason: result.doneReason ?? null,
+      timing_ms: {
+        wall: Date.now() - wallStarted,
+        ...result.timingMs,
+      },
+      input_tokens_estimate: inputEstimate,
+    },
   };
 
   if (structured.empty) {
@@ -327,8 +362,40 @@ const DRAFT_OUTPUT_SCHEMA = {
       },
       required: ['num_ctx', 'num_predict', 'input_budget'],
     },
+    telemetry: {
+      type: 'object',
+      properties: {
+        call: { type: 'string', enum: ['generate', 'refine'] },
+        round: { type: 'integer', minimum: 0 },
+        done_reason: { type: ['string', 'null'] },
+        timing_ms: {
+          type: 'object',
+          properties: {
+            wall: { type: 'number', minimum: 0 },
+            ollama_total: { type: ['number', 'null'], minimum: 0 },
+            model_load: { type: ['number', 'null'], minimum: 0 },
+            prompt_eval: { type: ['number', 'null'], minimum: 0 },
+            generation: { type: ['number', 'null'], minimum: 0 },
+          },
+          required: ['wall', 'ollama_total', 'model_load', 'prompt_eval', 'generation'],
+        },
+        input_tokens_estimate: {
+          type: 'object',
+          properties: {
+            spec: { type: 'integer', minimum: 0 },
+            inline_context: { type: 'integer', minimum: 0 },
+            files: { type: 'integer', minimum: 0 },
+            history: { type: 'integer', minimum: 0 },
+            diagnosis: { type: 'integer', minimum: 0 },
+            total: { type: 'integer', minimum: 0 },
+          },
+          required: ['spec', 'inline_context', 'files', 'history', 'diagnosis', 'total'],
+        },
+      },
+      required: ['call', 'round', 'done_reason', 'timing_ms', 'input_tokens_estimate'],
+    },
   },
-  required: ['code', 'text', 'session', 'model', 'seconds', 'truncated', 'empty', 'verified', 'context_files', 'budget'],
+  required: ['code', 'text', 'session', 'model', 'seconds', 'truncated', 'empty', 'verified', 'context_files', 'budget', 'telemetry'],
 };
 
 const TOOLS = [
@@ -469,6 +536,7 @@ async function callTool(name, args) {
   }
 
   if (name === 'ollama_generate') {
+    const wallStarted = Date.now();
     const models = await inventory();
     const model = await resolveModel(args.model, models);
     const numCtx = Number(args.num_ctx || DEFAULT_NUM_CTX);
@@ -478,8 +546,9 @@ async function callTool(name, args) {
       ? readFiles(args.files)
       : { text: '', manifest: [] };
 
+    const inlineContext = args.inline_context ? `Context:\n${args.inline_context}` : '';
     const prompt = [
-      args.inline_context ? `Context:\n${args.inline_context}` : '',
+      inlineContext,
       fileText,
       args.spec,
     ].filter(Boolean).join('\n\n');
@@ -503,11 +572,16 @@ async function callTool(name, args) {
     const digest = (models.find((m) => m.name === model) || {}).digest;
     const result = await generate({ messages, model, numCtx, numPredict, digest });
     const sessionId = newSessionId();
-    rememberSession(sessionId, model, [...messages, { role: 'assistant', content: result.text }], digest);
-    return renderResult({ model, result, sessionId, manifest, numCtx, numPredict });
+    const round = 0;
+    rememberSession(sessionId, model, [...messages, { role: 'assistant', content: result.text }], digest, round);
+    return renderResult({
+      model, result, sessionId, manifest, numCtx, numPredict, call: 'generate', round, wallStarted,
+      inputEstimate: estimateInput({ spec: args.spec, inlineContext, files: fileText }),
+    });
   }
 
   if (name === 'ollama_refine') {
+    const wallStarted = Date.now();
     const session = SESSIONS.get(args.session);
     if (!session) {
       const known = [...SESSIONS.keys()];
@@ -525,13 +599,21 @@ async function callTool(name, args) {
       role: 'user',
       content: [fileText, args.diagnosis].filter(Boolean).join('\n\n'),
     }];
+    const round = session.round + 1;
     const result = await generate({
       messages, model: session.model, numCtx: DEFAULT_NUM_CTX, numPredict, digest: session.digest,
     });
-    rememberSession(args.session, session.model, [...messages, { role: 'assistant', content: result.text }], session.digest);
+    rememberSession(
+      args.session, session.model, [...messages, { role: 'assistant', content: result.text }], session.digest, round,
+    );
     return renderResult({
       model: session.model, result, sessionId: args.session, manifest,
-      numCtx: DEFAULT_NUM_CTX, numPredict,
+      numCtx: DEFAULT_NUM_CTX, numPredict, call: 'refine', round, wallStarted,
+      inputEstimate: estimateInput({
+        history: session.messages.map((message) => message.content).join('\n\n'),
+        files: fileText,
+        diagnosis: args.diagnosis,
+      }),
     });
   }
 

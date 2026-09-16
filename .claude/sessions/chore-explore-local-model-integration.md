@@ -81,6 +81,10 @@ correctness through independent verification.
   successful generation request payload and text-only execution-error shape.
   `cd vernaculus && npm test -- --runInBand` passed 21 tests without a real
   Ollama request for either new contract test.
+- 2026-09-16: Added structured generation/refinement telemetry: exact schema,
+  nanosecond-to-millisecond phase conversion, input-component estimates, and
+  persisted refinement rounds. The focused fake-daemon suite passed 25 tests;
+  frozen payload and text-only HTTP-500 behavior remain covered.
 
 ## Approach
 
@@ -98,9 +102,7 @@ correctness through independent verification.
 1. Execute the remaining tasks in
    `docs/superpowers/plans/2026-09-16-vernaculus-observability.md` with one
    implementer and one independent review per task.
-2. Add the approved telemetry fields without changing the frozen payload or
-   text-only execution-error contract.
-3. Measure the post-instrumentation full loop on `qwen3-coder:30b` before
+2. Measure the post-instrumentation full loop on `qwen3-coder:30b` before
    revising the MCP interface or skill guidance.
 
 ## Files Changed
@@ -109,4 +111,5 @@ correctness through independent verification.
 - `docs/superpowers/plans/2026-09-16-vernaculus-observability.md`
 - `docs/superpowers/specs/2026-09-16-vernaculus-observability-design.md`
 - `vernaculus/README.md` (pre-existing registration findings preserved)
+- `vernaculus/mcp/server.js`
 - `vernaculus/__tests__/server.test.js`
