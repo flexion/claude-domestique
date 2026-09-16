@@ -86,7 +86,8 @@ correctness through independent verification.
   persisted refinement rounds. The focused fake-daemon suite passed 25 tests;
   frozen payload and text-only HTTP-500 behavior remain covered.
 - 2026-09-16: Exercised the instrumented live smoke with explicit
-  `qwen3-coder:30b` (digest `06c1097efce0`). The pre-instrumentation generation
+  `qwen3-coder:30b` (digest
+  `06c1097efce0431c2045fe7b2e5108366e43bee1b4603a7aded8f21689e90bca`). The pre-instrumentation generation
   measured 10.6s with 94 prompt and 138 output tokens; this run measured 10.528s
   wall time with 94 prompt and 109 output tokens. Its new timing fields were
   10,517.468ms Ollama total, 7,839.808ms model load, 347.817ms prompt evaluation,
