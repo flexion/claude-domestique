@@ -51,7 +51,7 @@
       "name": "vernaculus",
       "source": "./vernaculus",
       "description": "Vernaculus - delegating well-specified coding work to a locally hosted model over MCP",
-      "version": "0.1.0"
+      "version": "0.2.0"
     }
   ]
 }

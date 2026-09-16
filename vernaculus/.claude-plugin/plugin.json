@@ -1,6 +1,6 @@
 {
   "name": "vernaculus",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Vernaculus — delegating well-specified coding work to a locally hosted model over MCP, with the brief/generate/verify/diagnose/refine loop the measurements say it needs",
   "author": {
     "name": "Flexion"

@@ -97,6 +97,20 @@ correctness through independent verification.
   bytes; this is result-payload size only, not Claude or Codex token usage. The
   differing live output length and timings are observations, not a performance
   comparison.
+- 2026-09-16: Added a real-fixture regression test for the version tool. Before
+  the implementation, the focused Jest run failed with exit status 1 and the
+  copied script reported `Unknown plugin: vernaculus`; after adding the minimal
+  allowlist entry, the focused test and all 101 script-suite tests passed.
+- 2026-09-16: Applied the Vernaculus minor bump exactly once. The version tool
+  reported `0.1.0 → 0.2.0`, and package metadata, both host manifests,
+  marketplace metadata, and the workspace lockfile now agree on `0.2.0`.
+- 2026-09-16: Completed release validation: `npm test` passed all 651 tests;
+  `npm run validate:plugins` passed; pinned Claude Code 2.1.226 strict validation
+  passed for both the marketplace root and Vernaculus; and the isolated Codex
+  0.147.0 marketplace smoke installed `vernaculus@claude-domestique` from source
+  at version `0.2.0`. `git diff --check` passed, the delegation skill stayed
+  unchanged, the README registration guidance remains present, and no `tmp/`
+  artifact was staged.
 
 ## Approach
 
@@ -111,11 +125,9 @@ correctness through independent verification.
    overhead. Do not change the skill or delegation policy in this pass.
 
 ## Next Steps
-1. Execute the remaining tasks in
-   `docs/superpowers/plans/2026-09-16-vernaculus-observability.md` with one
-   implementer and one independent review per task.
-2. Measure the post-instrumentation full loop on `qwen3-coder:30b` before
-   revising the MCP interface or skill guidance.
+1. Complete the independent Task 4 review and integrate the finished branch.
+2. Use the recorded baseline and telemetry to plan any later optimization as a
+   separate change.
 
 ## Files Changed
 
@@ -126,3 +138,13 @@ correctness through independent verification.
 - `vernaculus/mcp/server.js`
 - `vernaculus/__tests__/server.test.js`
 - `vernaculus/mcp/smoke.js`
+- `scripts/__tests__/bump-version.test.js`
+- `scripts/bump-version.js`
+- `package.json`
+- `package-lock.json`
+- `vernaculus/package.json`
+- `vernaculus/.claude-plugin/plugin.json`
+- `vernaculus/.codex-plugin/plugin.json`
+- `.claude-plugin/marketplace.json`
+- `.superpowers/sdd/2026-09-16-vernaculus-observability/task-4-report.md`
+  (task handoff artifact; not part of the implementation commit)
