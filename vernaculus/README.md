@@ -65,6 +65,23 @@ live process, not current code. An MCP server edited on disk keeps serving the
 old tool definitions until the host restarts it — observed at nearly three hours
 stale, with the host still handing out superseded schemas.
 
+## Observability
+
+Successful `ollama_generate` and `ollama_refine` results include a nested
+`telemetry` object in `structuredContent`. `call`, `round`, and `done_reason`
+identify the generation; `timing_ms` reports wall-clock and Ollama phase
+durations in milliseconds; and `input_tokens_estimate` separates rough input
+estimates for `spec`, `inline_context`, `files`, `history`, and `diagnosis`,
+plus their `total`.
+
+The input figures are estimates (`ceil(characters / 3.6)`), useful for locating
+prompt growth rather than accounting. `prompt_tokens` and `output_tokens` are
+the authoritative counts returned by Ollama. `model_digest` identifies the
+weights that ran and must be retained with any measurement because a model tag
+can change underneath it. Claude/Codex cost and correctness remain outside MCP
+visibility: this server observes only its local Ollama call, and every draft
+still requires independent verification.
+
 ## Design notes
 
 Each of these exists because the obvious alternative was measured and failed.

@@ -85,6 +85,17 @@ correctness through independent verification.
   nanosecond-to-millisecond phase conversion, input-component estimates, and
   persisted refinement rounds. The focused fake-daemon suite passed 25 tests;
   frozen payload and text-only HTTP-500 behavior remain covered.
+- 2026-09-16: Exercised the instrumented live smoke with explicit
+  `qwen3-coder:30b` (digest `06c1097efce0`). The pre-instrumentation generation
+  measured 10.6s with 94 prompt and 138 output tokens; this run measured 10.528s
+  wall time with 94 prompt and 109 output tokens. Its new timing fields were
+  10,517.468ms Ollama total, 7,839.808ms model load, 347.817ms prompt evaluation,
+  and 2,326.577ms generation. Refinement round 1 measured 2,556ms wall,
+  2,554.760ms Ollama total, 4.512ms model load, 170.944ms prompt evaluation, and
+  2,376.469ms generation. The generation `telemetry` object serialized to 274
+  bytes; this is result-payload size only, not Claude or Codex token usage. The
+  differing live output length and timings are observations, not a performance
+  comparison.
 
 ## Approach
 
@@ -113,3 +124,4 @@ correctness through independent verification.
 - `vernaculus/README.md` (pre-existing registration findings preserved)
 - `vernaculus/mcp/server.js`
 - `vernaculus/__tests__/server.test.js`
+- `vernaculus/mcp/smoke.js`

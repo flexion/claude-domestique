@@ -13,6 +13,8 @@ const { spawn } = require('node:child_process');
 const path = require('node:path');
 const readline = require('node:readline');
 
+const SMOKE_MODEL = process.env.VERNACULUS_SMOKE_MODEL;
+
 const child = spawn(process.execPath, [path.join(__dirname, 'server.js')], {
   stdio: ['pipe', 'pipe', 'inherit'],
 });
@@ -136,14 +138,15 @@ function check(label, ok, detail) {
     noSess.result.content[0].text.slice(0, 80));
 
   if (process.argv.includes('--generate')) {
+    const spec = 'Write a CommonJS function parseSelector(spec) that splits on the FIRST colon only, '
+      + "returning {handle, model}; model is null when there is no colon. Model values may contain "
+      + "colons, so 'bob:ollama/qwen2.5:7b' gives handle 'bob', model 'ollama/qwen2.5:7b'. "
+      + 'Reject a handle that is not lowercase a-z. Output only code.';
+    const generateArgs = { spec };
+    if (SMOKE_MODEL) generateArgs.model = SMOKE_MODEL;
     const gen = await rpc('tools/call', {
       name: 'ollama_generate',
-      arguments: {
-        spec: 'Write a CommonJS function parseSelector(spec) that splits on the FIRST colon only, '
-          + "returning {handle, model}; model is null when there is no colon. Model values may contain "
-          + "colons, so 'bob:ollama/qwen2.5:7b' gives handle 'bob', model 'ollama/qwen2.5:7b'. "
-          + 'Reject a handle that is not lowercase a-z. Output only code.',
-      },
+      arguments: generateArgs,
     });
     const draft = gen.result.content[0].text;
     check('ollama_generate returns a labelled draft', !gen.result.isError && draft.startsWith('[unverified draft'));
@@ -164,6 +167,23 @@ function check(label, ok, detail) {
       st ? `prompt ${st.prompt_tokens}, out ${st.output_tokens}, digest ${(st.model_digest || '').slice(0, 12)}` : 'none');
     check('structured flags are booleans', st && typeof st.truncated === 'boolean' && st.verified === false,
       st ? `truncated=${st.truncated} verified=${st.verified}` : 'none');
+    if (SMOKE_MODEL) {
+      check('structured model matches VERNACULUS_SMOKE_MODEL', st && st.model === SMOKE_MODEL,
+        st && st.model);
+    }
+    check('generation telemetry identifies the call and round',
+      st && st.telemetry.call === 'generate' && st.telemetry.round === 0,
+      st && `${st.telemetry.call} round ${st.telemetry.round}`);
+    check('generation telemetry carries Ollama timings',
+      st && Object.values(st.telemetry.timing_ms).every((value) => typeof value === 'number'),
+      st && JSON.stringify(st.telemetry.timing_ms));
+    check('generation input estimates sum to total',
+      st && Object.entries(st.telemetry.input_tokens_estimate)
+        .filter(([name]) => name !== 'total')
+        .reduce((sum, [, value]) => sum + value, 0)
+        === st.telemetry.input_tokens_estimate.total);
+    const telemetryBytes = st && Buffer.byteLength(JSON.stringify(st.telemetry), 'utf8');
+    console.log(`generation telemetry: ${telemetryBytes} bytes`);
     if (session) {
       const refined = await rpc('tools/call', {
         name: 'ollama_refine',
@@ -173,6 +193,18 @@ function check(label, ok, detail) {
       check('ollama_refine continues the session',
         !refined.result.isError && text.includes('parseSelectorV2'),
         text.split('\n')[0]);
+      const refinedStructured = refined.result.structuredContent;
+      check('refinement telemetry identifies the session and round',
+        refinedStructured && refinedStructured.telemetry.call === 'refine'
+          && refinedStructured.telemetry.round === 1 && refinedStructured.session === session,
+        refinedStructured && `${refinedStructured.telemetry.call} round ${refinedStructured.telemetry.round}`);
+      check('refinement telemetry keeps the model digest',
+        refinedStructured && refinedStructured.model_digest === st.model_digest,
+        refinedStructured && (refinedStructured.model_digest || '').slice(0, 12));
+      check('refinement telemetry carries Ollama timings',
+        refinedStructured && Object.values(refinedStructured.telemetry.timing_ms)
+          .every((value) => typeof value === 'number'),
+        refinedStructured && JSON.stringify(refinedStructured.telemetry.timing_ms));
     }
     console.log(`\n${draft}\n`);
   }
