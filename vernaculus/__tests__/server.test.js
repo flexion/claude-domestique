@@ -115,6 +115,35 @@ describe('tool surface', () => {
   });
 });
 
+// The repository validator reads only `name` and `version` from the Codex
+// manifest, so a manifest can be structurally wrong for Codex and still pass
+// `npm run validate:plugins`. It did: this plugin first shipped
+// `"skills": {"path": "skills"}` where all seven siblings use the string form,
+// and with no `interface` block at all. Both validators reported green.
+describe('codex manifest parity', () => {
+  const fs = require('node:fs');
+  const codex = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '.codex-plugin', 'plugin.json'), 'utf8'));
+  const claude = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '.claude-plugin', 'plugin.json'), 'utf8'));
+
+  test('declares its skills path the way every other plugin does', () => {
+    expect(codex.skills).toBe('./skills/');
+  });
+
+  test('carries an interface block with the fields Codex renders', () => {
+    expect(codex.interface).toBeDefined();
+    for (const field of ['displayName', 'shortDescription', 'longDescription', 'developerName', 'category']) {
+      expect(typeof codex.interface[field]).toBe('string');
+    }
+    expect(Array.isArray(codex.interface.capabilities)).toBe(true);
+    expect(Array.isArray(codex.interface.defaultPrompt)).toBe(true);
+  });
+
+  test('both host manifests agree on name and version', () => {
+    expect(codex.name).toBe(claude.name);
+    expect(codex.version).toBe(claude.version);
+  });
+});
+
 describe('failure paths', () => {
   const call = (name, args) => {
     const out = rpc([INIT, { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name, arguments: args } }]);

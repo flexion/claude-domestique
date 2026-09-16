@@ -16,7 +16,24 @@
     "delegation",
     "code-generation"
   ],
-  "skills": {
-    "path": "skills"
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Vernaculus",
+    "shortDescription": "Delegate coding work to a local model",
+    "longDescription": "An MCP adapter for a locally hosted model, plus the brief, generate, verify, diagnose, refine loop that measurement shows it needs. Cold single-shot delegation solved 1 of 3 real functions; the same model solved 3 of 3 once the caller diagnosed the failures.",
+    "developerName": "Flexion",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Generate",
+      "Refine",
+      "Delegate"
+    ],
+    "websiteURL": "https://github.com/flexion/claude-domestique/tree/main/vernaculus",
+    "defaultPrompt": [
+      "List the models installed on my local Ollama daemon.",
+      "Draft this function with the local model, then help me verify it.",
+      "The local model's draft fails its tests - help me diagnose the cause."
+    ],
+    "brandColor": "#4B5563"
   }
 }
