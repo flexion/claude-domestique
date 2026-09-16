@@ -61,25 +61,30 @@ function startRpc(env = {}) {
   };
 }
 
-async function startFakeOllama(chatReplies) {
+async function startFakeOllama(chatReplies, inventories = [
+  [{ name: 'qwen3-coder:30b', size: 18000000000, digest: 'digest-123' }],
+]) {
   const requests = [];
   let chatIndex = 0;
+  let inventoryIndex = 0;
   const server = http.createServer((req, res) => {
     let raw = '';
     req.setEncoding('utf8');
     req.on('data', (chunk) => { raw += chunk; });
-    req.on('end', () => {
+    req.on('end', async () => {
       const body = raw ? JSON.parse(raw) : null;
       requests.push({ method: req.method, url: req.url, body });
       res.setHeader('content-type', 'application/json');
       if (req.url === '/api/tags') {
         res.end(JSON.stringify({
-          models: [{ name: 'qwen3-coder:30b', size: 18000000000, digest: 'digest-123' }],
+          models: inventories[Math.min(inventoryIndex++, inventories.length - 1)],
         }));
         return;
       }
       if (req.url === '/api/chat') {
-        const reply = chatReplies[chatIndex++];
+        const next = chatReplies[chatIndex++];
+        const reply = (typeof next === 'function' ? await next() : next)
+          || { status: 500, body: { error: 'unexpected inference' } };
         res.statusCode = reply.status || 200;
         res.end(JSON.stringify(reply.body || reply));
         return;
@@ -124,6 +129,19 @@ describe('protocol', () => {
   test('an unknown method is a JSON-RPC error, not a crash', () => {
     const out = rpc([INIT, { jsonrpc: '2.0', id: 2, method: 'nope/nope' }]);
     expect(out[1].error.code).toBe(-32601);
+  });
+
+  test('a raw null frame is an Invalid Request and leaves the adapter alive', () => {
+    const res = spawnSync(process.execPath, [SERVER], {
+      input: `null\n${JSON.stringify(INIT)}\n`, encoding: 'utf8', timeout: 15000,
+    });
+    expect(res.status).toBe(0);
+    expect(res.stderr).toBe('');
+    const replies = res.stdout.trim().split('\n').map((line) => JSON.parse(line));
+    expect(replies).toContainEqual({
+      jsonrpc: '2.0', id: null, error: { code: -32600, message: 'Invalid Request' },
+    });
+    expect(replies.find((message) => message.id === INIT.id).result.protocolVersion).toBe('2025-06-18');
   });
 
   test('unparseable stdin lines are ignored rather than killing the server', () => {
@@ -210,6 +228,149 @@ describe('tool surface', () => {
 });
 
 describe('Ollama contract', () => {
+  test('every refinement retains the generation context window in its request and budget', async () => {
+    const reply = { message: { role: 'assistant', content: 'draft' }, done_reason: 'stop' };
+    const fake = await startFakeOllama([reply, reply, reply]);
+    const client = startRpc({ OLLAMA_HOST: fake.url, QWEN_MCP_NUM_CTX: '32768' });
+    try {
+      const generated = await client.call('tools/call', {
+        name: 'ollama_generate', arguments: { spec: 'Return one assignment.', num_ctx: 8192, num_predict: 1024 },
+      });
+      const session = generated.result.structuredContent.session;
+      for (const diagnosis of ['Use two.', 'Use three.']) {
+        const refined = await client.call('tools/call', {
+          name: 'ollama_refine', arguments: { session, diagnosis, num_predict: 512 },
+        });
+        expect(refined.result.structuredContent.budget).toEqual({
+          num_ctx: 8192, num_predict: 512, input_budget: 7679,
+        });
+      }
+      expect(fake.requests.filter((request) => request.url === '/api/chat').map((request) => request.body.options))
+        .toEqual([
+          { num_ctx: 8192, num_predict: 1024 },
+          { num_ctx: 8192, num_predict: 512 },
+          { num_ctx: 8192, num_predict: 512 },
+        ]);
+    } finally {
+      await client.close();
+      await fake.close();
+    }
+  });
+
+  test.each([
+    ['changed', [{ name: 'qwen3-coder:30b', size: 18000000000, digest: 'digest-456' }], /digest.*changed/i],
+    ['missing', [], /no longer installed/i],
+  ])('refinement rejects a %s model before inference and preserves the session', async (_name, models, error) => {
+    const original = [{ name: 'qwen3-coder:30b', size: 18000000000, digest: 'digest-123' }];
+    const reply = { message: { role: 'assistant', content: 'draft' }, done_reason: 'stop' };
+    const fake = await startFakeOllama([reply, reply], [original, models, original]);
+    const client = startRpc({ OLLAMA_HOST: fake.url });
+    try {
+      const generated = await client.call('tools/call', {
+        name: 'ollama_generate', arguments: { spec: 'Return one assignment.' },
+      });
+      const session = generated.result.structuredContent.session;
+      const rejected = await client.call('tools/call', {
+        name: 'ollama_refine', arguments: { session, diagnosis: 'Must not enter history.' },
+      });
+      expect(rejected.result.isError).toBe(true);
+      expect(rejected.result.content[0].text).toMatch(error);
+      expect(rejected.result.structuredContent).toBeUndefined();
+      expect(fake.requests.filter((request) => request.url === '/api/chat')).toHaveLength(1);
+      const accepted = await client.call('tools/call', {
+        name: 'ollama_refine', arguments: { session, diagnosis: 'Use two.' },
+      });
+      expect(accepted.result.structuredContent).toMatchObject({
+        model_digest: 'digest-123', telemetry: { round: 1 },
+      });
+      expect(fake.requests.filter((request) => request.url === '/api/tags')).toHaveLength(3);
+      expect(fake.requests.filter((request) => request.url === '/api/chat')[1].body.messages).toEqual([
+        { role: 'user', content: 'Return one assignment.' },
+        { role: 'assistant', content: 'draft' },
+        { role: 'user', content: 'Use two.' },
+      ]);
+    } finally {
+      await client.close();
+      await fake.close();
+    }
+  });
+
+  test('overlapping refinements are rejected and a retry retains both diagnoses in order', async () => {
+    const started = Promise.withResolvers();
+    const release = Promise.withResolvers();
+    const fake = await startFakeOllama([
+      { message: { role: 'assistant', content: 'initial draft' } },
+      () => { started.resolve(); return release.promise; },
+      { message: { role: 'assistant', content: 'second revision' } },
+    ]);
+    const client = startRpc({ OLLAMA_HOST: fake.url });
+    let first;
+    try {
+      const generated = await client.call('tools/call', {
+        name: 'ollama_generate', arguments: { spec: 'Return one assignment.' },
+      });
+      const session = generated.result.structuredContent.session;
+      first = client.call('tools/call', {
+        name: 'ollama_refine', arguments: { session, diagnosis: 'First diagnosis.' },
+      });
+      await started.promise;
+      const secondArgs = { name: 'ollama_refine', arguments: { session, diagnosis: 'Second diagnosis.' } };
+      const rejected = await client.call('tools/call', secondArgs);
+      expect(rejected.result.isError).toBe(true);
+      expect(rejected.result.content[0].text).toMatch(/already in progress.*retry/i);
+      expect(rejected.result.structuredContent).toBeUndefined();
+      expect(fake.requests.filter((request) => request.url === '/api/chat')).toHaveLength(2);
+      release.resolve({ message: { role: 'assistant', content: 'first revision' } });
+      expect((await first).result.structuredContent.telemetry.round).toBe(1);
+      const retried = await client.call('tools/call', secondArgs);
+      expect(retried.result.structuredContent.telemetry.round).toBe(2);
+      expect(fake.requests.filter((request) => request.url === '/api/chat')[2].body.messages).toEqual([
+        { role: 'user', content: 'Return one assignment.' },
+        { role: 'assistant', content: 'initial draft' },
+        { role: 'user', content: 'First diagnosis.' },
+        { role: 'assistant', content: 'first revision' },
+        { role: 'user', content: 'Second diagnosis.' },
+      ]);
+    } finally {
+      release.resolve({ message: { role: 'assistant', content: 'first revision' } });
+      if (first) await first;
+      await client.close();
+      await fake.close();
+    }
+  });
+
+  test('a failed refinement releases the session for retry without advancing history or round', async () => {
+    const fake = await startFakeOllama([
+      { message: { role: 'assistant', content: 'initial draft' } },
+      { status: 500, body: { error: 'forced failure' } },
+      { message: { role: 'assistant', content: 'revision' } },
+    ]);
+    const client = startRpc({ OLLAMA_HOST: fake.url });
+    try {
+      const generated = await client.call('tools/call', {
+        name: 'ollama_generate', arguments: { spec: 'Return one assignment.' },
+      });
+      const session = generated.result.structuredContent.session;
+      const rejected = await client.call('tools/call', {
+        name: 'ollama_refine', arguments: { session, diagnosis: 'Failed diagnosis.' },
+      });
+      expect(rejected.result.isError).toBe(true);
+      expect(rejected.result.structuredContent).toBeUndefined();
+      const retried = await client.call('tools/call', {
+        name: 'ollama_refine', arguments: { session, diagnosis: 'Retry diagnosis.' },
+      });
+      expect(retried.result.structuredContent.telemetry.round).toBe(1);
+      expect(fake.requests.filter((request) => request.url === '/api/chat')[2].body.messages).toEqual([
+        { role: 'user', content: 'Return one assignment.' },
+        { role: 'assistant', content: 'initial draft' },
+        { role: 'user', content: 'Retry diagnosis.' },
+      ]);
+    } finally {
+      await client.close();
+      await fake.close();
+    }
+  });
+
   test('generation and refinement return telemetry for their rendered inputs', async () => {
     const generateReply = {
       message: { role: 'assistant', content: '```js\nmodule.exports = 1;\n```' },
@@ -415,18 +576,40 @@ describe('failure paths', () => {
     expect(r.content[0].text).toMatch(/lost when this server restarts/);
   });
 
-  test('an unreadable file names the path, not a stack trace', () => {
-    const r = call('ollama_generate', { spec: 'x', files: ['definitely/not/here.js'] });
-    expect(r.isError).toBe(true);
-    expect(r.content[0].text).toMatch(/definitely\/not\/here\.js/);
-    expect(r.content[0].text).not.toMatch(/at Object|node:internal/);
+  test('an unreadable file names the path, not a stack trace', async () => {
+    const fake = await startFakeOllama([]);
+    const client = startRpc({ OLLAMA_HOST: fake.url });
+    try {
+      const { result: r } = await client.call('tools/call', {
+        name: 'ollama_generate', arguments: { spec: 'x', files: ['definitely/not/here.js'] },
+      });
+      expect(r.isError).toBe(true);
+      expect(r.content[0].text).toMatch(/definitely\/not\/here\.js/);
+      expect(r.content[0].text).not.toMatch(/at Object|node:internal/);
+      expect(r.structuredContent).toBeUndefined();
+      expect(fake.requests.map((request) => request.url)).toEqual(['/api/tags']);
+    } finally {
+      await client.close();
+      await fake.close();
+    }
   });
 
-  test('an over-budget prompt is refused up front, naming the budget', () => {
-    const r = call('ollama_generate', { spec: 'x'.repeat(400000), num_ctx: 8192, num_predict: 1024 });
-    expect(r.isError).toBe(true);
-    expect(r.content[0].text).toMatch(/input budget/);
-    expect(r.content[0].text).toMatch(/7167/); // 8192 - 1024 - 1
+  test('an over-budget prompt is refused up front, naming the budget', async () => {
+    const fake = await startFakeOllama([]);
+    const client = startRpc({ OLLAMA_HOST: fake.url });
+    try {
+      const { result: r } = await client.call('tools/call', {
+        name: 'ollama_generate', arguments: { spec: 'x'.repeat(400000), num_ctx: 8192, num_predict: 1024 },
+      });
+      expect(r.isError).toBe(true);
+      expect(r.content[0].text).toMatch(/input budget/);
+      expect(r.content[0].text).toMatch(/7167/); // 8192 - 1024 - 1
+      expect(r.structuredContent).toBeUndefined();
+      expect(fake.requests.map((request) => request.url)).toEqual(['/api/tags']);
+    } finally {
+      await client.close();
+      await fake.close();
+    }
   });
 
   test('an unknown tool name is reported as a tool error, not a protocol error', () => {

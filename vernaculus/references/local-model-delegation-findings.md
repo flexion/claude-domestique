@@ -1,7 +1,7 @@
 # Local model integration — findings and options
 
 Exploratory. Nothing here is implemented. Mechanical launch-surface detail is in
-[`local-models-ned.md`](local-models-ned.md) and is not repeated.
+[`launch-surface.md`](launch-surface.md) and is not repeated.
 
 ## The question has two different shapes
 
@@ -116,7 +116,7 @@ would fail at first call.
 
 ## What the plugins would need
 
-Beyond the launcher gaps in `local-models-ned.md`:
+Beyond the launcher gaps in `launch-surface.md`:
 
 - **There is no third-host manifest.** `scripts/validate-plugins.js:361-398`
   hard-requires `.claude-plugin/plugin.json` *and* `.codex-plugin/plugin.json`

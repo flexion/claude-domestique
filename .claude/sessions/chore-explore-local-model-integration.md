@@ -42,6 +42,11 @@ correctness through independent verification.
   error result shapes. Add only observational session metadata. Successful,
   empty, and truncated generations get telemetry; preflight and execution
   errors remain text-only in this pass.
+- Final review authorized four adapter corrections: retain the generation
+  context window for refinement, reject changed or missing session models
+  after checking live inventory, reject overlapping refinements with an
+  explicit retry instruction, and reject non-object JSON-RPC frames safely.
+  Keep the generation payload, telemetry schema, and delegation skill unchanged.
 
 ## Session Log
 - 2026-09-16: Session created
@@ -111,6 +116,18 @@ correctness through independent verification.
   at version `0.2.0`. `git diff --check` passed, the delegation skill stayed
   unchanged, the README registration guidance remains present, and no `tmp/`
   artifact was staged.
+- 2026-09-16: Reproduced the final-review CI defect with
+  `OLLAMA_HOST=http://127.0.0.1:1 npm test --workspace=vernaculus -- --runInBand --reporters=default`:
+  the unreadable-file and over-budget tests failed because inventory needed a
+  real daemon (23 passed, 2 failed). Converted both to the fake-daemon harness.
+- 2026-09-16: Added deterministic regressions before production fixes. RED:
+  null stdin exited 1; refinement reset 8192 to 32768; changed/missing models
+  still inferred; overlapping refinements both succeeded (26 passed, 5 failed).
+  GREEN after the minimal fixes: all 31 focused tests passed with the real
+  daemon endpoint disabled. The concurrency test gates an HTTP response,
+  checks explicit rejection, and verifies retry history and rounds 1 then 2;
+  failed inference also leaves history and round unchanged and permits retry.
+  Corrected the packaged launch-surface link and its second stale mention.
 
 ## Approach
 
@@ -138,6 +155,7 @@ correctness through independent verification.
 - `vernaculus/mcp/server.js`
 - `vernaculus/__tests__/server.test.js`
 - `vernaculus/mcp/smoke.js`
+- `vernaculus/references/local-model-delegation-findings.md` (fix-wave stale-link correction)
 - `scripts/__tests__/bump-version.test.js`
 - `scripts/bump-version.js`
 - `package.json`

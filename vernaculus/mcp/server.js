@@ -224,10 +224,10 @@ function newSessionId() {
   return `s${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 }
 
-function rememberSession(id, model, messages, digest, round) {
+function rememberSession(id, model, messages, digest, round, numCtx) {
   if (SESSIONS.size >= MAX_SESSIONS) SESSIONS.delete(SESSIONS.keys().next().value);
   SESSIONS.set(id, {
-    model, digest, messages: messages.slice(-MAX_TURNS * 2), round, at: Date.now(),
+    model, digest, messages: messages.slice(-MAX_TURNS * 2), round, numCtx, at: Date.now(),
   });
 }
 
@@ -573,7 +573,7 @@ async function callTool(name, args) {
     const result = await generate({ messages, model, numCtx, numPredict, digest });
     const sessionId = newSessionId();
     const round = 0;
-    rememberSession(sessionId, model, [...messages, { role: 'assistant', content: result.text }], digest, round);
+    rememberSession(sessionId, model, [...messages, { role: 'assistant', content: result.text }], digest, round, numCtx);
     return renderResult({
       model, result, sessionId, manifest, numCtx, numPredict, call: 'generate', round, wallStarted,
       inputEstimate: estimateInput({ spec: args.spec, inlineContext, files: fileText }),
@@ -590,31 +590,49 @@ async function callTool(name, args) {
         + `Sessions are in-memory and are lost when this server restarts - start again with ollama_generate.`,
       );
     }
-    const numPredict = Number(args.num_predict || DEFAULT_NUM_PREDICT);
-    const { text: fileText, manifest } = args.files && args.files.length
-      ? readFiles(args.files)
-      : { text: '', manifest: [] };
+    // Claim synchronously, before any I/O can let another call use this history.
+    if (session.refining) {
+      throw new Error(`Refinement already in progress for session "${args.session}". Retry this diagnosis after it finishes.`);
+    }
+    session.refining = true;
+    try {
+      const numCtx = session.numCtx;
+      const numPredict = Number(args.num_predict || DEFAULT_NUM_PREDICT);
+      const { text: fileText, manifest } = args.files && args.files.length
+        ? readFiles(args.files)
+        : { text: '', manifest: [] };
 
-    const messages = [...session.messages, {
-      role: 'user',
-      content: [fileText, args.diagnosis].filter(Boolean).join('\n\n'),
-    }];
-    const round = session.round + 1;
-    const result = await generate({
-      messages, model: session.model, numCtx: DEFAULT_NUM_CTX, numPredict, digest: session.digest,
-    });
-    rememberSession(
-      args.session, session.model, [...messages, { role: 'assistant', content: result.text }], session.digest, round,
-    );
-    return renderResult({
-      model: session.model, result, sessionId: args.session, manifest,
-      numCtx: DEFAULT_NUM_CTX, numPredict, call: 'refine', round, wallStarted,
-      inputEstimate: estimateInput({
-        history: session.messages.map((message) => message.content).join('\n\n'),
-        files: fileText,
-        diagnosis: args.diagnosis,
-      }),
-    });
+      const messages = [...session.messages, {
+        role: 'user',
+        content: [fileText, args.diagnosis].filter(Boolean).join('\n\n'),
+      }];
+      const models = await inventory();
+      const current = models.find((model) => model.name === session.model);
+      if (!current) {
+        throw new Error(`Model "${session.model}" is no longer installed. Start again with ollama_generate.`);
+      }
+      if (current.digest !== session.digest) {
+        throw new Error(`Model "${session.model}" digest has changed since this session began. Start again with ollama_generate.`);
+      }
+      const round = session.round + 1;
+      const result = await generate({
+        messages, model: session.model, numCtx, numPredict, digest: current.digest,
+      });
+      rememberSession(
+        args.session, session.model, [...messages, { role: 'assistant', content: result.text }], current.digest, round, numCtx,
+      );
+      return renderResult({
+        model: session.model, result, sessionId: args.session, manifest,
+        numCtx, numPredict, call: 'refine', round, wallStarted,
+        inputEstimate: estimateInput({
+          history: session.messages.map((message) => message.content).join('\n\n'),
+          files: fileText,
+          diagnosis: args.diagnosis,
+        }),
+      });
+    } finally {
+      session.refining = false;
+    }
   }
 
   throw new Error(`Unknown tool: ${name}`);
@@ -661,6 +679,9 @@ readline.createInterface({ input: process.stdin }).on('line', (line) => {
     msg = JSON.parse(line);
   } catch {
     return;
+  }
+  if (!msg || typeof msg !== 'object' || Array.isArray(msg)) {
+    return send({ jsonrpc: '2.0', id: null, error: { code: -32600, message: 'Invalid Request' } });
   }
   handle(msg).catch((e) => {
     if (msg.id !== undefined) toolError(msg.id, `adapter error: ${e.message}`);
