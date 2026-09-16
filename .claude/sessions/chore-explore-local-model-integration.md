@@ -47,6 +47,17 @@ correctness through independent verification.
   after checking live inventory, reject overlapping refinements with an
   explicit retry instruction, and reject non-object JSON-RPC frames safely.
   Keep the generation payload, telemetry schema, and delegation skill unchanged.
+- The operator authorized a residual fix wave over the six items earlier reviews
+  deferred, explicitly including the two that exceed the branch's original
+  instrumentation-only scope: `allow_digest_change` on `ollama_refine`, and a
+  markdown link harness. The Ollama request body still does not change.
+- A malformed JSON-RPC envelope is `-32600`, never `-32601`. The envelope guard
+  deliberately does NOT require an `id`, because a notification is a valid frame
+  with a method and no id and every real MCP client sends
+  `notifications/initialized` right after `initialize`.
+- A changed model digest stays refused by default. The override is opt-in per
+  call, records the new digest as `model_digest` and the old one as
+  `telemetry.digest_changed_from`, and never covers a missing model.
 
 ## Session Log
 - 2026-09-16: Session created
@@ -128,6 +139,16 @@ correctness through independent verification.
   checks explicit rejection, and verifies retry history and rounds 1 then 2;
   failed inference also leaves history and round unchanged and permits retry.
   Corrected the packaged launch-surface link and its second stale mention.
+- 2026-09-16: Cleared the six residual items. RED first for each: the capacity
+  check evicted a live sibling on a refinement re-set (`QWEN_MCP_MAX_SESSIONS`
+  makes it testable); object frames with no method, a non-string method, or a
+  wrong `jsonrpc` returned `-32601`; a throwing fake-daemon handler failed at
+  the 10s jest timeout and then hung the runner instead of reporting its own
+  message; a link pointed at a missing `.md` and nothing noticed; and a
+  refinement could not continue across a deliberate re-pull. `claimSession()`
+  is a pure refactor, so the concurrency tests stayed green unmodified. GREEN:
+  51 tests in `vernaculus`, both with a real endpoint and with `OLLAMA_HOST`
+  unreachable, and 677 at the repository root.
 
 ## Approach
 
@@ -142,13 +163,14 @@ correctness through independent verification.
    overhead. Do not change the skill or delegation policy in this pass.
 
 ## Next Steps
-1. Complete the independent Task 4 review and integrate the finished branch.
+1. Review the residual fix wave, then integrate the finished branch.
 2. Use the recorded baseline and telemetry to plan any later optimization as a
    separate change.
 
 ## Files Changed
 
 - `.claude/sessions/chore-explore-local-model-integration.md`
+- `vernaculus/__tests__/markdown-links.test.js` (residual wave: link harness)
 - `docs/superpowers/plans/2026-09-16-vernaculus-observability.md`
 - `docs/superpowers/specs/2026-09-16-vernaculus-observability-design.md`
 - `vernaculus/README.md` (pre-existing registration findings preserved)

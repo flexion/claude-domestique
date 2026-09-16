@@ -59,7 +59,7 @@ const DEFAULT_NUM_PREDICT = Number(process.env.QWEN_MCP_NUM_PREDICT || 4096);
 // Sessions exist so a caller can send a diagnosis after reading a failed draft.
 // Bounded: this is a helper, not a datastore.
 const SESSIONS = new Map();
-const MAX_SESSIONS = 32;
+const MAX_SESSIONS = Number(process.env.QWEN_MCP_MAX_SESSIONS || 32);
 const MAX_TURNS = 12;
 
 // Rough, and labelled as rough wherever it is shown. Used only to refuse an
@@ -225,10 +225,25 @@ function newSessionId() {
 }
 
 function rememberSession(id, model, messages, digest, round, numCtx) {
-  if (SESSIONS.size >= MAX_SESSIONS) SESSIONS.delete(SESSIONS.keys().next().value);
+  // Evict only for a genuinely NEW key. Re-setting an existing session is an
+  // update, not an insertion: at capacity, evicting on every write let a
+  // long-lived session being refined drop a sibling — or itself — mid-refine.
+  if (!SESSIONS.has(id) && SESSIONS.size >= MAX_SESSIONS) {
+    SESSIONS.delete(SESSIONS.keys().next().value);
+  }
   SESSIONS.set(id, {
     model, digest, messages: messages.slice(-MAX_TURNS * 2), round, numCtx, at: Date.now(),
   });
+}
+
+// Check and set in ONE synchronous function. The refinement race fix depends on
+// no `await` landing between reading `session.refining` and setting it; keeping
+// both halves inside one body is what stops a later edit from splitting them.
+// Returns false when the session is already claimed by an in-flight refinement.
+function claimSession(session) {
+  if (session.refining) return false;
+  session.refining = true;
+  return true;
 }
 
 async function generate({ messages, model, numCtx, numPredict, digest }) {
@@ -273,6 +288,7 @@ function extractCode(text) {
 
 function renderResult({
   model, result, sessionId, manifest, numCtx, numPredict, call, round, wallStarted, inputEstimate,
+  digestChangedFrom,
 }) {
   const head = [
     `[unverified draft from ${model}, ${result.secs.toFixed(1)}s - review and test before use]`,
@@ -288,6 +304,13 @@ function renderResult({
   }
   if (manifest && manifest.length) {
     head.push(`context read locally: ${manifest.map((f) => `${f.file} (~${f.tokens} tok)`).join(', ')}`);
+  }
+  if (digestChangedFrom) {
+    head.push(
+      `WARNING: the model's weights changed during this session (digest ${digestChangedFrom} ->`
+      + ` ${result.digest}) and allow_digest_change accepted it. Earlier turns in this history were`
+      + ` produced by different weights; treat comparisons across the change with care.`,
+    );
   }
   const code = extractCode(result.text);
   const structured = {
@@ -313,6 +336,9 @@ function renderResult({
         ...result.timingMs,
       },
       input_tokens_estimate: inputEstimate,
+      // Present only when a digest change was deliberately accepted, so its
+      // absence is the ordinary case rather than an unknown.
+      ...(digestChangedFrom ? { digest_changed_from: digestChangedFrom } : {}),
     },
   };
 
@@ -390,6 +416,12 @@ const DRAFT_OUTPUT_SCHEMA = {
             total: { type: 'integer', minimum: 0 },
           },
           required: ['spec', 'inline_context', 'files', 'history', 'diagnosis', 'total'],
+        },
+        digest_changed_from: {
+          type: 'string',
+          description: 'The model digest this session began with. Present ONLY on a refinement that '
+            + 'ran with allow_digest_change:true after the tag was re-pulled; `model_digest` then '
+            + 'holds the new weights. Absent means no digest change was accepted.',
         },
       },
       required: ['call', 'round', 'done_reason', 'timing_ms', 'input_tokens_estimate'],
@@ -489,6 +521,16 @@ const TOOLS = [
         diagnosis: { type: 'string', description: 'What is wrong and WHY, in terms of the cause. Include ordering/placement if it matters.' },
         files: { type: 'array', items: { type: 'string' }, description: 'Optional extra files to read as added context.' },
         num_predict: { type: 'number', description: `Max output tokens. Default ${DEFAULT_NUM_PREDICT}.` },
+        allow_digest_change: {
+          type: 'boolean',
+          default: false,
+          description: 'Ollama tags are mutable, so re-pulling a tag replaces the weights under a live '
+            + 'session. By default such a session is REFUSED, because its earlier turns came from '
+            + 'different weights. Set true only when you know the tag was re-pulled and want to '
+            + 'continue against the currently installed weights anyway: the result then reports the '
+            + 'NEW digest as `model_digest` and the old one as `telemetry.digest_changed_from`. '
+            + 'A model that is no longer installed at all is refused regardless of this flag.',
+        },
       },
       required: ['session', 'diagnosis'],
       additionalProperties: false,
@@ -591,10 +633,9 @@ async function callTool(name, args) {
       );
     }
     // Claim synchronously, before any I/O can let another call use this history.
-    if (session.refining) {
+    if (!claimSession(session)) {
       throw new Error(`Refinement already in progress for session "${args.session}". Retry this diagnosis after it finishes.`);
     }
-    session.refining = true;
     try {
       const numCtx = session.numCtx;
       const numPredict = Number(args.num_predict || DEFAULT_NUM_PREDICT);
@@ -611,9 +652,17 @@ async function callTool(name, args) {
       if (!current) {
         throw new Error(`Model "${session.model}" is no longer installed. Start again with ollama_generate.`);
       }
-      if (current.digest !== session.digest) {
-        throw new Error(`Model "${session.model}" digest has changed since this session began. Start again with ollama_generate.`);
+      // A changed digest is refused by default: the history was written by other
+      // weights. A caller who re-pulled the tag on purpose can opt in, and the
+      // acceptance is then recorded in the result rather than only in prose.
+      const digestChanged = current.digest !== session.digest;
+      if (digestChanged && !args.allow_digest_change) {
+        throw new Error(
+          `Model "${session.model}" digest has changed since this session began. Start again with ollama_generate, `
+          + `or pass allow_digest_change:true to continue against the currently installed weights.`,
+        );
       }
+      const digestChangedFrom = digestChanged ? session.digest : undefined;
       const round = session.round + 1;
       const result = await generate({
         messages, model: session.model, numCtx, numPredict, digest: current.digest,
@@ -623,7 +672,7 @@ async function callTool(name, args) {
       );
       return renderResult({
         model: session.model, result, sessionId: args.session, manifest,
-        numCtx, numPredict, call: 'refine', round, wallStarted,
+        numCtx, numPredict, call: 'refine', round, wallStarted, digestChangedFrom,
         inputEstimate: estimateInput({
           history: session.messages.map((message) => message.content).join('\n\n'),
           files: fileText,
@@ -672,6 +721,25 @@ async function handle(msg) {
   send({ jsonrpc: '2.0', id, error: { code: -32601, message: `Method not found: ${method}` } });
 }
 
+// A well-formed JSON-RPC 2.0 request frame. NOTE the deliberate absence of any
+// `id` requirement: a NOTIFICATION is a valid request with a method and no id,
+// and every real MCP client sends notifications/initialized immediately after
+// initialize. Requiring an id here would reject that frame and break every real
+// client while leaving unit tests that only exercise id-bearing calls green.
+function isRequestFrame(msg) {
+  return Boolean(msg)
+    && typeof msg === 'object'
+    && !Array.isArray(msg)
+    && msg.jsonrpc === '2.0'
+    && typeof msg.method === 'string';
+}
+
+// Per JSON-RPC 2.0: echo the id when it is a string or number, otherwise null.
+function echoableId(msg) {
+  const id = msg && typeof msg === 'object' && !Array.isArray(msg) ? msg.id : undefined;
+  return typeof id === 'string' || typeof id === 'number' ? id : null;
+}
+
 readline.createInterface({ input: process.stdin }).on('line', (line) => {
   if (!line.trim()) return;
   let msg;
@@ -680,8 +748,12 @@ readline.createInterface({ input: process.stdin }).on('line', (line) => {
   } catch {
     return;
   }
-  if (!msg || typeof msg !== 'object' || Array.isArray(msg)) {
-    return send({ jsonrpc: '2.0', id: null, error: { code: -32600, message: 'Invalid Request' } });
+  // A malformed ENVELOPE is -32600, not -32601: reporting a frame with no
+  // method as "method not found" blames the caller's routing for a framing bug.
+  if (!isRequestFrame(msg)) {
+    return send({
+      jsonrpc: '2.0', id: echoableId(msg), error: { code: -32600, message: 'Invalid Request' },
+    });
   }
   handle(msg).catch((e) => {
     if (msg.id !== undefined) toolError(msg.id, `adapter error: ${e.message}`);

@@ -65,32 +65,44 @@ async function startFakeOllama(chatReplies, inventories = [
   [{ name: 'qwen3-coder:30b', size: 18000000000, digest: 'digest-123' }],
 ]) {
   const requests = [];
+  const handlerErrors = [];
   let chatIndex = 0;
   let inventoryIndex = 0;
   const server = http.createServer((req, res) => {
     let raw = '';
     req.setEncoding('utf8');
     req.on('data', (chunk) => { raw += chunk; });
+    // This listener is async, so a throw inside it would become an unhandled
+    // rejection: the request would never be answered and the test would hang to
+    // the jest timeout instead of failing with the real cause. Catch and answer
+    // with the message, so a broken fixture fails fast and legibly.
     req.on('end', async () => {
-      const body = raw ? JSON.parse(raw) : null;
-      requests.push({ method: req.method, url: req.url, body });
-      res.setHeader('content-type', 'application/json');
-      if (req.url === '/api/tags') {
-        res.end(JSON.stringify({
-          models: inventories[Math.min(inventoryIndex++, inventories.length - 1)],
-        }));
-        return;
+      try {
+        const body = raw ? JSON.parse(raw) : null;
+        requests.push({ method: req.method, url: req.url, body });
+        res.setHeader('content-type', 'application/json');
+        if (req.url === '/api/tags') {
+          res.end(JSON.stringify({
+            models: inventories[Math.min(inventoryIndex++, inventories.length - 1)],
+          }));
+          return;
+        }
+        if (req.url === '/api/chat') {
+          const next = chatReplies[chatIndex++];
+          const reply = (typeof next === 'function' ? await next() : next)
+            || { status: 500, body: { error: 'unexpected inference' } };
+          res.statusCode = reply.status || 200;
+          res.end(JSON.stringify(reply.body || reply));
+          return;
+        }
+        res.statusCode = 404;
+        res.end(JSON.stringify({ error: 'not found' }));
+      } catch (e) {
+        handlerErrors.push(e);
+        if (res.writableEnded) return;
+        res.statusCode = 500;
+        res.end(JSON.stringify({ error: `fake ollama handler failed: ${e.message}` }));
       }
-      if (req.url === '/api/chat') {
-        const next = chatReplies[chatIndex++];
-        const reply = (typeof next === 'function' ? await next() : next)
-          || { status: 500, body: { error: 'unexpected inference' } };
-        res.statusCode = reply.status || 200;
-        res.end(JSON.stringify(reply.body || reply));
-        return;
-      }
-      res.statusCode = 404;
-      res.end(JSON.stringify({ error: 'not found' }));
     });
   });
   server.listen(0, '127.0.0.1');
@@ -99,6 +111,7 @@ async function startFakeOllama(chatReplies, inventories = [
   return {
     url: `http://127.0.0.1:${port}`,
     requests,
+    handlerErrors,
     close: () => new Promise((resolve) => server.close(resolve)),
   };
 }
@@ -129,6 +142,40 @@ describe('protocol', () => {
   test('an unknown method is a JSON-RPC error, not a crash', () => {
     const out = rpc([INIT, { jsonrpc: '2.0', id: 2, method: 'nope/nope' }]);
     expect(out[1].error.code).toBe(-32601);
+  });
+
+  // A malformed envelope is not an unknown method. Reporting -32601 for a frame
+  // that never named a method sends the client hunting for a routing fault.
+  test.each([
+    ['an object frame carrying no method', { jsonrpc: '2.0', id: 7 }, 7],
+    ['a method that is not a string', { jsonrpc: '2.0', id: 'abc', method: 42 }, 'abc'],
+    ['a jsonrpc version that is not 2.0', { jsonrpc: '1.0', id: 9, method: 'tools/list' }, 9],
+    ['a missing jsonrpc member', { id: 10, method: 'tools/list' }, 10],
+    ['an id of a type JSON-RPC cannot echo', { jsonrpc: '2.0', id: { nested: true } }, null],
+    ['a frame with no id at all', { jsonrpc: '2.0', params: {} }, null],
+    ['an array frame', [1, 2, 3], null],
+  ])('%s is Invalid Request with the echoable id', (_name, frame, expectedId) => {
+    const out = rpc([frame, INIT]);
+    expect(out).toContainEqual({
+      jsonrpc: '2.0', id: expectedId, error: { code: -32600, message: 'Invalid Request' },
+    });
+    // The adapter stays alive and answers the well-formed frame that follows.
+    expect(out.find((m) => m.id === INIT.id).result.protocolVersion).toBe('2025-06-18');
+  });
+
+  // The envelope guard must NOT require an id: notifications are valid frames
+  // with a method and no id, and notifications/initialized is sent by every real
+  // MCP client right after initialize. Rejecting it breaks every real client
+  // while leaving the id-bearing tests above green.
+  test('notifications/initialized is accepted, answered with nothing, and does not stall the session', () => {
+    const out = rpc([
+      INIT,
+      { jsonrpc: '2.0', method: 'notifications/initialized' },
+      { jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} },
+    ]);
+    expect(out.map((m) => m.id)).toEqual([1, 2]);
+    expect(out.some((m) => m.error && m.error.code === -32600)).toBe(false);
+    expect(out.find((m) => m.id === 2).result.tools).toHaveLength(3);
   });
 
   test('a raw null frame is an Invalid Request and leaves the adapter alive', () => {
@@ -203,6 +250,17 @@ describe('tool surface', () => {
     expect(telemetry.properties.input_tokens_estimate.required).toEqual([
       'spec', 'inline_context', 'files', 'history', 'diagnosis', 'total',
     ]);
+  });
+
+  test('refine declares the digest override as optional and off by default', () => {
+    const refine = tools().find((t) => t.name === 'ollama_refine');
+    const flag = refine.inputSchema.properties.allow_digest_change;
+    expect(flag).toMatchObject({ type: 'boolean', default: false });
+    expect(refine.inputSchema.required).not.toContain('allow_digest_change');
+    // Optional in the output too: its absence is the ordinary case.
+    const telemetry = refine.outputSchema.properties.telemetry;
+    expect(telemetry.properties.digest_changed_from).toMatchObject({ type: 'string' });
+    expect(telemetry.required).not.toContain('digest_changed_from');
   });
 
   test('refine requires a session, which only generate can mint', () => {
@@ -370,6 +428,150 @@ describe('Ollama contract', () => {
       await fake.close();
     }
   });
+
+  // At capacity the old check ran on EVERY write, including the re-set that ends
+  // a refinement. Refining any session other than the oldest therefore evicted a
+  // live sibling although nothing new was inserted. (Refining the oldest deleted
+  // and immediately re-added the same key, so only a non-oldest refine exposes
+  // the loss.)
+  test('a refinement at session capacity evicts no session', async () => {
+    const reply = { message: { role: 'assistant', content: 'draft' }, done_reason: 'stop' };
+    const fake = await startFakeOllama([reply, reply, reply, reply]);
+    const client = startRpc({ OLLAMA_HOST: fake.url, QWEN_MCP_MAX_SESSIONS: '2' });
+    try {
+      const open = async (spec) => {
+        const response = await client.call('tools/call', { name: 'ollama_generate', arguments: { spec } });
+        return response.result.structuredContent.session;
+      };
+      const oldest = await open('Return one assignment.');
+      const newest = await open('Return two assignments.');
+
+      const refinedNewest = await client.call('tools/call', {
+        name: 'ollama_refine', arguments: { session: newest, diagnosis: 'Use three.' },
+      });
+      expect(refinedNewest.result.isError).not.toBe(true);
+
+      const refinedOldest = await client.call('tools/call', {
+        name: 'ollama_refine', arguments: { session: oldest, diagnosis: 'Use four.' },
+      });
+      expect(refinedOldest.result.content[0].text).not.toMatch(/Unknown session/);
+      expect(refinedOldest.result.isError).not.toBe(true);
+      expect(refinedOldest.result.structuredContent).toMatchObject({
+        session: oldest, telemetry: { round: 1 },
+      });
+    } finally {
+      await client.close();
+      await fake.close();
+    }
+  });
+
+  test('allow_digest_change accepts re-pulled weights and records the digest it began with', async () => {
+    const original = [{ name: 'qwen3-coder:30b', size: 18000000000, digest: 'digest-123' }];
+    const repulled = [{ name: 'qwen3-coder:30b', size: 18000000000, digest: 'digest-456' }];
+    const reply = { message: { role: 'assistant', content: 'draft' }, done_reason: 'stop' };
+    const fake = await startFakeOllama([reply, reply, reply], [original, repulled, repulled]);
+    const client = startRpc({ OLLAMA_HOST: fake.url });
+    try {
+      const generated = await client.call('tools/call', {
+        name: 'ollama_generate', arguments: { spec: 'Return one assignment.' },
+      });
+      const session = generated.result.structuredContent.session;
+      expect(generated.result.structuredContent.model_digest).toBe('digest-123');
+
+      const accepted = await client.call('tools/call', {
+        name: 'ollama_refine',
+        arguments: { session, diagnosis: 'Use two.', allow_digest_change: true },
+      });
+      expect(accepted.result.isError).not.toBe(true);
+      // The NEW weights are what ran, so they are what the result reports; the
+      // old digest survives as the field that makes the change visible.
+      expect(accepted.result.structuredContent).toMatchObject({
+        model_digest: 'digest-456',
+        telemetry: { round: 1, digest_changed_from: 'digest-123' },
+      });
+      expect(accepted.result.content[0].text).toMatch(/digest-123 -> digest-456/);
+      expect(fake.requests.filter((request) => request.url === '/api/chat')).toHaveLength(2);
+
+      // The session now carries the new digest, so the next turn is unremarkable
+      // and must not keep re-announcing a change that already settled.
+      const settled = await client.call('tools/call', {
+        name: 'ollama_refine', arguments: { session, diagnosis: 'Use three.' },
+      });
+      expect(settled.result.structuredContent.model_digest).toBe('digest-456');
+      expect(settled.result.structuredContent.telemetry).not.toHaveProperty('digest_changed_from');
+    } finally {
+      await client.close();
+      await fake.close();
+    }
+  });
+
+  test('the default digest rejection stands and names the override', async () => {
+    const original = [{ name: 'qwen3-coder:30b', size: 18000000000, digest: 'digest-123' }];
+    const repulled = [{ name: 'qwen3-coder:30b', size: 18000000000, digest: 'digest-456' }];
+    const reply = { message: { role: 'assistant', content: 'draft' }, done_reason: 'stop' };
+    const fake = await startFakeOllama([reply], [original, repulled]);
+    const client = startRpc({ OLLAMA_HOST: fake.url });
+    try {
+      const generated = await client.call('tools/call', {
+        name: 'ollama_generate', arguments: { spec: 'Return one assignment.' },
+      });
+      const rejected = await client.call('tools/call', {
+        name: 'ollama_refine',
+        arguments: { session: generated.result.structuredContent.session, diagnosis: 'Use two.' },
+      });
+      expect(rejected.result.isError).toBe(true);
+      expect(rejected.result.content[0].text).toMatch(/digest has changed/i);
+      expect(rejected.result.content[0].text).toMatch(/allow_digest_change/);
+      expect(fake.requests.filter((request) => request.url === '/api/chat')).toHaveLength(1);
+    } finally {
+      await client.close();
+      await fake.close();
+    }
+  });
+
+  test('allow_digest_change does not override a model that is gone', async () => {
+    const original = [{ name: 'qwen3-coder:30b', size: 18000000000, digest: 'digest-123' }];
+    const reply = { message: { role: 'assistant', content: 'draft' }, done_reason: 'stop' };
+    const fake = await startFakeOllama([reply], [original, []]);
+    const client = startRpc({ OLLAMA_HOST: fake.url });
+    try {
+      const generated = await client.call('tools/call', {
+        name: 'ollama_generate', arguments: { spec: 'Return one assignment.' },
+      });
+      const rejected = await client.call('tools/call', {
+        name: 'ollama_refine',
+        arguments: {
+          session: generated.result.structuredContent.session,
+          diagnosis: 'Use two.',
+          allow_digest_change: true,
+        },
+      });
+      expect(rejected.result.isError).toBe(true);
+      expect(rejected.result.content[0].text).toMatch(/no longer installed/i);
+      expect(fake.requests.filter((request) => request.url === '/api/chat')).toHaveLength(1);
+    } finally {
+      await client.close();
+      await fake.close();
+    }
+  });
+
+  // The fixture harness itself: a throwing handler must fail the test with its
+  // own message, not hang the request until jest's timeout reports nothing.
+  test('a throwing fake-daemon handler surfaces its message instead of hanging', async () => {
+    const fake = await startFakeOllama([() => { throw new Error('fixture exploded'); }]);
+    const client = startRpc({ OLLAMA_HOST: fake.url });
+    try {
+      const { result } = await client.call('tools/call', {
+        name: 'ollama_generate', arguments: { spec: 'Return one assignment.' },
+      });
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toMatch(/fixture exploded/);
+      expect(fake.handlerErrors.map((e) => e.message)).toEqual(['fixture exploded']);
+    } finally {
+      await client.close();
+      await fake.close();
+    }
+  }, 10000);
 
   test('generation and refinement return telemetry for their rendered inputs', async () => {
     const generateReply = {

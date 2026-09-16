@@ -78,7 +78,9 @@ The input figures are estimates (`ceil(characters / 3.6)`), useful for locating
 prompt growth rather than accounting. `prompt_tokens` and `output_tokens` are
 the authoritative counts returned by Ollama. `model_digest` identifies the
 weights that ran and must be retained with any measurement because a model tag
-can change underneath it. Claude/Codex cost and correctness remain outside MCP
+can change underneath it. `telemetry.digest_changed_from` appears only on a
+refinement that accepted a mid-session weight change (below), and its absence is
+the ordinary case. Claude/Codex cost and correctness remain outside MCP
 visibility: this server observes only its local Ollama call, and every draft
 still requires independent verification.
 
@@ -108,6 +110,17 @@ overflows on another.
 list went stale the instant a better model was pulled: `qwen3-coder:30b` was
 installed and absent from the list, so every default call got the
 general-instruct tag that measured worst.
+
+**A refinement runs against the weights its session started on.** Ollama tags are
+mutable pointers, so `ollama pull` can replace a model underneath a live session
+and leave a history whose earlier turns came from different weights. By default
+`ollama_refine` refuses such a session outright, before inference, and says to
+start again with `ollama_generate`. A caller who re-pulled the tag on purpose can
+pass `allow_digest_change: true` to continue against the currently installed
+weights; the result then reports the **new** digest as `model_digest` and the one
+the session began with as `telemetry.digest_changed_from`, so the change is a
+field rather than a footnote. The flag does not soften anything else: a model
+that is no longer installed at all is refused whatever it is set to.
 
 **`node:http`, not `fetch`.** A non-streaming 30B generation outlives undici's
 300-second header timeout and surfaces as a bare `fetch failed` — indistinguishable
