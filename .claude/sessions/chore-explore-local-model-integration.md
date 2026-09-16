@@ -72,6 +72,15 @@ correctness through independent verification.
 - 2026-09-16: Operator selected subagent-driven implementation. Renamed the
   active Herdr agent and tab to `ned`, verified the branch is already in an
   isolated linked worktree, and prepared the plan-specific SDD workspace.
+- 2026-09-16: Captured the pre-instrumentation live baseline with
+  `cd vernaculus && npm run smoke:generate`: resolved model
+  `qwen3-coder:30b`, digest `06c1097efce0`, generation 10.6s, 94 prompt
+  tokens, and 138 output tokens. Generation and refinement passed; the
+  refinement result remained an unverified draft as designed.
+- 2026-09-16: Added a loopback fake-Ollama contract harness that freezes the
+  successful generation request payload and text-only execution-error shape.
+  `cd vernaculus && npm test -- --runInBand` passed 21 tests without a real
+  Ollama request for either new contract test.
 
 ## Approach
 
@@ -86,12 +95,13 @@ correctness through independent verification.
    overhead. Do not change the skill or delegation policy in this pass.
 
 ## Next Steps
-1. Execute
+1. Execute the remaining tasks in
    `docs/superpowers/plans/2026-09-16-vernaculus-observability.md` with one
    implementer and one independent review per task.
-2. Capture the baseline and implement the instrumentation.
-3. Measure the full loop on `qwen3-coder:30b` before revising the MCP interface
-   or skill guidance.
+2. Add the approved telemetry fields without changing the frozen payload or
+   text-only execution-error contract.
+3. Measure the post-instrumentation full loop on `qwen3-coder:30b` before
+   revising the MCP interface or skill guidance.
 
 ## Files Changed
 
@@ -99,3 +109,4 @@ correctness through independent verification.
 - `docs/superpowers/plans/2026-09-16-vernaculus-observability.md`
 - `docs/superpowers/specs/2026-09-16-vernaculus-observability-design.md`
 - `vernaculus/README.md` (pre-existing registration findings preserved)
+- `vernaculus/__tests__/server.test.js`

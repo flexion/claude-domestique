@@ -6,7 +6,10 @@
 // start, so the smoke test is the acceptance criterion, not this file.
 
 const path = require('node:path');
-const { spawnSync } = require('node:child_process');
+const http = require('node:http');
+const readline = require('node:readline');
+const { once } = require('node:events');
+const { spawn, spawnSync } = require('node:child_process');
 
 const SERVER = path.join(__dirname, '..', 'mcp', 'server.js');
 
@@ -19,6 +22,78 @@ function rpc(messages) {
     .split('\n')
     .filter((l) => l.trim())
     .map((l) => JSON.parse(l));
+}
+
+function startRpc(env = {}) {
+  const child = spawn(process.execPath, [SERVER], {
+    env: { ...process.env, ...env },
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+  const pending = new Map();
+  let nextId = 1;
+  let stderr = '';
+
+  child.stderr.on('data', (chunk) => { stderr += chunk; });
+  readline.createInterface({ input: child.stdout }).on('line', (line) => {
+    const message = JSON.parse(line);
+    const waiter = pending.get(message.id);
+    if (waiter) {
+      pending.delete(message.id);
+      waiter.resolve(message);
+    }
+  });
+
+  return {
+    call(method, params) {
+      const id = nextId++;
+      return new Promise((resolve, reject) => {
+        pending.set(id, { resolve, reject });
+        child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id, method, params })}\n`);
+      });
+    },
+    async close() {
+      child.stdin.end();
+      await once(child, 'close');
+      if (child.exitCode !== 0) throw new Error(stderr || `MCP server exited ${child.exitCode}`);
+    },
+  };
+}
+
+async function startFakeOllama(chatReplies) {
+  const requests = [];
+  let chatIndex = 0;
+  const server = http.createServer((req, res) => {
+    let raw = '';
+    req.setEncoding('utf8');
+    req.on('data', (chunk) => { raw += chunk; });
+    req.on('end', () => {
+      const body = raw ? JSON.parse(raw) : null;
+      requests.push({ method: req.method, url: req.url, body });
+      res.setHeader('content-type', 'application/json');
+      if (req.url === '/api/tags') {
+        res.end(JSON.stringify({
+          models: [{ name: 'qwen3-coder:30b', size: 18000000000, digest: 'digest-123' }],
+        }));
+        return;
+      }
+      if (req.url === '/api/chat') {
+        const reply = chatReplies[chatIndex++];
+        res.statusCode = reply.status || 200;
+        res.end(JSON.stringify(reply.body || reply));
+        return;
+      }
+      res.statusCode = 404;
+      res.end(JSON.stringify({ error: 'not found' }));
+    });
+  });
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  const { port } = server.address();
+  return {
+    url: `http://127.0.0.1:${port}`,
+    requests,
+    close: () => new Promise((resolve) => server.close(resolve)),
+  };
 }
 
 const INIT = {
@@ -112,6 +187,57 @@ describe('tool surface', () => {
     expect(gen.inputSchema.properties.inline_context.description).toMatch(/files/);
     // The old `context` name invited pasting; it should be gone.
     expect(gen.inputSchema.properties.context).toBeUndefined();
+  });
+});
+
+describe('Ollama contract', () => {
+  test('generation sends the established Ollama request unchanged', async () => {
+    const fake = await startFakeOllama([{
+      message: { role: 'assistant', content: '```js\nmodule.exports = 1;\n```' },
+      done_reason: 'stop',
+      prompt_eval_count: 7,
+      eval_count: 5,
+    }]);
+    const client = startRpc({ OLLAMA_HOST: fake.url });
+    try {
+      await client.call('initialize', INIT.params);
+      const spec = 'Return one CommonJS assignment.';
+      const response = await client.call('tools/call', {
+        name: 'ollama_generate', arguments: { spec, model: 'qwen3-coder:30b' },
+      });
+      expect(response.result.isError).not.toBe(true);
+      const chat = fake.requests.find((request) => request.url === '/api/chat');
+      expect(chat.body).toEqual({
+        model: 'qwen3-coder:30b',
+        stream: false,
+        truncate: false,
+        shift: false,
+        options: { num_ctx: 32768, num_predict: 4096 },
+        messages: [{ role: 'user', content: spec }],
+      });
+    } finally {
+      await client.close();
+      await fake.close();
+    }
+  });
+
+  test('Ollama execution errors remain text-only tool errors', async () => {
+    const fake = await startFakeOllama([{ status: 500, body: { error: 'forced failure' } }]);
+    const client = startRpc({ OLLAMA_HOST: fake.url });
+    try {
+      await client.call('initialize', INIT.params);
+      const response = await client.call('tools/call', {
+        name: 'ollama_generate', arguments: { spec: 'Return one assignment.', model: 'qwen3-coder:30b' },
+      });
+      expect(response.result.isError).toBe(true);
+      expect(response.result.content).toEqual([
+        { type: 'text', text: expect.stringContaining('Ollama HTTP 500') },
+      ]);
+      expect(response.result.structuredContent).toBeUndefined();
+    } finally {
+      await client.close();
+      await fake.close();
+    }
   });
 });
 
