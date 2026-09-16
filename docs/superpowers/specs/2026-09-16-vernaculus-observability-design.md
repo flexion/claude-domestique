@@ -124,6 +124,12 @@ Implementation changes are limited to:
 - `vernaculus/README.md`
 - Vernaculus version metadata updated by `scripts/bump-version.js`
 
+Planning exposed one repository prerequisite outside the plugin: the version
+bump script's allowlist predates Vernaculus, so the required minor bump cannot
+currently run. Add Vernaculus to that allowlist with a fixture test, and add
+the test to the root script-test commands. This is release plumbing only; it
+does not alter the MCP contract or delegation behavior.
+
 Existing unrelated edits in `vernaculus/README.md` must remain intact. This is
 a new plugin capability, so the Vernaculus version receives one minor bump after
 the substantive changes.

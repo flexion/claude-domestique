@@ -63,6 +63,15 @@ correctness through independent verification.
   `docs/superpowers/specs/2026-09-16-vernaculus-observability-design.md`.
 - 2026-09-16: Operator approved the written design and requested a checkpoint
   commit before implementation planning.
+- 2026-09-16: Committed the approved design, session state, and pre-existing
+  Vernaculus registration guidance as `d638f18`.
+- 2026-09-16: Wrote and self-reviewed the observability implementation plan.
+  Planning identified one release prerequisite: `scripts/bump-version.js`
+  predates Vernaculus and needs a fixture-tested allowlist update before the
+  required minor plugin bump can run.
+- 2026-09-16: Operator selected subagent-driven implementation. Renamed the
+  active Herdr agent and tab to `ned`, verified the branch is already in an
+  isolated linked worktree, and prepared the plan-specific SDD workspace.
 
 ## Approach
 
@@ -77,7 +86,9 @@ correctness through independent verification.
    overhead. Do not change the skill or delegation policy in this pass.
 
 ## Next Steps
-1. Write the implementation plan.
+1. Execute
+   `docs/superpowers/plans/2026-09-16-vernaculus-observability.md` with one
+   implementer and one independent review per task.
 2. Capture the baseline and implement the instrumentation.
 3. Measure the full loop on `qwen3-coder:30b` before revising the MCP interface
    or skill guidance.
@@ -85,5 +96,6 @@ correctness through independent verification.
 ## Files Changed
 
 - `.claude/sessions/chore-explore-local-model-integration.md`
+- `docs/superpowers/plans/2026-09-16-vernaculus-observability.md`
 - `docs/superpowers/specs/2026-09-16-vernaculus-observability-design.md`
 - `vernaculus/README.md` (pre-existing registration findings preserved)
