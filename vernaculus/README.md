@@ -30,6 +30,21 @@ claude mcp add vernaculus -- node <abs-path>/vernaculus/mcp/server.js
 Codex uses `codex mcp add` with the same command vector. Remove with
 `claude mcp remove vernaculus`.
 
+Two ways that registration goes wrong, both observed:
+
+**The script path gets dropped**, leaving `command: node` with empty `args`.
+Bare `node` is a REPL: it reads stdin, answers no JSON-RPC, and the host waits
+out its full handshake timeout before reporting `connection timed out`. The
+error names the server, so it reads like a fault in `server.js` when the server
+was never started. Confirm what was actually stored — `claude mcp list` prints
+the whole command vector, and `node ` with nothing after it is the bug.
+
+**The path points into a git worktree.** Registration is keyed by the main
+repository path even when added from a worktree, so the entry outlives the
+worktree that satisfied it and breaks on removal. Register against the main
+checkout unless the plugin only exists on a branch, and re-point the entry once
+that branch merges.
+
 ## Verifying it works
 
 Neither validator catches a broken MCP server. `scripts/validate-plugins.js`
