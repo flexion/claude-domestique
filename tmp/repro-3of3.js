@@ -16,10 +16,13 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const os = require('node:os');
 const { execFileSync } = require('node:child_process');
 
 const REPO = path.resolve(__dirname, '..');
-const SANDBOX = path.join(__dirname, 'repro-sandbox');
+// Outside the repo: a sandbox holding a copy of a real test file trips the
+// root suite's orphaned-test guard, which scans the working tree.
+const SANDBOX = path.join(os.tmpdir(), 'vernaculus-repro-sandbox');
 const SRC_REL = 'comitatus/skills/herdr/scripts/up.js';
 const TEST_REL = 'comitatus/__tests__/up.test.js';
 const STUB = (n) => `function ${n}(/* SIGNATURE AND BODY REMOVED - YOU WRITE THIS */) {\n  throw new Error('not implemented');\n}`;

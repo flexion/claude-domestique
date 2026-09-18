@@ -1,0 +1,75 @@
+[
+  {
+    "name": "parseSelector",
+    "passed": false,
+    "attempts": 3,
+    "totalSecs": 165.23,
+    "log": [
+      {
+        "attempt": 1,
+        "genSecs": 50.869,
+        "promptTokens": 11891,
+        "evalTokens": 349,
+        "result": "red"
+      },
+      {
+        "attempt": 2,
+        "genSecs": 55.214,
+        "promptTokens": 13857,
+        "evalTokens": 383,
+        "result": "red"
+      },
+      {
+        "attempt": 3,
+        "genSecs": 55.341,
+        "promptTokens": 14227,
+        "evalTokens": 345,
+        "result": "red"
+      }
+    ]
+  },
+  {
+    "name": "makeAgent",
+    "passed": false,
+    "attempts": 3,
+    "totalSecs": 126.944,
+    "log": [
+      {
+        "attempt": 1,
+        "genSecs": 40.037,
+        "promptTokens": 11961,
+        "evalTokens": 182,
+        "result": "red"
+      },
+      {
+        "attempt": 2,
+        "genSecs": 41.732,
+        "promptTokens": 12359,
+        "evalTokens": 182,
+        "result": "red"
+      },
+      {
+        "attempt": 3,
+        "genSecs": 41.432,
+        "promptTokens": 12359,
+        "evalTokens": 182,
+        "result": "red"
+      }
+    ]
+  },
+  {
+    "name": "parseArgs",
+    "passed": true,
+    "attempts": 1,
+    "totalSecs": 48.3,
+    "log": [
+      {
+        "attempt": 1,
+        "genSecs": 46.901,
+        "promptTokens": 11889,
+        "evalTokens": 399,
+        "result": "green"
+      }
+    ]
+  }
+]
