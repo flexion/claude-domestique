@@ -48,10 +48,13 @@ This:
 > TRUNCATES the result array — it does not put the unsplit remainder in the last
 > element the way Python's `maxsplit` does. Use `indexOf(':')` then `slice()`.
 
-That one paragraph fixed a function that had failed nine automated retries.
+**Read the draft before you diagnose.** A cause inferred from the failing test
+alone names the wrong defect — and the model then applies that wrong cause
+faithfully, leaving the real one untouched. Open the code it wrote and find the
+mechanism there.
 
-**State ordering and placement explicitly.** Twice in the same session an
-underspecified diagnosis was implemented faithfully and still failed:
+**State ordering and placement explicitly.** An underspecified diagnosis is
+implemented faithfully and still fails:
 
 - "Add the missing-model check" — it was added *after* the effort check, so the
   wrong error won on an input where both applied.
@@ -81,20 +84,26 @@ nearly as long as the code.
 refactors. The measured failure mode is confident, plausible, wrong code that
 reads cleanly.
 
+**A more complete brief does not avoid the loop.** Structure supplied before the
+first attempt — acceptance criteria, ordering rules, the exact strings required —
+has not moved a result; only a diagnosis after an observed failure has. Budget
+for generate → verify → diagnose → refine, not for a spec good enough to
+one-shot.
+
 ## Verifying
 
 `verified` is always `false` in the result. The server never runs the code.
 
-A passing test suite is **necessary and not sufficient**. In this session a draft
-passed all 59 tests while silently accepting malformed input the original
-rejected, and another added an unrequested helper function. Run a differential
+A passing test suite is **necessary and not sufficient**. A draft has passed a
+complete suite while silently accepting malformed input the original rejected;
+another added an unrequested helper function. Run a differential
 probe against the original where one exists: feed both the same edge inputs and
 compare values and throw/no-throw, not just the test result.
 
-Expect error-message wording to differ. Two models from different vendors
-produced byte-identical divergences from this repository's phrasing, which says
-the repository's wording is the idiosyncratic part. If exact strings matter, say
-so in the spec — they are asserted character for character in many suites.
+Expect error-message wording to differ; the repository's phrasing is the
+idiosyncratic part, not the model's. If exact strings matter, say so in the
+spec — many suites assert them character for character, and this is the failure
+that survives an otherwise correct function.
 
 ## Reading the result
 
@@ -124,7 +133,9 @@ sibling are different models — `qwen3:30b` is not `qwen3-coder:30b`.
 
 ## Further reading
 
-`references/local-model-delegation-findings.md` carries the full measurements and
-the options considered. `references/launch-surface.md` covers the mechanical
+`references/front-loaded-contract-experiment.md` carries the measurements behind
+the two rules above: a complete brief does not avoid the loop, and the model
+cannot diagnose itself. `references/local-model-delegation-findings.md` carries
+the earlier measurements and the options considered. `references/launch-surface.md` covers the mechanical
 launcher surface for running a local model as a peer agent instead of a
 subordinate tool — a different topology with different failure modes.

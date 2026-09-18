@@ -64,18 +64,28 @@ nothing.
 ### The part that matters
 
 In both conditions `makeAgent` fails on exactly one test: **`opencode without a
-model throws`**. That is the precise rule the contract stated, near the top of the
-prompt:
+model throws`**.
 
-> For opencode, a selector carrying no model throws the missing-model error EVEN
-> WHEN `effort=` is also present. The effort rejection applies only when a model
-> IS present. Getting these two the wrong way round makes the wrong error win.
+The draft's check *ordering* is correct — missing-model precedes effort. What it
+gets wrong is the thrown message: it emits
 
-The model was told the exact defect, in plain language, before writing a line, and
-produced the defect anyway. It is the same failure recorded in the skill from an
-earlier session — "add the missing-model check", implemented after the effort
-check so the wrong error won. Twice now, in two different framings, against two
-different prompt shapes.
+```
+--opencode selector needs a value (or drop the trailing ":")
+```
+
+where the test asserts `.toThrow(/<handle>:<model>/)`. The defect is exact error
+text, not precedence.
+
+The contract block listed the required substring `<handle>:<model>` explicitly,
+under a heading reading EXACT ERROR TEXT (asserted by regex, character for
+character). The model was handed the literal string it had to produce, in a
+section that said so, and produced different wording anyway.
+
+It is also worth recording how close the draft is. `makeAgent` is one error
+message away from passing a 500-line suite. "1 of 3" undersells the state of the
+generation; what fails is narrow and specific, and it is the failure class the
+skill already names — model-authored error wording diverging from a repository's
+idiosyncratic phrasing, which many suites assert character for character.
 
 ### Format compliance needs no enforcement
 
@@ -110,6 +120,38 @@ enforcing something that does not fail.
   finding.
 - This tests front-loading only. It says nothing about whether a *better*
   diagnosis, or a differently shaped refinement, would help.
+
+## Follow-up: can the model diagnose itself?
+
+Same fixture, `makeAgent` only, three arms branching from one shared cold draft
+so they are paired: **raw** (the failing Jest output, fix it), **self** (one call
+asks for the cause with code forbidden, a second hands the model its own words
+back), **oracle** (a human-written cause naming mechanism, location and the
+literal substring required). Harness: `tmp/self-diagnosis-probe.js`.
+
+| arm | green |
+|---|---|
+| raw | 0/3 |
+| self | 0/3 |
+| oracle | 1/3 |
+
+**The model describes its own defect accurately and still cannot fix it.** Its
+stated causes correctly identify the message-pattern mismatch and quote its own
+thrown string. Articulation and capability come apart, so routing the diagnosis
+step to the local model does not move the caller's cost.
+
+**A correct diagnosis converted 1 of 3.** That sits against the 3-of-3 recorded
+elsewhere in this plugin for diagnosed refinement. The runs differ in model and
+in function set, and the earlier figure may have come from a caller iterating
+rather than from one directed turn. Unresolved; treat the 3-of-3 as
+condition-specific rather than as the expected yield.
+
+A first version of the oracle arm scored 0/3 because its diagnosis was written
+from the failing test without reading the draft, and named an ordering defect the
+draft did not have. The model applied that wrong cause faithfully and the real
+defect survived — the caller-side instance of the failure mode this plugin's
+skill already documents. `tmp/self-diagnosis-results-badoracle.json` holds that
+run; it is kept because the mechanism is the finding.
 
 ## The question it opens
 

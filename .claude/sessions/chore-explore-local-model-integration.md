@@ -163,6 +163,23 @@ correctness through independent verification.
   data in `tmp/ab-contract-probe.js` and `tmp/ab-results.json`. The contract-first
   schema was NOT built.
 
+- 2026-09-18: Decided the tool-interface question. NOT built: the contract-first
+  input schema (front-loading structure changed nothing, 0/3, 0/3, 3/3 in both
+  conditions); an enforced output-format contract (18 of 18 generations were
+  format-clean, nothing to enforce); a size or complexity bound (never supported —
+  the evidence describes an economic break-even and a kind exclusion, not a size
+  limit). Follow-up experiment on self-diagnosis also null: raw 0/3, self 0/3,
+  oracle 1/3. The model states its own defect accurately and still cannot fix it,
+  so the diagnosis step cannot be routed to it. The oracle's 1/3 sits against the
+  3-of-3 recorded in the skill; unresolved, and flagged in the reference.
+  Built instead: three small evidence-backed edits — `spec` now names exact-string
+  assertion, `ollama_refine` now says to read the draft before diagnosing,
+  `ollama_models` gained a limitation and a cross-reference — plus the same two
+  rules in the skill. Descriptions trimmed of provenance and measurement
+  narrative; that record lives here and in
+  `vernaculus/references/front-loaded-contract-experiment.md`, not in artifacts
+  read at decision time.
+
 ## Approach
 
 1. Capture the current generate/refine smoke scenario against explicit

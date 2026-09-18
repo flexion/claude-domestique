@@ -1,0 +1,100 @@
+{
+  "tally": {
+    "raw": {
+      "green": 0,
+      "n": 3
+    },
+    "self": {
+      "green": 0,
+      "n": 3
+    },
+    "oracle": {
+      "green": 1,
+      "n": 3
+    }
+  },
+  "results": [
+    {
+      "arm": "raw",
+      "run": 1,
+      "format": true,
+      "passed": false,
+      "failing": [
+        "opencode without a model throws"
+      ]
+    },
+    {
+      "arm": "self",
+      "run": 1,
+      "selfCause": "The cause of the failure is that the `makeAgent` function throws a generic error message when an opencode agent has no model specified, but the test expects it to throw an error with the specific pattern `<handle>:<model>` in the message. The implementation checks for `model === null` after calling `parseSelector`, which correctly identifies the missing model, but uses the wrong error message format that doesn't match what the test expects. The test expects the error to be about the selector needing a value in the `<handle>:<model>` format, not about the opencode-specific constraint.",
+      "format": true,
+      "passed": false,
+      "failing": [
+        "opencode without a model throws"
+      ]
+    },
+    {
+      "arm": "oracle",
+      "run": 1,
+      "format": true,
+      "passed": false,
+      "failing": [
+        "opencode without a model throws"
+      ]
+    },
+    {
+      "arm": "raw",
+      "run": 2,
+      "format": true,
+      "passed": false,
+      "failing": [
+        "opencode without a model throws"
+      ]
+    },
+    {
+      "arm": "self",
+      "run": 2,
+      "selfCause": "The cause of the failure is that the `makeAgent` function throws a generic error message when an opencode agent has no model specified, but the test expects it to throw an error with the specific pattern `<handle>:<model>` in the message. The implementation checks for `model === null` after calling `parseSelector`, which correctly identifies the missing model, but uses the wrong error message format that doesn't match what the test is expecting. The test expects the error to be about the selector needing a value in the `<handle>:<model>` format, but the current code throws a message about the selector needing a value without the specific format requirement that the test is checking for.",
+      "format": true,
+      "passed": false,
+      "failing": [
+        "opencode without a model throws"
+      ]
+    },
+    {
+      "arm": "oracle",
+      "run": 2,
+      "format": true,
+      "passed": false,
+      "failing": [
+        "opencode without a model throws"
+      ]
+    },
+    {
+      "arm": "raw",
+      "run": 3,
+      "format": true,
+      "passed": false,
+      "failing": [
+        "opencode without a model throws"
+      ]
+    },
+    {
+      "arm": "self",
+      "run": 3,
+      "selfCause": "The cause of the failure is that the `makeAgent` function throws a generic \"selector needs a value\" error message instead of the expected \"<handle>:<model>\" pattern when an opencode agent is specified without a model. This happens because the check for `model === null` occurs after `parseSelector` has already been called, but `parseSelector` itself throws a different error message than what the test expects for this specific case. The function should detect the absence of a model for opencode agents before calling `parseSelector` and throw an error with the exact message format expected by the test.",
+      "format": true,
+      "passed": false,
+      "failing": [
+        "opencode without a model throws"
+      ]
+    },
+    {
+      "arm": "oracle",
+      "run": 3,
+      "format": true,
+      "passed": true,
+      "failing": []
+    }
+  ]
+}

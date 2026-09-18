@@ -434,9 +434,11 @@ const TOOLS = [
   {
     name: 'ollama_models',
     description:
-      'List the models actually installed on the local Ollama daemon, with size and whether each '
-      + 'supports tool calling. Call this before ollama_generate if unsure what is available - model '
-      + 'tags differ per machine and a guessed tag fails at generation time, not at load time.',
+      'List the models installed on the local Ollama daemon, with size and capabilities. Call this '
+      + 'before ollama_generate when unsure what is available - tags differ per machine and a guessed '
+      + 'tag fails at generation time, not at load time.\n'
+      + 'Reports what is installed, not what is resident or how well it writes code. `default_model` is '
+      + 'the tag ollama_generate uses when `model` is omitted.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
     outputSchema: {
       type: 'object',
@@ -462,22 +464,25 @@ const TOOLS = [
   {
     name: 'ollama_generate',
     description:
-      'Draft code or text using a locally hosted model. Returns an UNVERIFIED first draft: the local '
-      + 'model is smaller than you and has been observed to write confident, plausible, wrong code on '
-      + 'specifications that state the rule and give a worked example. Read what comes back, test it, '
-      + 'and fix it before using it.\n'
-      + 'Pass context with `files` (read locally, costs you nothing) rather than pasting source into '
-      + '`context` - pasting spends your own output tokens to resend what is already on disk.\n'
-      + 'MEASURED: cold single-shot delegation solved 1 of 3 real functions in this repository; the '
-      + 'same model solved 3 of 3 when the caller read the failing draft and sent back a diagnosis '
-      + 'naming the CAUSE. A failing test shows a symptom and cannot say why. So expect to call '
-      + 'ollama_refine with the returned `session` - one-shot is the mode that does not work.\n'
-      + 'Prefer this for well-specified, low-risk, self-contained work. Do not delegate architecture, '
-      + 'security, concurrency, or multi-file refactors.',
+      'Draft code or text using a locally hosted model. Returns an UNVERIFIED first draft: this model '
+      + 'writes confident, plausible, wrong code even when the spec states the rule and shows a worked '
+      + 'example. Test it before using it.\n'
+      + 'Pass context with `files`, not by pasting into `inline_context`: `files` is read locally, '
+      + 'pasted text is spent from your own output budget.\n'
+      + 'Expect to call ollama_refine with the returned `session`. One shot is not the working mode, '
+      + 'and a more complete spec does not avoid the loop - only a diagnosis naming the CAUSE of an '
+      + 'observed failure has moved a result. A failing test shows a symptom and cannot say why.\n'
+      + 'Prefer well-specified, low-risk, self-contained work. Do not delegate architecture, security, '
+      + 'concurrency, or multi-file refactors.',
     inputSchema: {
       type: 'object',
       properties: {
-        spec: { type: 'string', description: 'What to write. Be complete: the model sees only this, the files, and context.' },
+        spec: {
+          type: 'string',
+          description: 'What to write. The model sees only this, `files` and `inline_context`. '
+            + 'State any string that is asserted exactly - error messages, log lines: model wording '
+            + 'diverges from a repository\'s phrasing and suites assert it character for character.',
+        },
         files: {
           type: 'array',
           items: { type: 'string' },
@@ -501,16 +506,13 @@ const TOOLS = [
     name: 'ollama_refine',
     description:
       'Continue a previous ollama_generate with a diagnosis, keeping the prior turns in context. This '
-      + 'is the tool that makes delegation work: measured on three real functions, cold generation got '
-      + '1 of 3 and refinement with a named cause got 3 of 3, with directed turns running roughly twice '
-      + 'as fast as cold ones.\n'
+      + 'is the step that makes delegation work.\n'
       + 'Send the CAUSE, not the symptom. "Expected x, received y" is what the test already said and it '
       + 'does not help. "You used spec.split(\':\', 2); JavaScript\'s split with a limit TRUNCATES rather '
-      + 'than keeping the remainder, unlike Python maxsplit - use indexOf and slice" is a cause, and it '
-      + 'fixed a function that had failed nine consecutive automated retries.\n'
-      + 'Be specific about ordering and placement too: an underspecified diagnosis gets implemented '
-      + 'faithfully and still fails - measured twice, once on check ordering and once on where a '
-      + 'validation loop belonged.\n'
+      + 'than keeping the remainder, unlike Python maxsplit - use indexOf and slice" is a cause.\n'
+      + 'Read the draft before diagnosing. A cause inferred from the failing test alone names the wrong '
+      + 'defect, and the model then applies it faithfully and still fails. State ordering and placement '
+      + 'explicitly when they matter.\n'
       + 'Use ollama_generate, not this tool, to START a draft; this tool requires a `session` that only '
       + 'ollama_generate can mint. Sessions live in this server process only and are lost on restart - '
       + 'an unknown session means starting over with ollama_generate rather than retrying here.',
