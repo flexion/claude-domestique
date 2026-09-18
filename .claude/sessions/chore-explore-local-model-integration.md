@@ -150,6 +150,19 @@ correctness through independent verification.
   51 tests in `vernaculus`, both with a real endpoint and with `OLLAMA_HOST`
   unreachable, and 677 at the repository root.
 
+- 2026-09-18: Measured whether front-loading a structured task contract into a
+  cold call substitutes for a post-failure diagnosis. It does not. Same fixture
+  (`up.js` blanked one function at a time, real Jest suite as the spec), two
+  conditions differing only in a prepended contract block whose every claim was
+  derivable from the test file both conditions already received. Result identical
+  in every cell: 0/3, 0/3, 3/3 under both. In both conditions `makeAgent` failed
+  on exactly one test, `opencode without a model throws` — the precise ordering
+  rule the contract stated explicitly. 18 of 18 generations were format-clean, so
+  an enforced output-format contract has nothing to enforce. Recorded in
+  `vernaculus/references/front-loaded-contract-experiment.md`; harness and raw
+  data in `tmp/ab-contract-probe.js` and `tmp/ab-results.json`. The contract-first
+  schema was NOT built.
+
 ## Approach
 
 1. Capture the current generate/refine smoke scenario against explicit
