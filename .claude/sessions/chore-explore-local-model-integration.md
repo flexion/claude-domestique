@@ -180,6 +180,14 @@ correctness through independent verification.
   `vernaculus/references/front-loaded-contract-experiment.md`, not in artifacts
   read at decision time.
 
+- 2026-09-18: Reproduced the skill's 3-of-3 claim through the MCP tools on all
+  three functions with draft-informed diagnoses: green in 1, 2 and 1 rounds. The
+  earlier 1-of-3 was a bad diagnosis, not a weaker model. "Zero behavioural
+  divergence" did NOT reproduce and was removed from the skill: `makeAgent` passed
+  only by throwing `new Error('<handle>:<model>')` after being told its message
+  needed that literal substring. Skill gained a warning about diagnoses that name
+  a required pattern being satisfied literally.
+
 ## Approach
 
 1. Capture the current generate/refine smoke scenario against explicit

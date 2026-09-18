@@ -25,7 +25,7 @@ verbatim:
 | --- | --- |
 | cold, single shot | 1 of 3 |
 | plus automatic retries on raw test output | 1–2 of 3; one function failed 9 consecutive times |
-| plus a diagnosis naming the cause | **3 of 3, zero behavioural divergence** |
+| plus a diagnosis naming the cause | **3 of 3**, in one or two directed rounds |
 
 Nothing changed but whether the orchestrator read the failure and said why.
 Directed turns also ran roughly twice as fast as cold ones, because the model
@@ -104,6 +104,12 @@ Expect error-message wording to differ; the repository's phrasing is the
 idiosyncratic part, not the model's. If exact strings matter, say so in the
 spec — many suites assert them character for character, and this is the failure
 that survives an otherwise correct function.
+
+**Naming the required pattern in a diagnosis invites it to be satisfied
+literally.** Told that its message had to contain `<handle>:<model>`, a draft
+threw exactly `new Error('<handle>:<model>')` — green suite, useless error. Ask
+for a message that *contains* the substring and still reads as an error, then
+check what came back.
 
 ## Reading the result
 

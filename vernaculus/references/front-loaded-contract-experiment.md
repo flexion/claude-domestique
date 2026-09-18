@@ -153,6 +153,39 @@ defect survived — the caller-side instance of the failure mode this plugin's
 skill already documents. `tmp/self-diagnosis-results-badoracle.json` holds that
 run; it is kept because the mechanism is the finding.
 
+
+## Reproduction of the 3-of-3 claim
+
+Run 2026-09-18 through the vernaculus MCP tools (not raw HTTP), `qwen3-coder:30b`
+at digest `06c1097efce0`, all three functions, with each diagnosis written after
+reading that run's actual draft. Harness: `tmp/repro-3of3.js`.
+
+| target | rounds to green |
+|---|---|
+| `parseSelector` | 1 |
+| `makeAgent` | 2 |
+| `parseArgs` | 1 |
+
+**3 of 3 reproduces.** The earlier 1-of-3 in the self-diagnosis follow-up is
+explained by the diagnosis, not by the model: that arm used a single directed
+turn on one function, with a cause written from the failing test rather than from
+the draft. A draft-informed diagnosis naming each defect and its mechanism
+converts all three.
+
+**"Zero behavioural divergence" does not reproduce**, and that phrase has been
+removed from the skill. `makeAgent` went green only after being told its thrown
+message had to contain the literal `<handle>:<model>`, whereupon it threw exactly
+`new Error('<handle>:<model>')` — a passing suite and a useless error message.
+The suite cannot see the difference; a reader can.
+
+Two further observations from the run:
+
+- The cold `parseSelector` draft independently reproduced the `spec.split(':', 2)`
+  truncation this plugin's skill already uses as its worked example of a cause.
+- Diagnosis phrasing carries real weight. Naming the required substring once was
+  not enough; the round that landed said explicitly that the regex is a literal
+  pattern whose characters must appear verbatim.
+
 ## The question it opens
 
 Why does a post-failure diagnosis work when identical information beforehand does
