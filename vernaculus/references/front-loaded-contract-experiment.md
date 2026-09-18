@@ -140,11 +140,10 @@ stated causes correctly identify the message-pattern mismatch and quote its own
 thrown string. Articulation and capability come apart, so routing the diagnosis
 step to the local model does not move the caller's cost.
 
-**A correct diagnosis converted 1 of 3.** That sits against the 3-of-3 recorded
-elsewhere in this plugin for diagnosed refinement. The runs differ in model and
-in function set, and the earlier figure may have come from a caller iterating
-rather than from one directed turn. Unresolved; treat the 3-of-3 as
-condition-specific rather than as the expected yield.
+**A correct diagnosis converted 1 of 3** in this arm. Resolved by the
+reproduction below: the arm's diagnosis was written from the failing test rather
+than from the draft, and it allowed one directed turn on one function. Rewritten
+from the draft, the same model converts all three.
 
 A first version of the oracle arm scored 0/3 because its diagnosis was written
 from the failing test without reading the draft, and named an ordering defect the
