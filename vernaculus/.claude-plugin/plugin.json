@@ -1,0 +1,27 @@
+{
+  "name": "vernaculus",
+  "version": "0.2.0",
+  "description": "Vernaculus \u2014 delegating well-specified coding work to a locally hosted model over MCP, with the brief/generate/verify/diagnose/refine loop the measurements say it needs",
+  "author": {
+    "name": "Flexion"
+  },
+  "repository": "https://github.com/flexion/claude-domestique",
+  "homepage": "https://github.com/flexion/claude-domestique/tree/main/vernaculus",
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "local-models",
+    "ollama",
+    "delegation",
+    "code-generation",
+    "flexion"
+  ],
+  "mcpServers": {
+    "vernaculus": {
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/mcp/server.js"
+      ]
+    }
+  }
+}

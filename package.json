@@ -10,27 +10,30 @@
     "onus",
     "comitatus",
     "agent-artifex",
-    "stilus"
+    "stilus",
+    "vernaculus"
   ],
   "scripts": {
     "install:all": "npm install",
-    "test": "npm run test:scripts && npm run test:shared && npm run test:mantra && npm run test:memento && npm run test:onus && npm run test:comitatus",
-    "test:scripts": "jest scripts/__tests__/validate-plugins.test.js scripts/__tests__/hook-invocation.test.js scripts/__tests__/stilus-review-contract.test.js scripts/__tests__/no-orphaned-tests.test.js --runInBand",
+    "test": "npm run test:scripts && npm run test:shared && npm run test:mantra && npm run test:memento && npm run test:onus && npm run test:comitatus && npm run test:vernaculus",
+    "test:scripts": "jest scripts/__tests__/validate-plugins.test.js scripts/__tests__/hook-invocation.test.js scripts/__tests__/stilus-review-contract.test.js scripts/__tests__/no-orphaned-tests.test.js scripts/__tests__/bump-version.test.js --runInBand",
     "test:shared": "cd shared && npm test",
     "test:mantra": "cd mantra && npm test",
     "test:memento": "cd memento && npm test",
     "test:onus": "cd onus && npm test",
     "test:comitatus": "cd comitatus && npm test",
     "validate:plugins": "node scripts/validate-plugins.js",
-    "test:coverage": "npm run test:coverage:scripts && npm run test:coverage:shared && npm run test:coverage:mantra && npm run test:coverage:memento && npm run test:coverage:onus && npm run test:coverage:comitatus",
-    "test:coverage:scripts": "jest scripts/__tests__/validate-plugins.test.js scripts/__tests__/hook-invocation.test.js scripts/__tests__/stilus-review-contract.test.js scripts/__tests__/no-orphaned-tests.test.js --runInBand --coverage --collectCoverageFrom=scripts/validate-plugins.js",
+    "test:coverage": "npm run test:coverage:scripts && npm run test:coverage:shared && npm run test:coverage:mantra && npm run test:coverage:memento && npm run test:coverage:onus && npm run test:coverage:comitatus && npm run test:coverage:vernaculus",
+    "test:coverage:scripts": "jest scripts/__tests__/validate-plugins.test.js scripts/__tests__/hook-invocation.test.js scripts/__tests__/stilus-review-contract.test.js scripts/__tests__/no-orphaned-tests.test.js scripts/__tests__/bump-version.test.js --runInBand --coverage --collectCoverageFrom=scripts/validate-plugins.js",
     "test:coverage:shared": "cd shared && npm run test:coverage",
     "test:coverage:mantra": "cd mantra && npm run test:coverage",
     "test:coverage:memento": "cd memento && npm run test:coverage",
     "test:coverage:onus": "cd onus && npm run test:coverage",
     "test:coverage:comitatus": "cd comitatus && npm run test:coverage",
     "build": "node scripts/bundle-shared.js",
-    "prepublish": "npm run build"
+    "prepublish": "npm run build",
+    "test:vernaculus": "cd vernaculus && npm test",
+    "test:coverage:vernaculus": "cd vernaculus && npm run test:coverage"
   },
   "repository": {
     "type": "git",

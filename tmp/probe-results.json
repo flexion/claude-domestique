@@ -1,0 +1,66 @@
+[
+  {
+    "name": "parseSelector",
+    "passed": false,
+    "attempts": 3,
+    "totalSecs": 1050.485,
+    "log": [
+      {
+        "attempt": 1,
+        "genSecs": 386.113,
+        "result": "red"
+      },
+      {
+        "attempt": 2,
+        "genSecs": 356.618,
+        "result": "red"
+      },
+      {
+        "attempt": 3,
+        "genSecs": 303.405,
+        "result": "red"
+      }
+    ]
+  },
+  {
+    "name": "makeAgent",
+    "passed": true,
+    "attempts": 2,
+    "totalSecs": 144.353,
+    "log": [
+      {
+        "attempt": 1,
+        "genSecs": 64.517,
+        "result": "red"
+      },
+      {
+        "attempt": 2,
+        "genSecs": 77.079,
+        "result": "green"
+      }
+    ]
+  },
+  {
+    "name": "parseArgs",
+    "passed": false,
+    "attempts": 3,
+    "totalSecs": 759.961,
+    "log": [
+      {
+        "attempt": 1,
+        "genSecs": 296.682,
+        "result": "red"
+      },
+      {
+        "attempt": 2,
+        "genSecs": 258.477,
+        "result": "red"
+      },
+      {
+        "attempt": 3,
+        "genSecs": 200.504,
+        "result": "red"
+      }
+    ]
+  }
+]

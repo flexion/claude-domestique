@@ -1,0 +1,35 @@
+{
+  "name": "@claude-domestique/vernaculus",
+  "version": "0.2.0",
+  "description": "Delegate well-specified coding work to a locally hosted model over MCP",
+  "main": "mcp/server.js",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "smoke": "node mcp/smoke.js",
+    "smoke:generate": "node mcp/smoke.js --generate"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/flexion/claude-domestique.git",
+    "directory": "vernaculus"
+  },
+  "keywords": [
+    "mcp",
+    "local-models",
+    "ollama",
+    "delegation"
+  ],
+  "author": "Flexion",
+  "license": "MIT",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/flexion/claude-domestique/issues"
+  },
+  "homepage": "https://github.com/flexion/claude-domestique/tree/main/vernaculus#readme",
+  "devDependencies": {
+    "jest": "^30.2.0",
+    "jest-github-actions-reporter": "^1.0.3"
+  }
+}

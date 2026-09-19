@@ -1,0 +1,262 @@
+{
+  "meta": {
+    "model": "qwen3-coder:30b",
+    "digest": "06c1097efce0431c2045fe7b2e5108366e43bee1b4603a7aded8f21689e90bca",
+    "num_ctx": 32768,
+    "num_predict": 4096,
+    "temperature": 0,
+    "seed": 42,
+    "runs": 3,
+    "startedAt": "2026-09-18T11:16:51.846Z"
+  },
+  "results": [
+    {
+      "target": "parseSelector",
+      "condition": "plain",
+      "run": 1,
+      "genSecs": 13.12,
+      "promptTokens": 11885,
+      "outputTokens": 399,
+      "doneReason": "stop",
+      "format": true,
+      "extracted": true,
+      "behaviour": false
+    },
+    {
+      "target": "parseSelector",
+      "condition": "contract",
+      "run": 1,
+      "genSecs": 11.93,
+      "promptTokens": 12075,
+      "outputTokens": 365,
+      "doneReason": "stop",
+      "format": true,
+      "extracted": true,
+      "behaviour": false
+    },
+    {
+      "target": "parseSelector",
+      "condition": "plain",
+      "run": 2,
+      "genSecs": 13.08,
+      "promptTokens": 11885,
+      "outputTokens": 399,
+      "doneReason": "stop",
+      "format": true,
+      "extracted": true,
+      "behaviour": false
+    },
+    {
+      "target": "parseSelector",
+      "condition": "contract",
+      "run": 2,
+      "genSecs": 11.82,
+      "promptTokens": 12075,
+      "outputTokens": 365,
+      "doneReason": "stop",
+      "format": true,
+      "extracted": true,
+      "behaviour": false
+    },
+    {
+      "target": "parseSelector",
+      "condition": "plain",
+      "run": 3,
+      "genSecs": 12.98,
+      "promptTokens": 11885,
+      "outputTokens": 399,
+      "doneReason": "stop",
+      "format": true,
+      "extracted": true,
+      "behaviour": false
+    },
+    {
+      "target": "parseSelector",
+      "condition": "contract",
+      "run": 3,
+      "genSecs": 12.01,
+      "promptTokens": 12075,
+      "outputTokens": 365,
+      "doneReason": "stop",
+      "format": true,
+      "extracted": true,
+      "behaviour": false
+    },
+    {
+      "target": "makeAgent",
+      "condition": "plain",
+      "run": 1,
+      "genSecs": 40.18,
+      "promptTokens": 11955,
+      "outputTokens": 190,
+      "doneReason": "stop",
+      "format": true,
+      "extracted": true,
+      "behaviour": false
+    },
+    {
+      "target": "makeAgent",
+      "condition": "contract",
+      "run": 1,
+      "genSecs": 40.37,
+      "promptTokens": 12272,
+      "outputTokens": 152,
+      "doneReason": "stop",
+      "format": true,
+      "extracted": true,
+      "behaviour": false
+    },
+    {
+      "target": "makeAgent",
+      "condition": "plain",
+      "run": 2,
+      "genSecs": 6.38,
+      "promptTokens": 11955,
+      "outputTokens": 190,
+      "doneReason": "stop",
+      "format": true,
+      "extracted": true,
+      "behaviour": false
+    },
+    {
+      "target": "makeAgent",
+      "condition": "contract",
+      "run": 2,
+      "genSecs": 5.05,
+      "promptTokens": 12272,
+      "outputTokens": 152,
+      "doneReason": "stop",
+      "format": true,
+      "extracted": true,
+      "behaviour": false
+    },
+    {
+      "target": "makeAgent",
+      "condition": "plain",
+      "run": 3,
+      "genSecs": 6.16,
+      "promptTokens": 11955,
+      "outputTokens": 190,
+      "doneReason": "stop",
+      "format": true,
+      "extracted": true,
+      "behaviour": false
+    },
+    {
+      "target": "makeAgent",
+      "condition": "contract",
+      "run": 3,
+      "genSecs": 4.93,
+      "promptTokens": 12272,
+      "outputTokens": 152,
+      "doneReason": "stop",
+      "format": true,
+      "extracted": true,
+      "behaviour": false
+    },
+    {
+      "target": "parseArgs",
+      "condition": "plain",
+      "run": 1,
+      "genSecs": 46.24,
+      "promptTokens": 11883,
+      "outputTokens": 384,
+      "doneReason": "stop",
+      "format": true,
+      "extracted": true,
+      "behaviour": true
+    },
+    {
+      "target": "parseArgs",
+      "condition": "contract",
+      "run": 1,
+      "genSecs": 48.07,
+      "promptTokens": 12136,
+      "outputTokens": 403,
+      "doneReason": "stop",
+      "format": true,
+      "extracted": true,
+      "behaviour": true
+    },
+    {
+      "target": "parseArgs",
+      "condition": "plain",
+      "run": 2,
+      "genSecs": 12.9,
+      "promptTokens": 11883,
+      "outputTokens": 389,
+      "doneReason": "stop",
+      "format": true,
+      "extracted": true,
+      "behaviour": true
+    },
+    {
+      "target": "parseArgs",
+      "condition": "contract",
+      "run": 2,
+      "genSecs": 13.44,
+      "promptTokens": 12136,
+      "outputTokens": 404,
+      "doneReason": "stop",
+      "format": true,
+      "extracted": true,
+      "behaviour": true
+    },
+    {
+      "target": "parseArgs",
+      "condition": "plain",
+      "run": 3,
+      "genSecs": 12.84,
+      "promptTokens": 11883,
+      "outputTokens": 389,
+      "doneReason": "stop",
+      "format": true,
+      "extracted": true,
+      "behaviour": true
+    },
+    {
+      "target": "parseArgs",
+      "condition": "contract",
+      "run": 3,
+      "genSecs": 13.32,
+      "promptTokens": 12136,
+      "outputTokens": 404,
+      "doneReason": "stop",
+      "format": true,
+      "extracted": true,
+      "behaviour": true
+    }
+  ],
+  "summary": {
+    "parseSelector/plain": {
+      "green": 0,
+      "formatBad": 0,
+      "n": 3
+    },
+    "parseSelector/contract": {
+      "green": 0,
+      "formatBad": 0,
+      "n": 3
+    },
+    "makeAgent/plain": {
+      "green": 0,
+      "formatBad": 0,
+      "n": 3
+    },
+    "makeAgent/contract": {
+      "green": 0,
+      "formatBad": 0,
+      "n": 3
+    },
+    "parseArgs/plain": {
+      "green": 3,
+      "formatBad": 0,
+      "n": 3
+    },
+    "parseArgs/contract": {
+      "green": 3,
+      "formatBad": 0,
+      "n": 3
+    }
+  }
+}

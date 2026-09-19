@@ -1,0 +1,102 @@
+{
+  "tally": {
+    "raw": {
+      "green": 0,
+      "n": 3
+    },
+    "self": {
+      "green": 0,
+      "n": 3
+    },
+    "oracle": {
+      "green": 0,
+      "n": 3
+    }
+  },
+  "results": [
+    {
+      "arm": "raw",
+      "run": 1,
+      "format": true,
+      "passed": false,
+      "failing": [
+        "opencode without a model throws"
+      ]
+    },
+    {
+      "arm": "self",
+      "run": 1,
+      "selfCause": "The cause of the failure is that the `makeAgent` function throws a generic error message when an opencode agent has no model specified, but the test expects a more specific error message that mentions `<handle>:<model>` as shown in the `parseSelector` function's error message for this case. The implementation incorrectly reuses the generic message from `parseSelector` instead of generating the kind-specific message that the test is expecting.",
+      "format": true,
+      "passed": false,
+      "failing": [
+        "opencode without a model throws"
+      ]
+    },
+    {
+      "arm": "oracle",
+      "run": 1,
+      "format": true,
+      "passed": false,
+      "failing": [
+        "opencode without a model throws"
+      ]
+    },
+    {
+      "arm": "raw",
+      "run": 2,
+      "format": true,
+      "passed": false,
+      "failing": [
+        "opencode without a model throws"
+      ]
+    },
+    {
+      "arm": "self",
+      "run": 2,
+      "selfCause": "The cause of the failure is that your `makeAgent` function throws a generic error message when an opencode agent has no model specified, but the test expects a more specific error message that mentions the `<handle>:<model>` format. The test checks for `/\\<handle\\>:\\<model\\>/` in the error message, but your implementation throws `--opencode selector needs a value (or drop the trailing \":\")` which doesn't match this pattern. The `parseSelector` function already handles the validation and throws an appropriate error for missing model values, so you should let that error propagate instead of overriding it with a less specific message.",
+      "format": true,
+      "passed": false,
+      "failing": [
+        "opencode without a model throws"
+      ]
+    },
+    {
+      "arm": "oracle",
+      "run": 2,
+      "format": true,
+      "passed": false,
+      "failing": [
+        "opencode without a model throws"
+      ]
+    },
+    {
+      "arm": "raw",
+      "run": 3,
+      "format": true,
+      "passed": false,
+      "failing": [
+        "opencode without a model throws"
+      ]
+    },
+    {
+      "arm": "self",
+      "run": 3,
+      "selfCause": "The cause of the failure is that your `makeAgent` function throws a generic error message when an opencode agent has no model specified, but the test expects it to throw an error with the specific pattern `<handle>:<model>` in the message. The test checks for this exact pattern to verify the error message format, and your implementation uses a different error message that doesn't match this expectation.",
+      "format": true,
+      "passed": false,
+      "failing": [
+        "opencode without a model throws"
+      ]
+    },
+    {
+      "arm": "oracle",
+      "run": 3,
+      "format": true,
+      "passed": false,
+      "failing": [
+        "opencode without a model throws"
+      ]
+    }
+  ]
+}

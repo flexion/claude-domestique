@@ -25,15 +25,15 @@
       "classification": "public"
     },
     {
+      "name": "comitatus:fan-out",
+      "classification": "public"
+    },
+    {
       "name": "comitatus:herd-setup",
       "classification": "public"
     },
     {
       "name": "comitatus:herdr",
-      "classification": "public"
-    },
-    {
-      "name": "comitatus:fan-out",
       "classification": "public"
     },
     {
@@ -134,6 +134,10 @@
       "name": "stilus:review-voice",
       "classification": "internal",
       "orchestrator": "stilus:review"
+    },
+    {
+      "name": "vernaculus:delegate-to-local-model",
+      "classification": "public"
     }
   ]
 }

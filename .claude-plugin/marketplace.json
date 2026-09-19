@@ -46,6 +46,12 @@
       "source": "./modus",
       "description": "Completion - carry a work item through to working behavior and judge when it is finished, without a separate definition-of-done artifact",
       "version": "0.5.0"
+    },
+    {
+      "name": "vernaculus",
+      "source": "./vernaculus",
+      "description": "Vernaculus - delegating well-specified coding work to a locally hosted model over MCP",
+      "version": "0.2.0"
     }
   ]
 }
