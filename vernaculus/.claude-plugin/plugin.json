@@ -1,7 +1,7 @@
 {
   "name": "vernaculus",
   "version": "0.2.0",
-  "description": "Vernaculus — delegating well-specified coding work to a locally hosted model over MCP, with the brief/generate/verify/diagnose/refine loop the measurements say it needs",
+  "description": "Vernaculus \u2014 delegating well-specified coding work to a locally hosted model over MCP, with the brief/generate/verify/diagnose/refine loop the measurements say it needs",
   "author": {
     "name": "Flexion"
   },
@@ -15,5 +15,13 @@
     "delegation",
     "code-generation",
     "flexion"
-  ]
+  ],
+  "mcpServers": {
+    "vernaculus": {
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/mcp/server.js"
+      ]
+    }
+  }
 }

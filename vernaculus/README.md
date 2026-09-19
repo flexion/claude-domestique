@@ -19,9 +19,27 @@ loopback address.
 
 ## Registering it
 
-Installing this plugin does **not** start anything. That is deliberate: a plugin
-that silently starts local code and reports daemon failures is a surprise for
-anyone who does not run Ollama. Register the server explicitly:
+The plugin declares its own server, so installing it is enough. Each host reads
+the declaration from its own manifest: `.claude-plugin/plugin.json` for Claude
+Code, `.codex-plugin/plugin.json` for Codex. Nothing to add by hand, and the
+path survives a plugin upgrade.
+
+The two manifests carry different path forms, and they are not interchangeable.
+Claude Code requires `${CLAUDE_PLUGIN_ROOT}`; handed a relative `args` plus
+`cwd` it fails to connect outright. Codex's plugin loader does the opposite: it
+does not expand that token, and resolves a relative `cwd` against the plugin
+root. There is deliberately no `.mcp.json` at the plugin root - Codex's loader
+falls back to discovering one when its manifest declares no server, and a
+Claude-shaped file is exactly what it must not find.
+
+Declaring it means the server process starts with the host, so the cost of
+installing this plugin without Ollama is three tool definitions in every
+session's context. It is not a daemon failure: the adapter contacts Ollama only
+inside a tool call, so an unused server on a machine with no daemon does
+nothing. Disable it in the host if the context is worth more than the option.
+
+To run it from somewhere else - another MCP client, or a checkout rather than an
+install - register it manually:
 
 ```bash
 claude mcp add vernaculus -- node <abs-path>/vernaculus/mcp/server.js
@@ -30,20 +48,20 @@ claude mcp add vernaculus -- node <abs-path>/vernaculus/mcp/server.js
 Codex uses `codex mcp add` with the same command vector. Remove with
 `claude mcp remove vernaculus`.
 
-Two ways that registration goes wrong, both observed:
+Two ways a manual registration goes wrong, both observed:
 
 **The script path gets dropped**, leaving `command: node` with empty `args`.
 Bare `node` is a REPL: it reads stdin, answers no JSON-RPC, and the host waits
 out its full handshake timeout before reporting `connection timed out`. The
 error names the server, so it reads like a fault in `server.js` when the server
-was never started. Confirm what was actually stored — `claude mcp list` prints
+was never started. Confirm what was actually stored - `claude mcp list` prints
 the whole command vector, and `node ` with nothing after it is the bug.
 
-**The path points into a git worktree.** Registration is keyed by the main
-repository path even when added from a worktree, so the entry outlives the
-worktree that satisfied it and breaks on removal. Register against the main
-checkout unless the plugin only exists on a branch, and re-point the entry once
-that branch merges.
+**The path points into a git worktree, or into a versioned plugin cache.**
+Registration is keyed by the main repository path even when added from a
+worktree, so the entry outlives the worktree that satisfied it. A plugin cache
+directory carries the version or a content hash, so a hand-registered path there
+breaks on the next upgrade. Both are reasons to prefer the declaration above.
 
 ## Verifying it works
 

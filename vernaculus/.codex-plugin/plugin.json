@@ -17,6 +17,15 @@
     "code-generation"
   ],
   "skills": "./skills/",
+  "mcpServers": {
+    "vernaculus": {
+      "command": "node",
+      "args": [
+        "mcp/server.js"
+      ],
+      "cwd": "."
+    }
+  },
   "interface": {
     "displayName": "Vernaculus",
     "shortDescription": "Delegate coding work to a local model",
