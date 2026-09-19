@@ -38,6 +38,13 @@ session's context. It is not a daemon failure: the adapter contacts Ollama only
 inside a tool call, so an unused server on a machine with no daemon does
 nothing. Disable it in the host if the context is worth more than the option.
 
+**A manually registered server of the same name masks the declared one.** Observed
+on both hosts: with a `vernaculus` entry in Claude's config or in Codex's
+`mcp_servers`, the plugin's own server does not appear at all - not as a
+conflict, just absent. If you registered it by hand before this plugin declared
+it, remove that entry (`claude mcp remove vernaculus`, or delete the
+`mcp_servers.vernaculus` block from `~/.codex/config.toml`).
+
 To run it from somewhere else - another MCP client, or a checkout rather than an
 install - register it manually:
 
@@ -77,6 +84,11 @@ npm run smoke:generate     # adds a real generation and a refine round-trip
 ```
 
 `npm test` runs the unit suite, which needs no daemon.
+
+Checking the declared server from a non-interactive `codex exec` needs
+`--approve-for-me` or an equivalent MCP approval policy. The default policy
+refuses to dispatch the call - "requires approval, but approval policy is
+never" - which reads as a broken server when nothing was ever dispatched.
 
 A further trap worth knowing: `claude mcp list` reporting `✔ Connected` means a
 live process, not current code. An MCP server edited on disk keeps serving the

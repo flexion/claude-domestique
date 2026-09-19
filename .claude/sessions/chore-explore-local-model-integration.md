@@ -188,6 +188,20 @@ correctness through independent verification.
   needed that literal substring. Skill gained a warning about diagnoses that name
   a required pattern being satisfied literally.
 
+- 2026-09-19: Settled MCP distribution: bundle the server in the plugin, no npm.
+  Each host declares it in its own manifest and the two forms are not
+  interchangeable - Claude requires `${CLAUDE_PLUGIN_ROOT}` and fails
+  CONNECTION_CLOSED on a relative `args`+`cwd`; Codex does not expand that token
+  and sets `cwd` to the installed plugin cache root, so the relative arg works
+  there. No `.mcp.json` at the plugin root, because Codex falls back to
+  discovering one and a Claude-shaped file is what it must not find. Claude side
+  verified by install; Codex side verified end to end by `ned` on codex-cli
+  0.155.0, including a live `ollama_models` call returning 9 models, with its
+  marketplace and config restored byte-for-byte afterwards. Both hosts showed the
+  same trap: a manually registered server of the same name makes the
+  plugin-declared one vanish silently. npm publishing stays optional and is not
+  needed for either host.
+
 ## Approach
 
 1. Capture the current generate/refine smoke scenario against explicit
