@@ -19,6 +19,14 @@ describe('mantra behavior hook', () => {
   });
 
   describe('processInput', () => {
+    it.each(['SessionStart', 'UserPromptSubmit'])('delivers active-objective guidance on %s', hookEvent => {
+      const context = hook.processInput({ hook_event_name: hookEvent })
+        .hookSpecificOutput.additionalContext;
+
+      // Checks hook delivery; multi-turn agent comparisons establish behavior.
+      expect(context).toContain('active user objective');
+    });
+
     it('returns additionalContext on SessionStart', () => {
       const result = hook.processInput({
         hook_event_name: 'SessionStart'

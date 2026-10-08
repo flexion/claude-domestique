@@ -1,0 +1,114 @@
+diff --git a/mantra/.claude-plugin/plugin.json b/mantra/.claude-plugin/plugin.json
+index 58f9b8b..cd7be33 100644
+--- a/mantra/.claude-plugin/plugin.json
++++ b/mantra/.claude-plugin/plugin.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "mantra",
+-  "version": "0.6.3",
++  "version": "0.7.0",
+   "description": "Behavioral skills for coding agents - critical assessment, evidence-based debugging, and rule authoring",
+   "author": {
+     "name": "David Puglielli"
+diff --git a/mantra/.codex-plugin/plugin.json b/mantra/.codex-plugin/plugin.json
+index ef1336c..6c1b9e9 100644
+--- a/mantra/.codex-plugin/plugin.json
++++ b/mantra/.codex-plugin/plugin.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "mantra",
+-  "version": "0.6.3",
++  "version": "0.7.0",
+   "description": "Behavioral skills for critical assessment, evidence-based debugging, and rule authoring",
+   "author": {
+     "name": "David Puglielli"
+diff --git a/mantra/README.md b/mantra/README.md
+index b0767d5..10bca63 100644
+--- a/mantra/README.md
++++ b/mantra/README.md
+@@ -22,6 +22,7 @@ mantra helps developers embody Flexion fundamentals throughout long sessions:
+ - **Token efficient** - Compact YAML frontmatter rather than prose
+ - **Status indicator** - Shows rules loaded and context freshness on every prompt
+ - **Curated rules** - Ships with behavior, testing, git, and format conventions
++- **Active objective** - The behavior hook injects guidance to distinguish discussion from action requests, retain clarifications and authorization, and honor discussion pauses
+ - **Periodic refresh** - Re-injects rules every 10 prompts to prevent drift
+ - **Plugin family aware** - Automatically loads rules from sibling plugins (memento, onus)
+ - **Easy customization** - Create your own rules with `/mantra:make-rule`
+diff --git a/mantra/hooks/__tests__/behavior.test.js b/mantra/hooks/__tests__/behavior.test.js
+index 5127e35..108a2b7 100644
+--- a/mantra/hooks/__tests__/behavior.test.js
++++ b/mantra/hooks/__tests__/behavior.test.js
+@@ -19,6 +19,14 @@ describe('mantra behavior hook', () => {
+   });
+ 
+   describe('processInput', () => {
++    it.each(['SessionStart', 'UserPromptSubmit'])('delivers active-objective guidance on %s', hookEvent => {
++      const context = hook.processInput({ hook_event_name: hookEvent })
++        .hookSpecificOutput.additionalContext;
++
++      // Checks hook delivery; multi-turn agent comparisons establish behavior.
++      expect(context).toContain('active user objective');
++    });
++
+     it('returns additionalContext on SessionStart', () => {
+       const result = hook.processInput({
+         hook_event_name: 'SessionStart'
+diff --git a/mantra/hooks/behavior.js b/mantra/hooks/behavior.js
+index c0018a9..f771420 100755
+--- a/mantra/hooks/behavior.js
++++ b/mantra/hooks/behavior.js
+@@ -2,7 +2,7 @@
+ /**
+  * mantra behavior hook
+  *
+- * Injects anti-sycophancy and evidence-based debugging stance on every prompt.
++ * Injects assessment, debugging, and active-objective guidance on every prompt.
+  * No state, no counters, no file I/O, no dependencies.
+  */
+ 
+@@ -10,7 +10,9 @@ const BEHAVIOR = `IMPORTANT: You are a skeptical peer, not an eager subordinate.
+ 
+ Before agreeing with any proposal, assess correctness, architecture, alternatives, risks. Find problems first. Never agree without analysis. Invoke the mantra:assess skill for structured evaluations.
+ 
+-Before fixing any error or bug, find minimum 3 documented examples (github issues, official docs, web). Cross-reference. Never guess from training data. Invoke the mantra:troubleshoot skill.`;
++Before fixing any error or bug, find minimum 3 documented examples (github issues, official docs, web). Cross-reference. Never guess from training data. Invoke the mantra:troubleshoot skill.
++
++Choose the next action against the active user objective in context; distinguish questions, observations, and action requests. Retain prior answers and authorization unless the user changes them. When implementation is explicitly paused for discussion, discuss without implementing or repeated resume questions; resume on user request. Act on clear requests within scope; approach observations alone authorize no new implementation or research campaign. Clarify only ambiguity that materially changes the action; use context and judgment for routine choices.`;
+ 
+ function processInput(input) {
+   const hookEvent = input.hook_event_name;
+diff --git a/mantra/package.json b/mantra/package.json
+index 64e2d24..72b8742 100644
+--- a/mantra/package.json
++++ b/mantra/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@claude-domestique/mantra",
+-  "version": "0.6.3",
++  "version": "0.7.0",
+   "description": "Behavioral rules for Claude Code and Codex sessions, auto-injected through hooks",
+   "main": "index.js",
+   "scripts": {
+diff --git a/mantra/skills/assess/SKILL.md b/mantra/skills/assess/SKILL.md
+index 0e87f63..6a50d0a 100644
+--- a/mantra/skills/assess/SKILL.md
++++ b/mantra/skills/assess/SKILL.md
+@@ -16,6 +16,18 @@ Perform a structured evaluation of a proposal, approach, or solution before impl
+ 
+ When the user presents a proposal, solution, or asks for agreement on an approach, you MUST assess before agreeing.
+ 
++### Active objective
++
++Assess the proposal in the context of the user's current objective and prior
++clarifications. A question or observation about an approach calls for discussion;
++it does not by itself authorize implementation or a research campaign. During an
++explicit discussion pause, answer the discussion and wait for the user's request
++to resume, without repeatedly asking permission to resume. Carry prior answers
++and authorization forward unless the user changes them. When the user clearly
++requests action, apply the assessment to that authorized work and proceed within
++its scope. Ask a focused question only if unresolved ambiguity would materially
++change the action; routine choices do not need renewed confirmation.
++
+ ### Assessment Framework
+ 
+ Evaluate these dimensions in order:
