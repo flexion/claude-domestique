@@ -16,6 +16,15 @@ describe('mantra behavior hook', () => {
       expect(hook.BEHAVIOR).toContain('mantra:assess');
       expect(hook.BEHAVIOR).toContain('mantra:troubleshoot');
     });
+
+    // This guards the removed injection requirement, not an agent's judgment.
+    // Fresh behavioral comparisons verify how agents use the revised guidance.
+    it.each(['SessionStart', 'UserPromptSubmit'])('does not inject an external source quota on %s', hookEvent => {
+      const context = hook.processInput({ hook_event_name: hookEvent })
+        .hookSpecificOutput.additionalContext;
+
+      expect(context).not.toMatch(/(?:minimum|at least|requires?)\s+(?:3|three)\s+(?:documented\s+)?(?:examples|sources)/i);
+    });
   });
 
   describe('processInput', () => {

@@ -1,6 +1,6 @@
 {
   "name": "mantra",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Behavioral skills for critical assessment, evidence-based debugging, and rule authoring",
   "author": {
     "name": "David Puglielli"
@@ -29,7 +29,7 @@
     "websiteURL": "https://github.com/flexion/claude-domestique/tree/main/mantra",
     "defaultPrompt": [
       "Assess this proposal critically before I implement it.",
-      "Troubleshoot this failure using documented evidence."
+      "Troubleshoot this failure using evidence relevant to the next action."
     ]
   }
 }

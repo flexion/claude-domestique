@@ -1,5 +1,14 @@
 # AI Assistant Preferences
 
+## Evidence and deliberation
+
+Choose further investigation for the decision it could change, considering
+available evidence, uncertainty, consequences, and reversibility. Keep that choice
+inexpensive. The [troubleshoot workflow](../skills/troubleshoot/SKILL.md#workflow)
+explains evidence selection; [assess](../skills/assess/SKILL.md) applies it to
+proportionate deliberation. Required permissions, user constraints, and project
+validation still apply.
+
 ## When to Discuss vs Build First
 
 **Trivial changes** - Build immediately without discussion:

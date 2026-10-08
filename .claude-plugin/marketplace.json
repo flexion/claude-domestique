@@ -15,7 +15,7 @@
       "name": "mantra",
       "source": "./mantra",
       "description": "Context refresh - periodic re-injection of behavioral guidance to prevent context drift",
-      "version": "0.7.0"
+      "version": "0.7.1"
     },
     {
       "name": "onus",
