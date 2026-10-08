@@ -22,7 +22,7 @@ Plugin type: **skill pack and minimal hook**
 Design goals:
 
 - Add behavior not already supplied by the host.
-- Inject the skepticism guidance on every prompt to prevent drift.
+- Inject assessment, research, and active-objective guidance on every prompt to prevent drift.
 - Keep structured assessment and troubleshooting workflows available on demand.
 - Keep always-on context small.
 
@@ -36,8 +36,6 @@ mantra/
 ├── context/              # Detailed on-demand references
 │   ├── behavior.md
 │   ├── test.md
-│   ├── context-format.md
-│   ├── format-guide.md
 │   └── rule-design.md
 ├── scripts/
 │   └── statusline.js
@@ -53,7 +51,7 @@ mantra/
 1. Evidence-responsive assessment that accepts sound proposals and challenges unsupported ones.
 2. Troubleshooting using evidence relevant to the next action, including demonstrated
    local causes and authoritative references for uncertain external behavior.
-3. Explicit checklists before high-consequence actions.
+3. Carrying the active objective and authorization forward while honoring discussion pauses.
 
 ### What Mantra does not duplicate
 

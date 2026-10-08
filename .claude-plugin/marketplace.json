@@ -14,7 +14,7 @@
     {
       "name": "mantra",
       "source": "./mantra",
-      "description": "Context refresh - periodic re-injection of behavioral guidance to prevent context drift",
+      "description": "Behavioral skills and recurring guidance for evidence-responsive assessment, troubleshooting, and the active user objective",
       "version": "0.7.2"
     },
     {

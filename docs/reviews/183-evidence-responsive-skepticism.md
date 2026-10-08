@@ -163,3 +163,38 @@ Run by the lead with `scripts/probe-skill.js` on a sound-rename prompt and a fla
 **Phase F (combined guidance, `faef431`), reported by the lead:** all `npm test` suites pass; the vernaculus suite failed in the sandbox with EPERM socket errors and passed when rerun outside it. Strict Claude marketplace and plugin validation and metadata validation pass. An isolated Codex 0.147.0 install passed; both installed Mantra manifests were verified as 0.7.2.
 
 **Phase E, before the rebase:** E changes only the hook's reminder text from D. The lead and the verifier each ran the affected checks: the mantra suite (23 tests), the root script suites (101 tests, lead), metadata validation and `git diff --check`, all passing. mantra is at 0.6.4. The full `npm test` was not repeated on E; it last passed on D. Strict Claude marketplace and plugin validation and an isolated Codex install showing mantra 0.6.4 were run on C; neither D nor E changed metadata or hook I/O logic, so they still apply.
+
+
+## Documentation and authoring sweep
+
+The post-rebase sweep corrected obsolete claims of interval refresh, sibling-rule
+loading, prompt counters, automatic context-file loading, runtime YAML validation,
+and fixed token savings. The README now describes the fixed hook and optional,
+unregistered statusline against their implementations. FORMAT.md owns the rule
+notation; the two redundant format guides were deleted. The unloaded generic
+coding checklist in context/behavior.md was replaced with links to the owning
+skills, removing its separate manifest, model-choice, and change-annotation rules.
+This is a deliberate simplification of on-demand content.
+
+The host documentation exposed a functional authoring error: Claude Code removes
+rule frontmatter before loading instructions. make-rule now places instructions
+in the Markdown body and reserves frontmatter for supported host metadata. Its
+priority choices use supplied requirements rather than asking again. Sources:
+[Claude Code rule frontmatter](https://code.claude.com/docs/en/memory#rule-frontmatter-reference)
+and [Codex hook trust](https://developers.openai.com/codex/hooks).
+
+Ned independently reviewed documentation against the hook/statusline source and
+checked the host-format correction against the official documentation. Local
+Markdown links and diff-check pass. Two final fresh make-rule probes, one per
+host after the description correction, fired the skill and produced body-based
+rules preserving required security checks and advisory style checks. They show
+invocation and the produced artifact, not a measured native-rule adherence rate.
+The recurring hook and skeptic/assess/troubleshoot guidance are unchanged, so
+this sweep does not close AC2 or AC5.
+
+The changed Markdown files shrank from 61,419 to 31,756 characters; this
+measures on-demand text size, not recurring injection cost or tokenizer savings.
+
+Full npm test, repository metadata validation, strict Claude marketplace/plugin
+validation, and local Markdown link checks pass for the sweep. Mantra remains
+0.7.2; this branch retains one version increment relative to origin/main.

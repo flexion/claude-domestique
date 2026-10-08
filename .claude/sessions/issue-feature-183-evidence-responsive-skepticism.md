@@ -23,6 +23,8 @@ Ned independently compares current and revised guidance on bounded contrasting c
 
 For the operator's token-efficiency follow-up relayed by kit, compare the current recurring assessment paragraph with the compact candidate before adopting it. Retain the required-changes framing distinction and complementary skeptic/structured-assess triggers. Ned checks fresh paired scope cases and the direct-instruction ceremony guard; kit reviews text-size savings, which are not exact tokenizer counts. Change only the assessment paragraph if supported, keep the 0.6.4 bump, and carry forward unresolved AC2/AC5 findings.
 
+For the operator's documentation/token-efficiency follow-up, sweep Mantra documentation against its hook, manifests and statusline implementation. Preserve the tested recurring hook; consolidate duplicate on-demand format guidance, remove unsupported token/effectiveness claims and private-reasoning verification, and clarify host versus plugin rule loading. Correct obsolete roadmap/companion descriptions and validate links and skill invocation after authoring-guidance corrections. Keep this branch's existing single 0.7.2 bump.
+
 ## Session Log
 
 - 2026-10-08: Worktree and paired agents launched from refreshed origin/main at operator request; session initialized before task assignment.
@@ -44,12 +46,15 @@ For the operator's token-efficiency follow-up relayed by kit, compare the curren
 
 - 2026-10-08: Combined-guidance comparison F completed and independently reviewed: approving/neutral/skeptical required changes still vary, and the correctly scoped registry lookup still asserts an unobserved self-cause. Flawed control and capability reading pass; AC2 remains unproven and AC5 partial. Isolated Codex 0.147.0 install verified both Mantra manifests at 0.7.2. Saving the final rebase/reassessment evidence in a documentation-only follow-up commit; no push, PR, or issue closure.
 
+- 2026-10-08: Completed the operator's token-efficiency/documentation sweep. Corrected hook/loading/statusline/validation claims and catalog description; removed duplicate format guides and the unloaded generic coding checklist. Corrected make-rule to put Claude Code instructions in the Markdown body, based on official host documentation; final probes fired on both hosts and preserved required/advisory scope. Ned independently reviewed accuracy. Recurring hook unchanged; exact token savings unmeasured. Full npm test, metadata, strict Claude marketplace/plugin validation, local Markdown links and diff-check pass. Saving the sweep in a local commit under the operator's existing commit authorization. Existing single 0.7.2 bump retained. A sibling-plugin frontmatter-only override issue was reported as outside this sweep, without editing those plugins or filing beads.
+
 ## Files Changed
 
 - Session and branch metadata initialized.
-- mantra/skills/skeptic/SKILL.md and mantra/skills/assess/SKILL.md
+- mantra/skills/skeptic/SKILL.md, mantra/skills/assess/SKILL.md, and mantra/skills/make-rule/SKILL.md
 - mantra/hooks/behavior.js
-- mantra/context/behavior.md, mantra/README.md, mantra/FORMAT.md, mantra/DEVELOPMENT.md
+- mantra/context/behavior.md, rule-design.md, test.md; README.md, FORMAT.md, DEVELOPMENT.md, ROADMAP.md, and historical ideas note
+- Removed redundant mantra/context/context-format.md and format-guide.md
 - Mantra package and host manifests; .claude-plugin/marketplace.json
 - docs/reviews/183-evidence-responsive-skepticism.md (Ned's independent comparison)
 

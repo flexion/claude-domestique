@@ -1,221 +1,79 @@
-# Context File Format Specification
+# Compact rule authoring
 
-This document defines the format for context files used by mantra.
+This is the authoring convention used by [make-rule](skills/make-rule/SKILL.md).
+Mantra's current hook injects a fixed reminder; it does not parse, validate, or
+refresh rule files. Claude Code natively loads project rules from `.claude/rules/`;
+start a new session to apply new or edited instructions. Path-scoped rules apply
+when Claude reads, writes, or edits a matching file. Other hosts have their own
+instruction-loading conventions.
 
-## Directory Structure
+## Rule and companion
 
-**Base context** (shipped with plugin):
-```
-<plugin-root>/
-├── rules/                 # Rule files (auto-injected)
-│   ├── behavior.md        # AI behavior rules (frontmatter + optional body)
-│   ├── test.md            # Testing conventions
-│   └── ...
-└── context/               # Companion docs (on-demand)
-    ├── behavior.md        # Detailed behavior guide
-    ├── test.md            # Detailed test examples
-    └── ...
-```
+Keep the actionable guidance in one compact file. Put examples and rationale in
+a companion only when they help apply the rule. Avoid duplicating the rule in
+both files.
 
-**Project extensions** (your project):
-```
-.claude/
-├── rules/                 # Project rule overrides
-│   └── *.md               # Custom rules with YAML frontmatter
-└── context/               # Project companion docs
-    └── *.md               # Detailed examples
-```
+For Claude Code projects, a rule can live at `.claude/rules/<topic>.md`, with its
+companion at `.claude/context/<topic>.md`. Mantra ships skills and on-demand
+references, not a `rules/` directory. Other plugins may ship their own rules.
 
-**Loading order**: base → sibling plugins → project extensions → CLAUDE.md
-
-## Two-Tier Pattern
-
-Each topic should have TWO files:
-
-### 1. Rule File (`rules/*.md`)
-**Purpose:** Quick context injection for Claude
-**Format:** YAML frontmatter (extracted and injected automatically)
-**Characteristics:**
-- Token-efficient (aim for 89% reduction vs prose)
-- Key-value assertions in frontmatter
-- Minimal prose
-- Target size: 10-30 lines of frontmatter
-
-### 2. Companion Doc (`context/*.md`)
-**Purpose:** Detailed reference for humans and Claude deep-dives
-**Characteristics:**
-- Full prose explanations
-- Code examples
-- Edge cases and troubleshooting
-- Not injected automatically (read on-demand)
-
-## Rule File Format
-
-Rule files use YAML frontmatter with an optional markdown body:
+Put behavioral instructions in the Markdown body. Claude Code reads `paths` as
+rule frontmatter metadata and removes frontmatter before loading the rule;
+other frontmatter fields do not supply behavioral instructions. See the
+[host rule documentation](https://code.claude.com/docs/en/memory#rule-frontmatter-reference).
 
 ```markdown
----
-companion: behavior.md
-type: actionable
-
-## Assessment
+# Assessment
+check: correctness, architecture, alternatives, material-risks
 stance: evidence-responsive
-assess-first: correctness, architecture, risks
-never: eager-agreement, sycophantic-tone
+accept: sound-proposals
+revise: evidence-or-reasoning
 
-## Implementation
-mode: discuss-first (non-trivial) | build-first (trivial)
-order: syntax → runtime → logic → optimize
----
-
-Optional body content (usually omitted for rule files).
+Details: .claude/context/assessment.md (project-root relative)
 ```
 
-The frontmatter between `---` markers is extracted and injected.
+For a file-scoped rule, add host-supported frontmatter:
 
-## YAML Format Conventions
-
-### Operators
-
-| Operator | Meaning | Example |
-|----------|---------|---------|
-| `→` | Flow/sequence | `hook → inject → refresh` |
-| `>` | Priority order | `unit > integration > e2e` |
-| `\|` | Alternatives | `issue/feature-N \| chore/desc` |
-| `,` | List items | `test: logic, errors, edge-cases` |
-
-### Negation Prefixes
-- `no:` - Prohibited
-- `skip:` - Don't do
-- `never:` - Absolutely prohibited
-
-### Style Rules
-
-**Do:**
-- Use shortest phrasing possible
-- Omit articles (a, an, the)
-- Use operators instead of prose
-- One fact per line
-- Key-value format
-
-**Don't:**
-- Write complete sentences
-- Include explanations (put in companion `.md` file)
-- Use markdown formatting in YAML
-- Repeat information
-
-### Example Frontmatter
-
-```yaml
-# behavior.md - Compact Reference
-companion: context/behavior.md
-
-## Assessment
-stance: evidence-responsive
-assess-first: correctness, architecture, risks
-never: eager-agreement, sycophantic-tone
-
-## Implementation
-mode: discuss-first (non-trivial) | build-first (trivial)
-order: syntax → runtime → logic → optimize
-validation: incremental (implement → test → next)
-
-## Testing
-priority: unit > integration > e2e
-test: new-logic, conditionals, error-paths
-skip: simple-DTOs, getters, boilerplate
-```
-
-## File Naming
-
-### Recommended Names
-
-| File | Purpose |
-|------|---------|
-| `behavior.md` | AI behavior rules, assessment stance |
-| `git.md` | Git conventions, commit format, PR rules |
-| `test.md` | Testing patterns, what to test/skip |
-| `sessions.md` | Session management workflow |
-| `<domain>.md` | Domain-specific rules |
-
-### Naming Rules
-- Use lowercase
-- Use hyphens for multi-word names
-- Be descriptive but concise
-- Pair with same-name companion file in `context/` for details
-
-## Token Efficiency
-
-Context files are injected into Claude's context window. Efficiency matters.
-
-### Size Targets
-
-| Complexity | Lines | Tokens (approx) |
-|------------|-------|-----------------|
-| Simple | 5-12 | 50-150 |
-| Standard | 10-20 | 100-250 |
-| Complex | 20-30 | 200-400 |
-| Maximum | 30 | 400 |
-
-### Efficiency Tips
-
-1. **Abbreviate consistently** - Use same short forms throughout
-2. **Omit obvious context** - Don't repeat what's in project files
-3. **Use references** - Point to companion `.md` files for details
-4. **Prioritize** - Put most important rules first
-5. **Prune regularly** - Remove obsolete content
-
-## Interpretation Guide
-
-When Claude reads compact YAML frontmatter:
-
-| Pattern | Interpretation |
-|---------|----------------|
-| `test: a, b, c` | Test ALL of these |
-| `skip: x, y, z` | Don't test ANY of these |
-| `a > b > c` | Priority order (a highest) |
-| `a → b → c` | Sequence (a then b then c) |
-| `a \| b` | Either is valid |
-| `key: value (example)` | Value with inline example |
-
-## Validation
-
-mantra validates:
-- File exists and is readable
-- Valid YAML frontmatter syntax
-- File size within limits
-
-mantra does NOT validate:
-- Content correctness
-- Operator usage
-- Naming conventions
-
-## Migration from CLAUDE.md
-
-If migrating from a single `CLAUDE.md`:
-
-1. **Identify topics** - Group related rules
-2. **Create rule file** - Add YAML frontmatter to `rules/<topic>.md`
-3. **Keep details** - Leave examples/explanations in `context/<topic>.md`
-4. **Test refresh** - Verify context injects correctly
-
-### Before (CLAUDE.md excerpt)
-```markdown
-## Git Conventions
-
-Always use HEREDOC format for commits. Never include emojis.
-Commit messages should be lowercase after the issue number.
-Format: "#N - verb description"
-```
-
-### After (rules/git.md)
 ```markdown
 ---
-# Git Workflow - Compact Reference
-companion: context/git.md
-
-commit-format: "#N - verb desc" | "chore - desc"
-commit-style: HEREDOC, lowercase-after-dash
-no: emojis
+paths:
+  - "src/api/**"
 ---
+# API contracts
+required: check unsettled external contracts against authoritative references
 ```
+
+Keep a `paths` block valid YAML: if it fails to parse, Claude Code ignores the
+frontmatter and loads the rule without path scoping.
+
+The key-value lines, arrows, alternatives, and headings in the body are notation
+for the agent, not a schema executed by Mantra. A companion path should state
+where it resolves from; Mantra does not load it automatically.
+
+## Notation
+
+| Pattern | Intended reading |
+|---------|------------------|
+| `a, b, c` | Items in a list |
+| `a → b → c` | Ordered steps |
+| `a > b > c` | Priority |
+| `a \| b` | Alternatives |
+| `no:`, `skip:`, `never:` | Prohibitions within the stated scope |
+
+Use explicit triggers and scope. Reserve blocking language for actual required
+permissions or constraints; do not turn routine choices into approval gates.
+Verify compliance through observable actions or results, not quoted private
+reasoning. See [rule-design](context/rule-design.md).
+
+## Efficiency and validation
+
+Remove filler, redundant rules, and stale guidance before abbreviating. Keep
+negations, triggers, and exceptions understandable. There is no guaranteed token
+reduction or line-count limit: character counts are only text-size measurements,
+and token counts depend on the tokenizer.
+
+Before using a rule, check its paths, consistency with project instructions, and
+whether a fresh agent applies it to representative cases. If another tool parses
+its frontmatter, validate with that tool as well. The repository's
+`npm run validate:plugins` checks plugin metadata and skill frontmatter; it does
+not certify arbitrary project-rule syntax or behavior.
