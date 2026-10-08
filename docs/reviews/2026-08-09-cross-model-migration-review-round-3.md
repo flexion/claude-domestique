@@ -1,5 +1,7 @@
 # Review round 3: cross-model plugin migration (Phase 0 + Phase 1)
 
+> Historical migration record for the versions named below. See the [repository README](../../README.md) for current installation and validation, and the [comitatus README](../../comitatus/README.md) for current herd commands and conventions.
+
 **Date:** 2026-08-09
 **Reviewer:** Claude (Opus 5)
 **Branch:** `chore/make-all-plugins-available-to-claude-and-codex`

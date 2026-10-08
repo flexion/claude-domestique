@@ -4,7 +4,7 @@ This file gives coding agents the repository-specific context needed to work saf
 
 ## Project overview
 
-Claude Domestique is a Claude Code plugin marketplace. It contains six independently installable plugins:
+Claude Domestique is a Claude Code plugin marketplace. Its independently installable plugins are:
 
 - `memento`: branch-based session persistence
 - `mantra`: behavioral rules and context refresh
@@ -12,6 +12,8 @@ Claude Domestique is a Claude Code plugin marketplace. It contains six independe
 - `agent-artifex`: guidance for designing and testing AI services
 - `comitatus`: herdr orchestration workflows
 - `stilus`: prose drafting, editing, and review tools
+- `modus`: carrying a work item through to working behavior and judging when it is finished
+- `vernaculus`: delegating well-specified coding work to a locally hosted model over MCP
 
 The repository is an npm workspace using CommonJS and targets Node.js 24. The root `package.json` declares `engines.node` as `>=24`, `.npmrc` sets `engine-strict=true` so an older runtime fails `npm install` rather than warning, `.nvmrc` pins 24 for local shells, and CI tests 24. Nothing verifies an older runtime, so do not reintroduce an older floor without adding a matrix entry for it.
 
@@ -32,12 +34,12 @@ The repository is an npm workspace using CommonJS and targets Node.js 24. The ro
 - `.agents/skills/`: skills shared across hosts that read the `.agents` convention, currently Codex
 - `.codex/`: Codex session hooks and the project-level feature flag that enables them
 
-Not every plugin uses every directory. `agent-artifex` and `stilus` are primarily prompt/documentation plugins and currently have no Jest suites.
+Not every plugin uses every directory. `agent-artifex`, `stilus`, and `modus` are primarily prompt/documentation plugins and currently have no Jest suites.
 
 ## Working principles
 
 - Inspect the nearest README, tests, and existing implementation before changing a plugin.
-- Keep concepts in their owning plugin. Session lifecycle belongs to `memento`; behavioral and formatting rules to `mantra`; git and work-item behavior to `onus`; herdr orchestration to `comitatus`; AI-service guidance to `agent-artifex`; prose guidance to `stilus`.
+- Keep concepts in their owning plugin. Session lifecycle belongs to `memento`; behavioral and formatting rules to `mantra`; git and work-item behavior to `onus`; herdr orchestration to `comitatus`; AI-service guidance to `agent-artifex`; prose guidance to `stilus`; work-item completion to `modus`; local-model delegation to `vernaculus`.
 - Prefer cross-references to duplicated guidance. Each behavior should have one source of truth.
 - Treat this repository as self-referential: source files here are not necessarily the installed plugin instances active in the current agent session. Source changes do not take effect until a plugin is rebuilt/reinstalled.
 - Do not edit generated `memento/lib/shared.js` or `onus/lib/shared.js` directly. Edit `shared/index.js`, then run `npm run build`.
@@ -68,6 +70,7 @@ npm run test:mantra
 npm run test:memento
 npm run test:onus
 npm run test:comitatus
+npm run test:vernaculus
 ```
 
 Run the CI-equivalent coverage suites:
@@ -328,8 +331,9 @@ bd prime                # Refresh Beads context
 ## Task tracking is on the filesystem, not in beads (current override)
 
 By operator instruction, 2026-09-09: **do not file beads.** Work items, todos, and
-deferred findings go to [`.pipeline/backlog.md`](.pipeline/backlog.md) and one file
-per item under `.pipeline/backlog/`. This overrides "Use `bd` for all task tracking"
+deferred findings go to `.pipeline/backlog.md` and one file
+per item under `.pipeline/backlog/`; the index and the item directory are created on
+first use. This overrides "Use `bd` for all task tracking"
 in the managed blocks above. Those blocks stay as written, for when the override is
 lifted.
 

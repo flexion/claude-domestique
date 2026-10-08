@@ -59,9 +59,18 @@ scoped to the OS user: uid on POSIX, a hash of the Windows account name and home
 on Windows. Cleanup uses Node's bounded retries for transient Windows directory-removal
 errors; it never steals a lock merely because its timestamp is old.
 
+## Launcher outside the herd
+
+By default the launcher that seeds a herd is not a member of it. The working lead defaults
+to the first handle in the roster and must be a roster member; a sender absent from the
+roster is named in each seed as an outside launcher, neither member nor coordinator, that
+members do not wait on unless their task names it as an approver. A launcher joins only by
+listing itself in the roster. Membership is inferred from the workspace, so an outside
+launcher must run from a different workspace than the herd.
+
 ## Lead withdrawal
 
-A lead may seed the herd and then withdraw. The handoff is explicit: identify the active
+A launcher that joined the herd may withdraw. The handoff is explicit: identify the active
 coordinator, send the handoff first, send `[herd -self]` to each member, and only then close
 the lead's pane. Remaining
 members own the work and must not wait for the departed lead. If no coordinator remains,

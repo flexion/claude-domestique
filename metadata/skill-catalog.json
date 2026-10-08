@@ -25,10 +25,6 @@
       "classification": "public"
     },
     {
-      "name": "comitatus:fan-out",
-      "classification": "public"
-    },
-    {
       "name": "comitatus:herd-setup",
       "classification": "public"
     },

@@ -2,7 +2,6 @@ const path = require('path');
 const hook = require('../herdr-orient.js');
 
 const SKILL_DIR = path.resolve(__dirname, '../../skills/herdr');
-const FANOUT_SKILL_DIR = path.resolve(__dirname, '../../skills/fan-out');
 const HERD_JS = path.join(SKILL_DIR, 'scripts', 'herd.js');
 
 describe('processSessionStart gating', () => {
@@ -76,9 +75,8 @@ describe('buildOrientation', () => {
 
   test('lists the composite verbs', () => {
     const c = hook.buildOrientation('/abs/herd.js');
-    for (const v of ['status', 'members', 'wait', 'send', 'send-wait-read', 'agent', 'up']) {
-      expect(c).toContain(v);
-    }
+    expect(c).toContain('status|members|send|seed|broadcast|sync|withdraw|agent|up');
+    expect(c).not.toMatch(/send-wait-read|wait-all|fanout|--roles-dir/);
   });
 
   test('does not steer agents to the unset $CLAUDE_PLUGIN_ROOT', () => {
@@ -313,81 +311,31 @@ describe('stable provisioning', () => {
   });
 });
 
-// The deployed-user case: a repository that carries no roles directory of its
-// own. `role` resolves --roles-dir against the RECIPIENT's cwd, so the only
-// value that reaches the packaged roles from there is an absolute path - and
-// the orientation is where this kit hands out absolute paths. A roles copy that
-// is not provisioned, or is provisioned but not named, leaves the deployed
-// fan-out runbook with no role files it can reach.
-function makeFixtureFanoutSkill(roles = ['architect', 'implementer', 'reviewer']) {
-  const dir = tmpdir();
-  fs.mkdirSync(path.join(dir, 'roles'), { recursive: true });
-  fs.writeFileSync(path.join(dir, 'SKILL.md'), '# fan-out\n');
-  for (const r of roles) {
-    fs.writeFileSync(path.join(dir, 'roles', `${r}.md`), `# ${r}\n`);
-  }
-  return dir;
-}
-
-describe('fan-out roles are reachable from a deployed install', () => {
-  test('stableRolesDir builds the fixed path', () => {
-    expect(hook.stableRolesDir('/h')).toBe(path.join('/h', 'skills', 'fan-out', 'roles'));
-  });
-
-  test('provisionStable puts a named skill beside herdr rather than over it', () => {
-    const home = path.join(tmpdir(), 'stable');
-    hook.provisionStable({ skillDir: makeFixtureSkill(), home });
-    hook.provisionStable({ skillDir: makeFixtureFanoutSkill(), home, name: 'fan-out' });
-    expect(fs.readdirSync(path.join(home, 'skills')).sort()).toEqual(['fan-out', 'herdr']);
-    expect(fs.existsSync(hook.stableHerdJs(home))).toBe(true);
-  });
-
-  test('the orientation names the roles dir and the files are actually there', () => {
+// fan-out (0.13-0.14) was a second skill provisioned beside herdr; 1.0.0
+// removed it, so a stable home upgraded in place still carries that copy.
+describe('the retired fan-out copy', () => {
+  test('is removed once the herdr copy lands', () => {
     const stableHomeDir = path.join(tmpdir(), 'stable');
+    const stale = path.join(stableHomeDir, 'skills', 'fan-out', 'roles');
+    fs.mkdirSync(stale, { recursive: true });
+    fs.writeFileSync(path.join(stale, 'architect.md'), '# old\n');
     const r = hook.processSessionStart({
       env: { HERDR_ENV: '1' }, skillDir: makeFixtureSkill(), herdJsPath: '/abs/herd.js',
       codexHome: '/nonexistent', stableHome: stableHomeDir,
-      fanoutSkillDir: makeFixtureFanoutSkill(),
     });
-    const rolesDir = hook.stableRolesDir(stableHomeDir);
-    expect(r.hookSpecificOutput.additionalContext).toContain(rolesDir);
-    expect(r.hookSpecificOutput.additionalContext).toContain('--roles-dir');
-    // The path is only worth naming if a role file resolves under it.
-    expect(fs.readFileSync(path.join(rolesDir, 'architect.md'), 'utf8')).toBe('# architect\n');
-  });
-
-  test('the roles line is omitted rather than pointing at a copy that failed', () => {
-    const stableHomeDir = path.join(tmpdir(), 'stable');
-    const r = hook.processSessionStart({
-      env: { HERDR_ENV: '1' }, skillDir: makeFixtureSkill(), herdJsPath: '/abs/herd.js',
-      codexHome: '/nonexistent', stableHome: stableHomeDir,
-      fanoutSkillDir: '/definitely/not/here',
-    });
-    expect(r.hookSpecificOutput.additionalContext).not.toContain('--roles-dir');
-    expect(r.hookSpecificOutput.additionalContext).not.toContain(hook.stableRolesDir(stableHomeDir));
-    // and the herdr half still got its stable path
+    expect(fs.readdirSync(path.join(stableHomeDir, 'skills'))).toEqual(['herdr']);
     expect(r.hookSpecificOutput.additionalContext).toContain(hook.stableHerdJs(stableHomeDir));
   });
 
-  test('a Codex-cache install provisions no roles copy', () => {
+  test('is left alone when the herdr copy fails, so nothing is lost for no gain', () => {
     const stableHomeDir = path.join(tmpdir(), 'stable');
-    const r = hook.processSessionStart({
-      env: { HERDR_ENV: '1' }, skillDir: makeFixtureSkill(), herdJsPath: '/abs/herd.js',
-      codexHome: tmpdir(), stableHome: stableHomeDir,
-      fanoutSkillDir: makeFixtureFanoutSkill(), directCodex: true,
+    const stale = path.join(stableHomeDir, 'skills', 'fan-out');
+    fs.mkdirSync(stale, { recursive: true });
+    hook.processSessionStart({
+      env: { HERDR_ENV: '1' }, skillDir: '/definitely/not/here', herdJsPath: '/abs/herd.js',
+      codexHome: '/nonexistent', stableHome: stableHomeDir,
     });
-    expect(fs.existsSync(stableHomeDir)).toBe(false);
-    expect(r.hookSpecificOutput.additionalContext).not.toContain('--roles-dir');
-  });
-
-  test('the shipped fan-out skill carries every role its SKILL.md names', () => {
-    const named = fs.readFileSync(path.join(FANOUT_SKILL_DIR, 'SKILL.md'), 'utf8')
-      .match(/\(roles\/([a-z-]+\.md)\)/g)
-      .map((m) => m.replace(/^\(roles\//, '').replace(/\)$/, ''));
-    expect(named.length).toBeGreaterThan(0);
-    for (const role of new Set(named)) {
-      expect(fs.existsSync(path.join(FANOUT_SKILL_DIR, 'roles', role))).toBe(true);
-    }
+    expect(fs.existsSync(stale)).toBe(true);
   });
 });
 

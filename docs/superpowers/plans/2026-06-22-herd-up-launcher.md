@@ -1,5 +1,7 @@
 # `up` Launcher Implementation Plan
 
+> Historical snapshot of the versions and decisions named below. Current commands, launch defaults, and herd conventions are documented in the [comitatus README](../../../comitatus/README.md).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add a `node "$H" up …` helper that creates a worktree and launches an N-agent herd in a single command, collapsing the multi-step `$()`-threaded recipe (5–9 permission prompts) into one.

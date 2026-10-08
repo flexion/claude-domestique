@@ -1,5 +1,7 @@
 # Design: comitatus Plugin
 
+> Historical snapshot of the versions and decisions named below. Current commands, launch defaults, and herd conventions are documented in the [comitatus README](../../comitatus/README.md).
+
 **Date:** 2026-06-21
 **Status:** Design
 **Branch:** chore/add-comitatus-plugin (proposed)

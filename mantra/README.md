@@ -4,22 +4,22 @@
 
 Behavioral rules plugin for Claude Code and Codex sessions.
 
-Claude is brilliant. Claude is helpful. Claude also has the memory of a goldfish in a context window. You've written the perfect CLAUDE.md. You've carefully documented your project conventions. Claude reads it. Claude agrees. Claude then proceeds to ignore half of it by turn 47.
+Claude is brilliant. Claude is helpful. Claude also has the memory of a goldfish in a context window. You've written the perfect CLAUDE.md. You've carefully documented your project conventions. Claude reads it. Claude agrees. Claude then drifts away from it as the session grows.
 
-**mantra** solves this by providing curated behavioral rules that are automatically loaded via Claude Code's native `.claude/rules/` mechanism—ensuring consistent behavior from turn 1 to turn 100.
+**mantra** solves this by providing curated behavioral rules that are injected automatically by session hooks in Claude Code and Codex, and re-injected periodically, so they stay in context as a session grows.
 
 ### Flexion Fundamentals
 
 mantra helps developers embody Flexion fundamentals throughout long sessions:
 
 - **Be skeptical and curious** — Keeps Claude questioning assumptions and seeking evidence, not pattern-matching
-- **Never compromise on quality** — Maintains consistent standards from turn 1 to turn 100
+- **Never compromise on quality** — Keeps standards consistent across a long session
 - **Listen with humility** — Enforces peer-not-subordinate stance, deferring to evidence over agreement
 
 ## Features
 
 - **Zero config** - Rules injected automatically via hooks, no setup required
-- **Token efficient** - Compact YAML frontmatter (~89% token reduction vs prose)
+- **Token efficient** - Compact YAML frontmatter rather than prose
 - **Status indicator** - Shows rules loaded and context freshness on every prompt
 - **Curated rules** - Ships with behavior, testing, git, and format conventions
 - **Periodic refresh** - Re-injects rules every 10 prompts to prevent drift
@@ -199,7 +199,7 @@ Mantra isn't just about remembering project conventions. It's about **overriding
 
 ```bash
 npm install
-npm test    # Run Jest tests (28 specs)
+npm test    # Run Jest tests
 ```
 
 ## Why "mantra"?

@@ -15,7 +15,7 @@
       "name": "mantra",
       "source": "./mantra",
       "description": "Context refresh - periodic re-injection of behavioral guidance to prevent context drift",
-      "version": "0.6.2"
+      "version": "0.6.3"
     },
     {
       "name": "onus",
@@ -33,7 +33,7 @@
       "name": "comitatus",
       "source": "./comitatus",
       "description": "herdr workflows - packages the herdr agent-orchestration skill for claude and codex, auto-injected inside herdr",
-      "version": "0.14.1"
+      "version": "1.0.0"
     },
     {
       "name": "stilus",
@@ -51,7 +51,7 @@
       "name": "vernaculus",
       "source": "./vernaculus",
       "description": "Vernaculus - delegating well-specified coding work to a locally hosted model over MCP",
-      "version": "0.2.0"
+      "version": "0.2.1"
     }
   ]
 }

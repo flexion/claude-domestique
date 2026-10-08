@@ -17,10 +17,11 @@ so this file is just the member call-sign pool.
 short, phonetically distinct call-signs, type-agnostic, each claimed as the **next unused**
 entry - check live state and skip any already in use:
 
-```bash
-: "${H:?set H from the herdr orientation line before piping herdr JSON into node}"
-herdr agent list | node "$H" members  # taken member handles
+```text
+node HERD members  # taken member handles, across every workspace
 ```
+
+`HERD` is the absolute helper path from your herdr orientation.
 
 constraints:
 

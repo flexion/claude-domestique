@@ -1,5 +1,7 @@
 # herdr plugin ecosystem — assessment against comitatus goals
 
+> Historical snapshot of the versions and decisions named below. Current commands, launch defaults, and herd conventions are documented in the [comitatus README](../comitatus/README.md).
+
 Source: GitHub topic `herdr-plugin` (the marketplace index), queried 2026-07-02. 52 repos found; the ones relevant to our goals are graded below. None are vetted by herdr — review before installing.
 
 Our goals: (1) reliable agent-to-agent workflow with few permission interruptions, (2) worktree + herd lifecycle automation, (3) operator visibility/control, (4) less comitatus code.

@@ -52,34 +52,6 @@ function defaultSleep(ms) {
 function sleeper(deps) { return (deps && deps.sleep) || defaultSleep; }
 function clock(deps) { return (deps && deps.now) || Date.now; }
 
-function parseWait(args) {
-  const out = { handle: args[0], statuses: ['idle'], timeout: 45000, interval: 1000 };
-  for (let i = 1; i < args.length; i++) {
-    const v = () => args[++i];
-    if (args[i] === '--status') out.statuses = v().split(',').filter(Boolean);
-    else if (args[i] === '--timeout') out.timeout = Number(v());
-    else if (args[i] === '--interval') out.interval = Number(v());
-  }
-  return out;
-}
-
-// Comma-status OR ("idle,done") is why this exists: the native
-// `herdr wait agent-status` takes exactly one status.
-function waitCmd(args, deps) {
-  const cfg = parseWait(args);
-  const now = clock(deps);
-  const sleep = sleeper(deps);
-  const deadline = now() + cfg.timeout;
-  for (;;) {
-    const st = status(fetchAgents(deps), cfg.handle);
-    if (cfg.statuses.includes(st)) return st;
-    if (now() >= deadline) {
-      throw new Error(`wait timeout: ${cfg.handle} is ${st}, want ${cfg.statuses.join(',')}`);
-    }
-    sleep(cfg.interval);
-  }
-}
-
 function resolveSelf(data, override, env = process.env) {
   if (override) return override;
   // The executing pane is the identity source: focus is a global that drifts
@@ -403,20 +375,6 @@ function sendCmd(args, deps) {
   };
 }
 
-function sendWaitReadCmd(args, deps) {
-  const handle = args[0];
-  const opt = (name, def) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : def; };
-  const timeout = String(Number(opt('--timeout', '60000')));
-  const lines = String(Number(opt('--lines', '40')));
-
-  const sent = sendCmd(args, deps); // parses handle/message/--reply/--fyi/--from itself
-  if (sent.delivery === 'undeliverable') {
-    throw new Error(`undeliverable to ${handle}: ${sent.reason}`);
-  }
-  waitCmd([handle, '--status', 'idle,done', '--timeout', timeout], deps);
-  return deps.run('herdr', ['pane', 'read', sent.pane, '--source', 'recent', '--lines', lines]);
-}
-
 // ---------------------------------------------------------------------------
 // herd lifecycle: seed, broadcast, roster sync, withdraw
 // ---------------------------------------------------------------------------
@@ -498,6 +456,7 @@ function seedLine(cfg) {
     `you are ${cfg.handle}, a member of a herd working on ${cfg.cwd}`,
     `roster: ${cfg.roster.join(', ')} (your teammates: ${peers.join(', ') || 'none yet'})`,
     `working lead: ${cfg.lead}${cfg.lead === cfg.handle ? ' (that is you - you drive the work)' : ''}`,
+    cfg.launcher ? `${cfg.launcher} launched this herd and is outside it: not a member and not its coordinator - the working lead coordinates, so do not wait on ${cfg.launcher} unless your task names it as an approver` : undefined,
     `PROTOCOL: message a teammate with exactly ONE line by RUNNING this as a real shell command, never printing it: node ${shellPath(cfg.helper, cfg.platform)} send <handle> "<body>" --reply (use --fyi instead when no reply is wanted)`,
     'an incoming "[from X reply]" needs a one-line answer back to X; "[from X fyi]" needs no answer and no ack; "[herd +H]" and "[herd -H]" are roster updates you apply idempotently without replying or rebroadcasting',
     'a "#id" in the header is a delivery id - ignore it, except that the same id arriving twice is a duplicate to ignore',
@@ -516,11 +475,22 @@ function seedCmd(args, deps) {
   const data = fetchAgents(deps);
   const target = findAgent(data, handle);
   if (!target) throw new Error(`no agent: ${handle}`);
-  const lead = opt('--lead') || resolveSelf(data, opt('--from'), deps.env) || roster[0];
+  // The launcher stays OUT of the herd it seeds unless it opts in by listing
+  // itself in --roster. The lead, defaulted or explicit, must be a roster
+  // member: a lead outside the roster - the sender included - would coordinate
+  // a herd that cannot see it, and every member would wait on an agent the
+  // roster says is not there.
+  const self = resolveSelf(data, opt('--from'), deps.env);
+  const herd = roster.includes(handle) ? roster : [handle, ...roster];
+  const lead = opt('--lead') || herd[0];
+  if (!herd.includes(lead)) {
+    throw new Error(`--lead ${lead} is not in the roster (${herd.join(', ')}); a lead must be a member - add it to --roster to join`);
+  }
   const line = seedLine({
     handle,
-    roster: roster.includes(handle) ? roster : [handle, ...roster],
+    roster: herd,
     lead,
+    launcher: self && !herd.includes(self) ? self : undefined,
     cwd: opt('--cwd', target.cwd || '(this worktree)'),
     helper: helperFor(target.agent, opt('--helper')),
     brief: opt('--brief'),
@@ -537,9 +507,10 @@ function seedCmd(args, deps) {
   // the sender's own pane, which this process cannot poll. Announce
   // `[herd +<handle>]` to the rest of the herd after the reply arrives, not
   // after this returns.
+  // Native wait, both states named: without --until it also matches `blocked`.
   const timeout = String(Number(opt('--timeout', '120000')));
   try {
-    waitCmd([handle, '--status', 'idle,done', '--timeout', timeout], deps);
+    deps.run('herdr', ['agent', 'wait', handle, '--until', 'idle', '--until', 'done', '--timeout', timeout]);
   } catch {
     return { ...sent, turn: 'timeout' };
   }
@@ -685,9 +656,6 @@ function usage() {
     'verbs are self-contained - each runs herdr itself:',
     '  status <handle|pane>             agent_status',
     '  members [--workspace <ws>]       handles, optionally per workspace',
-    '  wait <handle> [--status a,b] [--timeout ms] [--interval ms]',
-    '      poll agent list until status matches; a single-call comma set',
-    '      (idle,done) - the native `herdr agent wait` needs one --until each',
     '  send <handle> <msg> [--reply|--fyi] [--from <self>] [--force]',
     '      one sender at a time per recipient (per-recipient lock); reports',
     '      delivery: observed (turn start or id echoed) | accepted (submitted,',
@@ -695,9 +663,10 @@ function usage() {
     '      --force is an UNSAFE override of the blocked gate: it types into a',
     '      recipient whose modal has keyboard focus, so the text can land in a',
     '      permission dialog instead of the composer. Diagnostics only.',
-    '  send-wait-read <handle> <msg> [--timeout ms] [--lines n]',
     '  seed <handle> --roster a,b,c [--lead h] [--brief s] [--helper p] [--wait]',
     '      one-line cold-agent orientation: handle, roster, lead, protocol.',
+    '      the lead defaults to the first roster member and must be in the',
+    '      roster; a sender left off --roster is named as an outside launcher.',
     '      --wait blocks until it finishes a turn; its REPLY is the real proof',
     '  broadcast <msg> [--workspace ws] [--exclude a,b] [--reply|--fyi]',
     '  sync --roster a,b,c [--workspace ws] [--dry-run]',
@@ -707,57 +676,18 @@ function usage() {
     '  withdraw --lead <handle> [--workspace ws] [--note s]',
     '      hand off to the working lead, then announce your own departure',
     '  agent <kind> <handle>[:<selector>] --workspace <ws> --cwd <dir> [--timeout ms] [--label s]',
-    '      kind is claude|codex|opencode. a bare handle INHERITS the model and',
-    '      effort from that CLI\'s ambient config (managed settings for claude,',
-    '      ~/.codex/config.toml for codex); the selector overrides per agent:',
+    '      kind is claude|codex|opencode. a bare handle gets the default model',
+    '      (claude-opus-5-5 for claude, gpt-6.1-sol for codex) and INHERITS effort',
+    '      from that CLI\'s ambient config; codex always runs --no-daemon. the',
+    '      selector overrides per agent:',
     '        nell:model=opus,effort=high    claude --model/--effort',
     '        jay:effort=high                codex -c model_reasoning_effort=high',
     '        bob:ollama/qwen2.5:7b          opencode -m (model REQUIRED here)',
     '      a bare suffix is a model, so handle:opus == handle:model=opus. keys',
     '      are named, not positional, because opencode models contain colons.',
     '      opencode has no effort selector and refuses effort= rather than',
-    '      dropping it. the result reports model/effort as null when inherited.',
+    '      dropping it. the result reports effort as null when inherited.',
     '  up [...]                         one-shot worktree + herd launcher',
-    '',
-    'fan-out verbs - the mechanical steps of the fan-out runbook:',
-    '  role <handle> --role <name> --run <id> [--partition p] [--hypothesis n] [--roles-dir d]',
-    '      deliver a role BY PATH: "read <roles-dir>/<role>.md and follow it. $RUN',
-    '      is <id>, $PARTITION is <p>". resolved against the RECIPIENT cwd from the',
-    '      agent list, so a role file present only in your own checkout fails here',
-    '      instead of silently arriving as an unreadable path',
-    '  fanout --run <id> --partitions a,b [--task-branch <name>] [--partition-sep <sep>]',
-    '         [--base <branch>] [--kind codex]',
-    '         [--selector model=..,effort=..] [--role r] [--role-tag p] [--timeout ms]',
-    '      one worktree + one agent per partition off the task branch, each sent its own',
-    '      $PARTITION role line. handles are the next free call-signs from the pool in',
-    '      reference/names.md, claimed against the live agent list BEFORE the first',
-    '      worktree, because a collision surfaces only at agent start - after the tab',
-    '      and the tree exist. --role-tag decorates each TAB as <handle>-<tag> so the',
-    '      sidebar shows the part; the handle itself stays a bare call-sign. a partition',
-    '      that fails is reported and the rest still launch',
-    '  wait-all <h1,h2,...> [--status idle,done] [--timeout ms] [--interval ms]',
-    '      one `agent list` per round for the whole set, not one wait per handle. a',
-    '      timeout returns a row per handle rather than throwing, so a stuck handle',
-    '      does not hide the ones that settled',
-    '  state --run <id> [--task-branch <name>] [--partition-sep <sep>] [--partitions a,b]',
-    '                                      which step the run is on, read off git refs',
-    '      absent|started|partitioned|fanned-out|fanned-in|finished, plus per-branch',
-    '      merged/blocked/probe. derived on every call and stored nowhere - git is',
-    '      the state machine, so there is no run journal to go stale',
-    '  settled --run <id> --partitions a,b [--task-branch <name>] [--partition-sep <sep>]',
-    '      partition completion from branch commits or committed BLOCKED files;',
-    '      reads git refs, never transient agent status',
-    '  fan-in --run <id> --partitions a,b [--task-branch <name>] [--partition-sep <sep>]',
-    '         [--wait-handle arch] [--timeout ms] [--dry-run]',
-    '      refuses unless HEAD is the task branch and the architect is settled, then merges',
-    '      in the order given (manifest order). stops at the FIRST conflict with its',
-    '      --diff-filter=U paths and leaves the merge in the tree to resolve.',
-    '      NOT baked by /herd-setup - it runs `git merge`, so it prompts',
-    '  teardown --run <id> --partitions a,b [--task-branch <name>] [--partition-sep <sep>] [--yes]',
-    '      `worktree remove --force` then `git branch -D`, in that order, per',
-    '      partition. plans only without --yes, and skips a partition whose BLOCKED',
-    '      file is uncommitted or committed-but-unmerged - --force discards both',
-    '      without warning. NOT baked by /herd-setup - it destroys work, so it prompts',
   ].join('\n');
 }
 
@@ -771,12 +701,8 @@ function dispatch(argv, deps) {
       const i = rest.indexOf('--workspace');
       return members(fetchAgents(deps), i >= 0 ? rest[i + 1] : undefined);
     }
-    case 'wait':
-      return waitCmd(rest, deps);
     case 'send':
       return sendCmd(rest, deps);
-    case 'send-wait-read':
-      return sendWaitReadCmd(rest, deps);
     case 'seed':
       return seedCmd(rest, deps);
     case 'broadcast':
@@ -787,23 +713,6 @@ function dispatch(argv, deps) {
       return withdrawCmd(rest, deps);
     case 'agent':
       return agentCmd(rest, deps);
-    // Lazy, like `agent` and `defaultDeps` above: both modules require this one
-    // back for sendCmd/waitCmd, and a top-level require either way would leave
-    // whichever side loaded second holding a half-initialised exports object.
-    case 'role':
-      return require('./fanout.js').roleCmd(rest, deps);
-    case 'fanout':
-      return require('./fanout.js').fanoutCmd(rest, deps);
-    case 'wait-all':
-      return require('./fanout.js').waitAllCmd(rest, deps);
-    case 'state':
-      return require('./fanin.js').stateCmd(rest, deps);
-    case 'settled':
-      return require('./fanin.js').settledCmd(rest, deps);
-    case 'fan-in':
-      return require('./fanin.js').faninCmd(rest, deps);
-    case 'teardown':
-      return require('./fanin.js').teardownCmd(rest, deps);
     default:
       throw new Error(`unknown command: ${cmd}`);
   }
@@ -859,8 +768,6 @@ module.exports = {
   status,
   members,
   fetchAgents,
-  parseWait,
-  waitCmd,
   resolveSelf,
   stampPrefix,
   idIn,
@@ -875,7 +782,6 @@ module.exports = {
   echoSeen,
   parseSend,
   sendCmd,
-  sendWaitReadCmd,
   seedLine,
   seedCmd,
   codexHelper,

@@ -1,8 +1,24 @@
 # Mechanical local-model launch surface
 
-Scope: the current `comitatus` launcher and the installed CLIs. I inspected
+Scope: the `comitatus` 0.14.1 launcher and the installed CLIs. I inspected
 `herdr` 0.9.0, OpenCode 1.18.30, Claude Code 2.1.270, and Codex CLI 0.154.0.
-I did not launch an agent or change an integration.
+I did not launch an agent or change an integration. Line citations refer to
+comitatus 0.14.1 (commit `1e4ca45`).
+
+**Changed in comitatus 1.0.0.** Read these first; the sections below are the
+0.14.1 snapshot:
+
+- A bare `--claude <handle>` now launches with `--model claude-opus-5-5`, and a
+  bare `--codex <handle>` with `--model gpt-6.1-sol`. An explicit `model=`
+  replaces the default. To use a model your ambient configuration routes, such
+  as a local Codex provider, name it: `--codex ned:model=qwen2.5:7b`.
+- Every Codex launch passes `--no-daemon`.
+- The helper's `wait` and `send-wait-read` verbs are gone. Use native
+  `herdr agent wait <handle> --until idle --until done`. `seed --wait` calls
+  that, with its 120-second default.
+
+Current behaviour is documented in
+[`comitatus/skills/herdr/SKILL.md`](../../comitatus/skills/herdr/SKILL.md).
 
 ## A. What `--opencode <handle>:<model>` does today
 
@@ -100,10 +116,11 @@ also defines `oss_provider`, `model_provider`, and
 
 There are two mechanical routes today:
 
-- Configure a local provider in user-level Codex configuration, then launch a
-  bare `--codex <handle>` or add only the model selector. The helper deliberately
-  inherits ambient Codex configuration
-  (`comitatus/skills/herdr/SKILL.md:59-80`). Official documentation says
+- Configure a local provider in user-level Codex configuration, then launch with
+  only the model selector. At 0.14.1 a bare `--codex <handle>` also worked,
+  because the helper inherited ambient Codex configuration. Since 1.0.0 a bare
+  handle passes `--model gpt-6.1-sol`, so name the local model
+  ([where model and effort come from](../../comitatus/skills/herdr/SKILL.md#where-model-and-effort-come-from)). Official documentation says
   project-local `.codex/config.toml` cannot override provider routing, so this
   must be machine/user configuration.
 - Bypass the comitatus helper and use native herdr's argv tail, for example
@@ -162,7 +179,8 @@ tab only after every agent launches (`comitatus/skills/herdr/scripts/up.js:291-3
   treats a timeout or `agent_prompt_stalled` as unconfirmed submission and does
   not resend it.
 - Completion waits are separate and fixed by helper defaults: 45 seconds for
-  `wait`, 60 seconds for `send-wait-read`, and 120 seconds for `seed --wait`
+  `wait`, 60 seconds for `send-wait-read` (both removed in 1.0.0 in favour of
+  native `herdr agent wait`), and 120 seconds for `seed --wait`
   (`comitatus/skills/herdr/scripts/herd.js:55-80`,
   `comitatus/skills/herdr/scripts/herd.js:406-417`,
   `comitatus/skills/herdr/scripts/herd.js:533-550`). A slow local inference can
