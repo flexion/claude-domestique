@@ -8,151 +8,62 @@ argument-hint: [error message or bug description]
 
 # Troubleshoot
 
-Perform evidence-based debugging using documented examples rather than guessing.
+Diagnose the reported behavior using evidence relevant to the next action.
 
 ## Task
 
-**IMPORTANT: This skill implements the TROUBLESHOOTING & DEBUGGING rule from behavior.md**
+This skill implements the evidence and deliberation guidance in
+[the companion guidance](../../context/behavior.md). Use available evidence,
+uncertainty, consequences, and reversibility to choose further investigation.
+A demonstrated local defect can proceed from local evidence without an external
+source quota.
 
-When the user reports an error, bug, or unexpected behavior, you MUST find documented evidence before proposing fixes. No guessing.
+## Workflow
 
-### Evidence-Based Workflow
+1. **Establish the behavior**
+   Inspect the error, relevant source, reproduction, and tests. Gather environment
+   or version details when they affect the diagnosis. Distinguish observed facts
+   from hypotheses; a similar error elsewhere does not establish this cause.
 
-1. **Gather Context**
-   - Get full error message and stack trace
-   - Identify version numbers (runtime, libraries, tools)
-   - Understand what the user was trying to do
+2. **Choose the next evidence**
+   Keep this decision inexpensive: name what remains uncertain and whether
+   resolving it could change the next action. If a local reproduction and source
+   inspection establish a deterministic defect, repair it and verify locally.
+   Otherwise choose an investigation suited to the uncertainty and consequences:
+   - Before implementing a change whose correctness depends on a format, protocol,
+     or third-party API contract not established by available evidence, consult an
+     applicable authoritative reference such as the specification, official
+     documentation, or release notes.
+     Recall or a local sample does not establish that contract.
+   - Use issue reports or other documented cases when they help discriminate
+     plausible causes. Cross-check when applicability is doubtful or sources
+     conflict, rather than to reach a fixed number of sources.
+   - Investigate or surface high-consequence unresolved uncertainty. Identify what
+     is unknown and why it matters; do not silently guess through it.
 
-2. **Research First**
-   Use these sources in order:
-   - **GitHub Issues**: Search the project's issue tracker
-   - **Web Search**: Find real documented cases
-   - **Official Docs**: Check changelogs, known issues, migration guides
+3. **Act on the evidence**
+   Explain why the diagnosis applies to this case. Reference the local evidence or
+   external sources actually used. Make the supported repair and run the relevant
+   checks. Further research or another review should address a named uncertainty
+   that could change the next action, rather than continue searching without one.
 
-3. **Cross-Reference Requirement**
-   - Find minimum 3 documented examples of the same or similar error
-   - Sources must be authoritative (issue trackers, release notes, official docs)
-   - Do NOT rely on a single Stack Overflow answer
+Respect required permissions, user constraints, and project validation.
 
-4. **Pattern Matching**
-   Only after finding documented evidence:
-   - Identify common causes across examples
-   - Note what solutions worked in each case
-   - Determine if user's context matches
+## Communication
 
-5. **Propose Solution**
-   - Reference the documented examples
-   - Explain why this solution applies to user's case
-   - Provide verification steps
+Match the explanation to the decision. A deterministic local fix may need only the
+cause, repair, and verification result. A consequential or unresolved diagnosis
+should also state the uncertainty, evidence gathered, and what it means for the
+next action. Do not fill a template with unused sources.
 
-### What NOT to Do
+## When stuck
 
-- Jump to "common solutions" from training data
-- Pattern-match without verification
-- Shotgun debugging (try random fixes)
-- Fill knowledge gaps with speculation
-- Propose fixes without citing sources
+Identify the missing fact that prevents a supported next action. Choose a targeted
+reproduction, source inspection, authoritative reference, or focused question that
+could resolve it. If the evidence is unavailable, state the uncertainty and its
+consequences rather than claiming a diagnosis. Missing an arbitrary source count
+is not a reason to keep searching or ask the user for more context.
 
-### Output Format
-
-```
-## Troubleshooting: [error summary]
-
-### Context Gathered
-- Error: [full message]
-- Environment: [versions, platform]
-- Action: [what user was doing]
-
-### Research Findings
-
-**Source 1**: [link or reference]
-- Cause: [identified cause]
-- Solution: [what worked]
-
-**Source 2**: [link or reference]
-- Cause: [identified cause]
-- Solution: [what worked]
-
-**Source 3**: [link or reference]
-- Cause: [identified cause]
-- Solution: [what worked]
-
-### Analysis
-[Common patterns across sources, applicability to user's case]
-
-### Recommended Fix
-[Solution with steps]
-
-### Verification
-[How to confirm the fix worked]
-```
-
-## Example
-
-```
-User invokes `mantra:troubleshoot TypeError: Cannot read properties of undefined (reading 'map')`
-
-Agent: ## Troubleshooting: TypeError on .map()
-
-### Context Gathered
-Let me get more details:
-- Where does this error occur? (file:line)
-- What data are you mapping over?
-- Did this work before? What changed recently?
-
-[After user provides context]
-
-### Research Findings
-
-**Source 1**: React GitHub Issue #14920
-- Cause: API response returning undefined before data loads
-- Solution: Add loading state or optional chaining
-
-**Source 2**: Stack Overflow - verified answer with 200+ votes
-- Cause: Component renders before async data arrives
-- Solution: Initialize state with empty array, not undefined
-
-**Source 3**: React Docs - Conditional Rendering
-- Cause: Race condition between render and data fetch
-- Solution: Guard clause or early return when data unavailable
-
-### Analysis
-All three sources point to the same root cause: trying to call .map() on data that hasn't loaded yet. Your fetch likely returns undefined on error or hasn't completed.
-
-### Recommended Fix
-```javascript
-// Before
-{items.map(item => ...)}
-
-// After - Option 1: Optional chaining
-{items?.map(item => ...) ?? null}
-
-// After - Option 2: Guard clause
-{items && items.length > 0 && items.map(item => ...)}
-
-// After - Option 3: Loading state (preferred)
-if (!items) return <Loading />;
-return items.map(item => ...);
-```
-
-### Verification
-- Error should not occur when component first renders
-- Check Network tab to confirm API response shape
-- Add console.log before .map() to verify data structure
-```
-
-## When to Use
-
-Invoke this skill when:
-- User reports an error message
-- Something "stopped working"
-- Unexpected behavior occurs
-- User asks "why is this happening?"
-
-## When Stuck
-
-If you can't find 3 documented examples:
-- Ask user for more context (exact error, reproduction steps)
-- Search with different keywords
-- Check if this is a new/unreported issue
-- Do NOT guess - say "I couldn't find documented cases for this specific issue"
+Avoid shotgun fixes, unsupported pattern matching, and presenting speculation as
+fact. Local evidence is sufficient when it demonstrates the cause, not merely
+because an error happened locally.

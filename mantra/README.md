@@ -113,7 +113,7 @@ Use `/mantra:<skill>` in Claude Code or `$mantra:<skill>` in Codex.
 |---------|-------------|
 | `/mantra:make-rule` | Create compact frontmatter rule from verbose markdown |
 | `/mantra:assess` | Structured critical assessment (correctness, architecture, alternatives, risks) |
-| `/mantra:troubleshoot` | Evidence-based debugging (requires 3+ documented examples) |
+| `/mantra:troubleshoot` | Debugging with evidence relevant to the next action |
 
 ### Creating Custom Rules
 
@@ -181,9 +181,17 @@ Mantra isn't just about remembering project conventions. It's about **overriding
 | Default Claude | Mantra Override |
 |----------------|-----------------|
 | Pattern-match from training data | Evidence-based only, NO guessing |
-| Jump to common solutions | Require 3+ documented examples |
-| Single-source answers | Cross-reference multiple sources |
-| Fill gaps with speculation | Research until gaps filled |
+| Jump to common solutions | Demonstrate the cause with applicable evidence |
+| Research every local defect | Use demonstrated local evidence without a source quota |
+| Assume a format, protocol, or third-party API contract from recall | Consult an applicable authoritative reference when the contract determines correctness and is not established by available evidence |
+| Continue research or review without a decision | Address a named uncertainty that could change the next action |
+| Hide consequential uncertainty | Investigate or surface it |
+
+Choose further investigation using available evidence, uncertainty, consequences,
+and reversibility. Keep the choice inexpensive; no numerical value-of-information
+estimate or per-action approval document is required. This governs discretionary
+process guidance; required permissions, user constraints, and project validation
+still apply. Modus owns work-item completion and review stopping.
 
 ### Implementation Discipline
 

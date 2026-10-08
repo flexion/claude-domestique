@@ -12,7 +12,8 @@ Perform a structured evaluation of a proposal, approach, or solution before impl
 
 ## Task
 
-**IMPORTANT: This skill implements the CRITICAL ASSESSMENT rule from behavior.md**
+**IMPORTANT: This skill implements the critical assessment guidance in
+[the companion document](../../context/behavior.md).**
 
 When the user presents a proposal, solution, or asks for agreement on an approach, you MUST assess before agreeing.
 
@@ -27,6 +28,18 @@ and authorization forward unless the user changes them. When the user clearly
 requests action, apply the assessment to that authorized work and proceed within
 its scope. Ask a focused question only if unresolved ambiguity would materially
 change the action; routine choices do not need renewed confirmation.
+
+### Proportionate deliberation
+
+Scale assessment to available evidence, uncertainty, consequences, and
+reversibility. Keep the choice inexpensive: research or another review should
+address a named uncertainty that could change the next action. A routine,
+reversible decision supported by local evidence can receive a brief assessment;
+investigate or surface high-consequence unresolved uncertainty.
+
+Use [the evidence workflow](../troubleshoot/SKILL.md#workflow) when choosing further
+investigation. Required permissions, user constraints, and project validation
+still apply.
 
 ### Assessment Framework
 
@@ -60,7 +73,8 @@ Evaluate these dimensions in order:
 
 ### Output Format
 
-Structure your response as:
+Scale the response to the decision. A brief assessment can state the relevant
+finding and next action directly. For a substantial evaluation, use:
 
 ```
 ## Assessment: [proposal summary]

@@ -51,7 +51,8 @@ mantra/
 ### What Mantra adds
 
 1. A skeptical-by-default evaluation before agreeing to proposals.
-2. Evidence-based troubleshooting using documented sources.
+2. Troubleshooting using evidence relevant to the next action, including demonstrated
+   local causes and authoritative references for uncertain external behavior.
 3. Explicit checklists before high-consequence actions.
 
 ### What Mantra does not duplicate
