@@ -2,7 +2,7 @@
 
 ## Project overview
 
-Mantra is a behavioral-skills plugin for coding-agent sessions. It provides structured workflows for critical assessment and evidence-based debugging, plus a lean hook that reinforces guidance throughout a session.
+Mantra provides behavioral skills and a recurring reminder for evidence-responsive assessment, proportionate research, and the active user objective. An optional passive collector records resource observations with explicit coverage; it supplies no behavioral feedback. A separate explicit Claude display mode exposes observations for evaluation.
 
 Repository-wide agent instructions come from the root `AGENTS.md` and `CLAUDE.md`; this file documents Mantra's implementation and is loaded on demand.
 
@@ -22,7 +22,7 @@ Plugin type: **skill pack, recurring behavior hook, and opt-in resource pilot**
 Design goals:
 
 - Add behavior not already supplied by the host.
-- Inject assessment, research, and active-objective guidance on every prompt to prevent drift.
+- Reinforce assessment, research, and active-objective guidance on every prompt.
 - Keep structured assessment and troubleshooting workflows available on demand.
 - Keep always-on context small.
 
@@ -39,6 +39,7 @@ mantra/
 │   └── resource-display.js # Experimental observation formatting
 ├── context/              # Detailed on-demand references
 │   ├── behavior.md
+│   ├── test.md           # Mantra-specific validation reference
 │   ├── rule-design.md
 │   └── resources.md
 ├── scripts/
@@ -63,17 +64,13 @@ mantra/
 The default hook configuration registers only `behavior.js`, on session start and
 every prompt; skills own the detailed workflows. Resource collection
 and display require explicit host settings and environment variables; see
-[the setup and consumer contract](context/resources.md). Neither mode changes
-requirements, permissions, or the active objective. Unknown measurements are not
-zero, and consumption is not a usefulness score. Collection writes local reports
+[the setup, consumer contract and recommendation](context/resources.md). Collection writes local reports
 and returns `{}`; the experimental display can emit context. The collector has no
 runtime dependency outside Node.js and projects measurements without retaining
 message content.
 
-The visibility comparison recommends retaining passive collection and ending
-display evaluation. The small display seam remains for reproducibility and
-distinct-mode validation, without automatic registration. Its evaluation fixtures
-and run evidence live under repository `docs/`, outside the installed plugin.
+Evaluation fixtures and run evidence live under repository `docs/`, outside the
+installed plugin.
 
 ### What Mantra does not duplicate
 
@@ -81,6 +78,12 @@ and run evidence live under repository `docs/`, outside the installed plugin.
 - Generic response-format preferences.
 - TDD workflows owned by another installed plugin.
 - General testing knowledge.
+
+## Validation
+
+Follow `AGENTS.md` for required checks and [the Mantra testing reference](context/test.md)
+for the properties covered by tests and fresh-host probes. Static validation and
+resource accuracy do not establish behavioral benefit.
 
 ## Git conventions
 

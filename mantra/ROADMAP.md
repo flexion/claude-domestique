@@ -2,23 +2,14 @@
 
 ## Current implementation
 
-Mantra provides four skills and a fixed reminder injected on session start and
-every prompt, plus an opt-in [passive resource pilot](context/resources.md).
+Mantra provides four skills and a fixed reminder on session start and every
+prompt. Separately configured resource hooks support passive `collect` and
+experimental Claude `display`; see [the pilot contract and recommendation](context/resources.md).
 See [README.md](README.md) and [DEVELOPMENT.md](DEVELOPMENT.md).
-
-The collector is disabled by default and adds no agent-visible feedback. Its
-reports distinguish observed values from unknowns; measurement availability
-does not establish behavioral benefit. Resource display is not part of the
-installed behavior hook.
 
 Older plans described periodic file refresh, sibling-plugin discovery, and
 prompt-count freshness indicators. Those are not implemented by the current
 behavior hook.
-
-The [resource pilot](context/resources.md) has separate opt-in hooks. The
-[visibility comparison](../docs/research/resource-visibility.md) recommends
-retaining passive collection and ending the display evaluation; the experimental
-display seam remains for replayability. No follow-up comparison is scheduled.
 
 ## Future work
 

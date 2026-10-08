@@ -1,9 +1,11 @@
 # Resource pilot
 
-Use `collect` for passive observations. The [visibility comparison](../README.md#resource-pilot) recommends
+Use `collect` for passive observations. The visibility comparison recommends
 retaining passive collection and ending display evaluation; `display` remains an
 explicit Claude-only experiment, with no further comparison scheduled. Neither
 mode changes assessment, the active objective, task requirements, or permissions.
+The [evaluation report](../../docs/research/resource-visibility.md) records the
+evidence and limitations.
 
 The pilot is opt-in and its hooks are **not registered by plugin installation**.
 Before launching Claude Code or Codex, set:

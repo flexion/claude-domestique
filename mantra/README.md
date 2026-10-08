@@ -51,11 +51,10 @@ The [resource pilot](context/resources.md) is installed separately through expli
 settings hooks. `collect` writes coverage-labelled reports without feedback;
 experimental Claude-only `display` also shows token categories and elapsed wall
 observations during work. Resource hooks are absent from ordinary plugin
-installation. Neither mode changes task requirements or permissions.
+installation.
 
-The [visibility comparison](../docs/research/resource-visibility.md) recommends
-retaining passive collection and ending the display evaluation. Display remains
-available for reproducing the experiment; no further comparison is scheduled.
+See [the pilot contract and recommendation](context/resources.md) for setup,
+coverage limits and evaluation status.
 
 ## Skills
 

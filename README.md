@@ -278,7 +278,7 @@ Session: .claude/sessions/issue-feature-42-description.md
 
 ## Rules System
 
-Mantra's behavior hook injects a fixed reminder in both hosts; its skills and references provide detailed guidance on demand. It does not load project or sibling-plugin rules. The [resource pilot](./mantra/context/resources.md) uses separately configured opt-in hooks, with passive collection recommended after the visibility comparison.
+Mantra's behavior hook injects a fixed reminder in both hosts; its skills and references provide detailed guidance on demand. It does not load project or sibling-plugin rules. The [resource pilot](./mantra/context/resources.md) uses separately configured opt-in hooks; its contract owns setup and evaluation guidance.
 
 The [Mantra README](./mantra/README.md#automatic-guidance) describes injected guidance; [FORMAT.md](./mantra/FORMAT.md) explains rule authoring and host-loading limits. Use [make-rule](./mantra/skills/make-rule/SKILL.md) to create custom rules.
 
