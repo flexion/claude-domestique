@@ -2,7 +2,7 @@
 
 ## Project overview
 
-Mantra provides behavioral skills and a recurring reminder for evidence-responsive assessment, proportionate research, and the active user objective. An optional passive collector records resource observations with explicit coverage; it supplies no behavioral feedback.
+Mantra is a behavioral-skills plugin for coding-agent sessions. It provides structured workflows for critical assessment and evidence-based debugging, plus a lean hook that reinforces guidance throughout a session.
 
 Repository-wide agent instructions come from the root `AGENTS.md` and `CLAUDE.md`; this file documents Mantra's implementation and is loaded on demand.
 
@@ -17,12 +17,12 @@ npm run test:coverage
 
 ## Architecture
 
-Plugin type: **skill pack, recurring behavior hook, and opt-in passive collector**
+Plugin type: **skill pack, recurring behavior hook, and opt-in resource pilot**
 
 Design goals:
 
 - Add behavior not already supplied by the host.
-- Reinforce assessment, research, and active-objective guidance on every prompt.
+- Inject assessment, research, and active-objective guidance on every prompt to prevent drift.
 - Keep structured assessment and troubleshooting workflows available on demand.
 - Keep always-on context small.
 
@@ -33,14 +33,14 @@ mantra/
 ├── hooks/
 │   ├── hooks.json
 │   ├── behavior.js       # Contains the injected BEHAVIOR text
-│   └── resources.js      # Opt-in only; absent from hooks.json
+│   └── resources.js      # Explicit settings-only collection/display hook
 ├── lib/
-│   └── resources.js      # Measurement projection and aggregation
+│   ├── resources.js      # Measurement projection and aggregation
+│   └── resource-display.js # Experimental observation formatting
 ├── context/              # Detailed on-demand references
 │   ├── behavior.md
-│   ├── test.md
 │   ├── rule-design.md
-│   └── resources.md      # Collector setup, API, and coverage limits
+│   └── resources.md
 ├── scripts/
 │   └── statusline.js
 └── skills/               # Canonical workflows shared by Claude Code and Codex
@@ -56,20 +56,24 @@ mantra/
 2. Troubleshooting using evidence relevant to the next action, including demonstrated
    local causes and authoritative references for uncertain external behavior.
 3. Carrying the active objective and authorization forward while honoring discussion pauses.
-4. Optional resource observations for evaluation, independent of the behavioral guidance.
+4. Opt-in, coverage-labelled resource observations, with experimental Claude display.
 
-### Runtime boundaries
+### Resource pilot
 
-`hooks/hooks.json` registers only `behavior.js`, on session start and every prompt.
-The behavior hook injects a fixed string; skills own the detailed workflows. Neither
-the hook nor the skills interprets resource observations as permission to change
-requirements, omit necessary questions, or stop work.
+The default hook configuration registers only `behavior.js`, on session start and
+every prompt; skills own the detailed workflows. Resource collection
+and display require explicit host settings and environment variables; see
+[the setup and consumer contract](context/resources.md). Neither mode changes
+requirements, permissions, or the active objective. Unknown measurements are not
+zero, and consumption is not a usefulness score. Collection writes local reports
+and returns `{}`; the experimental display can emit context. The collector has no
+runtime dependency outside Node.js and projects measurements without retaining
+message content.
 
-`hooks/resources.js` reads explicit pilot settings, writes local reports, and
-returns `{}` to the host. It has no default registration or runtime dependency
-outside Node.js. `lib/resources.js` projects measurement fields and aggregates
-them without retaining message content. See [the collector contract](context/resources.md)
-for installation, supported host inputs, concurrency, bounds, and unknown values.
+The visibility comparison recommends retaining passive collection and ending
+display evaluation. The small display seam remains for reproducibility and
+distinct-mode validation, without automatic registration. Its evaluation fixtures
+and run evidence live under repository `docs/`, outside the installed plugin.
 
 ### What Mantra does not duplicate
 
@@ -77,13 +81,6 @@ for installation, supported host inputs, concurrency, bounds, and unknown values
 - Generic response-format preferences.
 - TDD workflows owned by another installed plugin.
 - General testing knowledge.
-
-## Validation
-
-Follow the repository's required checks in `AGENTS.md`. [The testing reference](context/test.md)
-describes the Mantra suites and the difference between mechanical checks and
-fresh agent behavior. Collector correctness does not establish that displaying
-measurements improves delivered work.
 
 ## Git conventions
 

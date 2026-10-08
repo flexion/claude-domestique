@@ -7,7 +7,7 @@ This file gives coding agents the repository-specific context needed to work saf
 Claude Domestique is a Claude Code plugin marketplace. Its independently installable plugins are:
 
 - `memento`: branch-based session persistence
-- `mantra`: behavioral rules and context refresh
+- `mantra`: behavioral skills, recurring guidance, and an opt-in resource pilot
 - `onus`: GitHub, JIRA, and Azure DevOps work-item automation
 - `agent-artifex`: guidance for designing and testing AI services
 - `comitatus`: herdr orchestration workflows

@@ -1,5 +1,10 @@
 # Analysis: mantra Goals vs Native Claude Code Features
 
+Historical analysis of earlier context-refresh proposals. The features,
+percentages and proposed `mantra:init` workflow below are not claims about the
+current implementation. See the [Mantra README](../../mantra/README.md) for shipped
+behavior and [the roadmap](../../mantra/ROADMAP.md) for current direction.
+
 ## Executive Summary
 
 **Key Discovery**: Claude Code's native features cover ~70% of mantra's goals. The remaining value is in sibling plugin discovery and YAML compactness. Most critically, **SessionStart fires with `source: "compact"` after compaction**, making periodic re-injection potentially unnecessary.

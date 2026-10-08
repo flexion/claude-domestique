@@ -15,6 +15,11 @@ Older plans described periodic file refresh, sibling-plugin discovery, and
 prompt-count freshness indicators. Those are not implemented by the current
 behavior hook.
 
+The [resource pilot](context/resources.md) has separate opt-in hooks. The
+[visibility comparison](../docs/research/resource-visibility.md) recommends
+retaining passive collection and ending the display evaluation; the experimental
+display seam remains for replayability. No follow-up comparison is scheduled.
+
 ## Future work
 
 Consider further changes only when observed failures justify them. Current

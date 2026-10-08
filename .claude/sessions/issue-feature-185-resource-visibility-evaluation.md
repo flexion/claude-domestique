@@ -17,7 +17,7 @@ Mantra: test whether resource visibility improves useful outcomes. Use the GitHu
 
 ## Approach
 
-Prepare a bounded eight-run comparison of passive collection versus visible observations across factual, code correction, necessary clarification, and conceptual tasks. Ada authors isolated fixtures and independent outcome oracles; rex owns the protocol and display integration. Alternate condition order across task pairs, pin the host/model/effort/tools/source, and start each run with a fresh fixture workspace. Grade delivered outputs before exposing consumption to ada. Preserve token categories and coverage, record defects/rework/interactions/fixation independently, and include setup, implementation, display, and grading overhead. Keep display observational with no score, budget, quota, or stopping instruction. Coordinate a separate display seam with kit; do not edit behavior.js or assessment guidance. Run the comparison only after independently validated #184 collector evidence is available. Negative or inconclusive observations are valid findings. Run focused tests, metadata checks, host checks and invocation probes; bump mantra once after substantive changes. Do not commit, push, create a PR, close GitHub issues, or file beads.
+Prepare a bounded eight-run comparison of passive collection versus visible observations across factual, code correction, necessary clarification, and conceptual tasks. Ada authors isolated fixtures and independent outcome oracles; rex owns the protocol and display integration. Alternate condition order across task pairs, pin the host/model/effort/tools/source, and start each run with a fresh fixture workspace. Grade delivered outputs before exposing consumption to ada. Preserve token categories and coverage, record defects/rework/interactions/fixation independently, and include setup, implementation, display, and grading overhead. Keep display observational with no score, budget, quota, or stopping instruction. Coordinate a separate display seam with kit; do not edit behavior.js or assessment guidance. Run the comparison only after independently validated #184 collector evidence is available. Negative or inconclusive observations are valid findings. Run focused tests, metadata checks, host checks and invocation probes; bump mantra once after substantive changes. The initial scope prohibited commits, pushes, PR creation, issue closure and beads; the operator later authorized local commits and rebasing, as recorded below. Pushes, PR creation, issue closure and beads remain outside scope.
 
 ## Session Log
 
@@ -35,6 +35,10 @@ Prepare a bounded eight-run comparison of passive collection versus visible obse
 
 - 2026-10-08: Created the authorized local commit and rebased integration onto origin/main c0ea159. Resolved version/README conflicts by retaining Mantra 0.8.0 and all upstream behavioral wording, adding only the resource-pilot section. Full tests, metadata, pinned Claude validation, isolated Codex installation and fresh assess probes on both hosts passed on the merged tree. The frozen resource implementation hashes and experiment evidence remain unchanged.
 
+- 2026-10-08: The operator extended the handoff to mechanical/thematic integration and a Mantra documentation consistency sweep. Rebase is complete. Inspect the integrated hooks and all Mantra references, keep each behavior with its owner, update current documentation and mark older research historical without rewriting frozen evaluation evidence; commit the resulting integration cleanup under the existing local-commit authorization.
+
+- 2026-10-08: Completed the mechanical/thematic integration and documentation sweep with ada's independent review. Preserved upstream behavioral code and frozen resource source/evidence, corrected current rule-loading/counter/coverage claims and setup instructions, removed the unused generic testing manual and circular troubleshooting reference, and labelled superseded proposals historical. Full npm test, metadata validation, pinned Claude marketplace/Mantra checks and fresh troubleshooting invocation probes on both hosts passed. Origin/main is an ancestor; Mantra remains synchronized at 0.8.0. Final local documentation commit is authorized; no push or remote work-item mutation.
+
 ## Files Changed
 
 - Session and branch metadata initialized.
@@ -45,10 +49,13 @@ Prepare a bounded eight-run comparison of passive collection versus visible obse
 - Mantra README/context and synchronized plugin metadata at 0.8.0.
 - docs/research/resource-visibility-runs/ and docs/reviews/resource-visibility-{outcomes,fixation}.md: reproducible run evidence and independent reviews.
 - jest.config.js: documentation fixture/workspace packages excluded from root Jest indexing.
+- Root README/AGENTS and Mantra README/DEVELOPMENT/ROADMAP/resource contract: current behavior, ownership and opt-in setup aligned.
+- Mantra hook/package descriptions and troubleshoot reference: terminology and ownership corrected; unused context/test.md removed.
+- Historical architecture and research proposals: labelled and linked to current guidance.
 
 ## Next Steps
 
-Completed local change is committed for operator review with origin/main integrated. No further comparison is scheduled. Push, PR creation and issue closure remain outside authorization.
+Implementation and integration cleanup are complete and validated, with local commits on origin/main. No further comparison is scheduled. Push, PR creation and issue closure remain outside authorization.
 
 ## Acceptance Criteria
 

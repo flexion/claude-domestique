@@ -1,5 +1,9 @@
 # Hook Architecture Redesign Proposal
 
+Historical proposal: the context aggregation and refresh design below is not the
+current implementation. See [Mantra's README](../mantra/README.md) for its fixed
+behavioral guidance and explicitly configured resource pilot.
+
 ## Core Principle: Right Tool for the Job
 
 | Need | Tool | Why |

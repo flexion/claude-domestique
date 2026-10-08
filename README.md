@@ -23,12 +23,12 @@ Helps developers embody Flexion fundamentals across conversation boundaries:
 
 > "I told you. You agreed. You forgot. Repeat."
 
-You've documented your project conventions. Claude reads them, then drifts as the conversation grows. **mantra** injects curated behavioral rules through lifecycle hooks and refreshes them during long sessions.
+**mantra** supplies behavioral skills and a fixed reminder on session start and every prompt: assess against evidence, investigate proportionately, and carry the active user objective and authorization forward.
 
 Helps developers embody Flexion fundamentals throughout long sessions:
-- **Be skeptical and curious** — Keeps Claude questioning assumptions and seeking evidence, not pattern-matching
-- **Never compromise on quality** — Reinforces project standards throughout long sessions
-- **Listen with humility** — Enforces peer-not-subordinate stance, deferring to evidence over agreement
+- **Be skeptical and curious** — Supports evidence-responsive agreement and challenge
+- **Never compromise on quality** — Keeps assessment, evidence, and required validation in the recurring reminder
+- **Listen with humility** — Revises conclusions for evidence and reasoning while respecting the user's goals
 
 ### [onus](./onus) — Work-Item Automation
 
@@ -79,14 +79,14 @@ External (GitHub/JIRA/Azure DevOps)
     [memento] ←── "What's next?" lookup
         │
         ▼ read session context
-    [mantra] ──► rules injected and refreshed through hooks
+    [agent] ◄── [mantra] fixed behavioral reminder through hooks
 ```
 
 Each plugin works standalone but gains enhanced behavior when used together.
 
-![Session persistence, rule refresh, and work-item context working together](images/plugins-in-action.png)
+![Historical session persistence, behavioral guidance, and work-item context](images/plugins-in-action.png)
 
-*Session resumption showing mantra (context refresh counter), onus (issue tracking), and memento (session file) working together. Claude reads the session file and picks up exactly where the previous conversation left off.*
+*Historical session-resumption example with Mantra, onus, and memento. Current Mantra hooks use a fixed reminder without a refresh counter; memento retains session state.*
 
 ---
 
@@ -183,7 +183,7 @@ Mantra, Memento, Onus, and Comitatus inject context through lifecycle hooks in b
 | **UserPromptSubmit** | Each prompt, for plugins that handle it | Status and context refresh according to that plugin's rules |
 
 This means:
-- **mantra** injects behavioral rules automatically—no copying files to `.claude/rules/`
+- **mantra** injects its fixed reminder automatically; project rules use the host's native instruction convention
 - **memento** creates session files on first prompt for feature branches
 - **onus** detects issue numbers from branch names and injects work item context
 - **comitatus** injects a short orientation when `HERDR_ENV=1`; agents read the herdr skill for its guidance
@@ -207,7 +207,7 @@ Selected entry points are listed below. Each plugin's README explains its usage 
 |--------|---------|-------------|
 | memento | `/memento:start` | Start new work - creates branch and session together |
 | memento | `/memento:session` | Show current session status or create new session |
-| mantra | `/mantra:make-rule` | Create compact frontmatter rule from verbose markdown |
+| mantra | `/mantra:make-rule` | Create compact project instructions from verbose markdown |
 | onus | `/onus:init` | Initialize project config (detects commit patterns) |
 | onus | `/onus:fetch` | Fetch issue details from tracker |
 | onus | `/onus:create` | Create new work item |
@@ -278,9 +278,9 @@ Session: .claude/sessions/issue-feature-42-description.md
 
 ## Rules System
 
-mantra injects compact behavioral rules through hooks in both hosts and includes rules from installed sibling plugins. Companion documents provide detail on demand.
+Mantra's behavior hook injects a fixed reminder in both hosts; its skills and references provide detailed guidance on demand. It does not load project or sibling-plugin rules. The [resource pilot](./mantra/context/resources.md) uses separately configured opt-in hooks, with passive collection recommended after the visibility comparison.
 
-The [mantra README](./mantra/README.md#what-gets-injected) owns the rule inventory and format. Use [make-rule](./mantra/skills/make-rule/SKILL.md) to create custom rules.
+The [Mantra README](./mantra/README.md#automatic-guidance) describes injected guidance; [FORMAT.md](./mantra/FORMAT.md) explains rule authoring and host-loading limits. Use [make-rule](./mantra/skills/make-rule/SKILL.md) to create custom rules.
 
 ---
 

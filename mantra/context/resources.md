@@ -1,4 +1,9 @@
-# Passive resource pilot
+# Resource pilot
+
+Use `collect` for passive observations. The [visibility comparison](../README.md#resource-pilot) recommends
+retaining passive collection and ending display evaluation; `display` remains an
+explicit Claude-only experiment, with no further comparison scheduled. Neither
+mode changes assessment, the active objective, task requirements, or permissions.
 
 The pilot is opt-in and its hooks are **not registered by plugin installation**.
 Before launching Claude Code or Codex, set:
@@ -38,6 +43,16 @@ Unrecognized values do not collect. Remove these
 settings entries to remove the launch cost too. No resource hook runs for ordinary
 plugin users. Existing behavior rules remain independent.
 
+For example, after saving the Claude fragment with its absolute script path as
+`resource-hooks.json`, launch:
+
+```sh
+MANTRA_RESOURCES=collect MANTRA_RESOURCE_DIR=/absolute/path/to/local/scratch/resources claude --settings resource-hooks.json
+```
+
+Use `MANTRA_RESOURCES=display` with the same settings for experimental visibility.
+Setting the environment variable alone does not register hooks.
+
 ## Consumer API
 
 `hooks/resources.js` exports `collect(input, env)` and
@@ -58,11 +73,12 @@ display mode does neither collection nor feedback. `collect(input, env)` itself
 remains passive and accepts only `collect`; the CLI's `processInput(input, env)`
 maps display to passive collection before deciding whether to emit context.
 
-An initial SessionStart injects fixed guidance; resumed SessionStart does not
-repeat it. UserPromptSubmit, PostToolUse and PostToolUseFailure display the current
-`collect` return, rather than an older disk snapshot. Display shows the separate
-Claude token categories, per-field coverage, observation time and elapsed wall
-including waits. Other metrics remain in the report with their full semantics.
+SessionStart injects fixed guidance unless its source is `resume`; compaction may
+inject it again. UserPromptSubmit, PostToolUse and PostToolUseFailure display the
+current `collect` return, rather than an older disk snapshot. Display shows the
+separate Claude token categories, shared coverage with differing fields tagged,
+observation time and elapsed wall including waits. Other metrics remain in the
+report with their full semantics.
 The report's `truncated` flag appears as "incomplete acquisition" because it also
 covers a missing early transcript or malformed input, not only size truncation.
 No prompt or tool-completion event means no refreshed observation.
