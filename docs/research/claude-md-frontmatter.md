@@ -1,5 +1,10 @@
 # Research: CLAUDE.md Frontmatter for Context Control
 
+Historical design research for the former context-loader proposal. Its "current"
+sections and recommendations describe that earlier design, not today's Mantra.
+For shipped behavior and host-loading limits, see the
+[Mantra README](../../mantra/README.md) and [FORMAT.md](../../mantra/FORMAT.md).
+
 ## Current State
 
 ### Native Claude Code Behavior

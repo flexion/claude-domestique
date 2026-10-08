@@ -1,5 +1,11 @@
 # Research: Claude Code Hooks for Context Injection
 
+Historical research for issue #99. Its host event inventory and plugin comparison
+describe the investigation at that time; they are not current setup guidance.
+Mantra now injects a fixed behavioral reminder and has a separate opt-in resource
+pilot. See [the Mantra README](../../mantra/README.md) and
+[resource setup](../../mantra/context/resources.md) for the current implementation.
+
 ## Executive Summary
 
 Claude Code hooks provide a mechanism for injecting context into Claude's conversation via the `additionalContext` field. This research documents the hook system, available events, and data structures to inform issue #99 (hook-based context injection).

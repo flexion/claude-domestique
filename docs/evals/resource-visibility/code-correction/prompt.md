@@ -1,0 +1,1 @@
+Users report two problems with result paging: when the number of results is not an exact multiple of the page size, the last partial page never shows up, and the summary line reports one page too few. Fix both. Existing tests must keep passing (`npm test`).

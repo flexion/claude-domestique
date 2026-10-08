@@ -37,13 +37,24 @@ and every `UserPromptSubmit`. It reinforces:
 - The active objective, prior clarifications and authorization, discussion
   pauses, and action within the requested scope.
 
-The behavior hook has no counters, refresh interval, state, file reads, or sibling-plugin
-loader. It does not inject the `context/` documents or load project rule files.
+The behavior hook has no counters, refresh interval, state, file reads, or
+sibling-plugin loader. It does not inject the `context/` documents or load project rule files.
 Those documents are references for use on demand; project instructions are loaded
 by the host according to its own conventions.
 
 On session start the hook also returns `📍 Mantra: behavior rules loaded`.
 It returns no status message on individual prompts.
+
+## Resource pilot
+
+The [resource pilot](context/resources.md) is installed separately through explicit
+settings hooks. `collect` writes coverage-labelled reports without feedback;
+experimental Claude-only `display` also shows token categories and elapsed wall
+observations during work. Resource hooks are absent from ordinary plugin
+installation.
+
+See [the pilot contract and recommendation](context/resources.md) for setup,
+coverage limits and evaluation status.
 
 ## Skills
 
@@ -79,14 +90,6 @@ Markdown files directly under the current project's `.claude/rules/` and display
 context usage, model, and cost when supplied by the host. The rule count does not
 prove those files were loaded. Its context percentage includes a fixed buffer
 estimate; it is not an exact measure of tokens injected by Mantra.
-
-## Passive resource pilot
-
-An opt-in [passive resource pilot](context/resources.md) records coverage-labelled
-observations in a local scratch directory. It adds no agent-visible counters or
-feedback; unavailable measurements remain unknown. Installing Mantra does not
-register the collector. Its observations do not change the active objective,
-authorization, or the need for consequential clarification.
 
 ## Development
 

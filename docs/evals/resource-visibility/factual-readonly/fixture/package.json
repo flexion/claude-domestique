@@ -1,0 +1,8 @@
+{
+  "name": "ledgerline-fixture",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Nightly ledger export and import jobs",
+  "main": "src/jobs/export.js",
+  "type": "commonjs"
+}

@@ -1,0 +1,34 @@
+{
+  "args": [
+    "--model",
+    "claude-opus-5",
+    "--effort",
+    "medium",
+    "--setting-sources",
+    "",
+    "--settings",
+    "/tmp/resource-visibility-185-2xLmYw/settings.json",
+    "--strict-mcp-config",
+    "--disable-slash-commands",
+    "--tools",
+    "Bash,Read,Write,Edit,Glob,Grep",
+    "--permission-mode",
+    "bypassPermissions",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--include-hook-events",
+    "--session-id",
+    "c1e89649-a899-4d57-ad9e-586eee2bef71",
+    "-p",
+    "In production (`NODE_ENV=production`) with no `LEDGER_*` environment variables set, what retry limit and what per-attempt timeout does the export job use? For each value, name the file that determines it. Do not change any files.\n"
+  ],
+  "env": {
+    "MANTRA_RESOURCES": "display",
+    "MANTRA_RESOURCE_DIR": "/private/tmp/resource-visibility-185-2xLmYw/evidence/1e290746/reports"
+  },
+  "cwd": "/tmp/resource-visibility-185-2xLmYw/1e290746",
+  "started": "2026-10-08T12:57:13.399Z",
+  "finished": "2026-10-08T12:57:39.172Z",
+  "exit_code": 0
+}

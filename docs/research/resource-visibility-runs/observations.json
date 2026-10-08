@@ -1,0 +1,1083 @@
+{
+  "reader": "Evaluator comparing resource categories after outcomes were frozen; quantities are observations, not quality scores.",
+  "rows": [
+    {
+      "run": "0ac9ad64",
+      "task": "factual-readonly",
+      "condition": "collect",
+      "report_path": "0ac9ad64/reports/135b11aad17140a609f8586b361ef00ca50b46ed072df1d9a26c552fb0f4fe5c.json",
+      "coverage": "partial",
+      "incomplete_acquisition": false,
+      "tokens": {
+        "input_tokens": {
+          "value": 8,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        },
+        "output_tokens": {
+          "value": 879,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        },
+        "cache_read_input_tokens": {
+          "value": 26678,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        },
+        "cache_creation_input_tokens": {
+          "value": 10317,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        }
+      },
+      "metrics": {
+        "elapsed_wall_ms": {
+          "value": 16931,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "First observed SessionStart to observation; includes resume gaps"
+        },
+        "model_request_latency_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "Hooks do not expose request start/end"
+        },
+        "api_query_duration_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "Claude SDK query API duration; not per-request latency or thinking time"
+        },
+        "tool_execution_ms": {
+          "value": 2629,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Sum of identified host execution durations; may overlap, not a wall-time total"
+        },
+        "tool_bracket_union_ms": {
+          "value": 2929,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Union of paired hook receipt brackets; includes approval, hook and dispatch overhead"
+        },
+        "active_interval_union_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "Supported hook/transcript observations do not establish execution interval boundaries"
+        },
+        "handoff_wait_ms": {
+          "value": 324,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Stop-to-next-prompt wall gaps; may include automation and background activity"
+        },
+        "user_wait_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "No reliable human wait boundaries"
+        },
+        "human_permission_stops": {
+          "value": null,
+          "unit": "episodes",
+          "coverage": "unknown",
+          "semantics": "Approval candidates may be auto-approved; no confirmed UI episode identity"
+        },
+        "human_clarification_stops": {
+          "value": null,
+          "unit": "episodes",
+          "coverage": "unknown",
+          "semantics": "Question/tool requests do not prove human yields"
+        },
+        "permission_notifications": {
+          "value": null,
+          "unit": "notifications",
+          "coverage": "unknown",
+          "semantics": "Observed permission_prompt notifications, not episodes; delayed, repeatable, may target automated SDK callbacks"
+        },
+        "collector_work_ms": {
+          "value": 20.151127000000002,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Collector work sample excludes final sample write and process startup"
+        }
+      },
+      "native_results": [
+        {
+          "stage": "start",
+          "model_names": [
+            "claude-opus-5"
+          ],
+          "permission_denials": [],
+          "subtype": "success"
+        }
+      ],
+      "launches": [
+        {
+          "started": "2026-10-08T12:56:06.768Z",
+          "finished": "2026-10-08T12:56:24.510Z",
+          "exit_code": 0,
+          "elapsed_ms": 17742
+        }
+      ],
+      "display": {
+        "blocks": 0,
+        "guidance_blocks": 0,
+        "characters": 0,
+        "utf8_bytes": 0,
+        "exact_added_tokens": null
+      }
+    },
+    {
+      "run": "1e290746",
+      "task": "factual-readonly",
+      "condition": "display",
+      "report_path": "1e290746/reports/2daa391b2433c965c1836c97930ed6e4433eecfdaa3d356833fb885cb33624ef.json",
+      "coverage": "partial",
+      "incomplete_acquisition": false,
+      "tokens": {
+        "input_tokens": {
+          "value": 8,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        },
+        "output_tokens": {
+          "value": 835,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        },
+        "cache_read_input_tokens": {
+          "value": 32450,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        },
+        "cache_creation_input_tokens": {
+          "value": 6459,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        }
+      },
+      "metrics": {
+        "elapsed_wall_ms": {
+          "value": 24775,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "First observed SessionStart to observation; includes resume gaps"
+        },
+        "model_request_latency_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "Hooks do not expose request start/end"
+        },
+        "api_query_duration_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "Claude SDK query API duration; not per-request latency or thinking time"
+        },
+        "tool_execution_ms": {
+          "value": 11016,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Sum of identified host execution durations; may overlap, not a wall-time total"
+        },
+        "tool_bracket_union_ms": {
+          "value": 11837,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Union of paired hook receipt brackets; includes approval, hook and dispatch overhead"
+        },
+        "active_interval_union_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "Supported hook/transcript observations do not establish execution interval boundaries"
+        },
+        "handoff_wait_ms": {
+          "value": 230,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Stop-to-next-prompt wall gaps; may include automation and background activity"
+        },
+        "user_wait_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "No reliable human wait boundaries"
+        },
+        "human_permission_stops": {
+          "value": null,
+          "unit": "episodes",
+          "coverage": "unknown",
+          "semantics": "Approval candidates may be auto-approved; no confirmed UI episode identity"
+        },
+        "human_clarification_stops": {
+          "value": null,
+          "unit": "episodes",
+          "coverage": "unknown",
+          "semantics": "Question/tool requests do not prove human yields"
+        },
+        "permission_notifications": {
+          "value": null,
+          "unit": "notifications",
+          "coverage": "unknown",
+          "semantics": "Observed permission_prompt notifications, not episodes; delayed, repeatable, may target automated SDK callbacks"
+        },
+        "collector_work_ms": {
+          "value": 19.845168,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Collector work sample excludes final sample write and process startup"
+        }
+      },
+      "native_results": [
+        {
+          "stage": "start",
+          "model_names": [
+            "claude-opus-5"
+          ],
+          "permission_denials": [],
+          "subtype": "success"
+        }
+      ],
+      "launches": [
+        {
+          "started": "2026-10-08T12:57:13.399Z",
+          "finished": "2026-10-08T12:57:39.172Z",
+          "exit_code": 0,
+          "elapsed_ms": 25773
+        }
+      ],
+      "display": {
+        "blocks": 5,
+        "guidance_blocks": 1,
+        "characters": 826,
+        "utf8_bytes": 826,
+        "exact_added_tokens": null
+      }
+    },
+    {
+      "run": "413291eb",
+      "task": "code-correction",
+      "condition": "display",
+      "report_path": "413291eb/reports/a6393bc45aeb52a6f299e8f92da240e21be393c551fdff4b19bafc55db2119d8.json",
+      "coverage": "partial",
+      "incomplete_acquisition": false,
+      "tokens": {
+        "input_tokens": {
+          "value": 10,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        },
+        "output_tokens": {
+          "value": 1764,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        },
+        "cache_read_input_tokens": {
+          "value": 41713,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        },
+        "cache_creation_input_tokens": {
+          "value": 6576,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        }
+      },
+      "metrics": {
+        "elapsed_wall_ms": {
+          "value": 34528,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "First observed SessionStart to observation; includes resume gaps"
+        },
+        "model_request_latency_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "Hooks do not expose request start/end"
+        },
+        "api_query_duration_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "Claude SDK query API duration; not per-request latency or thinking time"
+        },
+        "tool_execution_ms": {
+          "value": 9029,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Sum of identified host execution durations; may overlap, not a wall-time total"
+        },
+        "tool_bracket_union_ms": {
+          "value": 9479,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Union of paired hook receipt brackets; includes approval, hook and dispatch overhead"
+        },
+        "active_interval_union_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "Supported hook/transcript observations do not establish execution interval boundaries"
+        },
+        "handoff_wait_ms": {
+          "value": 286,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Stop-to-next-prompt wall gaps; may include automation and background activity"
+        },
+        "user_wait_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "No reliable human wait boundaries"
+        },
+        "human_permission_stops": {
+          "value": null,
+          "unit": "episodes",
+          "coverage": "unknown",
+          "semantics": "Approval candidates may be auto-approved; no confirmed UI episode identity"
+        },
+        "human_clarification_stops": {
+          "value": null,
+          "unit": "episodes",
+          "coverage": "unknown",
+          "semantics": "Question/tool requests do not prove human yields"
+        },
+        "permission_notifications": {
+          "value": null,
+          "unit": "notifications",
+          "coverage": "unknown",
+          "semantics": "Observed permission_prompt notifications, not episodes; delayed, repeatable, may target automated SDK callbacks"
+        },
+        "collector_work_ms": {
+          "value": 27.597,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Collector work sample excludes final sample write and process startup"
+        }
+      },
+      "native_results": [
+        {
+          "stage": "start",
+          "model_names": [
+            "claude-opus-5"
+          ],
+          "permission_denials": [],
+          "subtype": "success"
+        }
+      ],
+      "launches": [
+        {
+          "started": "2026-10-08T12:57:50.427Z",
+          "finished": "2026-10-08T12:58:26.046Z",
+          "exit_code": 0,
+          "elapsed_ms": 35619
+        }
+      ],
+      "display": {
+        "blocks": 6,
+        "guidance_blocks": 1,
+        "characters": 966,
+        "utf8_bytes": 966,
+        "exact_added_tokens": null
+      }
+    },
+    {
+      "run": "e6adaf66",
+      "task": "code-correction",
+      "condition": "collect",
+      "report_path": "e6adaf66/reports/74094a412f4f0962ec31b11a62f6b796fb2c02366dc81d44f6b182d28fa1def4.json",
+      "coverage": "partial",
+      "incomplete_acquisition": false,
+      "tokens": {
+        "input_tokens": {
+          "value": 10,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        },
+        "output_tokens": {
+          "value": 1317,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        },
+        "cache_read_input_tokens": {
+          "value": 40391,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        },
+        "cache_creation_input_tokens": {
+          "value": 5837,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        }
+      },
+      "metrics": {
+        "elapsed_wall_ms": {
+          "value": 31615,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "First observed SessionStart to observation; includes resume gaps"
+        },
+        "model_request_latency_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "Hooks do not expose request start/end"
+        },
+        "api_query_duration_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "Claude SDK query API duration; not per-request latency or thinking time"
+        },
+        "tool_execution_ms": {
+          "value": 11440,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Sum of identified host execution durations; may overlap, not a wall-time total"
+        },
+        "tool_bracket_union_ms": {
+          "value": 12117,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Union of paired hook receipt brackets; includes approval, hook and dispatch overhead"
+        },
+        "active_interval_union_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "Supported hook/transcript observations do not establish execution interval boundaries"
+        },
+        "handoff_wait_ms": {
+          "value": 294,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Stop-to-next-prompt wall gaps; may include automation and background activity"
+        },
+        "user_wait_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "No reliable human wait boundaries"
+        },
+        "human_permission_stops": {
+          "value": null,
+          "unit": "episodes",
+          "coverage": "unknown",
+          "semantics": "Approval candidates may be auto-approved; no confirmed UI episode identity"
+        },
+        "human_clarification_stops": {
+          "value": null,
+          "unit": "episodes",
+          "coverage": "unknown",
+          "semantics": "Question/tool requests do not prove human yields"
+        },
+        "permission_notifications": {
+          "value": null,
+          "unit": "notifications",
+          "coverage": "unknown",
+          "semantics": "Observed permission_prompt notifications, not episodes; delayed, repeatable, may target automated SDK callbacks"
+        },
+        "collector_work_ms": {
+          "value": 25.193834,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Collector work sample excludes final sample write and process startup"
+        }
+      },
+      "native_results": [
+        {
+          "stage": "start",
+          "model_names": [
+            "claude-opus-5"
+          ],
+          "permission_denials": [],
+          "subtype": "success"
+        }
+      ],
+      "launches": [
+        {
+          "started": "2026-10-08T13:01:40.514Z",
+          "finished": "2026-10-08T13:02:13.386Z",
+          "exit_code": 0,
+          "elapsed_ms": 32872
+        }
+      ],
+      "display": {
+        "blocks": 0,
+        "guidance_blocks": 0,
+        "characters": 0,
+        "utf8_bytes": 0,
+        "exact_added_tokens": null
+      }
+    },
+    {
+      "run": "72a2ea15",
+      "task": "missing-info",
+      "condition": "collect",
+      "report_path": "72a2ea15/reports/9290e89a7e4e21c559492d5e361b03500cf39f91d64aa7bb1e4b9abe9a113cfd.json",
+      "coverage": "partial",
+      "incomplete_acquisition": false,
+      "tokens": {
+        "input_tokens": {
+          "value": 20,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        },
+        "output_tokens": {
+          "value": 10890,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        },
+        "cache_read_input_tokens": {
+          "value": 117650,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        },
+        "cache_creation_input_tokens": {
+          "value": 21843,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        }
+      },
+      "metrics": {
+        "elapsed_wall_ms": {
+          "value": 169934,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "First observed SessionStart to observation; includes resume gaps"
+        },
+        "model_request_latency_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "Hooks do not expose request start/end"
+        },
+        "api_query_duration_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "Claude SDK query API duration; not per-request latency or thinking time"
+        },
+        "tool_execution_ms": {
+          "value": 9240,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Sum of identified host execution durations; may overlap, not a wall-time total"
+        },
+        "tool_bracket_union_ms": {
+          "value": 7807,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Union of paired hook receipt brackets; includes approval, hook and dispatch overhead"
+        },
+        "active_interval_union_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "Supported hook/transcript observations do not establish execution interval boundaries"
+        },
+        "handoff_wait_ms": {
+          "value": 40651,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Stop-to-next-prompt wall gaps; may include automation and background activity"
+        },
+        "user_wait_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "No reliable human wait boundaries"
+        },
+        "human_permission_stops": {
+          "value": null,
+          "unit": "episodes",
+          "coverage": "unknown",
+          "semantics": "Approval candidates may be auto-approved; no confirmed UI episode identity"
+        },
+        "human_clarification_stops": {
+          "value": null,
+          "unit": "episodes",
+          "coverage": "unknown",
+          "semantics": "Question/tool requests do not prove human yields"
+        },
+        "permission_notifications": {
+          "value": null,
+          "unit": "notifications",
+          "coverage": "unknown",
+          "semantics": "Observed permission_prompt notifications, not episodes; delayed, repeatable, may target automated SDK callbacks"
+        },
+        "collector_work_ms": {
+          "value": 64.678752,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Collector work sample excludes final sample write and process startup"
+        }
+      },
+      "native_results": [
+        {
+          "stage": "start",
+          "model_names": [
+            "claude-opus-5"
+          ],
+          "permission_denials": [],
+          "subtype": "success"
+        },
+        {
+          "stage": "resume",
+          "model_names": [
+            "claude-opus-5"
+          ],
+          "permission_denials": [],
+          "subtype": "success"
+        }
+      ],
+      "launches": [
+        {
+          "started": "2026-10-08T13:03:03.622Z",
+          "finished": "2026-10-08T13:04:04.214Z",
+          "exit_code": 0,
+          "elapsed_ms": 60592
+        },
+        {
+          "started": "2026-10-08T13:04:43.148Z",
+          "finished": "2026-10-08T13:05:54.301Z",
+          "exit_code": 0,
+          "elapsed_ms": 71153
+        }
+      ],
+      "display": {
+        "blocks": 0,
+        "guidance_blocks": 0,
+        "characters": 0,
+        "utf8_bytes": 0,
+        "exact_added_tokens": null
+      }
+    },
+    {
+      "run": "933f137e",
+      "task": "missing-info",
+      "condition": "display",
+      "report_path": "933f137e/reports/e026b801908e1b4878e4b2fab9a89681c27635a1ed98c5b4febf993fc6b6fa27.json",
+      "coverage": "partial",
+      "incomplete_acquisition": false,
+      "tokens": {
+        "input_tokens": {
+          "value": 10,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        },
+        "output_tokens": {
+          "value": 4478,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        },
+        "cache_read_input_tokens": {
+          "value": 43774,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        },
+        "cache_creation_input_tokens": {
+          "value": 9456,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        }
+      },
+      "metrics": {
+        "elapsed_wall_ms": {
+          "value": 57122,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "First observed SessionStart to observation; includes resume gaps"
+        },
+        "model_request_latency_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "Hooks do not expose request start/end"
+        },
+        "api_query_duration_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "Claude SDK query API duration; not per-request latency or thinking time"
+        },
+        "tool_execution_ms": {
+          "value": 8094,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Sum of identified host execution durations; may overlap, not a wall-time total"
+        },
+        "tool_bracket_union_ms": {
+          "value": 5350,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Union of paired hook receipt brackets; includes approval, hook and dispatch overhead"
+        },
+        "active_interval_union_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "Supported hook/transcript observations do not establish execution interval boundaries"
+        },
+        "handoff_wait_ms": {
+          "value": 218,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Stop-to-next-prompt wall gaps; may include automation and background activity"
+        },
+        "user_wait_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "No reliable human wait boundaries"
+        },
+        "human_permission_stops": {
+          "value": null,
+          "unit": "episodes",
+          "coverage": "unknown",
+          "semantics": "Approval candidates may be auto-approved; no confirmed UI episode identity"
+        },
+        "human_clarification_stops": {
+          "value": null,
+          "unit": "episodes",
+          "coverage": "unknown",
+          "semantics": "Question/tool requests do not prove human yields"
+        },
+        "permission_notifications": {
+          "value": null,
+          "unit": "notifications",
+          "coverage": "unknown",
+          "semantics": "Observed permission_prompt notifications, not episodes; delayed, repeatable, may target automated SDK callbacks"
+        },
+        "collector_work_ms": {
+          "value": 30.701042000000008,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Collector work sample excludes final sample write and process startup"
+        }
+      },
+      "native_results": [
+        {
+          "stage": "start",
+          "model_names": [
+            "claude-opus-5"
+          ],
+          "permission_denials": [],
+          "subtype": "success"
+        }
+      ],
+      "launches": [
+        {
+          "started": "2026-10-08T13:06:08.698Z",
+          "finished": "2026-10-08T13:07:06.603Z",
+          "exit_code": 0,
+          "elapsed_ms": 57905
+        }
+      ],
+      "display": {
+        "blocks": 7,
+        "guidance_blocks": 1,
+        "characters": 1103,
+        "utf8_bytes": 1103,
+        "exact_added_tokens": null
+      }
+    },
+    {
+      "run": "325cd079",
+      "task": "conceptual",
+      "condition": "display",
+      "report_path": "325cd079/reports/50d1bccfe9e535f84c15cecadd3fc365f1c56af87097d72104984308cc78fab2.json",
+      "coverage": "partial",
+      "incomplete_acquisition": false,
+      "tokens": {
+        "input_tokens": {
+          "value": 6,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        },
+        "output_tokens": {
+          "value": 1907,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        },
+        "cache_read_input_tokens": {
+          "value": 21712,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        },
+        "cache_creation_input_tokens": {
+          "value": 4430,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        }
+      },
+      "metrics": {
+        "elapsed_wall_ms": {
+          "value": 35322,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "First observed SessionStart to observation; includes resume gaps"
+        },
+        "model_request_latency_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "Hooks do not expose request start/end"
+        },
+        "api_query_duration_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "Claude SDK query API duration; not per-request latency or thinking time"
+        },
+        "tool_execution_ms": {
+          "value": 3260,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Sum of identified host execution durations; may overlap, not a wall-time total"
+        },
+        "tool_bracket_union_ms": {
+          "value": 3442,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Union of paired hook receipt brackets; includes approval, hook and dispatch overhead"
+        },
+        "active_interval_union_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "Supported hook/transcript observations do not establish execution interval boundaries"
+        },
+        "handoff_wait_ms": {
+          "value": 232,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Stop-to-next-prompt wall gaps; may include automation and background activity"
+        },
+        "user_wait_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "No reliable human wait boundaries"
+        },
+        "human_permission_stops": {
+          "value": null,
+          "unit": "episodes",
+          "coverage": "unknown",
+          "semantics": "Approval candidates may be auto-approved; no confirmed UI episode identity"
+        },
+        "human_clarification_stops": {
+          "value": null,
+          "unit": "episodes",
+          "coverage": "unknown",
+          "semantics": "Question/tool requests do not prove human yields"
+        },
+        "permission_notifications": {
+          "value": null,
+          "unit": "notifications",
+          "coverage": "unknown",
+          "semantics": "Observed permission_prompt notifications, not episodes; delayed, repeatable, may target automated SDK callbacks"
+        },
+        "collector_work_ms": {
+          "value": 17.108334,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Collector work sample excludes final sample write and process startup"
+        }
+      },
+      "native_results": [
+        {
+          "stage": "start",
+          "model_names": [
+            "claude-opus-5"
+          ],
+          "permission_denials": [],
+          "subtype": "success"
+        }
+      ],
+      "launches": [
+        {
+          "started": "2026-10-08T13:07:28.802Z",
+          "finished": "2026-10-08T13:08:04.929Z",
+          "exit_code": 0,
+          "elapsed_ms": 36127
+        }
+      ],
+      "display": {
+        "blocks": 4,
+        "guidance_blocks": 1,
+        "characters": 686,
+        "utf8_bytes": 686,
+        "exact_added_tokens": null
+      }
+    },
+    {
+      "run": "7cfa6757",
+      "task": "conceptual",
+      "condition": "collect",
+      "report_path": "7cfa6757/reports/77579ad0e3b9698e7a26f31ad32e83bf44422106b2d99cca26ed3b9dbe9dea60.json",
+      "coverage": "partial",
+      "incomplete_acquisition": false,
+      "tokens": {
+        "input_tokens": {
+          "value": 6,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        },
+        "output_tokens": {
+          "value": 2994,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        },
+        "cache_read_input_tokens": {
+          "value": 21187,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        },
+        "cache_creation_input_tokens": {
+          "value": 4203,
+          "unit": "tokens",
+          "coverage": "partial",
+          "semantics": "Observed message snapshots by message.id; categories kept separate; no billing equivalence"
+        }
+      },
+      "metrics": {
+        "elapsed_wall_ms": {
+          "value": 51379,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "First observed SessionStart to observation; includes resume gaps"
+        },
+        "model_request_latency_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "Hooks do not expose request start/end"
+        },
+        "api_query_duration_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "Claude SDK query API duration; not per-request latency or thinking time"
+        },
+        "tool_execution_ms": {
+          "value": 1996,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Sum of identified host execution durations; may overlap, not a wall-time total"
+        },
+        "tool_bracket_union_ms": {
+          "value": 2166,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Union of paired hook receipt brackets; includes approval, hook and dispatch overhead"
+        },
+        "active_interval_union_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "Supported hook/transcript observations do not establish execution interval boundaries"
+        },
+        "handoff_wait_ms": {
+          "value": 306,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Stop-to-next-prompt wall gaps; may include automation and background activity"
+        },
+        "user_wait_ms": {
+          "value": null,
+          "unit": "ms",
+          "coverage": "unknown",
+          "semantics": "No reliable human wait boundaries"
+        },
+        "human_permission_stops": {
+          "value": null,
+          "unit": "episodes",
+          "coverage": "unknown",
+          "semantics": "Approval candidates may be auto-approved; no confirmed UI episode identity"
+        },
+        "human_clarification_stops": {
+          "value": null,
+          "unit": "episodes",
+          "coverage": "unknown",
+          "semantics": "Question/tool requests do not prove human yields"
+        },
+        "permission_notifications": {
+          "value": null,
+          "unit": "notifications",
+          "coverage": "unknown",
+          "semantics": "Observed permission_prompt notifications, not episodes; delayed, repeatable, may target automated SDK callbacks"
+        },
+        "collector_work_ms": {
+          "value": 15.713916000000001,
+          "unit": "ms",
+          "coverage": "partial",
+          "semantics": "Collector work sample excludes final sample write and process startup"
+        }
+      },
+      "native_results": [
+        {
+          "stage": "start",
+          "model_names": [
+            "claude-opus-5"
+          ],
+          "permission_denials": [],
+          "subtype": "success"
+        }
+      ],
+      "launches": [
+        {
+          "started": "2026-10-08T13:08:09.926Z",
+          "finished": "2026-10-08T13:09:02.285Z",
+          "exit_code": 0,
+          "elapsed_ms": 52359
+        }
+      ],
+      "display": {
+        "blocks": 0,
+        "guidance_blocks": 0,
+        "characters": 0,
+        "utf8_bytes": 0,
+        "exact_added_tokens": null
+      }
+    }
+  ]
+}

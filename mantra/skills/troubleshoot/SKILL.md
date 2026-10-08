@@ -12,11 +12,9 @@ Diagnose the reported behavior using evidence relevant to the next action.
 
 ## Task
 
-This skill implements the evidence and deliberation guidance in
-[the companion guidance](../../context/behavior.md). Use available evidence,
-uncertainty, consequences, and reversibility to choose further investigation.
-A demonstrated local defect can proceed from local evidence without an external
-source quota.
+Use available evidence, uncertainty, consequences, and reversibility to choose
+further investigation. A demonstrated local defect can proceed from local evidence
+without an external source quota.
 
 ## Workflow
 

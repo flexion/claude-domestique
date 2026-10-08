@@ -1,0 +1,8 @@
+{
+  "observed_yield": "2026-10-08T13:04:26.199Z",
+  "planned_delay_ms": 10000,
+  "response_launched": "2026-10-08T13:04:43.148Z",
+  "actual_yield_to_launch_ms": 38934,
+  "actual_observation_to_launch_ms": 16949,
+  "note": "Planned minimum 10-second delay; operator status interruption and inspection added time. Actual gap includes continuation launch overhead and is not human attention."
+}

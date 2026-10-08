@@ -1,0 +1,10 @@
+{
+  "name": "exports-retention-fixture",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Customer data export storage",
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test"
+  }
+}

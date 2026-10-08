@@ -1,0 +1,53 @@
+{
+  "packet": "/tmp/visibility-outcomes-JaAH7J",
+  "mapping": [
+    {
+      "packet_label": "a6b9dc4d6c",
+      "run_label": "0ac9ad64",
+      "task": "factual-readonly",
+      "condition": "collect"
+    },
+    {
+      "packet_label": "0ccd960c89",
+      "run_label": "1e290746",
+      "task": "factual-readonly",
+      "condition": "display"
+    },
+    {
+      "packet_label": "a6933445cb",
+      "run_label": "413291eb",
+      "task": "code-correction",
+      "condition": "display"
+    },
+    {
+      "packet_label": "496b6786ae",
+      "run_label": "e6adaf66",
+      "task": "code-correction",
+      "condition": "collect"
+    },
+    {
+      "packet_label": "926ca4930f",
+      "run_label": "72a2ea15",
+      "task": "missing-info",
+      "condition": "collect"
+    },
+    {
+      "packet_label": "382c85f9b7",
+      "run_label": "933f137e",
+      "task": "missing-info",
+      "condition": "display"
+    },
+    {
+      "packet_label": "eb06600a5c",
+      "run_label": "325cd079",
+      "task": "conceptual",
+      "condition": "display"
+    },
+    {
+      "packet_label": "1f6b0383fa",
+      "run_label": "7cfa6757",
+      "task": "conceptual",
+      "condition": "collect"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "pager-fixture",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Result paging helpers",
+  "main": "src/paginate.js",
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test"
+  }
+}

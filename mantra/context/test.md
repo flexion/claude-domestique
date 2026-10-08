@@ -21,6 +21,8 @@ The Mantra Jest suites cover:
   category semantics, overlapping intervals, missing records, and unknown values.
 - Collector I/O: opt-in and disabled modes, bounded reads, local snapshots,
   concurrent appends, malformed input, and passive stdout.
+- Experimental display: separate token categories, explicit unknowns and coverage,
+  silent disabled/collect modes, and fresh observations after tool use.
 - The optional standalone Claude statusline, which is separate from both hooks.
 
 Test public behavior and meaningful failure cases. Pure aggregation functions can
