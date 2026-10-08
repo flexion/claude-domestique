@@ -17,7 +17,7 @@ Mantra: test whether resource visibility improves useful outcomes. Use the GitHu
 
 ## Approach
 
-Prepare a bounded eight-run comparison of passive collection versus visible observations across factual, code correction, necessary clarification, and conceptual tasks. Ada authors isolated fixtures and independent outcome oracles; rex owns the protocol and display integration. Alternate condition order across task pairs, pin the host/model/effort/tools/source, and start each run with a fresh fixture workspace. Grade delivered outputs before exposing consumption to ada. Preserve token categories and coverage, record defects/rework/interactions/fixation independently, and include setup, implementation, display, and grading overhead. Keep display observational with no score, budget, quota, or stopping instruction. Coordinate a separate display seam with kit; do not edit behavior.js or assessment guidance. Run the comparison only after independently validated #184 collector evidence is available. Negative or inconclusive observations are valid findings. Run focused tests, metadata checks, host checks and invocation probes; bump mantra once after substantive changes. The initial scope prohibited commits, pushes, PR creation, issue closure and beads; the operator later authorized local commits and rebasing, as recorded below. Pushes, PR creation, issue closure and beads remain outside scope.
+Prepare a bounded eight-run comparison of passive collection versus visible observations across factual, code correction, necessary clarification, and conceptual tasks. Ada authors isolated fixtures and independent outcome oracles; rex owns the protocol and display integration. Alternate condition order across task pairs, pin the host/model/effort/tools/source, and start each run with a fresh fixture workspace. Grade delivered outputs before exposing consumption to ada. Preserve token categories and coverage, record defects/rework/interactions/fixation independently, and include setup, implementation, display, and grading overhead. Keep display observational with no score, budget, quota, or stopping instruction. Coordinate a separate display seam with kit; do not edit behavior.js or assessment guidance. Run the comparison only after independently validated #184 collector evidence is available. Negative or inconclusive observations are valid findings. Run focused tests, metadata checks, host checks and invocation probes; bump mantra once after substantive changes. The initial scope prohibited commits, pushes, PR creation, issue closure and beads; the operator later authorized local commits and rebasing, as recorded below. The operator subsequently authorized push and PR creation; issue closure and beads remain outside scope.
 
 ## Session Log
 
@@ -41,6 +41,8 @@ Prepare a bounded eight-run comparison of passive collection versus visible obse
 
 - 2026-10-08: The operator requested a further rebase conflict resolution onto merged #184 at origin/main 3b3da10, including thematic consistency, duplication and token efficiency. Preserved upstream collector/accounting and updated verification provenance, retained the explicit display wrapper, and reconciled passive/display documentation. The upstream replacement for the old testing manual is now a concise Mantra-specific guide and is retained with display coverage. Bumped current Mantra metadata to 0.9.0 because main now publishes 0.8.0; the original experiment remains pinned to its recorded source/version. Runtime prompt text is unchanged: collect/disabled inject nothing, display guidance is separate from compact recurring values, and no automatic resource registration was added. Validation passed: full npm test (including 64 Mantra assertions), metadata validation, pinned Claude marketplace/Mantra strict validation, isolated Codex install at 0.9.0, relative-link checks and unchanged frozen source hashes. Token audit: default behavior reminder remains 1,735 characters; optional display guidance remains 234 characters and recorded known refreshes 137–140 characters, with no exact tokenizer claim. Ada independently confirmed collection/accounting and recurring hook text are unchanged, and found an overview regression plus repeated recommendations. Restored the upstream overview and neutral design goal, kept the concise testing guide, and made context/resources.md the recommendation owner with links elsewhere; detailed workflows stay on demand. Ada independently verified the final staged cleanup with no material findings.
 
+- 2026-10-08: The operator explicitly requested commit, push and PR creation. Local implementation and integration commits already exist; refreshed origin/main and checked branch/PR state before publication. Session authority and final file inventory updated before the final commit; the PR will describe the bounded negative/inconclusive findings and coverage limits without claiming a behavioral benefit.
+
 ## Files Changed
 
 - Session and branch metadata initialized.
@@ -48,16 +50,16 @@ Prepare a bounded eight-run comparison of passive collection versus visible obse
 - docs/evals/resource-visibility/: task prompts, starting workspaces, scripted answer, and independent outcome oracles.
 - mantra/lib/resource-display.js and its Jest suite: small observational renderer for the stable collector schema.
 - Verified #184 dependency files, research/overhead evidence and independent review; resources.js gains #185 display dispatch without changing collection/accounting.
-- Mantra README/context and synchronized plugin metadata at 0.8.0.
+- Mantra README/context and synchronized current plugin metadata at 0.9.0; pilot evidence retains its recorded 0.8.0 snapshot.
 - docs/research/resource-visibility-runs/ and docs/reviews/resource-visibility-{outcomes,fixation}.md: reproducible run evidence and independent reviews.
 - jest.config.js: documentation fixture/workspace packages excluded from root Jest indexing.
 - Root README/AGENTS and Mantra README/DEVELOPMENT/ROADMAP/resource contract: current behavior, ownership and opt-in setup aligned.
-- Mantra hook/package descriptions and troubleshoot reference: terminology and ownership corrected; unused context/test.md removed.
+- Mantra hook/package descriptions and troubleshoot reference: terminology and ownership corrected; obsolete generic context/test.md replaced by the upstream Mantra-specific testing guide.
 - Historical architecture and research proposals: labelled and linked to current guidance.
 
 ## Next Steps
 
-Implementation and integration cleanup are complete and validated, with local commits on origin/main. No further comparison is scheduled. Push, PR creation and issue closure remain outside authorization.
+Implementation and integration cleanup are complete and validated, with local commits on origin/main. No further comparison is scheduled. The operator authorized committing, pushing and PR creation; publish the validated branch for review. Issue closure remains outside authorization.
 
 ## Acceptance Criteria
 
