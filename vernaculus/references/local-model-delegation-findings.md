@@ -1,7 +1,10 @@
 # Local model integration — findings and options
 
 Exploratory. Nothing here is implemented. Mechanical launch-surface detail is in
-[`launch-surface.md`](launch-surface.md) and is not repeated.
+[`launch-surface.md`](launch-surface.md) and is not repeated. Measurements and
+line citations are a snapshot of comitatus 0.14.1. 1.0.0 removed the fan-out
+skill and its role files and changed the launch defaults; see the notice at the
+top of `launch-surface.md`.
 
 ## The question has two different shapes
 
@@ -101,14 +104,17 @@ lands on the reviewer.
 tokens; the local tag pins `num_ctx` to **32768**, which is the practical figure
 on this hardware, not an arbitrary one.
 
-Against that budget, `comitatus/skills/herdr/SKILL.md` is about 8k tokens and is
-*auto-injected* whenever `HERDR_ENV=1` (`comitatus/hooks/herdr-orient.js:180`).
-A fan-out participant loads `fan-out/SKILL.md` and a role file on top. A peer
-local model therefore spends something like a quarter to a third of its window
-on orientation before it reads a single repository file — and the fan-out
-orchestrator role is explicitly written as a loop that *survives compaction*
-(`comitatus/skills/fan-out/roles/orchestrator.md:13-33`), which assumes a model
-that can be compacted and resume, not one that ran out of room.
+Against that budget, `comitatus/skills/herdr/SKILL.md` was about 8k tokens at
+0.14.1. The SessionStart hook injects only a short orientation whenever
+`HERDR_ENV=1` and points at the skill (`comitatus/hooks/herdr-orient.js`); the
+skill itself loads when the agent invokes it, which a herd member is told to
+do. At 0.14.1 a fan-out participant also loaded `fan-out/SKILL.md` and a role
+file. A peer local model therefore spent something like a quarter to a third of
+its window on orientation before it read a single repository file. The fan-out
+orchestrator role was written as a loop that *survives compaction*, which
+assumes a model that can be compacted and resume, not one that ran out of room.
+comitatus 1.0.0 deleted the fan-out skill and its roles, so only the herdr skill
+remains in that budget.
 
 Note also that `qwen3:30b-32k` is the base Qwen3 instruct tag, not Qwen3-Coder.
 There is no `qwen3-coder:30b` on this machine, so any config naming that tag

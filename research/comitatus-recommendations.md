@@ -1,5 +1,7 @@
 # comitatus × herdr: first-principles review and recommendation
 
+> Historical snapshot of the versions and decisions named below. Current commands, launch defaults, and herd conventions are documented in the [comitatus README](../comitatus/README.md).
+
 Written 2026-07-02 after full review of herdr docs + local 0.7.1 CLI verification (see `herdr-briefing.md`) and the plugin ecosystem (see `herdr-plugins-catalog.md`). Current comitatus at 0.4.2.
 
 ## Design constraints (from the operator, 2026-07-02 — FIRM)

@@ -1,5 +1,7 @@
 # herdr capability briefing (docs + local verification)
 
+> Historical snapshot of the versions and decisions named below. Current commands, launch defaults, and herd conventions are documented in the [comitatus README](../comitatus/README.md).
+
 Sources: herdr.dev/docs (concepts, agents, session-state, configuration, socket-api, plugins, marketplace, quick-start), verified against the locally installed `herdr 0.7.1` CLI on 2026-07-02. Items marked **(verified local)** were confirmed against the real binary; everything else is from docs.
 
 ## Object model

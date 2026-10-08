@@ -92,8 +92,9 @@ This section sits outside the managed markers deliberately. Editing the block ab
 ## Task tracking is on the filesystem, not in beads (current override)
 
 By operator instruction, 2026-09-09: **do not file beads.** Work items, todos, and
-deferred findings go to [`.pipeline/backlog.md`](.pipeline/backlog.md) and one file
-per item under `.pipeline/backlog/`. This overrides "Use `bd` for ALL task tracking"
+deferred findings go to `.pipeline/backlog.md` and one file
+per item under `.pipeline/backlog/`; the index and the item directory are created on
+first use. This overrides "Use `bd` for ALL task tracking"
 in the managed block above, and the `bd remember` line with it — persistent knowledge
 goes to the same place.
 

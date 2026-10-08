@@ -1,5 +1,7 @@
 # comitatus Plugin Implementation Plan
 
+> Historical snapshot of the versions and decisions named below. Current commands, launch defaults, and herd conventions are documented in the [comitatus README](../../comitatus/README.md).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add `comitatus`, a fifth claude-domestique plugin that packages the herdr agent-orchestration skill for claude, ships a Node roster/state helper, and auto-provisions the same skill into codex's skill path when running inside herdr.

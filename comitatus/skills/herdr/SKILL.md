@@ -24,9 +24,7 @@ commands in this skill are deliberately one command per line. copy the literal h
 
 the shell still parses the command you type. in PowerShell, single quotes keep a message body literal while double quotes expand `$variables`; in `cmd.exe`, use double quotes and escape its metacharacters. `<body>` in the examples means one argument quoted for the shell currently running - it is not a promise that one quoting form is portable between shells. keep protocol messages on one physical line; do not use POSIX `\`, PowerShell backticks, or cmd carets to continue them.
 
-helper verbs: `status | members | wait | send | send-wait-read | seed | broadcast | sync | withdraw | agent | up | role | fanout | wait-all | state | settled | fan-in | teardown`.
-
-`fan-in` and `teardown` are the two verbs `/herd-setup` does **not** pre-authorize, because they reach `git merge`, `git branch -D`, and `worktree remove --force`. Expect one permission prompt each; nothing is waiting on you at either step.
+helper verbs: `status | members | send | seed | broadcast | sync | withdraw | agent | up`. waiting, reading, and git are native: use `herdr agent wait|read` and `git` directly.
 
 The message and membership contract is in [reference/protocol.md](reference/protocol.md).
 
@@ -42,33 +40,35 @@ node HERD up --branch chore/my-slug --base origin/main --claude sly --codex jay 
 
 ```json
 { "worktree": { "path": "…", "workspace_id": "wR" },
-  "agents": [ { "handle": "sly", "kind": "claude", "model": null, "effort": null,
+  "agents": [ { "handle": "sly", "kind": "claude", "model": "claude-opus-5-5", "effort": null,
                 "pane_id": "wR:p3", "tab": "wR:t2" } ] }
 ```
 
-`kind` is the integration; `model` and `effort` are what was actually **selected**, and `null` means **inherited** - so a launch on a model you chose is visibly distinct from one on whatever the ambient config happened to resolve. Do not read `kind` as an answer to "which model is it on".
+`kind` is the integration; `model` and `effort` are what was actually **passed** - an explicit selector or the kind's default model - and `null` means **inherited** from the CLI's ambient config. Do not read `kind` as an answer to "which model is it on".
 
-the `git fetch` happens only when `--base` names a configured remote. `origin/main` does; `task/my-slug` does not - a slash is not what makes a base remote-tracking, and a base with no slash is a local ref. so a **local-only base creates the worktree with no fetch attempted**, which is what lets `fanout` branch each partition off a task branch that was never pushed.
+the `git fetch` happens only when `--base` names a configured remote. `origin/main` does; `task/my-slug` does not - a slash is not what makes a base remote-tracking, and a base with no slash is a local ref. so a **local-only base creates the worktree with no fetch attempted**, so a worktree can branch off a task branch that was never pushed.
 
 | flag | runs | glyph |
 |---|---|---|
 | `--claude <handle>[:<selector>]` | `claude` | ◆ |
-| `--codex <handle>[:<selector>]` | `codex` | ◇ |
+| `--codex <handle>[:<selector>]` | `codex --no-daemon` | ◇ |
 | `--opencode <handle>:<model>` | `opencode -m <model>` | ⬨ |
 
 ### where model and effort come from
 
-**a bare handle inherits both from the CLI's own ambient config** - nothing is passed, so whatever that CLI resolves at startup is what you get:
+**a bare handle gets the kind's default model and inherits effort** from the CLI's own ambient config:
 
-- **claude** - user/project/**managed** settings. org-managed settings can *pin* a model the user cannot change interactively (`/model` reports e.g. "Managed settings pins Sonnet 5"), which makes the launch flag the only available lever.
-- **codex** - `config.toml` under the Codex home (`model`, `model_reasoning_effort`).
+- **claude** - model `claude-opus-5-5`; effort from user/project/**managed** settings. org-managed settings can *pin* a model the user cannot change interactively (`/model` reports e.g. "Managed settings pins Sonnet 5"), which makes the launch flag the only available lever.
+- **codex** - model `gpt-6.1-sol`; effort from `config.toml` under the Codex home (`model_reasoning_effort`). every codex launch also passes `--no-daemon`, so the session runs without the shared background app-server even when one is already running.
 - **opencode** - no default worth guessing, so its model is the one **required** selector.
+
+an explicit `model=` always replaces the default; `effort=` or `role=` alone does not, so `jay:effort=high` still launches on `gpt-6.1-sol`.
 
 the optional `:<selector>` overrides that per agent, as `key=value` pairs:
 
 | selector | claude | codex | opencode |
 |---|---|---|---|
-| `model=<m>` | `--model <m>` | `--model <m>` | `-m <m>` (required) |
+| `model=<m>` | `--model <m>` (default `claude-opus-5-5`) | `--model <m>` (default `gpt-6.1-sol`) | `-m <m>` (required) |
 | `effort=<level>` | `--effort <level>` | `-c model_reasoning_effort=<level>` | **unsupported - refused** |
 
 claude takes an alias (`opus`, `sonnet`, `fable`) or a full name (`claude-fable-5`), and its effort levels are `low, medium, high, xhigh, max`. codex has no effort *flag* - only the generic `-c <key>=<value>` config override - which is why the two kinds cannot share one flag pair.
@@ -179,7 +179,7 @@ node HERD agent codex jay --workspace wR --cwd <worktree-path>
 node HERD agent claude nell:model=opus,effort=high --workspace wR --cwd <path>
 ```
 
-it runs the primitives for you: `tab create` (decorated label) -> `agent start <handle> --kind <kind> --pane <tab-root-pane> --timeout <ms>` (the agent takes over the tab's root shell pane, so there is no leftover shell to close; the handle is assigned **at launch** - no detect-then-rename) -> `agent wait <handle> --until idle` (ready to seed). the trailing `-- <args>` on `agent start` is the only channel for per-agent program args, so the `handle[:<selector>]` model/effort selectors ride there - same syntax and same defaults-are-inherited rule as `up` (see [where model and effort come from](#where-model-and-effort-come-from)), because both share one `makeAgent`. `--timeout` alone only guarantees interactive readiness, so the explicit `--until idle` wait is what confirms the status the caller depends on.
+it runs the primitives for you: `tab create` (decorated label) -> `agent start <handle> --kind <kind> --pane <tab-root-pane> --timeout <ms>` (the agent takes over the tab's root shell pane, so there is no leftover shell to close; the handle is assigned **at launch** - no detect-then-rename) -> `agent wait <handle> --until idle` (ready to seed). the trailing `-- <args>` on `agent start` is the only channel for per-agent program args, so the `handle[:<selector>]` model/effort selectors ride there - same syntax and same defaults as `up` (see [where model and effort come from](#where-model-and-effort-come-from)), because both share one `makeAgent`. `--timeout` alone only guarantees interactive readiness, so the explicit `--until idle` wait is what confirms the status the caller depends on.
 
 ### 4. change a handle
 
@@ -212,11 +212,11 @@ herdr workspace close wR
 
 ### 7. remove a worktree
 
-removes the git worktree, its directory, the workspace, and all its tabs/agents - then delete the branch separately:
+removes the git worktree, its directory, the workspace, and all its tabs/agents - then delete the branch separately. adjudicate first (see [cleanup](#cleanup-adjudicates-it-does-not-sweep)). leave `--force` off: `git worktree remove` refuses a dirty tree without it, and `git branch -d` refuses an unmerged branch where `-D` would not:
 
 ```text
-herdr worktree remove --workspace wR --force --json
-git branch -D chore/my-slug
+herdr worktree remove --workspace wR --json
+git branch -d chore/my-slug
 ```
 
 `worktree remove` does not delete the branch; the second command does.
@@ -234,10 +234,11 @@ node HERD send sly "review the diff on this branch; jay is cross-checking" --fyi
 
 Take `<workspace-id>` from `herdr worktree list --json`. The first command removes the
 worktree, its directory, its workspace, and every tab and agent in that workspace.
+Adjudicate its work first; add `--force` / `-D` only for what you decided to discard.
 
 ```text
-herdr worktree remove --workspace <workspace-id> --force --json
-git branch -D chore/review-x
+herdr worktree remove --workspace <workspace-id> --json
+git branch -d chore/review-x
 ```
 
 ### assign a herd to a worktree
@@ -249,22 +250,31 @@ step 1 (create the worktree) then step 3 per agent - or just `up`. the herd is s
 an agent's **cwd is fixed at launch** - you cannot re-cwd a running agent. reassigning = **relaunching** on the new worktree. handles are preserved; conversation + protocol seeding are **not**. handles must be unique, so the old herd comes down first:
 
 Closing the old workspace frees its handles. The final two commands are optional cleanup
-for the old worktree and branch after the new herd launches successfully.
+for the old worktree and branch after the new herd launches successfully, subject to the
+same adjudication.
 
 ```text
 herdr workspace close <old-herd-ws>
 node HERD up --branch chore/new-slug --base origin/main --claude sly --codex jay
-git worktree remove --force <old-worktree-path>
-git branch -D chore/old-slug
+git worktree remove <old-worktree-path>
+git branch -d chore/old-slug
 ```
 
 after a reassign the relaunched agents are **cold**: re-seed the protocol + roster (see below).
 
-## fan-out
+## roles and multi-agent work
 
-For the architect/implementer runbook, branch naming, role delivery, and ordered
-fan-in, use the [`fan-out` skill](../fan-out/SKILL.md). It builds on this skill's
-herdr prerequisite, helper path, roster protocol, and worktree conventions.
+this skill owns herd initialization, membership, and who does what: `seed` assigns each member its handle, roster and working lead, and the working lead coordinates. a small task needs nothing more - a working lead who also implements, plus an independent verifier given the requirements and the diff and test evidence. add a dedicated agent per part only when coordination or verification warrants one. comitatus ships no run workflow or role files; git and the native verbs carry the state. what follows are the rules that keep that safe:
+
+- **one writer per tree.** an agent writes only in its own worktree (cwd is fixed at launch). anything another tree needs goes to that tree's owner as a message.
+- **a timeout is not a failure to deliver.** a wait can time out after the text was submitted, and neither silence nor a missing echo in the pane proves it was lost. only an `undeliverable` result (or `agent_blocked`) establishes that no input was sent; after `accepted` or `observed`, do not resend blind - a resend duplicates the turn.
+- **idle, a finished wait, or a commit is not completion.** an agent reads `idle` between its own turns, `agent prompt --wait` can match a turn that was already running, and an interim commit is not a finished one. done means the agent's reply plus the stated criteria checked - tests run, evidence read.
+- **inspect a partial launch before retrying.** a failed `up` or `agent` can leave a worktree, workspace, tab, or a running agent holding the handle. look (`herdr worktree list`, `herdr agent list`) and remove or reuse what is there; never relaunch blind.
+- **integrate in a stated order, in the target tree, by its owner.** start from a clean target tree and index - `git merge --abort` cannot always restore uncommitted changes that predate the merge. merge branches one at a time in the order you named. on a conflict, the owner of the tree being merged into resolves it or runs `git merge --abort`, so the tree is clean before anything is handed back. the branch's author fixes its own branch in its own tree.
+
+### cleanup adjudicates; it does not sweep
+
+before removing a worktree or deleting a branch, inspect what would be lost: `git -C <tree> status --short` (dirty and untracked files) and `git log <target>..<branch>` (commits not merged). decide each piece - **integrate** it, **preserve** it (keep the branch, or commit or push it where you already have that authority), or **discard** it. say what you are discarding and why, in one line, to whoever owns the work. `--force` and `git branch -D` are for that explicit discard, within the authority you already have; they are not the default. discarding a failed experiment you were authorized to throw away needs no extra approval - it needs to be named.
 
 ## agent-to-agent protocol (from/to)
 
@@ -288,7 +298,7 @@ node HERD send jay "<body>" --reply
 the helper reports mechanical evidence, and the `[from jay]` reply landing in your pane is the end-to-end confirmation. Silence is not proof of loss. For a message that expects **no** reply (`[herd ...]`, a one-way note), the helper serializes the send; it does not make the message durable:
 
 ```text
-node HERD wait jay --status idle,done --timeout 30000
+herdr agent wait jay --until idle --until done --timeout 30000
 ```
 
 For delivery purposes, either `idle` or `done` means the recipient is free to receive.
@@ -313,7 +323,9 @@ two complementary triggers:
 
 on receiving `[herd +H]`/`[herd -H]`: update your roster **idempotently**; do **not** reply and do **not** re-broadcast (every member detects independently; re-broadcasting causes O(N²) storms).
 
-**lead withdrawal:** the lead may seed the herd, announce the active coordinator, send the withdrawal directive with `withdraw`, and then leave. Remaining members continue without waiting for the lead; the lead is not a required approval or review hop.
+**the launcher stays out by default:** the agent that launches and seeds a herd is not a member of it unless it lists itself in `--roster`. `seed` defaults the working lead to the first handle in the roster - so pass the same `--roster`, lead first, to every seed - and refuses a `--lead` that is not in the roster, because a lead the members cannot see strands the herd. a sender left off the roster is named in the seed line as an outside launcher - neither member nor coordinator - so members do not wait on it unless their task names it as an approver. the seed reply still comes back to the launcher; that is the proof of seeding, not membership. **keep the launcher in its own workspace** (`up` already puts each herd in a fresh one): `sync`, `members`, `broadcast` and `withdraw` infer membership from the workspace, so a launcher co-located with the herd is counted whatever the roster says.
+
+**lead withdrawal:** a launcher that *did* join - by listing itself in `--roster` - leaves with `withdraw --lead <member>`: it hands off to the working lead first, then sends the withdrawal directive. Remaining members continue without waiting for it; it is not a required approval or review hop.
 
 add sequence: seed the newcomer with the roster, then `[herd +new]`. remove sequence: `[herd -gone]`, then close the agent's tab (steps 6-7).
 
@@ -342,13 +354,13 @@ the native wait command does not accept the helper's comma-list syntax.
 
 - **fetch before `worktree create`** - `--base origin/main` is the local ref; it is stale until you `git fetch origin main`.
 - **`agent prompt` types AND submits** - `herdr agent prompt <handle> "..."` is the native one-call send (kind-aware: it handles codex's double-Enter). `node HERD send` wraps it to stamp the sender, serialize the recipient, and report the three-valued `delivery` result.
-- **`--status` comma lists are helper-only** - `node HERD wait jay --status idle,done` accepts a set (it polls `agent list` itself); the native `herdr agent wait <handle> --until <state>` needs one `--until` per state (repeat the flag).
+- **native `agent wait` takes one `--until` per state** - repeat the flag (`--until idle --until done`). without `--until` it also matches `blocked`, so name the states you mean.
 - **`agent start` needs an existing shell pane** - it takes `--kind <kind> --pane <pane-at-a-shell-prompt>` and takes that pane over; it does **not** spawn its own. the helper/`up` hand it a fresh tab's root pane. `--timeout` waits only for interactive readiness, not for `idle` - wait on `idle` explicitly after.
 - **a fresh codex pane can read "ready" behind an update modal** - codex may open on a blocking `Update available! <old> -> <new>` menu. `agent start` succeeds and herdr reports the pane interactively ready, but that modal owns the keyboard, so the first prompt - a seed line included - lands in the menu instead of the composer. the `blocked` send gate does **not** save you here: herdr detects the pane as ready, not `blocked`, so `send` types anyway and reports a normal delivery. on an unattended codex launch, `agent read <handle>` first and clear the menu (`herdr agent send-keys <handle> "2"` to skip) before the first send. observed on codex 0.147.0 prompting to 0.149.0.
 - **install the managed opencode status integration** - herdr 0.9.0 ships the current integration, but it is not active until `herdr integration install opencode` installs it in the user's opencode plugin directory. without it, status waits on opencode panes are unreliable.
 - **only the home repo's worktree tree nests; plain workspaces don't** - a `workspace create --cwd` workspace gets no repo association and floats ungrouped, even at a repo root. give each herd agent a *tab* in the herd's one workspace; make the herd a worktree to nest it under the repo.
 - **workspace label vs tab truncation** - rows render `<workspace> · <tab>`; the long worktree-name label can truncate the tab label in the collapsed sidebar; the handle reappears on focus/widen. that label is herdr's default - don't rename it.
-- **`worktree remove` keeps the branch** - it removes the worktree, directory, workspace, and all tabs/agents, but `git branch -D` is separate.
+- **`worktree remove` keeps the branch** - it removes the worktree, directory, workspace, and all tabs/agents, but deleting the branch (`git branch -d`) is separate.
 - **`open` reattaches, `create` makes new branches** - existing branch with no worktree -> `git worktree add` first, then `open` (home repo only).
 - **one repo per herdr session** - `worktree create` always builds in the session's home repo regardless of cwd (verified). a second repo needs a second `herdr --session <name>`.
 - **`worktree create`/`open` run from the repo's main-checkout workspace** - from a linked worktree they error `linked_worktree_source`; pass `--workspace <main-checkout-ws>` or run from there.

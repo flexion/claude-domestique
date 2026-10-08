@@ -99,82 +99,20 @@ describe('dispatch (self-contained verbs)', () => {
     }
   });
 
-  // Registration is the whole point of this arm: the two fan-out modules are
-  // reachable only through dispatch, and a `case` that was never added makes a
-  // fully tested verb unreachable while its own suite stays green.
-  test('the fan-out verbs are routed, not silently unknown', () => {
-    for (const verb of ['role', 'fanout', 'wait-all', 'state', 'settled', 'fan-in', 'teardown']) {
-      expect(() => h.dispatch([verb], deps().deps)).not.toThrow(/unknown command/);
+  // 1.0.0 removed the run-workflow verbs and the polling waits; native
+  // `herdr agent wait|read` and git replace them. Unknown, not silently routed.
+  test('removed verbs are unknown commands', () => {
+    for (const verb of ['wait', 'send-wait-read', 'role', 'fanout', 'wait-all',
+      'state', 'settled', 'fan-in', 'teardown']) {
+      expect(() => h.dispatch([verb], deps().deps)).toThrow(/unknown command/);
     }
   });
 
-  test('each fan-out verb reaches its own module, and argument errors come from there', () => {
-    // Every one of these fails on its own required-argument check, which only
-    // the module can raise - so the case arm is wired to the right function.
-    const cases = [
-      [['role'], /role needs a handle/],
-      [['fanout'], /--run is required/],
-      [['wait-all'], /at least one handle/],
-      [['state'], /--run is required/],
-      [['settled'], /--run is required/],
-      [['fan-in'], /--run is required/],
-      [['teardown'], /--run is required/],
-    ];
-    for (const [argv, pattern] of cases) {
-      expect(() => h.dispatch(argv, deps().deps)).toThrow(pattern);
-    }
-  });
-
-  test('state dispatches to the read-only git verb, not to a herdr call', () => {
-    const calls = [];
-    const d = {
-      run: (f, a) => {
-        calls.push([f, ...a]);
-        if (f === 'git' && a[0] === 'rev-parse') throw new Error('not a ref');
-        return '';
-      },
-    };
-    expect(h.dispatch(['state', '--run', 'r7'], d)).toEqual({
-      run: 'r7', started: false, manifest: false, partitions: [], logRow: false, phase: 'absent',
-    });
-    expect(calls).toEqual([['git', 'rev-parse', '--verify', '--quiet', 'task/r7']]);
-  });
-
-  // format() decides how a verb prints. The fan-out verbs that return arrays
-  // return arrays OF OBJECTS, which must not degrade to [object Object].
-  test('teardown plan rows format as JSON, not newline-joined objects', () => {
-    const rows = [{ partition: 'auth', branch: 'task/r7-auth', action: 'planned' }];
+  // format() decides how a verb prints. Verbs that return arrays of per-
+  // recipient results must not degrade to [object Object].
+  test('result rows format as JSON, not newline-joined objects', () => {
+    const rows = [{ handle: 'jay', delivery: 'observed' }];
     expect(h.format(rows)).toBe(JSON.stringify(rows));
-  });
-});
-
-describe('parseWait', () => {
-  test('defaults: idle, 45s, 1s interval', () => {
-    expect(h.parseWait(['jay'])).toEqual({ handle: 'jay', statuses: ['idle'], timeout: 45000, interval: 1000 });
-  });
-  test('comma statuses and overrides', () => {
-    expect(h.parseWait(['jay', '--status', 'idle,done', '--timeout', '9000', '--interval', '250']))
-      .toEqual({ handle: 'jay', statuses: ['idle', 'done'], timeout: 9000, interval: 250 });
-  });
-});
-
-describe('waitCmd', () => {
-  test('returns as soon as the status matches one of the set', () => {
-    const seq = ['working', 'working', 'done']; let i = 0;
-    const deps = {
-      run: () => JSON.stringify({ result: { agents: [{ name: 'jay', agent_status: seq[i++] }] } }),
-      sleep: () => {}, now: () => 0,
-    };
-    expect(h.waitCmd(['jay', '--status', 'idle,done', '--interval', '1'], deps)).toBe('done');
-  });
-  test('throws on timeout, reporting the last seen status', () => {
-    let t = 0;
-    const deps = {
-      run: () => JSON.stringify({ result: { agents: [{ name: 'jay', agent_status: 'working' }] } }),
-      sleep: () => {}, now: () => (t += 1000),
-    };
-    expect(() => h.waitCmd(['jay', '--timeout', '1500', '--interval', '1'], deps))
-      .toThrow(/wait timeout: jay is working, want idle/);
   });
 });
 
@@ -439,53 +377,6 @@ describe('sendCmd', () => {
   });
 });
 
-describe('sendWaitReadCmd', () => {
-  function runner() {
-    const calls = [];
-    const seq = ['working', 'done'];
-    let i = 0;
-    const run = (f, a) => {
-      calls.push([f, ...a]);
-      if (a[0] === 'agent' && a[1] === 'list') {
-        return JSON.stringify({ result: { agents: [
-          { name: 'gus', agent: 'claude', pane_id: 'w1:p2', agent_status: seq[Math.min(i++, seq.length - 1)] },
-          { name: 'sly', agent: 'claude', pane_id: 'w1:p1', focused: true },
-        ] } });
-      }
-      if (a[0] === 'pane' && a[1] === 'read') return 'REVIEW: looks good\n';
-      return '';
-    };
-    return {
-      calls,
-      deps: { run, sleep: () => {}, now: () => 0, nonce: () => 'n1', lockDir: freshLockDir(), env: {} },
-    };
-  }
-
-  test('sends, waits for not-working, reads recent, returns the text', () => {
-    const { calls, deps } = runner();
-    const out = h.sendWaitReadCmd(['gus', 'review please', '--reply', '--from', 'sly', '--lines', '50'], deps);
-    expect(out).toBe('REVIEW: looks good\n');
-    expect(calls).toContainEqual(
-      ['herdr', 'agent', 'prompt', 'gus', '[from sly reply #n1] review please', '--wait', '--until', 'working', '--timeout', '6000']);
-    expect(calls).toContainEqual(['herdr', 'pane', 'read', 'w1:p2', '--source', 'recent', '--lines', '50']);
-  });
-
-  test('an undeliverable send throws instead of waiting on a message never sent', () => {
-    const { deps } = runner();
-    const inner = deps.run;
-    deps.run = (f, a) => {
-      if (a[0] === 'agent' && a[1] === 'prompt') {
-        const e = new Error('refused');
-        e.stderr = JSON.stringify({ error: { code: 'agent_not_found' } });
-        throw e;
-      }
-      return inner(f, a);
-    };
-    expect(() => h.sendWaitReadCmd(['gus', 'hi', '--reply', '--from', 'sly'], deps))
-      .toThrow(/undeliverable to gus: agent_not_found/);
-  });
-});
-
 // agent verb: tab create -> agent start --kind/--pane (agent takes over the
 // tab's root pane) -> wait until the agent is ready.
 describe('agentCmd', () => {
@@ -511,12 +402,13 @@ describe('agentCmd', () => {
     const { run, calls } = runner();
     const out = h.agentCmd(['codex', 'jay', '--workspace', 'wR', '--cwd', '/wt/x'], { run });
     expect(out).toEqual({
-      handle: 'jay', kind: 'codex', model: null, effort: null, pane_id: 'wR:p2', tab: 'wR:t2',
+      handle: 'jay', kind: 'codex', model: 'gpt-6.1-sol', effort: null, pane_id: 'wR:p2', tab: 'wR:t2',
     });
     expect(calls).toEqual([
       ['herdr', 'agent', 'list'],
       ['herdr', 'tab', 'create', '--workspace', 'wR', '--cwd', '/wt/x', '--label', 'jay ◇', '--no-focus'],
-      ['herdr', 'agent', 'start', 'jay', '--kind', 'codex', '--pane', 'wR:p2', '--timeout', '45000'],
+      ['herdr', 'agent', 'start', 'jay', '--kind', 'codex', '--pane', 'wR:p2', '--timeout', '45000',
+        '--', '--no-daemon', '--model', 'gpt-6.1-sol'],
       ['herdr', 'agent', 'wait', 'jay', '--until', 'idle', '--timeout', '45000'],
     ]);
   });
@@ -574,7 +466,7 @@ describe('agentCmd', () => {
     h.agentCmd(['codex', 'jay:effort=high', '--workspace', 'wR', '--cwd', '/wt/x'], { run });
     expect(calls).toContainEqual(
       ['herdr', 'agent', 'start', 'jay', '--kind', 'codex', '--pane', 'wR:p2', '--timeout', '45000',
-        '--', '-c', 'model_reasoning_effort=high']);
+        '--', '--no-daemon', '--model', 'gpt-6.1-sol', '-c', 'model_reasoning_effort=high']);
   });
 
   test('the tab label still uses the bare handle, not the selector', () => {
@@ -724,6 +616,17 @@ describe('seed', () => {
     expect(h.seedLine({ ...LINE, lead: 'pip' })).toMatch(/that is you - you drive the work/);
   });
 
+  // Outside the herd is not the same as outside the approval chain: a fan-out
+  // launcher still authorizes fan-in and teardown, so the line defers to the task.
+  test('an outside launcher is named as neither member nor coordinator', () => {
+    const line = h.seedLine({ ...LINE, launcher: 'sly' });
+    expect(line).toMatch(/sly launched this herd and is outside it/);
+    expect(line).toMatch(/not a member and not its coordinator - the working lead coordinates/);
+    expect(line).toMatch(/do not wait on sly unless your task names it as an approver/);
+    expect(line).not.toMatch(/\n/);
+    expect(h.seedLine(LINE)).not.toMatch(/launched this herd/);
+  });
+
   test('it teaches both flags, the roster directives, and the one-line rule', () => {
     const line = h.seedLine(LINE);
     expect(line).toMatch(/--reply/);
@@ -772,13 +675,81 @@ describe('seed', () => {
     const out = h.seedCmd(['pip', '--roster', 'pip,jay', '--helper', '/abs/herd.js',
       '--from', 'jay', '--wait'], deps);
     expect(out.turn).toBe('finished');
+    // native wait, naming both states: bare `agent wait` also matches blocked
+    expect(calls).toContainEqual(['herdr', 'agent', 'wait', 'pip', '--until', 'idle', '--until', 'done',
+      '--timeout', '120000']);
     expect(calls).toContainEqual(['herdr', 'agent', 'read', 'pip', '--source', 'recent', '--lines', '20']);
+  });
+
+  test('--wait reports a timeout when the native wait fails', () => {
+    const { deps } = seedRunner();
+    const run = deps.run;
+    deps.run = (f, a) => {
+      if (a[0] === 'agent' && a[1] === 'wait') throw new Error('timeout');
+      return run(f, a);
+    };
+    const out = h.seedCmd(['pip', '--roster', 'pip,jay', '--helper', '/abs/herd.js',
+      '--from', 'jay', '--wait'], deps);
+    expect(out.turn).toBe('timeout');
   });
 
   test('a handle missing from the roster is added rather than silently dropped', () => {
     const { calls, deps } = seedRunner();
     h.seedCmd(['pip', '--roster', 'jay', '--helper', '/abs/herd.js', '--from', 'jay'], deps);
     expect(calls.find((c) => c[2] === 'prompt')[4]).toMatch(/roster: pip, jay/);
+  });
+
+  // The launcher is outside the herd unless it lists itself: the default lead is
+  // the first roster member, never the sender, and a lead must be a member.
+  function seedPrompt(args) {
+    const { calls, deps } = seedRunner();
+    h.seedCmd(['pip', ...args, '--helper', '/abs/herd.js'], deps);
+    return calls.find((c) => c[2] === 'prompt')[4];
+  }
+
+  test('a sender left off the roster is an outside launcher, and the lead is the first member', () => {
+    const line = seedPrompt(['--roster', 'pip,jay', '--from', 'sly']);
+    expect(line).toMatch(/^\[from sly reply #s1\] you are pip/);
+    expect(line).toMatch(/roster: pip, jay/);
+    expect(line).toMatch(/working lead: pip \(that is you/);
+    expect(line).toMatch(/sly launched this herd and is outside it/);
+  });
+
+  test('every member seeded from one roster agrees on the default lead', () => {
+    const line = seedPrompt(['--roster', 'jay,pip', '--from', 'sly']);
+    expect(line).toMatch(/working lead: jay;/);
+  });
+
+  test('a sender that lists itself has joined: no launcher clause, lead still roster[0]', () => {
+    const line = seedPrompt(['--roster', 'jay,pip', '--from', 'jay']);
+    expect(line).toMatch(/working lead: jay;/);
+    expect(line).not.toMatch(/launched this herd/);
+  });
+
+  test('a solo agent seeded alone leads itself', () => {
+    const line = seedPrompt(['--roster', 'pip', '--from', 'sly']);
+    expect(line).toMatch(/your teammates: none yet/);
+    expect(line).toMatch(/working lead: pip \(that is you/);
+  });
+
+  test('an omitted target is prepended, so it becomes the default lead', () => {
+    const line = seedPrompt(['--roster', 'jay', '--from', 'sly']);
+    expect(line).toMatch(/roster: pip, jay/);
+    expect(line).toMatch(/working lead: pip \(that is you/);
+  });
+
+  test('an explicit --lead that is a member is honored', () => {
+    expect(seedPrompt(['--roster', 'pip,jay', '--lead', 'jay', '--from', 'sly']))
+      .toMatch(/working lead: jay;/);
+  });
+
+  test('a --lead outside the roster is refused before anything is sent, the sender included', () => {
+    for (const lead of ['sly', 'ghost']) {
+      const { calls, deps } = seedRunner();
+      expect(() => h.seedCmd(['pip', '--roster', 'pip,jay', '--lead', lead, '--from', 'sly',
+        '--helper', '/abs/herd.js'], deps)).toThrow(/is not in the roster/);
+      expect(calls.some((c) => c[2] === 'prompt')).toBe(false);
+    }
   });
 
   test('--roster is required: a seed without one produces an agent that cannot address anyone', () => {
@@ -1032,43 +1003,13 @@ describe('usage / --help', () => {
   test('usage no longer documents stdin or piping', () => {
     expect(h.usage()).not.toMatch(/stdin|pipe/i);
   });
-  test('usage warns that the native agent wait needs one --until per status, not a comma list', () => {
-    expect(h.usage()).toMatch(/herdr agent wait.*one\b/i);
-  });
-  test('usage documents the model/effort selector and that a bare handle inherits', () => {
+  test('usage documents the selector, the default models, --no-daemon, and inherited effort', () => {
     expect(h.usage()).toMatch(/model=/);
     expect(h.usage()).toMatch(/effort=/);
-    expect(h.usage()).toMatch(/inherit/i);
-  });
-  test('usage lists every fan-out verb (the done-when for --help)', () => {
-    const u = h.usage();
-    for (const verb of ['role', 'fanout', 'wait-all', 'state', 'settled', 'fan-in', 'teardown']) {
-      expect(u).toMatch(new RegExp(`^ {2}${verb.replace('-', '\\-')}\\b`, 'm'));
-    }
-  });
-  // The distinction the verb exists for. A reader who takes `wait-all` for a
-  // completion check writes the bug this run is fixing, so usage has to say
-  // which of the two answers off refs.
-  test('usage says settled answers from refs, not from agent status', () => {
-    const entry = /^ {2}settled .*(\n {6}.*)*/m.exec(h.usage());
-    expect(entry).not.toBeNull();
-    expect(entry[0]).toMatch(/--run/);
-    expect(entry[0]).toMatch(/refs|commit/);
-  });
-  // run fanout-branch-naming. usage() is where an operator learns the surface
-  // exists, and the whole point of the flag is repositories that do NOT name
-  // branches task/<id> - so a usage text that only ever shows task/<id> tells
-  // exactly the reader who needs the flag that the kit does not fit them.
-  test('usage documents --task-branch and stops presenting task/<id> as the only shape', () => {
-    const u = h.usage();
-    expect(u).toMatch(/--task-branch/);
-    expect(u).toMatch(/--partition-sep/);
-  });
-
-  // The prompt is the cost of the gate; a reader who does not know it is coming
-  // reads it as a bug and reaches for --force or a blanket allow rule.
-  test('usage says which verbs /herd-setup deliberately leaves prompting', () => {
-    expect(h.usage()).toMatch(/NOT baked/);
+    expect(h.usage()).toMatch(/claude-opus-5-5/);
+    expect(h.usage()).toMatch(/gpt-6\.1-sol/);
+    expect(h.usage()).toMatch(/--no-daemon/);
+    expect(h.usage()).toMatch(/INHERITS effort/);
   });
 });
 

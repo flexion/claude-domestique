@@ -1,5 +1,7 @@
 # Cross-model plugin architecture and migration plan
 
+> Historical migration record for the versions named below. See the [repository README](../../README.md) for current installation and validation, and the [comitatus README](../../comitatus/README.md) for current herd commands and conventions.
+
 **Date:** 2026-08-08
 
 **Status:** Complete — Phases 0–5 implemented; authenticated model-level smoke testing remains an operational release check

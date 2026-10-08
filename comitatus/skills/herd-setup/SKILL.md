@@ -37,7 +37,7 @@ Add `--local` for `~/.claude/settings.local.json` (machine, gitignored), or
 - `git fetch`, read-only `git status`/`git branch`.
 - One rule **per helper verb** at the stable path, e.g.
   `Bash(node <home>/.claude/comitatus/skills/herdr/scripts/herd.js send:*)` -
-  so `status`/`members`/`wait`/`send`/`send-wait-read`/`agent`/`up` run
+  so `status`/`members`/`send`/`seed`/`broadcast`/`sync`/`withdraw`/`agent`/`up` run
   prompt-free, but ONLY when you call the helper by the **absolute path** shown
   in your herdr orientation (shell variables and relative paths defeat the
   permission matcher).

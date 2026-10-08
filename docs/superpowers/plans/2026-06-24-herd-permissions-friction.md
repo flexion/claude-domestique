@@ -1,5 +1,7 @@
 # herdr Permissions Friction Reduction Implementation Plan
 
+> Historical snapshot of the versions and decisions named below. Current commands, launch defaults, and herd conventions are documented in the [comitatus README](../../../comitatus/README.md).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Cut Claude Code permission prompts for herdr workflows by (a) adding composite `herd` wrapper verbs that self-exec herdr (no pipes, loops, or `$H` variable), (b) provisioning the helper at a stable, version-independent path so an allow-rule survives upgrades, (c) shipping a `/herd-setup` command that bakes a SAFE, per-verb allowlist, and (d) tightening the agent-to-agent protocol so every message states whether a reply is required.

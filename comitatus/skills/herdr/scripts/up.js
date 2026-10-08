@@ -16,10 +16,16 @@ const { execFileSync } = require('child_process');
 // verified against the installed CLI's own --help, not assumed.
 // Keyed by agent KIND, deliberately not "model": conflating the two is what
 // made the old report claim `"model":"claude"`.
+//
+// `defaultModel` is what a launch gets when the selector names none. Pinning it
+// here, rather than inheriting ambient config, means every herd member starts
+// on a known model unless the caller chose otherwise; an explicit `model=`
+// always wins. Effort has no default and is still inherited.
 const KINDS = {
   claude: {
     glyph: '◆',
     kind: 'claude',
+    defaultModel: 'claude-opus-5-5',
     extraArgs: ({ model, effort }) => [
       ...(model ? ['--model', model] : []),
       ...(effort ? ['--effort', effort] : []),
@@ -28,11 +34,17 @@ const KINDS = {
   codex: {
     glyph: '◇',
     kind: 'codex',
+    defaultModel: 'gpt-6.1-sol',
     // No effort flag exists; `-c <key>=<value>` overrides one
     // ~/.codex/config.toml value. The value is parsed as TOML, and a bare word
     // that fails to parse is used as a literal string - which is what a level
     // like `high` relies on.
+    //
+    // `--no-daemon` on every launch: run without the shared background
+    // app-server even when one is already running, so a herd member's session
+    // does not depend on a daemon some other codex started.
     extraArgs: ({ model, effort }) => [
+      '--no-daemon',
       ...(model ? ['--model', model] : []),
       ...(effort ? ['-c', `model_reasoning_effort=${effort}`] : []),
     ],
@@ -69,8 +81,8 @@ const SELECTORS = {
 // handle:model:effort. Named keys are order-independent and extensible, and
 // they attach per agent, so two agents of one kind can differ in one launch.
 //
-// A bare handle means "inherit whatever the CLI's ambient config resolves" and
-// reports both settings as null - never as the kind name.
+// A bare handle gets the kind's `defaultModel` (see KINDS) and inherits effort
+// from the CLI's ambient config, reporting it as null - never as the kind name.
 function parseSelector(kind, spec) {
   const text = String(spec);
   const colon = text.indexOf(':');
@@ -106,6 +118,7 @@ function makeAgent(kind, spec) {
   const def = KINDS[kind];
   if (!def) throw new Error(`unknown agent kind: ${kind} (want ${Object.keys(KINDS).join('/')})`);
   const sel = parseSelector(kind, spec);
+  if (!sel.model && def.defaultModel) sel.model = def.defaultModel;
   if (!sel.handle) throw new Error(`--${kind} needs a <handle> (got "${spec}")`);
   if (kind === 'opencode') {
     // opencode alone requires a model: it has no ambient default to inherit.

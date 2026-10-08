@@ -1,18 +1,26 @@
 const { parseArgs, makeAgent, startAgent, launchAgent, up } = require('../skills/herdr/scripts/up.js');
 
 describe('makeAgent', () => {
-  // A bare handle means "inherit ambient config". model/effort report null so a
-  // caller can tell an inherited setting from a chosen one - the kind name is
-  // NOT an answer to "which model".
-  test('claude with no selector: ◆ glyph, no extra args, model and effort null', () => {
+  // A bare handle gets the kind's default model and inherits effort. effort
+  // reports null so a caller can tell an inherited setting from a passed one -
+  // the kind name is NOT an answer to "which model".
+  test('claude with no selector: ◆ glyph, default Opus 5.5 model, effort null', () => {
     expect(makeAgent('claude', 'sly')).toEqual({
-      handle: 'sly', kind: 'claude', glyph: '◆', model: null, effort: null, role: null, extraArgs: [],
+      handle: 'sly', kind: 'claude', glyph: '◆', model: 'claude-opus-5-5', effort: null, role: null,
+      extraArgs: ['--model', 'claude-opus-5-5'],
     });
   });
-  test('codex with no selector: ◇ glyph, no extra args, model and effort null', () => {
+  test('codex with no selector: ◇ glyph, --no-daemon, default gpt-6.1-sol model, effort null', () => {
     expect(makeAgent('codex', 'jay')).toEqual({
-      handle: 'jay', kind: 'codex', glyph: '◇', model: null, effort: null, role: null, extraArgs: [],
+      handle: 'jay', kind: 'codex', glyph: '◇', model: 'gpt-6.1-sol', effort: null, role: null,
+      extraArgs: ['--no-daemon', '--model', 'gpt-6.1-sol'],
     });
+  });
+  // Every codex session runs off the shared daemon, whatever else was selected.
+  test('codex always passes --no-daemon, explicit model and effort included', () => {
+    expect(makeAgent('codex', 'jay:model=gpt-5.5,effort=high').extraArgs)
+      .toEqual(['--no-daemon', '--model', 'gpt-5.5', '-c', 'model_reasoning_effort=high']);
+    expect(makeAgent('claude', 'sly:model=sonnet').extraArgs).not.toContain('--no-daemon');
   });
 
   // The three CLIs differ in SHAPE, not just flag naming, so each kind gets its
@@ -24,25 +32,31 @@ describe('makeAgent', () => {
     });
   });
   test('codex effort= becomes a -c config override, not a flag', () => {
-    expect(makeAgent('codex', 'jay:model=gpt-5.6-sol,effort=high')).toEqual({
-      handle: 'jay', kind: 'codex', glyph: '◇', model: 'gpt-5.6-sol', effort: 'high', role: null,
-      extraArgs: ['--model', 'gpt-5.6-sol', '-c', 'model_reasoning_effort=high'],
+    expect(makeAgent('codex', 'jay:model=gpt-6.1-sol,effort=high')).toEqual({
+      handle: 'jay', kind: 'codex', glyph: '◇', model: 'gpt-6.1-sol', effort: 'high', role: null,
+      extraArgs: ['--no-daemon', '--model', 'gpt-6.1-sol', '-c', 'model_reasoning_effort=high'],
     });
   });
-  test('either key alone is enough; the other stays inherited', () => {
-    expect(makeAgent('claude', 'sly:effort=xhigh').extraArgs).toEqual(['--effort', 'xhigh']);
-    expect(makeAgent('claude', 'sly:effort=xhigh').model).toBeNull();
-    expect(makeAgent('codex', 'jay:model=gpt-5.6-sol').extraArgs).toEqual(['--model', 'gpt-5.6-sol']);
-    expect(makeAgent('codex', 'jay:model=gpt-5.6-sol').effort).toBeNull();
+  // An explicit model replaces the default; effort= alone keeps it.
+  test('either key alone is enough: effort alone keeps the default model, model alone inherits effort', () => {
+    expect(makeAgent('claude', 'sly:effort=xhigh').extraArgs)
+      .toEqual(['--model', 'claude-opus-5-5', '--effort', 'xhigh']);
+    expect(makeAgent('codex', 'jay:effort=high').extraArgs)
+      .toEqual(['--no-daemon', '--model', 'gpt-6.1-sol', '-c', 'model_reasoning_effort=high']);
+    expect(makeAgent('claude', 'sly:model=sonnet').extraArgs).toEqual(['--model', 'sonnet']);
+    expect(makeAgent('codex', 'jay:model=gpt-5.5').extraArgs).toEqual(['--no-daemon', '--model', 'gpt-5.5']);
+    expect(makeAgent('codex', 'jay:model=gpt-5.5').effort).toBeNull();
   });
   // `role=` decorates the TAB so a human can see which part a tab is playing.
   // It is label-only: it must never reach the agent's own CLI args, and it must
   // never become part of the handle, which stays the addressable identity.
   test('role= is a label-only key and does not reach the CLI args', () => {
-    const a = makeAgent('codex', 'jay:model=gpt-5.6-sol,role=impl');
+    const a = makeAgent('codex', 'jay:model=gpt-5.5,role=impl');
     expect(a.role).toBe('impl');
     expect(a.handle).toBe('jay');
-    expect(a.extraArgs).toEqual(['--model', 'gpt-5.6-sol']);
+    expect(a.extraArgs).toEqual(['--no-daemon', '--model', 'gpt-5.5']);
+    // role= alone is not a model choice, so the default model still applies
+    expect(makeAgent('claude', 'sly:role=arch').extraArgs).toEqual(['--model', 'claude-opus-5-5']);
   });
 
   test('an unsafe role is refused like any other selector value', () => {
@@ -282,16 +296,18 @@ describe('startAgent', () => {
 
   test('codex model/effort args ride after -- on the start call', () => {
     const { deps, calls } = runner([ok]);
-    startAgent(makeAgent('codex', 'jay:model=gpt-5.6-sol,effort=high'), 'wR:p2', '45000', deps);
+    startAgent(makeAgent('codex', 'jay:model=gpt-6.1-sol,effort=high'), 'wR:p2', '45000', deps);
     expect(calls[0]).toEqual(
       ['herdr', 'agent', 'start', 'jay', '--kind', 'codex', '--pane', 'wR:p2', '--timeout', '45000',
-        '--', '--model', 'gpt-5.6-sol', '-c', 'model_reasoning_effort=high']);
+        '--', '--no-daemon', '--model', 'gpt-6.1-sol', '-c', 'model_reasoning_effort=high']);
   });
 
-  test('a bare handle passes no -- vector at all', () => {
+  test('a bare handle passes only its default model after --', () => {
     const { deps, calls } = runner([ok]);
     startAgent(makeAgent('claude', 'sly'), 'wR:p2', '45000', deps);
-    expect(calls[0]).not.toContain('--');
+    expect(calls[0]).toEqual(
+      ['herdr', 'agent', 'start', 'sly', '--kind', 'claude', '--pane', 'wR:p2', '--timeout', '45000',
+        '--', '--model', 'claude-opus-5-5']);
   });
 });
 
@@ -299,15 +315,16 @@ describe('launchAgent', () => {
   // The old report set `model` to the FLAG name ("model":"codex"), which reads
   // like an answer while carrying nothing about Opus vs Sonnet. The kind is
   // reported as `kind`; model/effort report what was actually selected.
-  test('reports kind, and null model/effort when both are inherited', () => {
+  test('reports kind, the default model, and null effort when effort is inherited', () => {
     const { run, calls } = fakeRunner(dynMatchers());
     const out = launchAgent(makeAgent('codex', 'jay'), { workspace: 'wR', cwd: '/wt/x' }, { run });
     expect(out).toEqual({
-      handle: 'jay', kind: 'codex', model: null, effort: null, pane_id: 'wR:p2', tab: 'wR:t2',
+      handle: 'jay', kind: 'codex', model: 'gpt-6.1-sol', effort: null, pane_id: 'wR:p2', tab: 'wR:t2',
     });
     expect(calls).toEqual([
       ['herdr', 'tab', 'create', '--workspace', 'wR', '--cwd', '/wt/x', '--label', 'jay ◇', '--no-focus'],
-      ['herdr', 'agent', 'start', 'jay', '--kind', 'codex', '--pane', 'wR:p2', '--timeout', '45000'],
+      ['herdr', 'agent', 'start', 'jay', '--kind', 'codex', '--pane', 'wR:p2', '--timeout', '45000',
+        '--', '--no-daemon', '--model', 'gpt-6.1-sol'],
       ['herdr', 'agent', 'wait', 'jay', '--until', 'idle', '--timeout', '45000'],
     ]);
   });
@@ -350,7 +367,7 @@ describe('up', () => {
     expect(result).toEqual({
       worktree: { path: '/wt/x', workspace_id: 'wR' },
       agents: [{
-        handle: 'sly', kind: 'claude', model: null, effort: null, pane_id: 'wR:p2', tab: 'wR:t2',
+        handle: 'sly', kind: 'claude', model: 'claude-opus-5-5', effort: null, pane_id: 'wR:p2', tab: 'wR:t2',
       }],
     });
     expect(calls).toEqual([
@@ -361,7 +378,8 @@ describe('up', () => {
       ['herdr', 'worktree', 'create', '--branch', 'chore/x', '--base', 'origin/main', '--no-focus', '--json',
         '--workspace', 'wMain'],
       ['herdr', 'tab', 'create', '--workspace', 'wR', '--cwd', '/wt/x', '--label', 'sly ◆', '--no-focus'],
-      ['herdr', 'agent', 'start', 'sly', '--kind', 'claude', '--pane', 'wR:p2', '--timeout', '45000'],
+      ['herdr', 'agent', 'start', 'sly', '--kind', 'claude', '--pane', 'wR:p2', '--timeout', '45000',
+        '--', '--model', 'claude-opus-5-5'],
       ['herdr', 'agent', 'wait', 'sly', '--until', 'idle', '--timeout', '45000'],
       ['herdr', 'tab', 'close', 'wR:t1'], // the worktree's original root tab
     ]);
@@ -372,13 +390,14 @@ describe('up', () => {
     const result = up(['--branch', 'chore/x', '--claude', 'sly', '--codex', 'jay'], { run });
 
     expect(result.agents).toEqual([
-      { handle: 'sly', kind: 'claude', model: null, effort: null, pane_id: 'wR:p2', tab: 'wR:t2' },
-      { handle: 'jay', kind: 'codex', model: null, effort: null, pane_id: 'wR:p3', tab: 'wR:t3' },
+      { handle: 'sly', kind: 'claude', model: 'claude-opus-5-5', effort: null, pane_id: 'wR:p2', tab: 'wR:t2' },
+      { handle: 'jay', kind: 'codex', model: 'gpt-6.1-sol', effort: null, pane_id: 'wR:p3', tab: 'wR:t3' },
     ]);
     expect(calls).toContainEqual(
       ['herdr', 'tab', 'create', '--workspace', 'wR', '--cwd', '/wt/x', '--label', 'jay ◇', '--no-focus']);
     expect(calls).toContainEqual(
-      ['herdr', 'agent', 'start', 'jay', '--kind', 'codex', '--pane', 'wR:p3', '--timeout', '45000']);
+      ['herdr', 'agent', 'start', 'jay', '--kind', 'codex', '--pane', 'wR:p3', '--timeout', '45000',
+        '--', '--no-daemon', '--model', 'gpt-6.1-sol']);
     expect(calls[calls.length - 1]).toEqual(['herdr', 'tab', 'close', 'wR:t1']);
   });
 
@@ -421,10 +440,9 @@ describe('up', () => {
     expect(calls).toContainEqual(['git', 'fetch', 'origin', 'dev']);
   });
 
-  // The fan-out runbook's own named failure: `fanout` bases every partition
-  // worktree on `task/<id>`, a branch that exists only locally. An
+  // A worktree based on a branch that exists only locally (`task/<id>`): an
   // unconditional `git fetch origin task/<id>` dies on `couldn't find remote
-  // ref` and no partition worktree is ever created. The base names a remote or
+  // ref` and the worktree is never created. The base names a remote or
   // it does not, and only the first case has anything to fetch.
   const fetches = (calls) => calls.filter((c) => c[0] === 'git' && c[1] === 'fetch');
 

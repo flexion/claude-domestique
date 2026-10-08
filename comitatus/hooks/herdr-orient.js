@@ -8,11 +8,10 @@ const crypto = require('crypto');
 
 const PLUGIN_ROOT = path.resolve(__dirname, '..');
 const SKILL_DIR = path.join(PLUGIN_ROOT, 'skills', 'herdr');
-const FANOUT_SKILL_DIR = path.join(PLUGIN_ROOT, 'skills', 'fan-out');
 const HERD_JS = path.join(SKILL_DIR, 'scripts', 'herd.js');
 const EXCLUDE = new Set(['__tests__', 'node_modules']);
 
-function buildOrientation(herdJsPath, { codexPlugin, rolesDir } = {}) {
+function buildOrientation(herdJsPath, { codexPlugin } = {}) {
   return [
     '# herdr (comitatus)',
     '',
@@ -22,26 +21,13 @@ function buildOrientation(herdJsPath, { codexPlugin, rolesDir } = {}) {
     'Prefer native `herdr` verbs by handle: `herdr agent prompt|read|get|wait <handle>`.',
     'The herd.js helper adds the composite verbs (each is self-contained and',
     'runs herdr itself - no shell variables):',
-    '  status|members|wait|send|send-wait-read|agent|up',
+    '  status|members|send|seed|broadcast|sync|withdraw|agent|up',
     '',
     `    node ${herdJsPath} send jay "..." --reply`,
     '',
     'This path is STABLE across comitatus updates; allowlist it once with',
     '`/herd-setup` and always call it by this absolute path so the permission',
     'matcher can match it.',
-    // Only emitted when the copy is actually on disk. An orientation that named
-    // a roles directory nothing had written would send `role` at a missing file,
-    // which is the failure this line exists to prevent.
-    ...(rolesDir ? [
-      '',
-      'Fan-out role files (architect, implementer, reviewer, ...) are provisioned',
-      'to the same stable location:',
-      '',
-      `    ${rolesDir}`,
-      '',
-      'Pass that absolute path as `--roles-dir` to `role` when the repository does',
-      'not carry a roles directory of its own.',
-    ] : []),
     '',
     codexPlugin === true
       ? 'comitatus is installed as a Codex plugin, so codex agents in this herd load the same `herdr` skill from their own plugin install.'
@@ -172,11 +158,15 @@ function provisionStable({ skillDir, home, name }) {
 
 function stableHome(homedir) { return path.join(homedir, '.claude', 'comitatus'); }
 function stableHerdJs(home) { return path.join(home, 'skills', 'herdr', 'scripts', 'herd.js'); }
-function stableRolesDir(home) { return path.join(home, 'skills', 'fan-out', 'roles'); }
+// fan-out (0.13-0.14) was a second skill provisioned beside herdr, and 1.0.0
+// removed it. A leftover tree there is a stale copy nothing names any more.
+function removeRetiredFanout(home) {
+  fs.rmSync(path.join(home, 'skills', 'fan-out'), { recursive: true, force: true });
+}
 
 function processSessionStart({
   env, skillDir, herdJsPath, codexHome, stableHome: stableHomeDir,
-  fanoutSkillDir, directCodex = false,
+  directCodex = false,
 }) {
   if (env.HERDR_ENV !== '1') return null;
 
@@ -194,33 +184,22 @@ function processSessionStart({
   // fails. Skipped when we are the Codex-installed copy: there is no Claude
   // permission matcher to keep stable in that case.
   let helperPath = herdJsPath;
-  let rolesDir;
   if (stableHomeDir && !directCodex) {
     try {
       provisionStable({ skillDir, home: stableHomeDir });
       helperPath = stableHerdJs(stableHomeDir);
-    } catch { /* keep fallback */ }
-
-    // Provisioned separately from the herdr skill, and separately caught: the
-    // fan-out roles failing to copy must not cost herdr its stable helper path.
-    // The packaged roles are the only copy a deployed user has when the
-    // repository carries no roles of its own, and `role` resolves --roles-dir
-    // against the recipient's cwd - so without a stable absolute path to name,
-    // the deployed fan-out runbook has no role files it can reach.
-    if (fanoutSkillDir) {
+      // Only once the herdr copy has landed.
       try {
-        provisionStable({ skillDir: fanoutSkillDir, home: stableHomeDir, name: 'fan-out' });
-        const provisioned = stableRolesDir(stableHomeDir);
-        if (fs.existsSync(provisioned)) rolesDir = provisioned;
-      } catch { /* orientation omits the roles line */ }
-    }
+        removeRetiredFanout(stableHomeDir);
+      } catch { /* a stale copy is harmless; nothing names it */ }
+    } catch { /* keep fallback */ }
   }
 
   return {
     systemMessage: `📍 Comitatus: herdr${codexPlugin === undefined ? '' : codexPlugin ? ' (codex: installed)' : ' (codex: not installed)'}`,
     hookSpecificOutput: {
       hookEventName: 'SessionStart',
-      additionalContext: buildOrientation(helperPath, { codexPlugin, rolesDir }),
+      additionalContext: buildOrientation(helperPath, { codexPlugin }),
     },
   };
 }
@@ -248,7 +227,6 @@ async function main() {
     herdJsPath: HERD_JS,
     codexHome,
     stableHome: stableHome(os.homedir()),
-    fanoutSkillDir: FANOUT_SKILL_DIR,
     directCodex: isCodexInstall({ pluginRoot: PLUGIN_ROOT, codexHome }),
   });
   if (result) console.log(JSON.stringify(result));
@@ -267,11 +245,9 @@ module.exports = {
   resolveCodexHome,
   stableHome,
   stableHerdJs,
-  stableRolesDir,
   processSessionStart,
   EXCLUDE,
   PLUGIN_ROOT,
   SKILL_DIR,
-  FANOUT_SKILL_DIR,
   HERD_JS,
 };

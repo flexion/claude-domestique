@@ -1,5 +1,7 @@
 # comitatus Retro Fixes Implementation Plan
 
+> Historical snapshot of the versions and decisions named below. Current commands, launch defaults, and herd conventions are documented in the [comitatus README](../../../comitatus/README.md).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Fix the comitatus-ownable bug and behavior issues surfaced by a live herdr-session retro: the broken `herd.js` helper-path recipe, plus three documentation clarifications.

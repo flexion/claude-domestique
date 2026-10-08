@@ -1,5 +1,7 @@
 # fan-out skill review manifest
 
+> Historical snapshot of the versions and decisions named below. Current commands, launch defaults, and herd conventions are documented in the [comitatus README](../../comitatus/README.md).
+
 ## review scope
 
 - Base: `7a1deeb` (after the Modus-purpose refactor merge)
