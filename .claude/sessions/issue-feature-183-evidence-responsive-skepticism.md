@@ -40,6 +40,10 @@ For the operator's token-efficiency follow-up relayed by kit, compare the curren
 
 - 2026-10-08: Operator explicitly authorized committing local changes and rebasing on origin/main. Fetched origin; #181 and #182 are merged. Full npm test on E, metadata validation, and diff-check passed before the local commit. Session remains in progress with AC2/AC5 gaps.
 
+- 2026-10-08: Committed local changes and rebased onto origin/main at a604370, preserving #181 active-objective and #182 research/proportionate-deliberation guidance. Resolved assessment/development conflicts by ownership and retained main's equivalent brief output guidance. Reconciled the patch bump to 0.7.2. Rebase treated the #183 title as a comment; a reword-only rebase restored the title (faef431) without changing source. All JavaScript suites pass after rerunning Vernaculus with socket access for sandbox EPERM; metadata and strict Claude manifests pass. All four fresh combined-source probes fired the expected skills; Codex assess also loaded skeptic. Ned is running a bounded combined-guidance reassessment.
+
+- 2026-10-08: Combined-guidance comparison F completed and independently reviewed: approving/neutral/skeptical required changes still vary, and the correctly scoped registry lookup still asserts an unobserved self-cause. Flawed control and capability reading pass; AC2 remains unproven and AC5 partial. Isolated Codex 0.147.0 install verified both Mantra manifests at 0.7.2. Saving the final rebase/reassessment evidence in a documentation-only follow-up commit; no push, PR, or issue closure.
+
 ## Files Changed
 
 - Session and branch metadata initialized.
@@ -51,4 +55,4 @@ For the operator's token-efficiency follow-up relayed by kit, compare the curren
 
 ## Next Steps
 
-AC2 remains not demonstrated and AC5 partly supported; the review records the evidence and limitations for deciding whether to expand the evaluation or revise the guidance further. The branch stays in progress and issue #183 stays open. Wait for #181 and #182 to merge to main, then rebase this branch and reassess #183 against the combined guidance. Preserve their sections, reconcile the plugin version with merged main, and rerun affected validation and behavioral comparisons, including the unresolved AC2/AC5 cases.
+AC2 remains not demonstrated and AC5 partly supported; the review records the evidence and limitations for deciding whether to expand the evaluation or revise the guidance further. The branch stays in progress and issue #183 stays open. Rebase onto origin/main is complete with #181/#182 guidance preserved and Mantra reconciled to 0.7.2. Fresh combined-guidance validation passed; Ned completed the bounded combined-guidance reassessment: AC2 remains unproven and AC5 partial. Decide further work against the documented findings; do not push or open a PR.
