@@ -45,6 +45,14 @@ by the host according to its own conventions.
 On session start the hook also returns `📍 Mantra: behavior rules loaded`.
 It returns no status message on individual prompts.
 
+## Resource pilot
+
+The [resource pilot](context/resources.md) is installed separately through explicit
+settings hooks. `collect` writes coverage-labelled reports without feedback;
+experimental Claude-only `display` also shows token categories and elapsed wall
+observations during work. Resource hooks are absent from ordinary plugin
+installation. Neither mode changes task requirements or permissions.
+
 ## Skills
 
 The [canonical skill files](skills/) are shared across hosts. Claude Code exposes

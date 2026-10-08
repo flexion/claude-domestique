@@ -1,0 +1,1 @@
+Our team is split on how to handle failures when we process incoming partner webhooks: retry the downstream call inside the HTTP handler, or accept the webhook and retry from a durable queue. Given the constraints in `docs/webhooks.md`, explain the tradeoffs and recommend one approach. We want an explanation, not code.

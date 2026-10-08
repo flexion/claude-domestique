@@ -1,0 +1,34 @@
+{
+  "args": [
+    "--model",
+    "claude-opus-5",
+    "--effort",
+    "medium",
+    "--setting-sources",
+    "",
+    "--settings",
+    "/tmp/resource-visibility-185-2xLmYw/settings.json",
+    "--strict-mcp-config",
+    "--disable-slash-commands",
+    "--tools",
+    "Bash,Read,Write,Edit,Glob,Grep",
+    "--permission-mode",
+    "bypassPermissions",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--include-hook-events",
+    "--session-id",
+    "12e96ffb-3ea8-449c-89ab-9b96128e5898",
+    "-p",
+    "Add `purgeExpiredExports({ store, now })` in `src/exports/purge.js`. It should delete customer exports older than our retention period, using the store interface in `src/exports/store.js`, and come with tests (`npm test`).\n"
+  ],
+  "env": {
+    "MANTRA_RESOURCES": "display",
+    "MANTRA_RESOURCE_DIR": "/private/tmp/resource-visibility-185-2xLmYw/evidence/933f137e/reports"
+  },
+  "cwd": "/tmp/resource-visibility-185-2xLmYw/933f137e",
+  "started": "2026-10-08T13:06:08.698Z",
+  "finished": "2026-10-08T13:07:06.603Z",
+  "exit_code": 0
+}

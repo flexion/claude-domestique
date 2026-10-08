@@ -34,7 +34,7 @@ For Codex, put the fragment in a scratch workspace's `.codex/hooks.json`, replac
 Quote script paths containing spaces inside the JSON command string.
 
 Unset `MANTRA_RESOURCES` or set it to `disabled` to stop all collection writes.
-Other values, including `display`, do not collect in this pilot. Remove these
+Unrecognized values do not collect. Remove these
 settings entries to remove the launch cost too. No resource hook runs for ordinary
 plugin users. Existing behavior rules remain independent.
 
@@ -48,7 +48,30 @@ The settings commands supply `--host` themselves. `readSnapshot` checks both hos
 run identity and returns null for missing/invalid files. It is a saved observation,
 not a new measurement; consumers must inspect its observation time. A display
 experiment can wrap `collect` and explicitly decide whether to expose its return
-value; the pilot's command always writes `{}` to stdout.
+value. In `collect` mode the command always writes `{}` to stdout.
+
+## Experimental Claude display
+
+With the same explicit Claude hook settings, set `MANTRA_RESOURCES=display` to
+collect and show observations. This mode is experimental and Claude-only; Codex
+display mode does neither collection nor feedback. `collect(input, env)` itself
+remains passive and accepts only `collect`; the CLI's `processInput(input, env)`
+maps display to passive collection before deciding whether to emit context.
+
+An initial SessionStart injects fixed guidance; resumed SessionStart does not
+repeat it. UserPromptSubmit, PostToolUse and PostToolUseFailure display the current
+`collect` return, rather than an older disk snapshot. Display shows the separate
+Claude token categories, per-field coverage, observation time and elapsed wall
+including waits. Other metrics remain in the report with their full semantics.
+The report's `truncated` flag appears as "incomplete acquisition" because it also
+covers a missing early transcript or malformed input, not only size truncation.
+No prompt or tool-completion event means no refreshed observation.
+
+Consumption does not change requirements or permissions. Ask when necessary and
+spend what the task requires. Avoid routine commentary about counters. Display
+contains no success score, countdown, question quota or automatic stop. Unknown
+values remain unknown. The guidance and added observation text have their own
+input cost; collection alone establishes no behavioral benefit.
 
 Snapshots and journals live in the configured local scratch directory. Their stem
 is SHA256 of `JSON.stringify([host, session_id])`; extensions are `.json` and

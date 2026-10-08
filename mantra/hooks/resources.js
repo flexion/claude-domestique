@@ -1,10 +1,11 @@
 #!/usr/bin/env node
-/** Opt-in passive collection. stdout never contains measurements or decisions. */
+/** Opt-in collection, with explicit experimental Claude display mode. */
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { performance } = require('perf_hooks');
 const { normalize, summarize } = require('../lib/resources');
+const { renderObservation, DISPLAY_GUIDANCE } = require('../lib/resource-display');
 
 const MAX_BYTES = 2 * 1024 * 1024;
 const MAX_INPUT_BYTES = 1024 * 1024;
@@ -93,6 +94,18 @@ function readSnapshot(host, runId, env = process.env) {
   } catch { return null; }
 }
 
+function processInput(input, env = process.env) {
+  const display = env.MANTRA_RESOURCES === 'display';
+  if (display && env.MANTRA_RESOURCE_HOST !== 'claude') return {};
+  const report = collect(input, display ? { ...env, MANTRA_RESOURCES: 'collect' } : env);
+  if (!display || !report) return {};
+  const event = input.hook_event_name;
+  let context = '';
+  if (event === 'SessionStart' && input.source !== 'resume') context = DISPLAY_GUIDANCE;
+  if (['UserPromptSubmit', 'PostToolUse', 'PostToolUseFailure'].includes(event)) context = renderObservation(report);
+  return context ? { hookSpecificOutput: { hookEventName: event, additionalContext: context } } : {};
+}
+
 if (require.main === module) {
   let input = '';
   let exceeded = false;
@@ -107,10 +120,11 @@ if (require.main === module) {
   process.stdin.on('end', () => {
     const hostIndex = process.argv.indexOf('--host');
     const env = hostIndex >= 0 ? { ...process.env, MANTRA_RESOURCE_HOST: process.argv[hostIndex + 1] } : process.env;
-    try { if (!exceeded) collect(JSON.parse(input), env); }
+    let output = {};
+    try { if (!exceeded) output = processInput(JSON.parse(input), env); }
     catch (error) { process.stderr.write(`mantra: resource collection unavailable: ${error.message}\n`); }
-    process.stdout.write('{}\n');
+    process.stdout.write(`${JSON.stringify(output)}\n`);
   });
 }
 
-module.exports = { collect, readSnapshot, MAX_BYTES };
+module.exports = { collect, readSnapshot, processInput, MAX_BYTES };

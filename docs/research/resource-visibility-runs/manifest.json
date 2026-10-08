@@ -1,0 +1,377 @@
+{
+  "prepared_at": "2026-10-08T12:38:38.314Z",
+  "rows": [
+    {
+      "label": "0ac9ad64",
+      "task": "factual-readonly",
+      "condition": "collect",
+      "workspace": "/tmp/resource-visibility-185-2xLmYw/0ac9ad64",
+      "prompt_hash": "ea21c5f60524116e5fa8bd705742d4929ad6ad52b3de43cf68c8a0157ad7804a",
+      "fixture_files": [
+        [
+          "config/production.json",
+          "280050206f79490986323d540f7d93525a6185824238f345f36d1b84ee4b20cb"
+        ],
+        [
+          "config/staging.json",
+          "b44ed9cef0bf492f543cf2a8f2dd8c029f386c0d0008ba458f3cbe30fae84a70"
+        ],
+        [
+          "package.json",
+          "cb585253dfdf6e42ffc96b1cd9b8d1ae3fc09229a2bf44673e0370f7c921b965"
+        ],
+        [
+          "README.md",
+          "30440b99f02e0d4f569c65cc94c4036fc1d6e606e78603f29225d8e33dc602c9"
+        ],
+        [
+          "src/config/defaults.js",
+          "2f65e557ed521df6d3c5b93605af5193410aafcf0d90fcd1ae684f5da71c9824"
+        ],
+        [
+          "src/config/limits.js",
+          "44fc4eb0bae0cc314c917f76ffa9be69a9bc7d0624e2ae901f59377903db79d3"
+        ],
+        [
+          "src/config/load.js",
+          "a351951b354bfe075741bbd883e4c0ed6a6a884131d936a313aa235aab182168"
+        ],
+        [
+          "src/jobs/export.js",
+          "eb18cdef949de5802e58e43a62ed6c39781e7d769ddd2416f7d5685aff0a3e1c"
+        ],
+        [
+          "src/jobs/import.js",
+          "9f6ac8ad400db9dba8414dc477a9a765f09b3732136ff0001d5d282429a6f523"
+        ]
+      ],
+      "session_id": "986f953a-9bd5-46c9-ab4e-bc1e336def6d"
+    },
+    {
+      "label": "1e290746",
+      "task": "factual-readonly",
+      "condition": "display",
+      "workspace": "/tmp/resource-visibility-185-2xLmYw/1e290746",
+      "prompt_hash": "ea21c5f60524116e5fa8bd705742d4929ad6ad52b3de43cf68c8a0157ad7804a",
+      "fixture_files": [
+        [
+          "config/production.json",
+          "280050206f79490986323d540f7d93525a6185824238f345f36d1b84ee4b20cb"
+        ],
+        [
+          "config/staging.json",
+          "b44ed9cef0bf492f543cf2a8f2dd8c029f386c0d0008ba458f3cbe30fae84a70"
+        ],
+        [
+          "package.json",
+          "cb585253dfdf6e42ffc96b1cd9b8d1ae3fc09229a2bf44673e0370f7c921b965"
+        ],
+        [
+          "README.md",
+          "30440b99f02e0d4f569c65cc94c4036fc1d6e606e78603f29225d8e33dc602c9"
+        ],
+        [
+          "src/config/defaults.js",
+          "2f65e557ed521df6d3c5b93605af5193410aafcf0d90fcd1ae684f5da71c9824"
+        ],
+        [
+          "src/config/limits.js",
+          "44fc4eb0bae0cc314c917f76ffa9be69a9bc7d0624e2ae901f59377903db79d3"
+        ],
+        [
+          "src/config/load.js",
+          "a351951b354bfe075741bbd883e4c0ed6a6a884131d936a313aa235aab182168"
+        ],
+        [
+          "src/jobs/export.js",
+          "eb18cdef949de5802e58e43a62ed6c39781e7d769ddd2416f7d5685aff0a3e1c"
+        ],
+        [
+          "src/jobs/import.js",
+          "9f6ac8ad400db9dba8414dc477a9a765f09b3732136ff0001d5d282429a6f523"
+        ]
+      ],
+      "session_id": "c1e89649-a899-4d57-ad9e-586eee2bef71"
+    },
+    {
+      "label": "413291eb",
+      "task": "code-correction",
+      "condition": "display",
+      "workspace": "/tmp/resource-visibility-185-2xLmYw/413291eb",
+      "prompt_hash": "2aff5e3f1bd1bdcf3cd24bd1e2a1cf93d351ac333c16bd4636662a9c59c72f79",
+      "fixture_files": [
+        [
+          "package.json",
+          "5deb065dd13a9807688f643793c9e0e3782bda22bdafb01bd3596ca1f5caa8fe"
+        ],
+        [
+          "src/paginate.js",
+          "578afc8f77841e02b74be890037f6b2ab5e01ed29b6d1e8a80e9902242b97714"
+        ],
+        [
+          "src/summary.js",
+          "ad9d083dba03ed2a4c5608b0e30efcc1de6ea7d9b4b739e458587b6be56bbcdd"
+        ],
+        [
+          "test/paginate.js",
+          "cff5b4fde438e72e7637423eb9c08696446acd11ba488edfa6d921b77d88af86"
+        ],
+        [
+          "test/summary.js",
+          "fc510e407a403504857e9f6d47fd9589d4d2fc11bbdca244c9be3ad88827854b"
+        ]
+      ],
+      "session_id": "1b6c8a20-cfbd-420c-80a5-d7a020fbcdcf"
+    },
+    {
+      "label": "e6adaf66",
+      "task": "code-correction",
+      "condition": "collect",
+      "workspace": "/tmp/resource-visibility-185-2xLmYw/e6adaf66",
+      "prompt_hash": "2aff5e3f1bd1bdcf3cd24bd1e2a1cf93d351ac333c16bd4636662a9c59c72f79",
+      "fixture_files": [
+        [
+          "package.json",
+          "5deb065dd13a9807688f643793c9e0e3782bda22bdafb01bd3596ca1f5caa8fe"
+        ],
+        [
+          "src/paginate.js",
+          "578afc8f77841e02b74be890037f6b2ab5e01ed29b6d1e8a80e9902242b97714"
+        ],
+        [
+          "src/summary.js",
+          "ad9d083dba03ed2a4c5608b0e30efcc1de6ea7d9b4b739e458587b6be56bbcdd"
+        ],
+        [
+          "test/paginate.js",
+          "cff5b4fde438e72e7637423eb9c08696446acd11ba488edfa6d921b77d88af86"
+        ],
+        [
+          "test/summary.js",
+          "fc510e407a403504857e9f6d47fd9589d4d2fc11bbdca244c9be3ad88827854b"
+        ]
+      ],
+      "session_id": "3165debf-9485-497d-9814-4de937abd014"
+    },
+    {
+      "label": "72a2ea15",
+      "task": "missing-info",
+      "condition": "collect",
+      "workspace": "/tmp/resource-visibility-185-2xLmYw/72a2ea15",
+      "prompt_hash": "1fd1bb2735bb3c6d09c92383733539b27bf04b7634b24194c8f4752c67c7e8f6",
+      "fixture_files": [
+        [
+          "config/retention.js",
+          "a366c9f39ad8d083bc302ed9a4d5b401d1c7588bb1be6ac928ecb787b0c5d390"
+        ],
+        [
+          "docs/retention.md",
+          "565434fbbe89db45fff2c4ed9742f1b4b9a382e1cdd081806eda0a7a42030138"
+        ],
+        [
+          "package.json",
+          "a6c885f920f2d4467bb968821feaf7d18776fe0670b37cc0adfa7d5d1c3c15c1"
+        ],
+        [
+          "src/exports/store.js",
+          "ad3093500f29e707edf0f3c07a2cbd170e89d8910dc906a6493f133e674093fa"
+        ],
+        [
+          "test/store.js",
+          "4e784433887ab1722df018d7c62610937f6f32d756e1e7bc275151af85f4072d"
+        ]
+      ],
+      "session_id": "ca0d8e3b-7b36-4513-8ae8-30f49ec890f0"
+    },
+    {
+      "label": "933f137e",
+      "task": "missing-info",
+      "condition": "display",
+      "workspace": "/tmp/resource-visibility-185-2xLmYw/933f137e",
+      "prompt_hash": "1fd1bb2735bb3c6d09c92383733539b27bf04b7634b24194c8f4752c67c7e8f6",
+      "fixture_files": [
+        [
+          "config/retention.js",
+          "a366c9f39ad8d083bc302ed9a4d5b401d1c7588bb1be6ac928ecb787b0c5d390"
+        ],
+        [
+          "docs/retention.md",
+          "565434fbbe89db45fff2c4ed9742f1b4b9a382e1cdd081806eda0a7a42030138"
+        ],
+        [
+          "package.json",
+          "a6c885f920f2d4467bb968821feaf7d18776fe0670b37cc0adfa7d5d1c3c15c1"
+        ],
+        [
+          "src/exports/store.js",
+          "ad3093500f29e707edf0f3c07a2cbd170e89d8910dc906a6493f133e674093fa"
+        ],
+        [
+          "test/store.js",
+          "4e784433887ab1722df018d7c62610937f6f32d756e1e7bc275151af85f4072d"
+        ]
+      ],
+      "session_id": "12e96ffb-3ea8-449c-89ab-9b96128e5898"
+    },
+    {
+      "label": "325cd079",
+      "task": "conceptual",
+      "condition": "display",
+      "workspace": "/tmp/resource-visibility-185-2xLmYw/325cd079",
+      "prompt_hash": "ddf18b50e6dbc0e0f77a6c2a6cb8e79dd1475635c39b995b4f33c6ccfffc1976",
+      "fixture_files": [
+        [
+          "docs/webhooks.md",
+          "83306b9c2bd25a33ed80be0f63faf62d0c7ef46b022791430f7dcab381aa1f22"
+        ]
+      ],
+      "session_id": "287a36cb-f89b-4109-b5b7-8e28ef8564e0"
+    },
+    {
+      "label": "7cfa6757",
+      "task": "conceptual",
+      "condition": "collect",
+      "workspace": "/tmp/resource-visibility-185-2xLmYw/7cfa6757",
+      "prompt_hash": "ddf18b50e6dbc0e0f77a6c2a6cb8e79dd1475635c39b995b4f33c6ccfffc1976",
+      "fixture_files": [
+        [
+          "docs/webhooks.md",
+          "83306b9c2bd25a33ed80be0f63faf62d0c7ef46b022791430f7dcab381aa1f22"
+        ]
+      ],
+      "session_id": "50abccf9-ba0c-42f0-b090-52fb57e6b191"
+    }
+  ],
+  "launch": {
+    "host": "claude",
+    "version": "2.1.294",
+    "model": "claude-opus-5",
+    "effort": "medium",
+    "permission_mode": "bypassPermissions",
+    "tools": [
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "setting_sources": "",
+    "strict_mcp_config": true,
+    "disable_slash_commands": true,
+    "source_revision": "25eb46c61337c7e0b85973de2c26f53904d6b165",
+    "settings": "/tmp/resource-visibility-185-2xLmYw/settings.json",
+    "execution_context": "elevated outside Codex sandbox, system credential store",
+    "residual_context": "Claude builtin plugins and managed policy remain; no user CLAUDE.md per verifier; empty setting sources, no MCP, no custom skills, fresh fixture workspaces"
+  },
+  "settings": {
+    "hooks": {
+      "SessionStart": [
+        {
+          "hooks": [
+            {
+              "type": "command",
+              "command": "node \"/tmp/resource-visibility-185-2xLmYw/source/mantra/hooks/resources.js\" --host claude",
+              "timeout": 3
+            }
+          ]
+        }
+      ],
+      "UserPromptSubmit": [
+        {
+          "hooks": [
+            {
+              "type": "command",
+              "command": "node \"/tmp/resource-visibility-185-2xLmYw/source/mantra/hooks/resources.js\" --host claude",
+              "timeout": 3
+            }
+          ]
+        }
+      ],
+      "PreToolUse": [
+        {
+          "hooks": [
+            {
+              "type": "command",
+              "command": "node \"/tmp/resource-visibility-185-2xLmYw/source/mantra/hooks/resources.js\" --host claude",
+              "timeout": 3
+            }
+          ]
+        }
+      ],
+      "PostToolUse": [
+        {
+          "hooks": [
+            {
+              "type": "command",
+              "command": "node \"/tmp/resource-visibility-185-2xLmYw/source/mantra/hooks/resources.js\" --host claude",
+              "timeout": 3
+            }
+          ]
+        }
+      ],
+      "PostToolUseFailure": [
+        {
+          "hooks": [
+            {
+              "type": "command",
+              "command": "node \"/tmp/resource-visibility-185-2xLmYw/source/mantra/hooks/resources.js\" --host claude",
+              "timeout": 3
+            }
+          ]
+        }
+      ],
+      "Notification": [
+        {
+          "matcher": "permission_prompt",
+          "hooks": [
+            {
+              "type": "command",
+              "command": "node \"/tmp/resource-visibility-185-2xLmYw/source/mantra/hooks/resources.js\" --host claude",
+              "timeout": 3
+            }
+          ]
+        }
+      ],
+      "Stop": [
+        {
+          "hooks": [
+            {
+              "type": "command",
+              "command": "node \"/tmp/resource-visibility-185-2xLmYw/source/mantra/hooks/resources.js\" --host claude",
+              "timeout": 3
+            }
+          ]
+        }
+      ],
+      "SessionEnd": [
+        {
+          "hooks": [
+            {
+              "type": "command",
+              "command": "node \"/tmp/resource-visibility-185-2xLmYw/source/mantra/hooks/resources.js\" --host claude",
+              "timeout": 3
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "collector_archive_sha256": "f157f0051f14dbf621dc12eeff1224cb2d68a2a2b88700613f08dec0e34d9f54",
+  "plugin_version": "0.8.0",
+  "implementation_files": {
+    "mantra/hooks/resources.js": "1738eb5dfac277661b35c2cd666cffaf26440a6c3ba25ab6e7b2a6643c8655d9",
+    "mantra/lib/resources.js": "7a439c04ba88430d192920aa8e76166271233bcdb999ff285c9d1803b9036eee",
+    "mantra/lib/resource-display.js": "2ceeb0523f5f6117025263474208740df60f7d2446906d32492d582b92068e28"
+  },
+  "scripted_user_response_hash": "16079ac8e8db1f6c4d9bbfbc54fc2124616638039fe5d138fd23a4d1793455fa",
+  "frozen_at": "2026-10-08T12:55:45.148Z",
+  "failed_attempts": [
+    {
+      "label": "0ac9ad64",
+      "session_id": "92523fc9-86f3-45cf-8e7f-3b32a3632cc9",
+      "reason": "Not logged in; sandbox launch before any model usage",
+      "path": "failed-attempts/0ac9ad64"
+    }
+  ]
+}

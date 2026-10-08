@@ -1,0 +1,16 @@
+{"host":"claude","session_id":"50abccf9-ba0c-42f0-b090-52fb57e6b191","at":1791464890714,"kind":"hook","event":"SessionStart","id":null,"tool":null,"notification":null,"duration_ms":null}
+{"host":"claude","session_id":"50abccf9-ba0c-42f0-b090-52fb57e6b191","kind":"overhead","duration_ms":1.6141659999999973}
+{"host":"claude","session_id":"50abccf9-ba0c-42f0-b090-52fb57e6b191","at":1791464890834,"kind":"hook","event":"UserPromptSubmit","id":null,"tool":null,"notification":null,"duration_ms":null}
+{"host":"claude","session_id":"50abccf9-ba0c-42f0-b090-52fb57e6b191","kind":"overhead","duration_ms":1.8922500000000007}
+{"host":"claude","session_id":"50abccf9-ba0c-42f0-b090-52fb57e6b191","at":1791464893113,"kind":"hook","event":"PreToolUse","id":"toolu_01XkXEw5cBttakQGuyfyc6sX","tool":null,"notification":null,"duration_ms":null}
+{"host":"claude","session_id":"50abccf9-ba0c-42f0-b090-52fb57e6b191","kind":"overhead","duration_ms":2.3023750000000014}
+{"host":"claude","session_id":"50abccf9-ba0c-42f0-b090-52fb57e6b191","at":1791464895127,"kind":"hook","event":"PostToolUse","id":"toolu_01XkXEw5cBttakQGuyfyc6sX","tool":null,"notification":null,"duration_ms":1928}
+{"host":"claude","session_id":"50abccf9-ba0c-42f0-b090-52fb57e6b191","kind":"overhead","duration_ms":2.2402499999999996}
+{"host":"claude","session_id":"50abccf9-ba0c-42f0-b090-52fb57e6b191","at":1791464896891,"kind":"hook","event":"PreToolUse","id":"toolu_01KaBw6EoeViEaLaJW4b7ANP","tool":null,"notification":null,"duration_ms":null}
+{"host":"claude","session_id":"50abccf9-ba0c-42f0-b090-52fb57e6b191","kind":"overhead","duration_ms":2.484167000000003}
+{"host":"claude","session_id":"50abccf9-ba0c-42f0-b090-52fb57e6b191","at":1791464897043,"kind":"hook","event":"PostToolUse","id":"toolu_01KaBw6EoeViEaLaJW4b7ANP","tool":null,"notification":null,"duration_ms":68}
+{"host":"claude","session_id":"50abccf9-ba0c-42f0-b090-52fb57e6b191","kind":"overhead","duration_ms":2.5594579999999993}
+{"host":"claude","session_id":"50abccf9-ba0c-42f0-b090-52fb57e6b191","at":1791464941787,"kind":"hook","event":"Stop","id":null,"tool":null,"notification":null,"duration_ms":null}
+{"host":"claude","session_id":"50abccf9-ba0c-42f0-b090-52fb57e6b191","kind":"overhead","duration_ms":2.62125}
+{"host":"claude","session_id":"50abccf9-ba0c-42f0-b090-52fb57e6b191","at":1791464942091,"kind":"hook","event":"SessionEnd","id":null,"tool":null,"notification":null,"duration_ms":null}
+{"host":"claude","session_id":"50abccf9-ba0c-42f0-b090-52fb57e6b191","kind":"overhead","duration_ms":2.9145000000000003}

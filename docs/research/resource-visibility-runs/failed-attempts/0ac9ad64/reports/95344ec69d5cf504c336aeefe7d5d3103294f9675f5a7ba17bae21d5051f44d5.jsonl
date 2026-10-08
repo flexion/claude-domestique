@@ -1,0 +1,4 @@
+{"host":"claude","session_id":"92523fc9-86f3-45cf-8e7f-3b32a3632cc9","at":1791464065966,"kind":"hook","event":"UserPromptSubmit","id":null,"tool":null,"notification":null,"duration_ms":null}
+{"host":"claude","session_id":"92523fc9-86f3-45cf-8e7f-3b32a3632cc9","kind":"overhead","duration_ms":1.6370419999999992}
+{"host":"claude","session_id":"92523fc9-86f3-45cf-8e7f-3b32a3632cc9","at":1791464066120,"kind":"hook","event":"SessionEnd","id":null,"tool":null,"notification":null,"duration_ms":null}
+{"host":"claude","session_id":"92523fc9-86f3-45cf-8e7f-3b32a3632cc9","kind":"overhead","duration_ms":1.673207999999999}

@@ -1,0 +1,1 @@
+Add `purgeExpiredExports({ store, now })` in `src/exports/purge.js`. It should delete customer exports older than our retention period, using the store interface in `src/exports/store.js`, and come with tests (`npm test`).

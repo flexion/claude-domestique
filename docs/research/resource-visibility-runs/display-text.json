@@ -1,0 +1,225 @@
+{
+  "reader": "Evaluator checking actual intervention freshness and injection overhead; character/byte counts are not token counts.",
+  "injections": [
+    {
+      "run": "1e290746",
+      "stage": "start",
+      "event": "SessionStart",
+      "outcome": "success",
+      "text": "Resource observations do not measure thinking time, human attention, usefulness, or billing. They do not change requirements or permissions. Ask when necessary and spend what the task requires. Avoid routine commentary about counters.",
+      "characters": 234,
+      "utf8_bytes": 234,
+      "observed_at": null
+    },
+    {
+      "run": "1e290746",
+      "stage": "start",
+      "event": "UserPromptSubmit",
+      "outcome": "success",
+      "text": "Resources (partial; incomplete acquisition) @2026-10-08T12:57:14.353Z: tokens input=unknown output=unknown cache-read=unknown cache-create=unknown; wall=186 ms (includes waits)",
+      "characters": 176,
+      "utf8_bytes": 176,
+      "observed_at": "2026-10-08T12:57:14.353Z:"
+    },
+    {
+      "run": "1e290746",
+      "stage": "start",
+      "event": "PostToolUse",
+      "outcome": "success",
+      "text": "Resources (partial) @2026-10-08T12:57:27.526Z: tokens input=2 output=130 cache-read=4650 cache-create=3599; wall=13359 ms (includes waits)",
+      "characters": 138,
+      "utf8_bytes": 138,
+      "observed_at": "2026-10-08T12:57:27.526Z:"
+    },
+    {
+      "run": "1e290746",
+      "stage": "start",
+      "event": "PostToolUse",
+      "outcome": "success",
+      "text": "Resources (partial) @2026-10-08T12:57:29.898Z: tokens input=4 output=292 cache-read=12899 cache-create=4141; wall=15731 ms (includes waits)",
+      "characters": 139,
+      "utf8_bytes": 139,
+      "observed_at": "2026-10-08T12:57:29.898Z:"
+    },
+    {
+      "run": "1e290746",
+      "stage": "start",
+      "event": "PostToolUse",
+      "outcome": "success",
+      "text": "Resources (partial) @2026-10-08T12:57:33.875Z: tokens input=6 output=506 cache-read=21690 cache-create=6110; wall=19708 ms (includes waits)",
+      "characters": 139,
+      "utf8_bytes": 139,
+      "observed_at": "2026-10-08T12:57:33.875Z:"
+    },
+    {
+      "run": "413291eb",
+      "stage": "start",
+      "event": "SessionStart",
+      "outcome": "success",
+      "text": "Resource observations do not measure thinking time, human attention, usefulness, or billing. They do not change requirements or permissions. Ask when necessary and spend what the task requires. Avoid routine commentary about counters.",
+      "characters": 234,
+      "utf8_bytes": 234,
+      "observed_at": null
+    },
+    {
+      "run": "413291eb",
+      "stage": "start",
+      "event": "UserPromptSubmit",
+      "outcome": "success",
+      "text": "Resources (partial; incomplete acquisition) @2026-10-08T12:57:51.634Z: tokens input=unknown output=unknown cache-read=unknown cache-create=unknown; wall=326 ms (includes waits)",
+      "characters": 176,
+      "utf8_bytes": 176,
+      "observed_at": "2026-10-08T12:57:51.634Z:"
+    },
+    {
+      "run": "413291eb",
+      "stage": "start",
+      "event": "PostToolUse",
+      "outcome": "success",
+      "text": "Resources (partial) @2026-10-08T12:58:01.786Z: tokens input=2 output=106 cache-read=4650 cache-create=3600; wall=10478 ms (includes waits)",
+      "characters": 138,
+      "utf8_bytes": 138,
+      "observed_at": "2026-10-08T12:58:01.786Z:"
+    },
+    {
+      "run": "413291eb",
+      "stage": "start",
+      "event": "PostToolUse",
+      "outcome": "success",
+      "text": "Resources (partial) @2026-10-08T12:58:03.852Z: tokens input=4 output=233 cache-read=12900 cache-create=4099; wall=12544 ms (includes waits)",
+      "characters": 139,
+      "utf8_bytes": 139,
+      "observed_at": "2026-10-08T12:58:03.852Z:"
+    },
+    {
+      "run": "413291eb",
+      "stage": "start",
+      "event": "PostToolUse",
+      "outcome": "success",
+      "text": "Resources (partial) @2026-10-08T12:58:10.420Z: tokens input=6 output=719 cache-read=21649 cache-create=5049; wall=19112 ms (includes waits)",
+      "characters": 139,
+      "utf8_bytes": 139,
+      "observed_at": "2026-10-08T12:58:10.420Z:"
+    },
+    {
+      "run": "413291eb",
+      "stage": "start",
+      "event": "PostToolUse",
+      "outcome": "success",
+      "text": "Resources (partial) @2026-10-08T12:58:15.965Z: tokens input=8 output=1174 cache-read=31348 cache-create=5715; wall=24657 ms (includes waits)",
+      "characters": 140,
+      "utf8_bytes": 140,
+      "observed_at": "2026-10-08T12:58:15.965Z:"
+    },
+    {
+      "run": "933f137e",
+      "stage": "start",
+      "event": "SessionStart",
+      "outcome": "success",
+      "text": "Resource observations do not measure thinking time, human attention, usefulness, or billing. They do not change requirements or permissions. Ask when necessary and spend what the task requires. Avoid routine commentary about counters.",
+      "characters": 234,
+      "utf8_bytes": 234,
+      "observed_at": null
+    },
+    {
+      "run": "933f137e",
+      "stage": "start",
+      "event": "UserPromptSubmit",
+      "outcome": "success",
+      "text": "Resources (partial; incomplete acquisition) @2026-10-08T13:06:09.482Z: tokens input=unknown output=unknown cache-read=unknown cache-create=unknown; wall=202 ms (includes waits)",
+      "characters": 176,
+      "utf8_bytes": 176,
+      "observed_at": "2026-10-08T13:06:09.482Z:"
+    },
+    {
+      "run": "933f137e",
+      "stage": "start",
+      "event": "PostToolUse",
+      "outcome": "success",
+      "text": "Resources (partial) @2026-10-08T13:06:16.107Z: tokens input=2 output=241 cache-read=4650 cache-create=3603; wall=6827 ms (includes waits)",
+      "characters": 137,
+      "utf8_bytes": 137,
+      "observed_at": "2026-10-08T13:06:16.107Z:"
+    },
+    {
+      "run": "933f137e",
+      "stage": "start",
+      "event": "PostToolUse",
+      "outcome": "success",
+      "text": "Resources (partial) @2026-10-08T13:06:16.173Z: tokens input=2 output=241 cache-read=4650 cache-create=3603; wall=6893 ms (includes waits)",
+      "characters": 137,
+      "utf8_bytes": 137,
+      "observed_at": "2026-10-08T13:06:16.173Z:"
+    },
+    {
+      "run": "933f137e",
+      "stage": "start",
+      "event": "PostToolUse",
+      "outcome": "success",
+      "text": "Resources (partial) @2026-10-08T13:06:19.293Z: tokens input=4 output=489 cache-read=12903 cache-create=4443; wall=10013 ms (includes waits)",
+      "characters": 139,
+      "utf8_bytes": 139,
+      "observed_at": "2026-10-08T13:06:19.293Z:"
+    },
+    {
+      "run": "933f137e",
+      "stage": "start",
+      "event": "PostToolUse",
+      "outcome": "success",
+      "text": "Resources (partial) @2026-10-08T13:06:38.061Z: tokens input=6 output=1999 cache-read=21996 cache-create=5427; wall=28781 ms (includes waits)",
+      "characters": 140,
+      "utf8_bytes": 140,
+      "observed_at": "2026-10-08T13:06:38.061Z:"
+    },
+    {
+      "run": "933f137e",
+      "stage": "start",
+      "event": "PostToolUse",
+      "outcome": "success",
+      "text": "Resources (partial) @2026-10-08T13:06:56.808Z: tokens input=8 output=3898 cache-read=32073 cache-create=7051; wall=47528 ms (includes waits)",
+      "characters": 140,
+      "utf8_bytes": 140,
+      "observed_at": "2026-10-08T13:06:56.808Z:"
+    },
+    {
+      "run": "325cd079",
+      "stage": "start",
+      "event": "SessionStart",
+      "outcome": "success",
+      "text": "Resource observations do not measure thinking time, human attention, usefulness, or billing. They do not change requirements or permissions. Ask when necessary and spend what the task requires. Avoid routine commentary about counters.",
+      "characters": 234,
+      "utf8_bytes": 234,
+      "observed_at": null
+    },
+    {
+      "run": "325cd079",
+      "stage": "start",
+      "event": "UserPromptSubmit",
+      "outcome": "success",
+      "text": "Resources (partial; incomplete acquisition) @2026-10-08T13:07:29.543Z: tokens input=unknown output=unknown cache-read=unknown cache-create=unknown; wall=153 ms (includes waits)",
+      "characters": 176,
+      "utf8_bytes": 176,
+      "observed_at": "2026-10-08T13:07:29.543Z:"
+    },
+    {
+      "run": "325cd079",
+      "stage": "start",
+      "event": "PostToolUse",
+      "outcome": "success",
+      "text": "Resources (partial) @2026-10-08T13:07:35.336Z: tokens input=2 output=140 cache-read=4650 cache-create=3632; wall=5946 ms (includes waits)",
+      "characters": 137,
+      "utf8_bytes": 137,
+      "observed_at": "2026-10-08T13:07:35.336Z:"
+    },
+    {
+      "run": "325cd079",
+      "stage": "start",
+      "event": "PostToolUse",
+      "outcome": "success",
+      "text": "Resources (partial) @2026-10-08T13:07:39.776Z: tokens input=4 output=318 cache-read=12932 cache-create=4130; wall=10386 ms (includes waits)",
+      "characters": 139,
+      "utf8_bytes": 139,
+      "observed_at": "2026-10-08T13:07:39.776Z:"
+    }
+  ]
+}

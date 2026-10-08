@@ -1,0 +1,34 @@
+{
+  "args": [
+    "--model",
+    "claude-opus-5",
+    "--effort",
+    "medium",
+    "--setting-sources",
+    "",
+    "--settings",
+    "/tmp/resource-visibility-185-2xLmYw/settings.json",
+    "--strict-mcp-config",
+    "--disable-slash-commands",
+    "--tools",
+    "Bash,Read,Write,Edit,Glob,Grep",
+    "--permission-mode",
+    "bypassPermissions",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--include-hook-events",
+    "--session-id",
+    "287a36cb-f89b-4109-b5b7-8e28ef8564e0",
+    "-p",
+    "Our team is split on how to handle failures when we process incoming partner webhooks: retry the downstream call inside the HTTP handler, or accept the webhook and retry from a durable queue. Given the constraints in `docs/webhooks.md`, explain the tradeoffs and recommend one approach. We want an explanation, not code.\n"
+  ],
+  "env": {
+    "MANTRA_RESOURCES": "display",
+    "MANTRA_RESOURCE_DIR": "/private/tmp/resource-visibility-185-2xLmYw/evidence/325cd079/reports"
+  },
+  "cwd": "/tmp/resource-visibility-185-2xLmYw/325cd079",
+  "started": "2026-10-08T13:07:28.802Z",
+  "finished": "2026-10-08T13:08:04.929Z",
+  "exit_code": 0
+}

@@ -1,0 +1,72 @@
+{
+  "reader": "Evaluator judging whether more visibility evaluation is proportionate; these costs are not usefulness scores and overlapping intervals are not summed.",
+  "initial_design_and_fixture_authoring": {
+    "duration_ms": null,
+    "coverage": "unknown",
+    "semantics": "Work before the recorded preparation window was not timed."
+  },
+  "recorded_preparation_window": {
+    "started": "2026-10-08T12:24:32Z",
+    "finished": "2026-10-08T12:55:45.148Z",
+    "coverage": "partial",
+    "semantics": "Includes implementation, validation, dependency waiting and authentication troubleshooting; not active engineering time or the full implementation cost."
+  },
+  "successful_launch_window": {
+    "started": "2026-10-08T12:56:06.768Z",
+    "finished": "2026-10-08T13:09:02.285Z",
+    "coverage": "partial",
+    "semantics": "Includes gaps between launches for orchestration and inspection. Per-launch elapsed intervals are in observations.json."
+  },
+  "outcome_grading": {
+    "started": "2026-10-08T13:09:31Z",
+    "finished": "2026-10-08T13:11:28Z",
+    "coverage": "partial",
+    "semantics": "Verifier-reported wall interval for grading the eight outcome packets; not human attention measured by the collector."
+  },
+  "fixation_review": {
+    "duration_ms": null,
+    "coverage": "unknown",
+    "completed_by": "2026-10-08T13:14:37Z",
+    "semantics": "Separate post-disclosure review completed before this observation; its start was not timed."
+  },
+  "observed_synthesis_window": {
+    "started": "2026-10-08T13:14:37Z",
+    "recorded_through": "2026-10-08T13:20:31Z",
+    "coverage": "partial",
+    "semantics": "A partial recorded interval for synthesis and acceptance review; earlier analysis and later handoff are outside this window."
+  },
+  "display_input_cost": {
+    "exact_added_tokens": null,
+    "coverage": "unknown",
+    "evidence": "display-text.json",
+    "semantics": "Actual text, characters and UTF-8 bytes are recorded; no host attribution establishes exact added tokens per hook block."
+  },
+  "collector_overhead": {
+    "live_in_process_evidence": "observations.json",
+    "external_synthetic_benchmark": "../resource-measurements-overhead.json",
+    "live_process_startup_ms": null,
+    "semantics": "Live samples exclude process startup and final sample writes; the separate disabled-hook benchmark is not a live per-hook measurement."
+  },
+  "failed_attempt": {
+    "evidence": "failed-attempts/0ac9ad64",
+    "semantics": "Sandbox authentication failure before model usage; retained as setup cost and replaced by a fresh elevated session."
+  },
+  "clarification_delay": {
+    "planned_delay_ms": 10000,
+    "actual_yield_to_resume_launch_ms": 38934,
+    "evidence": "72a2ea15/script-delay.json",
+    "semantics": "Inspection and operator status interruption extended the gap. Only the collect arm asked and received an answer; no matching display wait occurred. Not human attention."
+  },
+  "plugin_and_initial_repository_validation": {
+    "duration_ms": null,
+    "coverage": "unknown",
+    "completed_by": "2026-10-08T13:14:37Z",
+    "semantics": "Full tests, metadata, Claude validation, Codex installation and both skill probes; exact active duration not captured. A sandbox DNS failure required an elevated Codex-check retry."
+  },
+  "cold_cache_followup_validation": {
+    "completed_by": "2026-10-08T13:20:31Z",
+    "duration_ms": null,
+    "coverage": "unknown",
+    "semantics": "Duplicate documentation fixture packages reproduced on fresh Jest cache; root module indexing now excludes docs. Fresh-cache scripts passed without collision warnings, then the full repository suite passed; independently confirmed by verifier."
+  }
+}
