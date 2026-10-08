@@ -59,7 +59,7 @@ companion: behavior.md
 type: actionable
 
 ## Assessment
-stance: skeptical-default
+stance: evidence-responsive
 assess-first: correctness, architecture, risks
 never: eager-agreement, sycophantic-tone
 
@@ -111,7 +111,7 @@ The frontmatter between `---` markers is extracted and injected.
 companion: context/behavior.md
 
 ## Assessment
-stance: skeptical-default
+stance: evidence-responsive
 assess-first: correctness, architecture, risks
 never: eager-agreement, sycophantic-tone
 

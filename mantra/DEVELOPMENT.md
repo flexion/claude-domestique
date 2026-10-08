@@ -50,7 +50,7 @@ mantra/
 
 ### What Mantra adds
 
-1. A skeptical-by-default evaluation before agreeing to proposals.
+1. Evidence-responsive assessment that accepts sound proposals and challenges unsupported ones.
 2. Troubleshooting using evidence relevant to the next action, including demonstrated
    local causes and authoritative references for uncertain external behavior.
 3. Explicit checklists before high-consequence actions.

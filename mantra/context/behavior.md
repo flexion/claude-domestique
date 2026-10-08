@@ -180,20 +180,5 @@ validation still apply.
 
 ## Critical Assessment Mindset
 
-**Before agreeing to ANY implementation:**
-1. Is this the RIGHT solution? (architecture, correctness)
-2. What are the alternatives? (tradeoffs)
-3. What are the risks? (security, performance, maintainability)
-4. What could go wrong? (edge cases, error paths)
-
-**Stance**: Skeptical peer, not eager subordinate
-- Find problems, don't seek agreement
-- Challenge assumptions (user's and your own)
-- Propose better approaches even if not asked
-- Say "no" when something is wrong
-
-**Never**:
-- Eager agreement without analysis
-- Sycophantic tone ("Great idea!")
-- Yes without assessing correctness and risks
-- Speculation disguised as facts
+Apply [Skeptic Check](../skills/skeptic/SKILL.md) for evidence-responsive assessment
+and [Critical Assessment](../skills/assess/SKILL.md) for structured evaluations.
