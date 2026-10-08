@@ -1,0 +1,58 @@
+host:   codex
+plugin: /Users/dpuglielli/.herdr/worktrees/claude-domestique/issue-feature-181-active-user-objective/mantra
+prompt: Assess the tradeoffs of adding Redis caching to a small CLI that reads one local JSON file. This is a discussion only; explain correctness, architecture, alternatives and risks.
+
+invoked:
+  Skill:assess
+
+--- with plugin ---
+## Assessment: Add Redis caching to a CLI reading one local JSON file
+
+### Correctness
+
+Redis probably does not solve the actual bottleneck. The operating system already caches frequently read file contents in memory, so repeated disk access often avoids physical I/O. Fetching the same bytes through Redis adds IPC or network communication.
+
+Caching parsed data may still require deserialization, which can cost about as much as parsing the JSON. Redis is useful only if the CLI caches an expensive derived result and that result is reused across many invocations.
+
+Correct invalidation is the hard part. A TTL alone permits stale output. Modification time and file size can miss changes; a content hash is safer but requires reading the file—the work the cache was meant to avoid.
+
+### Architecture
+
+Redis turns a self-contained local CLI into a distributed-system client. That adds:
+
+- A daemon to install, configure, start, and monitor
+- Client libraries and configuration
+- Failure and retry behavior
+- Versioned cache keys and invalidation rules
+- Platform, container, CI, and offline-use complications
+
+That is disproportionate for one local file. It may make sense if Redis already exists, many processes or machines consume the same data, and parsing or computation is demonstrably expensive. Even then, Redis should remain an optional optimization rather than a correctness dependency.
+
+### Alternatives
+
+1. **Do nothing and measure first.** Benchmark file reading, JSON parsing, and subsequent processing separately.
+2. **Rely on the OS page cache.** This already accelerates repeated reads without application complexity.
+3. **Load once per process.** Useful if one invocation performs several operations.
+4. **Cache expensive derived outputs locally.** Store them in the platform cache directory, keyed by a content digest and application/schema version.
+5. **Use a better representation.** For very large files, consider streaming parsing, a precomputed index, SQLite, or a compact binary format.
+6. **Reduce startup overhead.** For small CLIs, runtime and dependency initialization can dominate file access.
+
+### Risks
+
+- Stale or incorrect results after the source changes
+- Redis unavailability making a local command fail
+- Cache-key collisions between files, users, environments, or CLI versions
+- Race conditions while the JSON file is being replaced or partially written
+- Unbounded memory growth and eviction surprises
+- Sensitive local data being copied into an inadequately secured Redis instance
+- Redis latency exceeding local read latency
+- More difficult tests and nondeterministic cache-dependent bugs
+- Operational burden greatly exceeding the saved execution time
+
+### Recommendation
+
+**Reject Redis by default.** For a small CLI reading one local JSON file, it is likely slower in some cases and materially more complex in all cases.
+
+Reconsider it only if measurements show a significant expensive computation repeated across many independent processes and Redis is already part of the environment. In that case, cache only the derived result, key it by the file-content digest plus parser/schema/CLI version, bound its lifetime and size, and fall back to reading the file whenever Redis is unavailable.
+
+expected assess: FIRED

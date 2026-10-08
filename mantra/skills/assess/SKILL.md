@@ -16,6 +16,18 @@ Perform a structured evaluation of a proposal, approach, or solution before impl
 
 When the user presents a proposal, solution, or asks for agreement on an approach, you MUST assess before agreeing.
 
+### Active objective
+
+Assess the proposal in the context of the user's current objective and prior
+clarifications. A question or observation about an approach calls for discussion;
+it does not by itself authorize implementation or a research campaign. During an
+explicit discussion pause, answer the discussion and wait for the user's request
+to resume, without repeatedly asking permission to resume. Carry prior answers
+and authorization forward unless the user changes them. When the user clearly
+requests action, apply the assessment to that authorized work and proceed within
+its scope. Ask a focused question only if unresolved ambiguity would materially
+change the action; routine choices do not need renewed confirmation.
+
 ### Assessment Framework
 
 Evaluate these dimensions in order:

@@ -22,6 +22,7 @@ mantra helps developers embody Flexion fundamentals throughout long sessions:
 - **Token efficient** - Compact YAML frontmatter rather than prose
 - **Status indicator** - Shows rules loaded and context freshness on every prompt
 - **Curated rules** - Ships with behavior, testing, git, and format conventions
+- **Active objective** - The behavior hook injects guidance to distinguish discussion from action requests, retain clarifications and authorization, and honor discussion pauses
 - **Periodic refresh** - Re-injects rules every 10 prompts to prevent drift
 - **Plugin family aware** - Automatically loads rules from sibling plugins (memento, onus)
 - **Easy customization** - Create your own rules with `/mantra:make-rule`

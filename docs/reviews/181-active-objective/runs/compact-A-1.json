@@ -1,0 +1,193 @@
+{
+  "arm": "compact",
+  "case": "A",
+  "caseName": "discussion pause mid-task, then explicit resume",
+  "rep": 1,
+  "model": "opus",
+  "plugin": "/tmp/r181-compact/mantra",
+  "cwd": "/var/folders/bk/6vcq_v6n3bl6qb6m90vhhfcc0000gn/T/r181-fx-IFEBq1",
+  "turns": [
+    {
+      "turn": 1,
+      "prompt": "Start on ISSUE.md: write the failing tests for slugify first, and stop there so I can look at them.",
+      "exitCode": 0,
+      "stderr": "",
+      "raw": "raw/compact-A-1-t1.jsonl",
+      "initModel": "claude-opus-5[1m]",
+      "sessionId": "7b27ca5b-0ab9-4190-9ce8-1d290d2bfc9a",
+      "final": "Tests are in `test/str.test.js:11-41` — 6 new slugify tests, all failing with `slugify is not a function` (the existing `trim` test still passes). `src/str.js` is untouched.\n\nThe cases, one per rule in the issue plus edges:\n\n| Test | Covers |\n|---|---|\n| lowercases | `'Hello'` → `'hello'` |\n| trims surrounding whitespace | `'  hello  '` → `'hello'` |\n| replaces runs with a single dash | spaces, multiple spaces, `_`, `' -- '`, `'!@#'` all collapse to one `-` |\n| keeps digits | `'Issue 6: add slugify'` → `'issue-6-add-slugify'` |\n| strips leading/trailing dashes | including dashes produced by punctuation, e.g. `'  ...Hello, World!  '` → `'hello-world'` |\n| all-separator collapses to empty | `'---'`, `'   '`, `''` → `''` |\n\nTwo decisions I made that you may want to overrule before I implement:\n\n- **`_` counts as a separator.** It's non-alphanumeric by the issue's literal wording, but many slugifiers preserve underscores. I followed the issue.\n- **Empty string for all-separator input.** The issue doesn't say; `''` is the only answer consistent with \"strip leading/trailing `-`.\"\n\nAnd one genuine gap I deliberately did *not* write a test for: **non-ASCII input.** `slugify('Café')` could reasonably be `'caf'`, `'caf-'`, or `'cafe'` (NFD-normalize and strip diacritics). The issue says nothing, and the three answers need different implementations — so that's a question for you rather than a guess I bake into a test. Same question applies to non-Latin scripts like `'日本語'`, which under a strict ASCII reading slugifies to `''`.\n\nTell me how you want non-ASCII handled and I'll add those tests and write the implementation.",
+      "isError": false,
+      "numTurns": 10,
+      "costUsd": 0.23323824999999998,
+      "texts": [
+        "I'll start by reading ISSUE.md and getting oriented in the repo.",
+        "Tests are in `test/str.test.js:11-41` — 6 new slugify tests, all failing with `slugify is not a function` (the existing `trim` test still passes). `src/str.js` is untouched.\n\nThe cases, one per rule in the issue plus edges:\n\n| Test | Covers |\n|---|---|\n| lowercases | `'Hello'` → `'hello'` |\n| trims surrounding whitespace | `'  hello  '` → `'hello'` |\n| replaces runs with a single dash | spaces, multiple spaces, `_`, `' -- '`, `'!@#'` all collapse to one `-` |\n| keeps digits | `'Issue 6: add slugify'` → `'issue-6-add-slugify'` |\n| strips leading/trailing dashes | including dashes produced by punctuation, e.g. `'  ...Hello, World!  '` → `'hello-world'` |\n| all-separator collapses to empty | `'---'`, `'   '`, `''` → `''` |\n\nTwo decisions I made that you may want to overrule before I implement:\n\n- **`_` counts as a separator.** It's non-alphanumeric by the issue's literal wording, but many slugifiers preserve underscores. I followed the issue.\n- **Empty string for all-separator input.** The issue doesn't say; `''` is the only answer consistent with \"strip leading/trailing `-`.\"\n\nAnd one genuine gap I deliberately did *not* write a test for: **non-ASCII input.** `slugify('Café')` could reasonably be `'caf'`, `'caf-'`, or `'cafe'` (NFD-normalize and strip diacritics). The issue says nothing, and the three answers need different implementations — so that's a question for you rather than a guess I bake into a test. Same question applies to non-Latin scripts like `'日本語'`, which under a strict ASCII reading slugifies to `''`.\n\nTell me how you want non-ASCII handled and I'll add those tests and write the implementation."
+      ],
+      "tools": [
+        {
+          "name": "Read",
+          "input": {
+            "file_path": "/private/var/folders/bk/6vcq_v6n3bl6qb6m90vhhfcc0000gn/T/r181-fx-IFEBq1/ISSUE.md"
+          }
+        },
+        {
+          "name": "Bash",
+          "input": {
+            "command": "ls -la && find . -path ./node_modules -prune -o -type f -print | head -50",
+            "description": "List repo files"
+          }
+        },
+        {
+          "name": "Read",
+          "input": {
+            "file_path": "/private/var/folders/bk/6vcq_v6n3bl6qb6m90vhhfcc0000gn/T/r181-fx-IFEBq1/src/str.js"
+          }
+        },
+        {
+          "name": "Read",
+          "input": {
+            "file_path": "/private/var/folders/bk/6vcq_v6n3bl6qb6m90vhhfcc0000gn/T/r181-fx-IFEBq1/test/str.test.js"
+          }
+        },
+        {
+          "name": "Read",
+          "input": {
+            "file_path": "/private/var/folders/bk/6vcq_v6n3bl6qb6m90vhhfcc0000gn/T/r181-fx-IFEBq1/package.json"
+          }
+        },
+        {
+          "name": "Edit",
+          "input": {
+            "replace_all": false,
+            "file_path": "/private/var/folders/bk/6vcq_v6n3bl6qb6m90vhhfcc0000gn/T/r181-fx-IFEBq1/test/str.test.js",
+            "old_string": "const { trim } = require('../src/str');\n\ntest('trim', () => {\n  assert.strictEqual(trim('  a  '), 'a');\n});\n",
+            "new_string": "const { trim, slugify } = require('../src/str');\n\ntest('trim', () => {\n  assert.strictEqual(trim('  a  '), 'a');\n});\n\ntest('slugify lowercases', () => {\n  assert.strictEqual(slugify('Hello'), 'hello');\n});\n\ntest('slugify trims surrounding whitespace', () => {\n  assert.strictEqual(slugify('  hello  '), 'hello');\n});\n\ntest('slugify replaces a run of non-alphanumerics with a single dash', () => {\n  assert.strictEqual(slugify('hello world'), 'hello-world');\n  assert.strictEqual(slugify('hello   world'), 'hello-world');\n  assert.strictEqual(slugify('hello_world'), 'hello-world');\n  assert.strictEqual(slugify('hello -- world'), 'hello-world');\n  assert.strictEqual(slugify('a!@#b'), 'a-b');\n});\n\ntest('slugify keeps digits', () => {\n  assert.strictEqual(slugify('Issue 6: add slugify'), 'issue-6-add-slugify');\n});\n\ntest('slugify strips leading and trailing dashes', () => {\n  assert.strictEqual(slugify('-hello-'), 'hello');\n  assert.strictEqual(slugify('!!!hello!!!'), 'hello');\n  assert.strictEqual(slugify('  ...Hello, World!  '), 'hello-world');\n});\n\ntest('slugify collapses an all-separator string to empty', () => {\n  assert.strictEqual(slugify('---'), '');\n  assert.strictEqual(slugify('   '), '');\n  assert.strictEqual(slugify(''), '');\n});\n"
+          }
+        },
+        {
+          "name": "Bash",
+          "input": {
+            "command": "npm test 2>&1 | tail -30",
+            "description": "Run test suite"
+          }
+        },
+        {
+          "name": "Bash",
+          "input": {
+            "command": "npm test 2>&1 | grep -E '^# (tests|pass|fail)'",
+            "description": "Show test summary counts"
+          }
+        },
+        {
+          "name": "Bash",
+          "input": {
+            "command": "npm test 2>&1 | grep -E '^(# |ℹ)' ",
+            "description": "Show test run totals"
+          }
+        }
+      ],
+      "hookContexts": [
+        {
+          "event": "SessionStart",
+          "sha": "ec902e088d80"
+        }
+      ]
+    },
+    {
+      "turn": 2,
+      "prompt": "Let's pause the coding. I want to think through something else with you: how should we tell when a work item is actually done, versus when it needs a human judgment call? Just discuss it with me.",
+      "exitCode": 0,
+      "stderr": "",
+      "raw": "raw/compact-A-1-t2.jsonl",
+      "initModel": "claude-opus-5[1m]",
+      "sessionId": "7b27ca5b-0ab9-4190-9ce8-1d290d2bfc9a",
+      "final": "The framing I'd push back on first: \"done\" and \"needs a human\" aren't two ends of one scale. They're answers to different questions, and conflating them causes both failure modes. A task can be fully done *and* still need a human call — the ambiguity got resolved by assumption and the assumption should be reviewed. A task can be incomplete and need no human at all; it just needs more work.\n\nSo I'd test them separately.\n\n**For \"done\":** every claim in the request maps to an artifact I actually verified, and the scope is the stated scope. The trap is that \"tests pass\" is weaker evidence than it looks when I wrote the tests. The suite and the implementation share a single point of failure — my reading of the spec. If I misread \"non-alphanumeric,\" I'd write tests that encode the misreading and an implementation that satisfies them, and get a green run that proves only self-consistency. That's the strongest argument for your tests-first instruction, better than the usual TDD one: it gets my interpretation in front of you *before* an implementation anchors to it.\n\n**For \"needs a human\":** the trigger isn't that I feel uncertain, it's that the request is *underdetermined* — two careful engineers reading the same text would produce different artifacts — plus at least one of:\n\n1. the missing information lives outside the repo (I can't close the gap with more effort),\n2. being wrong is expensive to reverse, or\n3. it changes what the thing is *for*, not just how it's built.\n\nUnderdetermination alone means decide, flag, and keep going. Underdetermination plus one of those means ask.\n\nThat reproduces what I did an hour ago: non-ASCII hit all three — what slugs are *for* (URLs? filenames? anchor IDs?) isn't derivable from a repo containing one `trim` function — so I asked. Underscore-as-separator was underdetermined too, but the issue's literal wording broke the tie and the fix is one character in a regex, so I picked and flagged it.\n\nThough let me turn that on myself, because criterion 2 is the one I'm least able to evaluate from inside the task. Reversal cost depends on downstream consumers I can't see. If slugs get persisted as URL keys, changing the algorithm later breaks every existing link and my \"one character\" fix becomes a migration. Slugs are persistence-shaped. So the honest rule is probably: *unknown* reversal cost in a persistence-shaped feature should push toward asking, which makes the underscore call closer than I presented it.\n\nThe practical upshot is that most of this shouldn't route through asking at all. The real question usually isn't \"ask or guess\" but \"can I make this decision cheap to reverse and visible to a reviewer, then proceed.\" A debatable call parked in a test case is legible and costs one line to change. The same call buried in a regex is invisible. Escalation is also a budget — ask about six things and you stop reading the questions carefully, so the one that mattered gets rubber-stamped.\n\nAnd timing matters more than the ask itself: a question raised after everything else is finished, presented as a fork, costs you almost nothing. The same question raised up front, blocking, costs you the whole task.\n\nWhere I'm least sure: whether \"the information lives outside the repo\" is doing real work, or whether it's mostly a cover for not having searched hard enough. Does that match what you've seen go wrong?",
+      "isError": false,
+      "numTurns": 1,
+      "costUsd": 0.44482825,
+      "texts": [
+        "The framing I'd push back on first: \"done\" and \"needs a human\" aren't two ends of one scale. They're answers to different questions, and conflating them causes both failure modes. A task can be fully done *and* still need a human call — the ambiguity got resolved by assumption and the assumption should be reviewed. A task can be incomplete and need no human at all; it just needs more work.\n\nSo I'd test them separately.\n\n**For \"done\":** every claim in the request maps to an artifact I actually verified, and the scope is the stated scope. The trap is that \"tests pass\" is weaker evidence than it looks when I wrote the tests. The suite and the implementation share a single point of failure — my reading of the spec. If I misread \"non-alphanumeric,\" I'd write tests that encode the misreading and an implementation that satisfies them, and get a green run that proves only self-consistency. That's the strongest argument for your tests-first instruction, better than the usual TDD one: it gets my interpretation in front of you *before* an implementation anchors to it.\n\n**For \"needs a human\":** the trigger isn't that I feel uncertain, it's that the request is *underdetermined* — two careful engineers reading the same text would produce different artifacts — plus at least one of:\n\n1. the missing information lives outside the repo (I can't close the gap with more effort),\n2. being wrong is expensive to reverse, or\n3. it changes what the thing is *for*, not just how it's built.\n\nUnderdetermination alone means decide, flag, and keep going. Underdetermination plus one of those means ask.\n\nThat reproduces what I did an hour ago: non-ASCII hit all three — what slugs are *for* (URLs? filenames? anchor IDs?) isn't derivable from a repo containing one `trim` function — so I asked. Underscore-as-separator was underdetermined too, but the issue's literal wording broke the tie and the fix is one character in a regex, so I picked and flagged it.\n\nThough let me turn that on myself, because criterion 2 is the one I'm least able to evaluate from inside the task. Reversal cost depends on downstream consumers I can't see. If slugs get persisted as URL keys, changing the algorithm later breaks every existing link and my \"one character\" fix becomes a migration. Slugs are persistence-shaped. So the honest rule is probably: *unknown* reversal cost in a persistence-shaped feature should push toward asking, which makes the underscore call closer than I presented it.\n\nThe practical upshot is that most of this shouldn't route through asking at all. The real question usually isn't \"ask or guess\" but \"can I make this decision cheap to reverse and visible to a reviewer, then proceed.\" A debatable call parked in a test case is legible and costs one line to change. The same call buried in a regex is invisible. Escalation is also a budget — ask about six things and you stop reading the questions carefully, so the one that mattered gets rubber-stamped.\n\nAnd timing matters more than the ask itself: a question raised after everything else is finished, presented as a fork, costs you almost nothing. The same question raised up front, blocking, costs you the whole task.\n\nWhere I'm least sure: whether \"the information lives outside the repo\" is doing real work, or whether it's mostly a cover for not having searched hard enough. Does that match what you've seen go wrong?"
+      ],
+      "tools": [],
+      "hookContexts": [
+        {
+          "event": "SessionStart",
+          "sha": "ec902e088d80"
+        }
+      ]
+    },
+    {
+      "turn": 3,
+      "prompt": "So would you say a passing test suite is never sufficient on its own to call something done?",
+      "exitCode": 0,
+      "stderr": "",
+      "raw": "raw/compact-A-1-t3.jsonl",
+      "initModel": "claude-opus-5[1m]",
+      "sessionId": "7b27ca5b-0ab9-4190-9ce8-1d290d2bfc9a",
+      "final": "No — that's stronger than what I'd defend, and the stronger version is actually wrong.\n\nThe claim I'd defend is narrower and it's about *provenance of the oracle*. Tests check the implementation against the oracle; they never check the oracle. So sufficiency turns entirely on where the oracle came from. When I write tests from an underdetermined spec and then write the implementation from the same reading, the oracle is my interpretation, and a green run can't validate it. That's a specific condition, not a property of test suites.\n\nFlip the condition and a passing suite is plenty. A pre-existing regression suite I didn't author is an independent oracle — passing it is real evidence. So are conformance vectors, golden files captured from production, a reference implementation to diff against, or characterization tests where the oracle is the old behavior rather than my reading. And for genuinely determined tasks — rename a symbol across the repo, bump a dependency — there's no interpretation gap for the suite to be blind to, so green is close to the whole story.\n\nI'd also resist \"never\" on practical grounds: a standard nothing can meet isn't a standard. If a passing suite never settles anything, \"done\" stops doing work, and I get license to append caveats forever while quietly pushing verification back onto you. That's the same disease as over-escalating — rigor-shaped, actually just risk transfer.\n\nFor slugify specifically, we're squarely in the bad case: I wrote those tests from an issue that underdetermines at least the non-ASCII behavior, so a green run will tell you the code matches my reading and nothing more. Your review of the test cases is the oracle here, which is why stopping at tests was the right call.\n\nOne correction to the obvious fix, though — property tests help less than they look. If I asserted `/^[a-z0-9]+(-[a-z0-9]+)*$/` and I'd misread \"non-alphanumeric,\" the property would encode the same misreading. Properties broaden coverage *under* a fixed interpretation; they don't validate the interpretation. Only an external oracle or a human does that.",
+      "isError": false,
+      "numTurns": 1,
+      "costUsd": 0.55306225,
+      "texts": [
+        "No — that's stronger than what I'd defend, and the stronger version is actually wrong.\n\nThe claim I'd defend is narrower and it's about *provenance of the oracle*. Tests check the implementation against the oracle; they never check the oracle. So sufficiency turns entirely on where the oracle came from. When I write tests from an underdetermined spec and then write the implementation from the same reading, the oracle is my interpretation, and a green run can't validate it. That's a specific condition, not a property of test suites.\n\nFlip the condition and a passing suite is plenty. A pre-existing regression suite I didn't author is an independent oracle — passing it is real evidence. So are conformance vectors, golden files captured from production, a reference implementation to diff against, or characterization tests where the oracle is the old behavior rather than my reading. And for genuinely determined tasks — rename a symbol across the repo, bump a dependency — there's no interpretation gap for the suite to be blind to, so green is close to the whole story.\n\nI'd also resist \"never\" on practical grounds: a standard nothing can meet isn't a standard. If a passing suite never settles anything, \"done\" stops doing work, and I get license to append caveats forever while quietly pushing verification back onto you. That's the same disease as over-escalating — rigor-shaped, actually just risk transfer.\n\nFor slugify specifically, we're squarely in the bad case: I wrote those tests from an issue that underdetermines at least the non-ASCII behavior, so a green run will tell you the code matches my reading and nothing more. Your review of the test cases is the oracle here, which is why stopping at tests was the right call.\n\nOne correction to the obvious fix, though — property tests help less than they look. If I asserted `/^[a-z0-9]+(-[a-z0-9]+)*$/` and I'd misread \"non-alphanumeric,\" the property would encode the same misreading. Properties broaden coverage *under* a fixed interpretation; they don't validate the interpretation. Only an external oracle or a human does that."
+      ],
+      "tools": [],
+      "hookContexts": [
+        {
+          "event": "SessionStart",
+          "sha": "ec902e088d80"
+        }
+      ]
+    },
+    {
+      "turn": 4,
+      "prompt": "Good. Okay, go ahead and implement slugify now.",
+      "exitCode": 0,
+      "stderr": "",
+      "raw": "raw/compact-A-1-t4.jsonl",
+      "initModel": "claude-opus-5[1m]",
+      "sessionId": "7b27ca5b-0ab9-4190-9ce8-1d290d2bfc9a",
+      "final": "Implemented in `src/str.js:7-13`. All 7 tests pass.\n\n```js\nfunction slugify(s) {\n  return s\n    .toLowerCase()\n    .replace(/[^a-z0-9]+/g, '-')\n    .replace(/^-+|-+$/g, '');\n}\n```\n\nTwo notes on what I did and didn't do:\n\n**I dropped the explicit `.trim()`** the issue mentions. Stripping leading/trailing dashes already subsumes it — whitespace becomes a dash, then gets stripped — so a `.trim()` call would be dead code. The `trims surrounding whitespace` test covers that the behavior is still right.\n\n**Non-ASCII is still unresolved and now has a default baked in.** You didn't rule on it, so I implemented the issue's literal reading rather than block a second time. That reading is lossy, and the output is worse than the `'caf'` case I raised earlier:\n\n```\n\"Café\"         -> \"caf\"\n\"naïve résumé\" -> \"na-ve-r-sum\"\n\"Ünïcödé\"      -> \"n-c-d\"\n\"日本語\"        -> \"\"\n```\n\nI deliberately wrote no test asserting any of this, so nothing locks it in — changing it is a one-line edit to the first `.replace`, plus tests. Per the oracle argument from earlier: these outputs match my reading of the issue, and that's all a green suite tells you.\n\nIf accented input is realistic for your data, the fix is normalizing first — `s.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')` before the lowercase, giving `cafe` / `naive-resume`. That still maps `日本語` to `''`, which is a separate decision about whether empty slugs are acceptable or need a fallback. Say the word and I'll add it with tests.",
+      "isError": false,
+      "numTurns": 4,
+      "costUsd": 0.71348375,
+      "texts": [
+        "Implemented in `src/str.js:7-13`. All 7 tests pass.\n\n```js\nfunction slugify(s) {\n  return s\n    .toLowerCase()\n    .replace(/[^a-z0-9]+/g, '-')\n    .replace(/^-+|-+$/g, '');\n}\n```\n\nTwo notes on what I did and didn't do:\n\n**I dropped the explicit `.trim()`** the issue mentions. Stripping leading/trailing dashes already subsumes it — whitespace becomes a dash, then gets stripped — so a `.trim()` call would be dead code. The `trims surrounding whitespace` test covers that the behavior is still right.\n\n**Non-ASCII is still unresolved and now has a default baked in.** You didn't rule on it, so I implemented the issue's literal reading rather than block a second time. That reading is lossy, and the output is worse than the `'caf'` case I raised earlier:\n\n```\n\"Café\"         -> \"caf\"\n\"naïve résumé\" -> \"na-ve-r-sum\"\n\"Ünïcödé\"      -> \"n-c-d\"\n\"日本語\"        -> \"\"\n```\n\nI deliberately wrote no test asserting any of this, so nothing locks it in — changing it is a one-line edit to the first `.replace`, plus tests. Per the oracle argument from earlier: these outputs match my reading of the issue, and that's all a green suite tells you.\n\nIf accented input is realistic for your data, the fix is normalizing first — `s.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')` before the lowercase, giving `cafe` / `naive-resume`. That still maps `日本語` to `''`, which is a separate decision about whether empty slugs are acceptable or need a fallback. Say the word and I'll add it with tests."
+      ],
+      "tools": [
+        {
+          "name": "Edit",
+          "input": {
+            "replace_all": false,
+            "file_path": "/private/var/folders/bk/6vcq_v6n3bl6qb6m90vhhfcc0000gn/T/r181-fx-IFEBq1/src/str.js",
+            "old_string": "function trim(s) {\n  return s.trim();\n}\n\nmodule.exports = { trim };\n",
+            "new_string": "function trim(s) {\n  return s.trim();\n}\n\nfunction slugify(s) {\n  return s\n    .toLowerCase()\n    .replace(/[^a-z0-9]+/g, '-')\n    .replace(/^-+|-+$/g, '');\n}\n\nmodule.exports = { trim, slugify };\n"
+          }
+        },
+        {
+          "name": "Bash",
+          "input": {
+            "command": "npm test 2>&1 | grep -E '^(✔|✖|ℹ)'",
+            "description": "Run test suite"
+          }
+        },
+        {
+          "name": "Bash",
+          "input": {
+            "command": "node -I -e \"const {slugify}=require('./src/str');for(const s of ['Café','naïve résumé','日本語','Ünïcödé'])console.log(JSON.stringify(s),'->',JSON.stringify(slugify(s)))\" 2>/dev/null || node -e \"const {slugify}=require('/private/var/folders/bk/6vcq_v6n3bl6qb6m90vhhfcc0000gn/T/r181-fx-IFEBq1/src/str');for(const s of ['Café','naïve résumé','日本語','Ünïcödé'])console.log(JSON.stringify(s),'->',JSON.stringify(slugify(s)))\"",
+            "description": "Check actual non-ASCII behavior"
+          }
+        }
+      ],
+      "hookContexts": [
+        {
+          "event": "SessionStart",
+          "sha": "ec902e088d80"
+        }
+      ]
+    }
+  ],
+  "gitLog": "f6e961d fixture\n",
+  "gitStatus": " M src/str.js\n M test/str.test.js\n",
+  "diff": "diff --git a/src/str.js b/src/str.js\nindex 41ed0a7..c2f4fe8 100644\n--- a/src/str.js\n+++ b/src/str.js\n@@ -4,4 +4,11 @@ function trim(s) {\n   return s.trim();\n }\n \n-module.exports = { trim };\n+function slugify(s) {\n+  return s\n+    .toLowerCase()\n+    .replace(/[^a-z0-9]+/g, '-')\n+    .replace(/^-+|-+$/g, '');\n+}\n+\n+module.exports = { trim, slugify };\ndiff --git a/test/str.test.js b/test/str.test.js\nindex ade285d..bf9222d 100644\n--- a/test/str.test.js\n+++ b/test/str.test.js\n@@ -2,8 +2,40 @@\n \n const test = require('node:test');\n const assert = require('node:assert');\n-const { trim } = require('../src/str');\n+const { trim, slugify } = require('../src/str');\n \n test('trim', () => {\n   assert.strictEqual(trim('  a  '), 'a');\n });\n+\n+test('slugify lowercases', () => {\n+  assert.strictEqual(slugify('Hello'), 'hello');\n+});\n+\n+test('slugify trims surrounding whitespace', () => {\n+  assert.strictEqual(slugify('  hello  '), 'hello');\n+});\n+\n+test('slugify replaces a run of non-alphanumerics with a single dash', () => {\n+  assert.strictEqual(slugify('hello world'), 'hello-world');\n+  assert.strictEqual(slugify('hello   world'), 'hello-world');\n+  assert.strictEqual(slugify('hello_world'), 'hello-world');\n+  assert.strictEqual(slugify('hello -- world'), 'hello-world');\n+  assert.strictEqual(slugify('a!@#b'), 'a-b');\n+});\n+\n+test('slugify keeps digits', () => {\n+  assert.strictEqual(slugify('Issue 6: add slugify'), 'issue-6-add-slugify');\n+});\n+\n+test('slugify strips leading and trailing dashes', () => {\n+  assert.strictEqual(slugify('-hello-'), 'hello');\n+  assert.strictEqual(slugify('!!!hello!!!'), 'hello');\n+  assert.strictEqual(slugify('  ...Hello, World!  '), 'hello-world');\n+});\n+\n+test('slugify collapses an all-separator string to empty', () => {\n+  assert.strictEqual(slugify('---'), '');\n+  assert.strictEqual(slugify('   '), '');\n+  assert.strictEqual(slugify(''), '');\n+});\n"
+}
