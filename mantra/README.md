@@ -80,6 +80,12 @@ context usage, model, and cost when supplied by the host. The rule count does no
 prove those files were loaded. Its context percentage includes a fixed buffer
 estimate; it is not an exact measure of tokens injected by Mantra.
 
+## Passive resource pilot
+
+An opt-in [passive resource pilot](context/resources.md) records coverage-labelled
+observations in a local scratch directory. It adds no agent-visible counters or
+feedback; unavailable measurements remain unknown.
+
 ## Development
 
 From the repository root:

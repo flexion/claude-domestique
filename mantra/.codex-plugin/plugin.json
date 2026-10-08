@@ -1,6 +1,6 @@
 {
   "name": "mantra",
-  "version": "0.7.2",
+  "version": "0.8.0",
   "description": "Behavioral skills for critical assessment, evidence-based debugging, and rule authoring",
   "author": {
     "name": "David Puglielli"
