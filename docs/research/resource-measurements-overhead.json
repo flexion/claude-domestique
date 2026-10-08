@@ -1,0 +1,41 @@
+{
+  "reader": "Issue #185 experiment uses this baseline to assess collector overhead",
+  "node": "v24.15.0",
+  "platform": "darwin",
+  "method": "Alternating fresh hook processes, 12 per mode, first 2 discarded; 1000 synthetic assistant messages; local scratch filesystem; external wall time includes startup, serialization and I/O",
+  "transcript_bytes": 694890,
+  "unit": "ms",
+  "disabled_median": 42.10439600000004,
+  "collect_median": 46.567854499999996,
+  "incremental_median": 4.463458499999959,
+  "samples": {
+    "disabled": [
+      40.775917,
+      39.57825000000001,
+      40.190042000000005,
+      39.685833,
+      42.046667000000014,
+      43.05654100000004,
+      40.361541999999986,
+      42.328457999999955,
+      42.16212500000006,
+      44.75237500000003,
+      41.73066599999993,
+      52.50049999999999
+    ],
+    "collect": [
+      45.85420800000001,
+      46.773291,
+      46.35454200000001,
+      44.86600000000004,
+      45.874833999999964,
+      46.34812499999998,
+      45.33470800000009,
+      48.468624999999975,
+      46.97874999999999,
+      49.02391699999998,
+      46.78116699999998,
+      83.99250000000006
+    ]
+  }
+}

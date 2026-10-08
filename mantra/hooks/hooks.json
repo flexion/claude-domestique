@@ -1,5 +1,5 @@
 {
-  "description": "Mantra behavior hook - injects anti-sycophancy and critical assessment rules on every prompt",
+  "description": "Recurring assessment, research, and active-objective guidance; resource collection is opt-in and registered separately",
   "hooks": {
     "SessionStart": [
       {

@@ -14,8 +14,8 @@
     {
       "name": "mantra",
       "source": "./mantra",
-      "description": "Behavioral skills and recurring guidance for evidence-responsive assessment, troubleshooting, and the active user objective",
-      "version": "0.7.2"
+      "description": "Behavioral skills and recurring guidance for assessment, proportionate research, and the active user objective; optional passive resource measurements",
+      "version": "0.8.0"
     },
     {
       "name": "onus",

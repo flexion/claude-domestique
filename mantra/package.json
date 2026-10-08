@@ -1,7 +1,7 @@
 {
   "name": "@claude-domestique/mantra",
-  "version": "0.7.2",
-  "description": "Behavioral rules for Claude Code and Codex sessions, auto-injected through hooks",
+  "version": "0.8.0",
+  "description": "Behavioral skills and recurring guidance for Claude Code and Codex, with optional passive resource measurements",
   "main": "index.js",
   "scripts": {
     "test": "jest",
