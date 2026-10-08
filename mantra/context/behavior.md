@@ -15,3 +15,7 @@ Project instructions set implementation and testing conventions. Mantra does
 not require a separate change manifest, model recommendation, approval for
 already-authorized work, or `// CHANGED` annotations. Consult the owning plugin
 for session, git, and work-item procedures rather than duplicating them here.
+
+The [passive resource pilot](resources.md) is separate from this guidance. Its
+observations measure neither usefulness nor human attention and do not authorize
+changes to scope, permissions, or necessary clarification. It injects no feedback.

@@ -1,7 +1,7 @@
 {
   "name": "mantra",
   "version": "0.8.0",
-  "description": "Behavioral skills for critical assessment, evidence-based debugging, and rule authoring",
+  "description": "Behavioral skills and recurring guidance for assessment, proportionate research, and the active user objective; optional passive resource measurements",
   "author": {
     "name": "David Puglielli"
   },
@@ -17,8 +17,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Mantra",
-    "shortDescription": "Critical assessment and debugging discipline",
-    "longDescription": "Reinforces skeptical analysis, evidence-based debugging, and compact behavioral rule authoring.",
+    "shortDescription": "Evidence-responsive assessment and scoped action",
+    "longDescription": "Supports sound assessment, proportionate troubleshooting, retained authorization, and discussion pauses. Passive resource measurements are opt-in.",
     "developerName": "Flexion",
     "category": "Developer Tools",
     "capabilities": [

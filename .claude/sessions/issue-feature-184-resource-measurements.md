@@ -7,7 +7,7 @@
 **Branch**: issue/feature-184/resource-measurements
 **Type**: feature
 **Created**: 2026-10-08
-**Status**: in-progress
+**Status**: ready-for-review
 **Lead**: kit (Codex, medium effort)
 **Verifier**: pip (Claude, medium effort)
 
@@ -17,7 +17,9 @@ Mantra: collect trustworthy resource measurements with explicit coverage. Use th
 
 ## Approach
 
-Implement a bounded, opt-in passive collector separately from behavior.js. Document Claude/Codex hook and runtime-stream contracts first; retain only measurement fields, never message content or reasoning. Aggregate native usage snapshots by host identity, preserve categories, use interval union for overlapping observations, and expose unknown values wherever events cannot establish a measurement. Hooks capture supported lifecycle/tool observations and project measurement fields from bounded host-provided transcripts; omit an additional importer/runner. Reports carry run identity, observation time, units and per-metric coverage. Disabled is the default; collection never injects agent feedback. Tests cover duplicates, overlap, incomplete records, classification, bounds, concurrent hooks and disable behavior. Pip independently verifies the contract and behavior; rex consumes the validated report for #185. No edits to assessment guidance or behavior.js. Commit local changes and rebase onto origin/main at the operator's latest request. No push, PR, issue closure, or beads.
+Implement a bounded, opt-in passive collector separately from behavior.js. Document Claude/Codex hook and runtime-stream contracts first; retain only measurement fields, never message content or reasoning. Aggregate native usage snapshots by host identity, preserve categories, use interval union for overlapping observations, and expose unknown values wherever events cannot establish a measurement. Hooks capture supported lifecycle/tool observations and project measurement fields from bounded host-provided transcripts; omit an additional importer/runner. Reports carry run identity, observation time, units and per-metric coverage. Disabled is the default; collection never injects agent feedback. Tests cover duplicates, overlap, incomplete records, classification, bounds, concurrent hooks and disable behavior. Pip independently verifies the contract and behavior; rex consumes the validated report for #185. No edits to assessment guidance or behavior.js. Commit local changes and rebase onto origin/main at the operator's latest request. Operator now authorizes commit, push, and PR. No merge, issue closure, or beads.
+
+Integration follow-up: inspect merged guidance, hook delivery, resource mode boundaries and all Mantra documentation. Preserve verified runtime behavior; align architecture/roadmap/metadata with optional passive collection and replace contradictory generic testing procedure with a focused Mantra testing reference. Validate relative links, focused suites, metadata and fresh host skill invocation; report live coverage limits.
 
 ## Session Log
 
@@ -43,13 +45,30 @@ Implement a bounded, opt-in passive collector separately from behavior.js. Docum
 
 - 2026-10-08: Rebase resolution preserves origin/main's merged #181–183 guidance and rewritten README. Reconciled the collector feature bump onto current Mantra 0.7.2 as 0.8.0 in all metadata; original 0.7.0 verification/archive provenance remains historical. Added passive-pilot section to current README. Post-rebase validation follows; no push or PR.
 
+- 2026-10-08: Operator requested mechanical/thematic integration and complete Mantra documentation sweep. Full post-rebase tests, metadata, strict Claude manifest and isolated Codex installation passed. Found development/roadmap omissions for passive pilot and contradictory generic testing requirements; updating documentation from current source and official Jest/Node/hook references.
+
+- 2026-10-08: Completed Mantra documentation/metadata sweep and independent pip review. Removed contradictory generic testing guidance, documented passive collector architecture and mode boundaries, aligned descriptions, corrected historical version claims and linked rollout evidence. All relative Markdown links resolve. Integrated BEHAVIOR matches reviewed composition; fresh Claude/Codex assess probes fired and rejected unsafe cache. Live Claude discussion check co-enabled behavior and collector: fixture unchanged, no resume ask, collector silent, final token categories match native usage. Focused Mantra tests and metadata pass; Codex collector live coverage remains unverified.
+
+- 2026-10-08: Operator authorized committing, pushing and opening the PR. Final full npm test, metadata validation and diff checks passed; origin/main remains an ancestor. Session is ready for review, with AC2/AC4 explicitly partial rather than marked complete. Committing reviewed integration/docs follow-up and publishing the passive-pilot PR without an issue-closing keyword.
+
+## Acceptance Criteria
+
+- [x] AC1: Supported events, identities, timestamps and coverage documented before calculations.
+- [ ] AC2 (partial): Supported wall/tool/bracket/overhead observations recorded; request latency, active execution union and human wait remain unknown.
+- [x] AC3: Native token snapshots deduplicated; input/output/cache categories preserved without a total or billing equivalence.
+- [ ] AC4 (partial): Permission notifications observed and labelled; actual human permission/clarification episodes remain separately unknown; auto-approvals excluded.
+- [x] AC5: Host/run identity, observation time, units and explicit coverage; missing is unknown.
+- [x] AC6: Duplicate/overlap/missing/classification/disable fixtures and overhead evidence verified.
+- [x] AC7: Passive, without scores, quotas, auto-stop or private-reasoning inspection.
+
 ## Files Changed
 
 - Session and branch metadata initialized.
-- mantra/lib/resources.js; mantra/hooks/resources.js; focused collector tests; mantra/context/resources.md; mantra/README.md and synchronized version manifests. Default hooks and behavior.js are unchanged.
+- mantra/lib/resources.js; mantra/hooks/resources.js; focused collector tests; mantra/context/resources.md; mantra/README.md and synchronized version manifests. Behavior.js and hook registrations are unchanged; hook description metadata is aligned with the current scope.
 - docs/research/resource-measurements.md and resource-measurements-overhead.json.
-- docs/reviews/resource-measurements-verification.md (independent verifier's evidence).
+- docs/reviews/resource-measurements-verification.md (independent verifier's evidence) and recurring-injection-efficiency.md.
+- Mantra README, development guide, roadmap, behavior/testing/resource references and descriptive metadata aligned after integration.
 
 ## Next Steps
 
-Injection-efficiency implementation and textual review are recorded; owner final objective recheck passed; combined live integration remains unverified. No #184 collector changes are needed. AC2/AC4 remain partial: supported inputs cannot establish active execution intervals, per-request latency, human wait or distinct human-stop episodes. Preserve these limitations in any later review or issue update. Local commit and rebase are authorized; finish rebase and validate integrated changes. No push, PR, issue closure or beads without further instruction.
+Injection-efficiency implementation and textual review are recorded; owner final objective recheck passed; bounded combined live integration checks passed with limits recorded. No #184 collector changes are needed. AC2/AC4 remain partial: supported inputs cannot establish active execution intervals, per-request latency, human wait or distinct human-stop episodes. Preserve these limitations in any later review or issue update. Local collector commit/rebase completed at 917c222; reviewed integration/documentation follow-up is being committed and pushed for the authorized PR. Bounded combined-source smoke checks passed; broader combined behavior remains unproven. Review should retain partial criteria and Codex live-collector limitations. No merge, issue closure or beads without further instruction.

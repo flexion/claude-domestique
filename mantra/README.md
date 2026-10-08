@@ -37,7 +37,7 @@ and every `UserPromptSubmit`. It reinforces:
 - The active objective, prior clarifications and authorization, discussion
   pauses, and action within the requested scope.
 
-The hook has no counters, refresh interval, state, file reads, or sibling-plugin
+The behavior hook has no counters, refresh interval, state, file reads, or sibling-plugin
 loader. It does not inject the `context/` documents or load project rule files.
 Those documents are references for use on demand; project instructions are loaded
 by the host according to its own conventions.
@@ -84,7 +84,9 @@ estimate; it is not an exact measure of tokens injected by Mantra.
 
 An opt-in [passive resource pilot](context/resources.md) records coverage-labelled
 observations in a local scratch directory. It adds no agent-visible counters or
-feedback; unavailable measurements remain unknown.
+feedback; unavailable measurements remain unknown. Installing Mantra does not
+register the collector. Its observations do not change the active objective,
+authorization, or the need for consequential clarification.
 
 ## Development
 

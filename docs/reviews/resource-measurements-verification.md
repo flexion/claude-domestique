@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-08
 **Verifier:** pip (Claude Opus 5.5), independent of the implementing lead (kit)
-**Branch:** `issue/feature-184/resource-measurements`, uncommitted working tree
+**Branch at verification:** `issue/feature-184/resource-measurements`, pre-rebase working tree
 **Hosts observed:** Claude Code 2.1.294, codex-cli 0.161.0 (isolated smoke install: 0.147.0)
 
 ## Verdict
@@ -53,9 +53,9 @@ raised during the session was fixed. I have one minor observation, below.
 
 **Metadata.**
 - `scripts/validate-plugins.js` passes for the repository root and for `mantra`.
-- An isolated `CODEX_HOME` smoke install of `mantra@claude-domestique` at 0.7.0 succeeded.
-- `mantra/hooks/hooks.json` and `mantra/hooks/behavior.js` are unchanged from `main`.
-- The version is bumped to 0.7.0 consistently across the plugin manifests, `package.json`, and the marketplace.
+- An isolated `CODEX_HOME` smoke install of `mantra@claude-domestique` at the pre-rebase 0.7.0 version succeeded.
+- At that verification snapshot, `mantra/hooks/hooks.json` and `mantra/hooks/behavior.js` were unchanged from its `main` baseline.
+- The pre-rebase version bump was 0.7.0 consistently across the plugin manifests, `package.json`, and the marketplace. Rebasing onto merged #181–183 reconciled the feature version to 0.8.0; kit subsequently repeated the full tests, metadata validation, strict Claude validation and isolated Codex installation successfully at that version. These integration checks do not replace the original independent pilot evidence above.
 
 ## Findings raised during verification, all resolved
 

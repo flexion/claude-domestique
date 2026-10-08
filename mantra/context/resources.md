@@ -90,7 +90,8 @@ Transcripts are not stable public interfaces, so format changes can make usage
 unknown. Do not treat these observations as billing or context-window accounting.
 
 The Codex protocol defines timestamped `exec_command_begin/end` events, but the
-verifier found none in sampled codex-cli 0.161.0 rollouts. They are not an input
+[independent verification](../../docs/reviews/resource-measurements-verification.md)
+found none in sampled codex-cli 0.161.0 rollouts. They are not an input
 supported by this pilot. Active execution interval union therefore stays unknown.
 Hook brackets establish only receipt-to-receipt occupancy and include
 approval/hook overhead. Their union is separate from actual execution. Summed
