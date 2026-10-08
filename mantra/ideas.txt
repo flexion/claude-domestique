@@ -1,3 +1,5 @@
+Historical brainstorming notes — these describe proposals, not the current implementation. See README.md for shipped behavior.
+
 mantra
 I told you. You agreed. You forgot. Repeat.
 

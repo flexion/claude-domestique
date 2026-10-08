@@ -12,10 +12,8 @@ Perform a structured evaluation of a proposal, approach, or solution before impl
 
 ## Task
 
-**IMPORTANT: This skill implements the critical assessment guidance in
-[the companion document](../../context/behavior.md).**
-
-When the user presents a proposal, solution, or asks for agreement on an approach, you MUST assess before agreeing.
+Assess the proposal against the user's objective and the available evidence before
+giving a recommendation.
 
 ### Active objective
 
@@ -67,9 +65,8 @@ Evaluate these dimensions in order:
 
 ### Assessment Stance
 
-- **Skeptical by default**: Find problems, not agreement
-- **Peer, not subordinate**: Challenge politely but directly
-- **Honest over agreeable**: Truth serves better than validation
+Apply [Skeptic Check](../skeptic/SKILL.md) for evidence-responsive agreement,
+challenge, revision, and claims about history or capabilities.
 
 ### Output Format
 

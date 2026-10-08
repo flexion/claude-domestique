@@ -1,6 +1,6 @@
 # Testing Conventions - Detailed Reference
 
-This document provides detailed examples for the testing patterns defined in `rules/test.md`.
+This is an optional testing reference, not an automatically injected rule. Mantra ships no `rules/test.md`; project instructions determine testing requirements.
 
 ## Core Principles
 
@@ -105,18 +105,18 @@ Never write all functionality then all tests. Work in small chunks:
 ```bash
 # Chunk 1
 # Write test for parse('')
-npm test -- --grep "parses empty" --coverage
+npm test -- -t "parses empty" --coverage
 # FAILS - parse() doesn't exist
 # Implement minimal parse()
-npm test -- --grep "parses empty" --coverage
+npm test -- -t "parses empty" --coverage
 # PASSES - check coverage shows parse() covered
 
 # Chunk 2
 # Write test for parse('apple')
-npm test -- --grep "parses single" --coverage
+npm test -- -t "parses single" --coverage
 # FAILS - returns empty
 # Implement item splitting
-npm test -- --grep "parses single" --coverage
+npm test -- -t "parses single" --coverage
 # PASSES - coverage still good
 
 # After all chunks
@@ -589,8 +589,8 @@ Run targeted tests for fast feedback:
 # Single file
 npm test -- path/to/specific.test.js
 
-# Single describe block (framework-specific)
-npm test -- --grep "parseInput"
+# Single describe block (Jest)
+npm test -- -t "parseInput"
 
 # Watch mode for rapid iteration
 npm test -- --watch
