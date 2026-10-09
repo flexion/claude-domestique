@@ -49,9 +49,9 @@ It returns no status message on individual prompts.
 
 The [resource pilot](context/resources.md) is installed separately through explicit
 settings hooks. `collect` writes coverage-labelled reports without feedback;
-experimental Claude-only `display` also shows token categories and elapsed wall
-observations during work. Resource hooks are absent from ordinary plugin
-installation.
+experimental `inject` adds token categories and elapsed wall observations to
+model context on Claude and Codex during work. Resource hooks are absent from
+ordinary plugin installation.
 
 See [the pilot contract and recommendation](context/resources.md) for setup,
 coverage limits and evaluation status.

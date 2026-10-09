@@ -10,8 +10,8 @@ afterEach(() => { fs.rmSync(directory, { recursive: true, force: true }); });
 const input = { session_id: 's', hook_event_name: 'SessionStart' };
 const env = () => ({ MANTRA_RESOURCES: 'collect', MANTRA_RESOURCE_HOST: 'claude', MANTRA_RESOURCE_DIR: directory });
 
-test('disabled/default/display modes perform no writes and return no feedback', () => {
-  for (const mode of [undefined, 'disabled', 'display']) {
+test('disabled/default/inject modes perform no writes and return no feedback', () => {
+  for (const mode of [undefined, 'disabled', 'inject']) {
     expect(collect(input, { ...env(), MANTRA_RESOURCES: mode })).toBeNull();
   }
   expect(fs.readdirSync(directory)).toEqual([]);

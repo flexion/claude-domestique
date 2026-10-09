@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-/** Opt-in collection, with explicit experimental Claude display mode. */
+/** Opt-in collection, with explicit experimental context injection. */
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { performance } = require('perf_hooks');
 const { normalize, summarize } = require('../lib/resources');
-const { renderObservation, DISPLAY_GUIDANCE } = require('../lib/resource-display');
+const { renderObservation, INJECT_GUIDANCE } = require('../lib/resource-inject');
 
 const MAX_BYTES = 2 * 1024 * 1024;
 const MAX_INPUT_BYTES = 1024 * 1024;
@@ -95,14 +95,18 @@ function readSnapshot(host, runId, env = process.env) {
 }
 
 function processInput(input, env = process.env) {
-  const display = env.MANTRA_RESOURCES === 'display';
-  if (display && env.MANTRA_RESOURCE_HOST !== 'claude') return {};
-  const report = collect(input, display ? { ...env, MANTRA_RESOURCES: 'collect' } : env);
-  if (!display || !report) return {};
+  const inject = env.MANTRA_RESOURCES === 'inject';
+  const report = collect(input, inject ? { ...env, MANTRA_RESOURCES: 'collect' } : env);
+  if (!inject || !report) return {};
   const event = input.hook_event_name;
   let context = '';
-  if (event === 'SessionStart' && input.source !== 'resume') context = DISPLAY_GUIDANCE;
-  if (['UserPromptSubmit', 'PostToolUse', 'PostToolUseFailure'].includes(event)) context = renderObservation(report);
+  if (event === 'SessionStart' && input.source !== 'resume') context = INJECT_GUIDANCE;
+  // Codex 0.161.0 accepts additionalContext on these tool/prompt events.
+  // Other events still collect, without emitting unsupported output fields.
+  const observationEvents = report.host === 'codex'
+    ? ['UserPromptSubmit', 'PostToolUse']
+    : ['UserPromptSubmit', 'PostToolUse', 'PostToolUseFailure'];
+  if (observationEvents.includes(event)) context = renderObservation(report);
   return context ? { hookSpecificOutput: { hookEventName: event, additionalContext: context } } : {};
 }
 

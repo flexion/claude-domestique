@@ -1,9 +1,10 @@
 # Resource pilot
 
 Use `collect` for passive observations. The visibility comparison recommends
-retaining passive collection and ending display evaluation; `display` remains an
-explicit Claude-only experiment, with no further comparison scheduled. Neither
-mode changes assessment, the active objective, task requirements, or permissions.
+retaining passive collection and ending the Claude context-injection evaluation.
+The experimental `inject` mode supports Claude and Codex; no further comparison
+is scheduled. Neither mode changes assessment, the active objective, task
+requirements, or permissions.
 The [evaluation report](../../docs/research/resource-visibility.md) records the
 evidence and limitations.
 
@@ -52,7 +53,7 @@ For example, after saving the Claude fragment with its absolute script path as
 MANTRA_RESOURCES=collect MANTRA_RESOURCE_DIR=/absolute/path/to/local/scratch/resources claude --settings resource-hooks.json
 ```
 
-Use `MANTRA_RESOURCES=display` with the same settings for experimental visibility.
+Use `MANTRA_RESOURCES=inject` with the same settings for experimental context injection.
 Setting the environment variable alone does not register hooks.
 
 ## Consumer API
@@ -63,33 +64,59 @@ recording the hook, or null when disabled/unsupported; it never produces host
 feedback. Programmatic callers set `MANTRA_RESOURCE_HOST` to `claude` or `codex`.
 The settings commands supply `--host` themselves. `readSnapshot` checks both host and
 run identity and returns null for missing/invalid files. It is a saved observation,
-not a new measurement; consumers must inspect its observation time. A display
+not a new measurement; consumers must inspect its observation time. A context-injection
 experiment can wrap `collect` and explicitly decide whether to expose its return
 value. In `collect` mode the command always writes `{}` to stdout.
 
-## Experimental Claude display
+## Experimental context injection
 
-With the same explicit Claude hook settings, set `MANTRA_RESOURCES=display` to
-collect and show observations. This mode is experimental and Claude-only; Codex
-display mode does neither collection nor feedback. `collect(input, env)` itself
+With the same explicit host hook settings, set `MANTRA_RESOURCES=inject` to
+collect and add observations to model context on Claude or Codex. The name refers
+to context injection, rather than screen output. The former mode value is not an
+alias; unrecognized values neither collect nor inject. `collect(input, env)` itself
 remains passive and accepts only `collect`; the CLI's `processInput(input, env)`
-maps display to passive collection before deciding whether to emit context.
+maps `inject` to passive collection before deciding whether to emit context.
 
 SessionStart injects fixed guidance unless its source is `resume`; compaction may
-inject it again. UserPromptSubmit, PostToolUse and PostToolUseFailure display the
-current `collect` return, rather than an older disk snapshot. Display shows the
-separate Claude token categories, shared coverage with differing fields tagged,
-observation time and elapsed wall including waits. Other metrics remain in the
-report with their full semantics.
-The report's `truncated` flag appears as "incomplete acquisition" because it also
-covers a missing early transcript or malformed input, not only size truncation.
-No prompt or tool-completion event means no refreshed observation.
+inject it again. UserPromptSubmit and PostToolUse inject the current `collect`
+return, rather than an older disk snapshot. Claude also injects on
+PostToolUseFailure. PreToolUse collects passively on both hosts, avoiding a second
+observation block for each tool call. Other events also collect passively and
+return `{}`.
+
+The [official Codex hook contract](https://learn.chatgpt.com/docs/hooks) and
+[Codex 0.161.0 output schema](https://github.com/openai/codex/blob/rust-v0.161.0/codex-rs/hooks/src/schema.rs)
+confirm this JSON shape on the pilot's injection events: SessionStart,
+UserPromptSubmit and PostToolUse (use the current event name):
+
+```json
+{
+  "hookSpecificOutput": {
+    "hookEventName": "UserPromptSubmit",
+    "additionalContext": "Resource observation text"
+  }
+}
+```
+
+Stop and SessionEnd do not support added model context, so the pilot collects
+there without injecting. Codex does not support Notification or
+PostToolUseFailure; omit those registrations. Failed Bash commands still produce
+PostToolUse. The pilot does not register additional events such as SubagentStart,
+which Codex also supports for context injection.
+
+Injected text preserves each host's separate token categories, shared coverage
+with differing fields tagged, observation time and elapsed wall including waits.
+Codex cached/reasoning categories are explicitly labelled as subsets; no combined
+token total is produced. Other metrics remain in the report with their full
+semantics. The report's `truncated` flag appears as "incomplete acquisition"
+because it also covers a missing early transcript or malformed input, not only
+size truncation. No configured hook event means no refreshed observation.
 
 Consumption does not change requirements or permissions. Ask when necessary and
-spend what the task requires. Avoid routine commentary about counters. Display
-contains no success score, countdown, question quota or automatic stop. Unknown
-values remain unknown. The guidance and added observation text have their own
-input cost; collection alone establishes no behavioral benefit.
+spend what the task requires. Avoid routine commentary about counters. Injected
+text contains no success score, countdown, question quota or automatic stop.
+Unknown values remain unknown. The guidance and added observation text have their
+own input cost; collection alone establishes no behavioral benefit.
 
 Snapshots and journals live in the configured local scratch directory. Their stem
 is SHA256 of `JSON.stringify([host, session_id])`; extensions are `.json` and
@@ -130,6 +157,14 @@ Codex cached/reasoning values are subsets; Claude cache categories are separate.
 Transcripts are not stable public interfaces, so format changes can make usage
 unknown. Do not treat these observations as billing or context-window accounting.
 
+Observed token counts lag on both hosts. Claude counts can take a turn or two to
+catch up. In a three-turn Codex 0.161.0 probe, the first turn’s injected counts
+were unknown; turns two and three showed the preceding completed turn’s totals,
+matching the saved snapshots. Post-tool observations refreshed their timestamps
+and wall time but retained those totals: the next rollout usage row appeared
+after the hook. Injection reports usage already written to the transcript, not
+tokens still in flight; this timing is an observation, not a host guarantee.
+
 The Codex protocol defines timestamped `exec_command_begin/end` events, but the
 [independent verification](../../docs/reviews/resource-measurements-verification.md)
 found none in sampled codex-cli 0.161.0 rollouts. They are not an input
@@ -158,7 +193,7 @@ data between experiments as needed.
 The collector uses small append-only journal writes on a local filesystem,
 without persistent locks; snapshots use temporary files plus rename. Parallel
 hooks can finish out of order, so a saved snapshot is last-writer-wins and can lag
-another observation. A live display should use its own `collect` return. NFS and
+another observation. Live context injection should use its own `collect` return. NFS and
 other filesystems without reliable append semantics are outside pilot coverage.
 
 `collector_work_ms` sums earlier successful hook work samples, including journal,

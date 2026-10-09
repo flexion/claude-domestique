@@ -1,6 +1,6 @@
 {
   "name": "@claude-domestique/mantra",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Behavioral skills, recurring guidance, and opt-in resource observations for Claude Code and Codex",
   "main": "index.js",
   "scripts": {

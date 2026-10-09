@@ -1,4 +1,4 @@
-const { renderObservation, DISPLAY_GUIDANCE } = require('../resource-display');
+const { renderObservation, INJECT_GUIDANCE } = require('../resource-inject');
 
 function report() {
   return {
@@ -33,10 +33,10 @@ test('shows observation time, units, coverage and separate token categories', ()
 });
 
 test('separates once-per-session guidance from refreshed observations', () => {
-  expect(DISPLAY_GUIDANCE).toContain('do not change requirements or permissions');
-  expect(DISPLAY_GUIDANCE).toContain('Ask when necessary');
-  expect(DISPLAY_GUIDANCE).toContain('spend what the task requires');
-  expect(DISPLAY_GUIDANCE).toContain('Avoid routine commentary about counters');
+  expect(INJECT_GUIDANCE).toContain('do not change requirements or permissions');
+  expect(INJECT_GUIDANCE).toContain('Ask when necessary');
+  expect(INJECT_GUIDANCE).toContain('spend what the task requires');
+  expect(INJECT_GUIDANCE).toContain('Avoid routine commentary about counters');
   expect(renderObservation(report())).not.toContain('Ask when necessary');
 });
 
@@ -55,8 +55,24 @@ test('retains a field coverage that differs from shared report coverage', () => 
   expect(renderObservation(data)).toContain('input=12(complete)');
 });
 
-test.each([null, {}, { ...report(), schema_version: 2 }, { ...report(), host: 'codex' }])(
-  'does not display an unavailable or unsupported report', data => {
+test.each([null, {}, { ...report(), schema_version: 2 }, { ...report(), host: 'unsupported' }])(
+  'does not render an unavailable or unsupported report', data => {
     expect(renderObservation(data)).toBe('');
   },
 );
+
+test('renders native Codex categories without adding subsets or inventing absent values', () => {
+  const data = report();
+  data.host = 'codex';
+  data.tokens = {
+    input_tokens: { value: 20, coverage: 'partial' },
+    output_tokens: { value: 6, coverage: 'partial' },
+    cached_input_tokens: { value: 4, coverage: 'partial' },
+    cache_write_input_tokens: { value: null, coverage: 'unknown' },
+    reasoning_output_tokens: { value: 2, coverage: 'partial' },
+  };
+  const text = renderObservation(data);
+  expect(text).toContain('input=20 output=6 cached=4 cache-write=unknown reasoning=2');
+  expect(text).toContain('cache/reasoning are subsets');
+  expect(text).not.toMatch(/cache-read|cache-create|total_tokens/);
+});

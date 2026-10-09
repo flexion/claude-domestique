@@ -2,7 +2,7 @@
 
 ## Project overview
 
-Mantra provides behavioral skills and a recurring reminder for evidence-responsive assessment, proportionate research, and the active user objective. An optional passive collector records resource observations with explicit coverage; it supplies no behavioral feedback. A separate explicit Claude display mode exposes observations for evaluation.
+Mantra provides behavioral skills and a recurring reminder for evidence-responsive assessment, proportionate research, and the active user objective. An optional passive collector records resource observations with explicit coverage; it supplies no behavioral feedback. An explicit `inject` mode adds observations to model context on Claude and Codex.
 
 Repository-wide agent instructions come from the root `AGENTS.md` and `CLAUDE.md`; this file documents Mantra's implementation and is loaded on demand.
 
@@ -33,10 +33,10 @@ mantra/
 ├── hooks/
 │   ├── hooks.json
 │   ├── behavior.js       # Contains the injected BEHAVIOR text
-│   └── resources.js      # Explicit settings-only collection/display hook
+│   └── resources.js      # Explicit settings-only collection/injection hook
 ├── lib/
 │   ├── resources.js      # Measurement projection and aggregation
-│   └── resource-display.js # Experimental observation formatting
+│   └── resource-inject.js # Experimental observation formatting
 ├── context/              # Detailed on-demand references
 │   ├── behavior.md
 │   ├── test.md           # Mantra-specific validation reference
@@ -57,15 +57,15 @@ mantra/
 2. Troubleshooting using evidence relevant to the next action, including demonstrated
    local causes and authoritative references for uncertain external behavior.
 3. Carrying the active objective and authorization forward while honoring discussion pauses.
-4. Opt-in, coverage-labelled resource observations, with experimental Claude display.
+4. Opt-in, coverage-labelled resource observations, with experimental context injection on Claude and Codex.
 
 ### Resource pilot
 
 The default hook configuration registers only `behavior.js`, on session start and
 every prompt; skills own the detailed workflows. Resource collection
-and display require explicit host settings and environment variables; see
+and injection require explicit host settings and environment variables; see
 [the setup, consumer contract and recommendation](context/resources.md). Collection writes local reports
-and returns `{}`; the experimental display can emit context. The collector has no
+and returns `{}`; the experimental `inject` mode can emit context. The collector has no
 runtime dependency outside Node.js and projects measurements without retaining
 message content.
 

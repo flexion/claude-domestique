@@ -199,6 +199,9 @@ function runClaude(pluginDir, prompt, cwd) {
 }
 
 function runCodex(pluginName, prompt, cwd) {
+  const version = arg('codex-version');
+  const codex = version ? `@openai/codex@${version}` : CODEX;
+  const trustHooks = process.argv.includes('--codex-trust-hooks');
   // A throwaway home is what makes the install cheap to repeat and impossible to
   // stale: nothing survives between runs.
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'probe-codex-'));
@@ -210,10 +213,17 @@ function runCodex(pluginName, prompt, cwd) {
   const auth = path.join(os.homedir(), '.codex', 'auth.json');
   if (!fs.existsSync(auth)) die(`no ${auth}; run codex once to authenticate first`);
   fs.copyFileSync(auth, path.join(home, 'auth.json'));
+  // Workspace config and hook-definition trust are separate gates in Codex.
+  // Opt in only for vetted probe hooks, in this disposable home; model tools
+  // retain the read-only sandbox. The installed CLI must support the trust flag.
+  if (trustHooks) {
+    fs.writeFileSync(path.join(home, 'config.toml'),
+      `[features]\nhooks = true\n\n[projects.${JSON.stringify(fs.realpathSync(cwd))}]\ntrust_level = "trusted"\n`);
+  }
   const marketplace = require(path.join(REPO, '.claude-plugin', 'marketplace.json')).name;
   try {
-    execFileSync('npx', ['--yes', CODEX, 'plugin', 'marketplace', 'add', REPO], { env, stdio: 'ignore' });
-    execFileSync('npx', ['--yes', CODEX, 'plugin', 'add', `${pluginName}@${marketplace}`], { env, stdio: 'ignore' });
+    execFileSync('npx', ['--yes', codex, 'plugin', 'marketplace', 'add', REPO], { env, stdio: 'ignore' });
+    execFileSync('npx', ['--yes', codex, 'plugin', 'add', `${pluginName}@${marketplace}`], { env, stdio: 'ignore' });
   } catch (err) {
     die(`could not install ${pluginName} into a throwaway CODEX_HOME: ${err.message}`);
   }
@@ -222,7 +232,8 @@ function runCodex(pluginName, prompt, cwd) {
   // input '': codex exec reads the positional prompt AND waits on stdin, so an
   // open stdin hangs the run until it is killed.
   const r = spawnSync('npx', [
-    '--yes', CODEX, 'exec', '--json', '--sandbox', 'read-only', '--skip-git-repo-check', prompt,
+    '--yes', codex, 'exec', '--json', '--sandbox', 'read-only', '--skip-git-repo-check',
+    ...(trustHooks ? ['--dangerously-bypass-hook-trust'] : []), prompt,
   ], {
     cwd, env, encoding: 'utf8', input: '', maxBuffer: 64 * 1024 * 1024,
   });
@@ -235,7 +246,7 @@ function main() {
   const plugin = arg('plugin');
   const prompt = arg('prompt');
   const expect = arg('expect');
-  if (!plugin || !prompt) die('usage: --plugin <name-or-dir> --prompt <text> [--host claude|codex] [--expect <skill>] [--stream <path>]');
+  if (!plugin || !prompt) die('usage: --plugin <name-or-dir> --prompt <text> [--host claude|codex] [--codex-version <version>] [--codex-trust-hooks] [--expect <skill>] [--stream <path>]');
 
   const pluginDir = path.resolve(REPO, plugin);
   if (!fs.existsSync(path.join(pluginDir, '.claude-plugin', 'plugin.json'))) {
