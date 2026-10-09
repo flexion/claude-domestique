@@ -8,14 +8,7 @@ let directory;
 beforeEach(() => { directory = fs.mkdtempSync(path.join(os.tmpdir(), 'mantra-resources-')); });
 afterEach(() => { fs.rmSync(directory, { recursive: true, force: true }); });
 const input = { session_id: 's', hook_event_name: 'SessionStart' };
-const env = () => ({ MANTRA_RESOURCES: 'collect', MANTRA_RESOURCE_HOST: 'claude', MANTRA_RESOURCE_DIR: directory });
-
-test('disabled/default/inject modes perform no writes and return no feedback', () => {
-  for (const mode of [undefined, 'disabled', 'inject']) {
-    expect(collect(input, { ...env(), MANTRA_RESOURCES: mode })).toBeNull();
-  }
-  expect(fs.readdirSync(directory)).toEqual([]);
-});
+const env = () => ({ host: 'claude', directory });
 
 test('snapshots match host and session; identifiers cannot traverse directories', () => {
   const report = collect(input, env());
@@ -35,16 +28,16 @@ test('bounded journals stop appending and mark report truncated', () => {
   expect(fs.statSync(path.join(directory, journal)).size).toBe(MAX_BYTES);
 });
 
-test('CLI hook always returns valid empty JSON for invalid input, missing identity and disabled mode', () => {
+test('CLI hook always returns valid empty JSON for invalid input, missing identity and missing host', () => {
   for (const data of ['invalid', '{}', JSON.stringify(input)]) {
-    const result = spawnSync(process.execPath, [path.join(__dirname, '../resources.js')], { input: data, encoding: 'utf8', env: { ...process.env, MANTRA_RESOURCES: 'disabled' } });
+    const result = spawnSync(process.execPath, [path.join(__dirname, '../resources.js')], { input: data, encoding: 'utf8', env: { ...process.env, HOME: directory } });
     expect(result.status).toBe(0);
     expect(JSON.parse(result.stdout)).toEqual({});
   }
 });
 
 test('collection failure is diagnostic only and does not alter hook decisions', () => {
-  const result = spawnSync(process.execPath, [path.join(__dirname, '../resources.js')], { input: JSON.stringify(input), encoding: 'utf8', env: { ...process.env, ...env(), MANTRA_RESOURCE_DIR: '/dev/null/no-directory' } });
+  const result = spawnSync(process.execPath, [path.join(__dirname, '../resources.js'), '--host', 'claude'], { input: JSON.stringify(input), encoding: 'utf8', env: { ...process.env, HOME: '/dev/null/no-directory' } });
   expect(result.status).toBe(0);
   expect(JSON.parse(result.stdout)).toEqual({});
   expect(result.stderr).toContain('resource collection unavailable');
@@ -57,10 +50,10 @@ test('missing transcript marks partial acquisition without inventing usage', () 
   expect(collect({ ...input, hook_event_name: 'Stop' }, env()).metrics.collector_work_ms.value).toBeGreaterThanOrEqual(0);
 });
 
-test('plugin installation does not register resource hooks for ordinary users', () => {
+test('plugin installation registers resource hooks on both hosts', () => {
   const config = require('../hooks.json');
-  expect(JSON.stringify(config)).not.toContain('resources.js');
-  expect(require('../../.codex-plugin/plugin.json').hooks).toBeUndefined();
+  expect(JSON.stringify(config)).toContain('resources.js');
+  expect(require('../../.codex-plugin/plugin.json').hooks).toBe('./hooks/codex.json');
 });
 
 test('live transcript usage reaches the current PostToolUse snapshot without content retention', () => {
@@ -83,9 +76,10 @@ test('an abandoned old lock cannot disable collection', () => {
 });
 
 test('concurrent hooks preserve every identified tool duration in the journal', async () => {
-  collect(input, env());
+  const childOptions = { host: 'claude', directory: path.join(directory, '.cache/claude-domestique/mantra/resources') };
+  collect(input, childOptions);
   await Promise.all(Array.from({ length: 12 }, (_, index) => new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [path.join(__dirname, '../resources.js')], { env: { ...process.env, ...env() }, stdio: ['pipe', 'pipe', 'pipe'] });
+    const child = spawn(process.execPath, [path.join(__dirname, '../resources.js'), '--host', 'claude'], { env: { ...process.env, HOME: directory }, stdio: ['pipe', 'pipe', 'pipe'] });
     let output = '';
     let diagnostic = '';
     child.stdout.on('data', data => { output += data; });
@@ -95,11 +89,11 @@ test('concurrent hooks preserve every identified tool duration in the journal', 
       try {
         expect(status).toBe(0);
         expect(diagnostic).toBe('');
-        expect(JSON.parse(output)).toEqual({});
+        expect(JSON.parse(output).hookSpecificOutput.additionalContext).toContain('Resources');
         resolve();
       } catch (error) { reject(error); }
     });
     child.stdin.end(JSON.stringify({ ...input, hook_event_name: 'PostToolUse', tool_use_id: `tool-${index}`, duration_ms: 1 }));
   })));
-  expect(collect({ ...input, hook_event_name: 'Stop' }, env()).metrics.tool_execution_ms.value).toBe(12);
+  expect(collect({ ...input, hook_event_name: 'Stop' }, childOptions).metrics.tool_execution_ms.value).toBe(12);
 });

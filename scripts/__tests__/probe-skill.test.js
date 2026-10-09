@@ -24,7 +24,7 @@ function probe(options = [], cwd = root) {
   const child = {
     execFileSync(command, args, settings) {
       commands.push({ command, args, settings });
-      return '';
+      return args[0] === '--version' ? 'codex-cli 9.8.7\n' : '';
     },
     spawnSync(command, args, settings) {
       if (command === 'git') return { status: 1, stdout: '' };
@@ -52,20 +52,16 @@ function probe(options = [], cwd = root) {
   return { commands, output, exitCode };
 }
 
-test.each([
-  [[], '@openai/codex@0.147.0'],
-  [['--codex-version', '0.161.0'], '@openai/codex@0.161.0'],
-])('uses the selected Codex package for marketplace, plugin installation and execution: %s', (options, expectedPackage) => {
-  const result = probe(options);
+test('uses the installed Codex for every operation and reports its actual version', () => {
+  const result = probe();
   expect(result.exitCode).toBe(0);
   expect(result.output).toContain('probe response');
+  expect(result.output).toContain('codex-cli 9.8.7');
+  expect(result.commands.map(call => call.command)).toEqual(['codex', 'codex', 'codex', 'codex']);
   expect(result.commands.map(call => call.args.slice(0, 2))).toEqual([
-    ['--yes', expectedPackage], ['--yes', expectedPackage], ['--yes', expectedPackage],
+    ['--version'], ['plugin', 'marketplace'], ['plugin', 'add'], ['exec', '--json'],
   ]);
-  expect(result.commands.map(call => call.args.slice(2, 4))).toEqual([
-    ['plugin', 'marketplace'], ['plugin', 'add'], ['exec', '--json'],
-  ]);
-  const execution = result.commands[2];
+  const execution = result.commands[3];
   expect(execution.args).toContain('read-only');
   expect(execution.args).not.toContain('--dangerously-bypass-hook-trust');
   expect(fs.existsSync(path.join(execution.settings.env.CODEX_HOME, 'config.toml'))).toBe(false);
@@ -76,8 +72,8 @@ test('explicit hook trust is scoped to the isolated home and workspace, retainin
   const alias = path.join(root, 'workspace-link');
   fs.mkdirSync(workspace);
   fs.symlinkSync(workspace, alias, 'dir');
-  const result = probe(['--codex-version', '0.161.0', '--codex-trust-hooks'], alias);
-  const execution = result.commands[2];
+  const result = probe(['--codex-trust-hooks'], alias);
+  const execution = result.commands[3];
   expect(result.exitCode).toBe(0);
   expect(execution.args).toContain('--dangerously-bypass-hook-trust');
   expect(execution.args).toContain('read-only');

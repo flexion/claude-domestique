@@ -28,6 +28,24 @@ describe('mantra behavior hook', () => {
   });
 
   describe('processInput', () => {
+    it.each(['startup', 'clear'])('previews later reflection without requesting it on %s', source => {
+      const result = hook.processInput({ hook_event_name: 'SessionStart', source });
+
+      expect(result.hookSpecificOutput.hookEventName).toBe('SessionStart');
+      expect(result.hookSpecificOutput.additionalContext).toContain('No reflection is needed now.');
+      expect(result.hookSpecificOutput.additionalContext).not.toContain('Briefly recheck');
+      expect(result).not.toHaveProperty('decision');
+      expect(result).not.toHaveProperty('continue');
+    });
+
+    it.each(['resume', 'compact', undefined, 'unknown'])('delivers self-contained reflection on SessionStart source %s', source => {
+      const result = hook.processInput({ hook_event_name: 'SessionStart', source });
+
+      expect(result.hookSpecificOutput.additionalContext).toBe(hook.BEHAVIOR);
+      expect(result.hookSpecificOutput.additionalContext).toContain('Briefly recheck');
+      expect(result.hookSpecificOutput.additionalContext).not.toContain('No reflection is needed now.');
+    });
+
     it.each(['SessionStart', 'UserPromptSubmit'])('delivers active-objective guidance on %s', hookEvent => {
       const context = hook.processInput({ hook_event_name: hookEvent })
         .hookSpecificOutput.additionalContext;

@@ -19,26 +19,18 @@ beforeEach(() => {
       cache_read_input_tokens: 4, cache_creation_input_tokens: 8,
     } },
   })}\n`);
-  env = { ...process.env, MANTRA_RESOURCE_HOST: 'claude', MANTRA_RESOURCE_DIR: path.join(root, 'reports') };
+  env = { ...process.env, host: 'claude', directory: path.join(root, 'reports') };
   input = { hook_event_name: 'UserPromptSubmit', session_id: 'run-a', transcript_path: transcript };
 });
 
 afterEach(() => fs.rmSync(root, { recursive: true, force: true }));
 
-test.each(['disabled', undefined, 'unrecognized', 'display'])('disabled mode %s neither writes nor injects', mode => {
-  env.MANTRA_RESOURCES = mode;
-  expect(processInput(input, env)).toEqual({});
-  expect(fs.existsSync(env.MANTRA_RESOURCE_DIR)).toBe(false);
-});
-
-test('collect records measurements without agent feedback', () => {
-  env.MANTRA_RESOURCES = 'collect';
-  expect(processInput(input, env)).toEqual({});
+test('observations are always injected without a mode setting', () => {
+  expect(processInput(input, env).hookSpecificOutput.additionalContext).toContain('tokens input=10');
   expect(readSnapshot('claude', 'run-a', env).tokens.input_tokens.value).toBe(10);
 });
 
 test('inject records the same categories and exposes the fresh report after tool use', () => {
-  env.MANTRA_RESOURCES = 'inject';
   const output = processInput({ ...input, hook_event_name: 'PostToolUse', tool_use_id: 'tool-a' }, env);
   expect(output.hookSpecificOutput.hookEventName).toBe('PostToolUse');
   expect(output.hookSpecificOutput.additionalContext).toContain('tokens input=10');
@@ -53,7 +45,6 @@ test('inject records the same categories and exposes the fresh report after tool
 });
 
 test('fixed guidance appears on startup but is not repeated on resume or prompts', () => {
-  env.MANTRA_RESOURCES = 'inject';
   const startup = processInput({ ...input, hook_event_name: 'SessionStart', source: 'startup' }, env);
   expect(startup.hookSpecificOutput.additionalContext).toBe(INJECT_GUIDANCE);
   expect(processInput({ ...input, hook_event_name: 'SessionStart', source: 'resume' }, env)).toEqual({});
@@ -62,28 +53,25 @@ test('fixed guidance appears on startup but is not repeated on resume or prompts
 });
 
 test('unsupported injection host produces no feedback or collection writes', () => {
-  env.MANTRA_RESOURCES = 'inject';
-  env.MANTRA_RESOURCE_HOST = 'unsupported';
+  env.host = 'unsupported';
   expect(processInput(input, env)).toEqual({});
-  expect(fs.existsSync(env.MANTRA_RESOURCE_DIR)).toBe(false);
+  expect(fs.existsSync(env.directory)).toBe(false);
 });
 
 test('CLI keeps malformed input silent and emits valid context for inject', () => {
-  env.MANTRA_RESOURCES = 'inject';
   const script = path.join(__dirname, '..', 'resources.js');
   expect(JSON.parse(execFileSync(process.execPath, [script, '--host', 'claude'], {
-    env, input: 'malformed', encoding: 'utf8',
+    env: { ...process.env, HOME: root }, input: 'malformed', encoding: 'utf8',
   }))).toEqual({});
   const output = JSON.parse(execFileSync(process.execPath, [script, '--host', 'claude'], {
-    env, input: JSON.stringify(input), encoding: 'utf8',
+    env: { ...process.env, HOME: root }, input: JSON.stringify(input), encoding: 'utf8',
   }));
   expect(output.hookSpecificOutput.hookEventName).toBe('UserPromptSubmit');
   expect(output.hookSpecificOutput.additionalContext).toContain('tokens input=10');
 });
 
 function codexTranscript(usage = {}) {
-  env.MANTRA_RESOURCES = 'inject';
-  env.MANTRA_RESOURCE_HOST = 'codex';
+  env.host = 'codex';
   fs.writeFileSync(input.transcript_path, `${JSON.stringify({
     type: 'event_msg', payload: { type: 'token_count', info: { total_token_usage: {
       input_tokens: 20, output_tokens: 6, cached_input_tokens: 4,
@@ -122,18 +110,18 @@ test.each(['PreToolUse', 'Stop', 'SessionEnd', 'PreCompact', 'PostCompact', 'Pos
     codexTranscript();
     expect(processInput({ ...input, hook_event_name: event }, env)).toEqual({});
     expect(readSnapshot('codex', 'run-a', env).tokens.input_tokens.value).toBe(20);
-    const journal = fs.readdirSync(env.MANTRA_RESOURCE_DIR).find(name => name.endsWith('.jsonl'));
-    expect(fs.readFileSync(path.join(env.MANTRA_RESOURCE_DIR, journal), 'utf8')).toContain(`"event":"${event}"`);
+    const journal = fs.readdirSync(env.directory).find(name => name.endsWith('.jsonl'));
+    expect(fs.readFileSync(path.join(env.directory, journal), 'utf8')).toContain(`"event":"${event}"`);
   },
 );
 
 test('Codex CLI host flag selects collection and valid context output', () => {
   codexTranscript();
-  env.MANTRA_RESOURCE_HOST = 'claude';
+  env.host = 'claude';
   const output = JSON.parse(execFileSync(process.execPath, [path.join(__dirname, '..', 'resources.js'), '--host', 'codex'], {
-    env, input: JSON.stringify(input), encoding: 'utf8',
+    env: { ...process.env, HOME: root }, input: JSON.stringify(input), encoding: 'utf8',
   }));
   expect(output.hookSpecificOutput.hookEventName).toBe('UserPromptSubmit');
   expect(output.hookSpecificOutput.additionalContext).toContain('input=20');
-  expect(readSnapshot('codex', 'run-a', env).tokens.input_tokens.value).toBe(20);
+  expect(readSnapshot('codex', 'run-a', { directory: path.join(root, '.cache/claude-domestique/mantra/resources') }).tokens.input_tokens.value).toBe(20);
 });

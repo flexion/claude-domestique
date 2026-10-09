@@ -1,20 +1,25 @@
 #!/usr/bin/env node
-/** Opt-in collection, with explicit experimental context injection. */
+/** Automatic, coverage-labelled resource observations and periodic reflection. */
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const crypto = require('crypto');
 const { performance } = require('perf_hooks');
 const { normalize, summarize } = require('../lib/resources');
 const { renderObservation, INJECT_GUIDANCE } = require('../lib/resource-inject');
 
+const { REFLECTION } = require('./behavior');
+
+const REFLECTION_INTERVAL_MS = 5 * 60 * 1000;
+const RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 const MAX_BYTES = 2 * 1024 * 1024;
 const MAX_INPUT_BYTES = 1024 * 1024;
 
-function paths(host, runId, env) {
-  const directory = env.MANTRA_RESOURCE_DIR;
-  if (!directory || !path.isAbsolute(directory)) throw new Error('Set an absolute MANTRA_RESOURCE_DIR');
+function paths(host, runId, options = {}) {
+  const directory = options.directory || path.join(os.homedir(), '.cache', 'claude-domestique', 'mantra', 'resources');
+  if (!path.isAbsolute(directory)) throw new Error('Resource directory must be absolute');
   const key = crypto.createHash('sha256').update(JSON.stringify([host, runId])).digest('hex');
-  return { directory, journal: path.join(directory, `${key}.jsonl`), snapshot: path.join(directory, `${key}.json`) };
+  return { directory, journal: path.join(directory, `${key}.jsonl`), snapshot: path.join(directory, `${key}.json`), checkpoint: path.join(directory, `${key}.checkpoint`) };
 }
 
 function readBounded(file) {
@@ -42,14 +47,15 @@ function parseLines(text, projection) {
   return { records, malformed };
 }
 
-function collect(input, env = process.env) {
-  if (env.MANTRA_RESOURCES !== 'collect') return null;
-  const host = env.MANTRA_RESOURCE_HOST;
+function collect(input, options = {}) {
+  if (input?.agent_id) return null;
+  const host = options.host;
   const observation = normalize(input, host, Date.now());
   if (!observation?.session_id || observation.kind !== 'hook') return null;
   const start = performance.now();
-  const files = paths(host, observation.session_id, env);
+  const files = paths(host, observation.session_id, options);
   fs.mkdirSync(files.directory, { recursive: true, mode: 0o700 });
+  if (input.hook_event_name === 'SessionStart') prune(files.directory);
   let journal = fs.existsSync(files.journal) ? readBounded(files.journal) : { text: '', truncated: false };
   const line = `${JSON.stringify(observation)}\n`;
   let truncated = journal.truncated || Buffer.byteLength(journal.text) + Buffer.byteLength(line) > MAX_BYTES;
@@ -87,26 +93,86 @@ function collect(input, env = process.env) {
   return report;
 }
 
-function readSnapshot(host, runId, env = process.env) {
+function readSnapshot(host, runId, options = {}) {
   try {
-    const report = JSON.parse(readBounded(paths(host, runId, env).snapshot).text);
+    const report = JSON.parse(readBounded(paths(host, runId, options).snapshot).text);
     return report.host === host && report.run_id === runId ? report : null;
   } catch { return null; }
 }
 
-function processInput(input, env = process.env) {
-  const inject = env.MANTRA_RESOURCES === 'inject';
-  const report = collect(input, inject ? { ...env, MANTRA_RESOURCES: 'collect' } : env);
-  if (!inject || !report) return {};
+function prune(directory) {
+  const cutoff = Date.now() - RETENTION_MS;
+  for (const name of fs.readdirSync(directory)) {
+    if (!/^[a-f0-9]{64}\.(?:jsonl|json|checkpoint|checkpoint\.lock|checkpoint\.\d+\.claim|(?:checkpoint|json)\.\d+(?:\.[a-f0-9-]+)?\.tmp)$/.test(name)) continue;
+    const file = path.join(directory, name);
+    try { if (fs.statSync(file).mtimeMs < cutoff) fs.unlinkSync(file); }
+    catch { /* Another hook may have removed or replaced it. */ }
+  }
+}
+
+function saveCheckpoint(file, now) {
+  const temporary = `${file}.${process.pid}.${crypto.randomUUID()}.tmp`;
+  try {
+    fs.writeFileSync(temporary, String(now), { mode: 0o600 });
+    fs.renameSync(temporary, file);
+  } finally {
+    try { fs.unlinkSync(temporary); } catch { /* Already renamed or unavailable. */ }
+  }
+}
+
+function checkpoint(input, options, reset) {
+  const file = paths(options.host, input.session_id, options).checkpoint;
+  const now = Date.now();
+  try {
+    let previous;
+    try { previous = Number(fs.readFileSync(file, 'utf8')); } catch { /* First receipt. */ }
+    if (reset || !Number.isFinite(previous) || now < previous) {
+      saveCheckpoint(file, now);
+      return false;
+    }
+    // Immutable claims form a chain from the last observed checkpoint. A
+    // concurrent pointer write may lag, but following published claims recovers
+    // the latest time without deleting or releasing another process's lock.
+    while (now - previous >= REFLECTION_INTERVAL_MS) {
+      const claim = `${file}.${previous}.claim`;
+      let next;
+      try { next = Number(fs.readFileSync(claim, 'utf8')); }
+      catch (error) { if (error.code !== 'ENOENT') return false; }
+      if (Number.isFinite(next)) {
+        if (next <= previous) return false;
+        previous = next;
+        continue;
+      }
+      // Publish a fully written receipt with an exclusive hard link. A crash
+      // after publication leaves a usable claim, not an abandoned shared lock.
+      const temporary = `${file}.${process.pid}.${crypto.randomUUID()}.tmp`;
+      try {
+        fs.writeFileSync(temporary, String(now), { mode: 0o600 });
+        fs.linkSync(temporary, claim);
+      } catch { return false; }
+      finally { try { fs.unlinkSync(temporary); } catch { /* Best-effort cleanup. */ } }
+      // Pointer updates are only an optimization: the published claim is final.
+      try { saveCheckpoint(file, now); } catch { /* A later reader follows the claim. */ }
+      return true;
+    }
+  } catch { /* Resource context remains available if cadence storage fails. */ }
+  return false;
+}
+
+function processInput(input, options = {}) {
+  const report = collect(input, options);
+  if (!report) return {};
   const event = input.hook_event_name;
   let context = '';
+  if (event === 'SessionStart' || event === 'UserPromptSubmit') checkpoint(input, options, true);
   if (event === 'SessionStart' && input.source !== 'resume') context = INJECT_GUIDANCE;
-  // Codex 0.161.0 accepts additionalContext on these tool/prompt events.
-  // Other events still collect, without emitting unsupported output fields.
   const observationEvents = report.host === 'codex'
     ? ['UserPromptSubmit', 'PostToolUse']
     : ['UserPromptSubmit', 'PostToolUse', 'PostToolUseFailure'];
-  if (observationEvents.includes(event)) context = renderObservation(report);
+  if (observationEvents.includes(event)) {
+    context = renderObservation(report);
+    if (event !== 'UserPromptSubmit' && checkpoint(input, options, false)) context += `\n\n${REFLECTION}`;
+  }
   return context ? { hookSpecificOutput: { hookEventName: event, additionalContext: context } } : {};
 }
 
@@ -123,12 +189,14 @@ if (require.main === module) {
   });
   process.stdin.on('end', () => {
     const hostIndex = process.argv.indexOf('--host');
-    const env = hostIndex >= 0 ? { ...process.env, MANTRA_RESOURCE_HOST: process.argv[hostIndex + 1] } : process.env;
+    const host = hostIndex >= 0 ? process.argv[hostIndex + 1] : undefined;
+    const data = host === 'codex' ? process.env.PLUGIN_DATA : process.env.CLAUDE_PLUGIN_DATA;
+    const options = { host, ...(data ? { directory: path.join(data, 'resources') } : {}) };
     let output = {};
-    try { if (!exceeded) output = processInput(JSON.parse(input), env); }
+    try { if (!exceeded) output = processInput(JSON.parse(input), options); }
     catch (error) { process.stderr.write(`mantra: resource collection unavailable: ${error.message}\n`); }
     process.stdout.write(`${JSON.stringify(output)}\n`);
   });
 }
 
-module.exports = { collect, readSnapshot, processInput, MAX_BYTES };
+module.exports = { collect, readSnapshot, processInput, MAX_BYTES, REFLECTION_INTERVAL_MS };

@@ -14,8 +14,8 @@
     {
       "name": "mantra",
       "source": "./mantra",
-      "description": "Behavioral skills and recurring guidance for assessment, proportionate research, and the active user objective; optional passive resource measurements",
-      "version": "0.10.0"
+      "description": "Behavioral skills, recurring guidance, and automatic resource observations for Claude Code and Codex",
+      "version": "0.11.0"
     },
     {
       "name": "onus",

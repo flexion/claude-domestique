@@ -19,10 +19,10 @@ The Mantra Jest suites cover:
   across those events, and absence of the removed external-source quota.
 - Resource projection and aggregation: native identities, repeated snapshots,
   category semantics, overlapping intervals, missing records, and unknown values.
-- Collector I/O: opt-in and disabled modes, bounded reads, local snapshots,
+- Collector I/O: automatic registration and storage retention, bounded reads, local snapshots,
   concurrent appends, malformed input, and passive stdout.
-- Experimental context injection: separate token categories, explicit unknowns and coverage,
-  silent disabled/collect modes, and fresh observations after tool use.
+- Automatic context injection: separate token categories, explicit unknowns and coverage,
+  silent passive events and unsupported hosts, fresh observations after tool use, interval resets, concurrent claims and subagent exclusion.
 - The optional standalone Claude statusline, which is separate from both hooks.
 
 Test public behavior and meaningful failure cases. Pure aggregation functions can
@@ -57,7 +57,7 @@ whether the model follows it.
 
 ## Resource measurements
 
-Follow [the pilot contract](resources.md) when testing collection. Keep human
+Follow [the measurement contract](resources.md) when testing collection. Keep human
 permission stops, clarification, automation, hook brackets, and execution distinct.
 Missing evidence is unknown, not zero. Native token categories have different
 host semantics and must not be combined into a billing or efficiency score.

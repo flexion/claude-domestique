@@ -7,7 +7,7 @@ This file gives coding agents the repository-specific context needed to work saf
 Claude Domestique is a Claude Code plugin marketplace. Its independently installable plugins are:
 
 - `memento`: branch-based session persistence
-- `mantra`: behavioral skills, recurring guidance, and an opt-in resource pilot
+- `mantra`: behavioral skills, recurring guidance, and automatic resource observations
 - `onus`: GitHub, JIRA, and Azure DevOps work-item automation
 - `agent-artifex`: guidance for designing and testing AI services
 - `comitatus`: herdr orchestration workflows
@@ -92,16 +92,20 @@ $plugins
 EOF
 ```
 
-Smoke-test every plugin that declares a Codex manifest from an isolated Codex home:
+Smoke-test every plugin that declares a Codex manifest from an isolated Codex home
+using the installed `codex` CLI. Report its actual version; do not pin or label a
+version as current or minimum. CI installs Codex without a version selector only
+when the CLI is missing.
 
 ```bash
 export CODEX_HOME="$(mktemp -d)"
-npx --yes @openai/codex@0.147.0 plugin marketplace add .
+codex --version
+codex plugin marketplace add .
 marketplace=$(node -p "require('./.claude-plugin/marketplace.json').name")
 for manifest in */.codex-plugin/plugin.json; do
   [ -e "$manifest" ] || continue
   plugin=${manifest%%/*}
-  npx --yes @openai/codex@0.147.0 plugin add "${plugin}@${marketplace}"
+  codex plugin add "${plugin}@${marketplace}"
 done
 ```
 
@@ -114,7 +118,7 @@ node scripts/probe-skill.js --plugin modus --expect modus:agent-work-item --prom
 node scripts/probe-skill.js --host codex --plugin modus --expect agent-work-item --prompt "..."
 ```
 
-Use `--codex-version 0.161.0` to override the default `@openai/codex@0.147.0`; `--codex-trust-hooks` opts into vetted hooks in the isolated home/workspace, retaining read-only model tools (requires a CLI supporting hook-trust bypass). With `--cwd` on a real repository, this trusts that repository’s hooks, which Codex runs outside its sandbox.
+Codex probes use the installed CLI and print its actual version. `--codex-trust-hooks` opts into vetted hooks in the isolated home/workspace, retaining read-only model tools (requires a CLI supporting hook-trust bypass). With `--cwd` on a real repository, this trusts that repository’s hooks, which Codex runs outside its sandbox.
 
 Exit 0 fired, 1 did not, 2 could not run. It loads the plugin from source with no
 install, so the edit under test is the one that runs, and it runs in a neutral

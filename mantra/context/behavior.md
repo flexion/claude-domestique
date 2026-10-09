@@ -16,6 +16,13 @@ not require a separate change manifest, model recommendation, approval for
 already-authorized work, or `// CHANGED` annotations. Consult the owning plugin
 for session, git, and work-item procedures rather than duplicating them here.
 
-The [passive resource pilot](resources.md) is separate from this guidance. Its
+The hook also prompts brief reflection on the requested outcome, actual progress,
+and consequential uncertainty. This uses the existing prompt/session delivery,
+including after compaction, and a five-minute tool-completion cadence. It asks agents
+to use wall-time/token metrics only when visible and to account for reflection
+cost. Startup/clear instead preview later reminders without requesting reflection
+now. The hook itself measures nothing; guidance is not a completion judge.
+
+The [automatic resource hooks](resources.md) is separate from this guidance. Its
 observations measure neither usefulness nor human attention and do not authorize
-changes to scope, permissions, or necessary clarification. It injects no feedback.
+changes to scope, permissions, or necessary clarification. Collection projects measurements; supported delivery events automatically add observations to model context.

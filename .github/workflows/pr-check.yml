@@ -6,8 +6,6 @@ on:
 env:
   CLAUDE_MIN_VERSION: 2.1.226
   CLAUDE_CURRENT_VERSION: 2.1.226
-  CODEX_MIN_VERSION: 0.147.0
-  CODEX_CURRENT_VERSION: 0.147.0
 
 jobs:
   test:
@@ -51,17 +49,24 @@ jobs:
           $plugins
           EOF
 
+      - name: Ensure Codex is installed
+        run: |
+          if ! command -v codex >/dev/null 2>&1; then
+            npm install --global @openai/codex
+          fi
+
       - name: Smoke test Codex plugin installs
         env:
           CODEX_HOME: ${{ runner.temp }}/codex-home
         run: |
           mkdir -p "$CODEX_HOME"
-          npx --yes @openai/codex@0.147.0 plugin marketplace add .
+          codex --version
+          codex plugin marketplace add .
           marketplace=$(node -p "require('./.claude-plugin/marketplace.json').name")
           for manifest in */.codex-plugin/plugin.json; do
             [ -e "$manifest" ] || continue
             plugin=${manifest%%/*}
-            npx --yes @openai/codex@0.147.0 plugin add "${plugin}@${marketplace}"
+            codex plugin add "${plugin}@${marketplace}"
           done
 
   # The bug this guards against is invisible on Linux. A hook command that names

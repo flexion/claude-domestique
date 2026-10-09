@@ -1,9 +1,11 @@
 # Research: Claude Code Hooks for Context Injection
 
+
+Current implementation update: resource hooks now inject automatically; see [the current contract](../../mantra/context/resources.md). Historical design discussion below retains the earlier opt-in scope.
+
 Historical research for issue #99. Its host event inventory and plugin comparison
 describe the investigation at that time; they are not current setup guidance.
-Mantra now injects a fixed behavioral reminder and has a separate opt-in resource
-pilot. See [the Mantra README](../../mantra/README.md) and
+Mantra now injects behavioral guidance and resource observations automatically. See [the Mantra README](../../mantra/README.md) and
 [resource setup](../../mantra/context/resources.md) for the current implementation.
 
 ## Executive Summary

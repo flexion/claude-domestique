@@ -82,9 +82,13 @@ Codex has **no `--plugin-dir`**. It installs from a configured marketplace
 snapshot only. This repository is a marketplace, so a throwaway `CODEX_HOME` gives
 the same fresh-load property:
 
+Use the installed `codex` and record `codex --version`. The probe does this
+automatically; it does not download or select a Codex version.
+
 ```bash
 export CODEX_HOME="$(mktemp -d)"
 cp ~/.codex/auth.json "$CODEX_HOME/"
+codex --version
 codex plugin marketplace add <repo-root>
 codex plugin add <plugin>@claude-domestique
 codex exec --json --sandbox read-only --skip-git-repo-check "<prompt>" < /dev/null

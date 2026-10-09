@@ -11,7 +11,7 @@
           },
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/resources.js\" --host claude",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/resources.js\" --host codex",
             "timeout": 3
           }
         ]
@@ -27,7 +27,7 @@
           },
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/resources.js\" --host claude",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/resources.js\" --host codex",
             "timeout": 3
           }
         ]
@@ -38,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/resources.js\" --host claude",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/resources.js\" --host codex",
             "timeout": 3
           }
         ]
@@ -49,7 +49,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/resources.js\" --host claude",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/resources.js\" --host codex",
             "timeout": 3
           }
         ]
@@ -60,7 +60,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/resources.js\" --host claude",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/resources.js\" --host codex",
             "timeout": 3
           }
         ]
@@ -71,18 +71,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/resources.js\" --host claude",
-            "timeout": 3
-          }
-        ]
-      }
-    ],
-    "PostToolUseFailure": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/resources.js\" --host claude",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/resources.js\" --host codex",
             "timeout": 3
           }
         ]
