@@ -114,6 +114,8 @@ node scripts/probe-skill.js --plugin modus --expect modus:agent-work-item --prom
 node scripts/probe-skill.js --host codex --plugin modus --expect agent-work-item --prompt "..."
 ```
 
+Use `--codex-version 0.161.0` to override the default `@openai/codex@0.147.0`; `--codex-trust-hooks` opts into vetted hooks in the isolated home/workspace, retaining read-only model tools (requires a CLI supporting hook-trust bypass). With `--cwd` on a real repository, this trusts that repository’s hooks, which Codex runs outside its sandbox.
+
 Exit 0 fired, 1 did not, 2 could not run. It loads the plugin from source with no
 install, so the edit under test is the one that runs, and it runs in a neutral
 temporary directory — inside this repository the agent reads `CLAUDE.md` and every
