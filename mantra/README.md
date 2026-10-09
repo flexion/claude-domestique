@@ -26,7 +26,7 @@ installed plugin's skills can be available while its hooks remain untrusted.
 
 ## Automatic guidance
 
-[The hook](hooks/behavior.js) injects the same `BEHAVIOR` text on `SessionStart`
+[The hook](hooks/behavior.js) injects core guidance on `SessionStart`
 and every `UserPromptSubmit`. It reinforces:
 
 - Assessment of correctness, architecture, alternatives, and material risks;
@@ -36,25 +36,43 @@ and every `UserPromptSubmit`. It reinforces:
   contracts.
 - The active objective, prior clarifications and authorization, discussion
   pauses, and action within the requested scope.
+- Brief reflection on actual progress, remaining uncertainty, and whether to
+  continue necessary work, change a stalled approach, or finish a supported
+  outcome. When wall-time/token metrics are visible, consider their coverage
+  and the cost of reflection; consumption alone does not decide completion.
 
 The behavior hook has no counters, refresh interval, state, file reads, or
 sibling-plugin loader. It does not inject the `context/` documents or load project rule files.
 Those documents are references for use on demand; project instructions are loaded
 by the host according to its own conventions.
 
+SessionStart also refreshes guidance after compaction (source: compact). During
+an autonomous turn, tool completion adds the same reflection about every five
+minutes, alongside fresh resource observations. Each prompt or session start
+resets that interval. Stop adds no continuation. The interval is provisional;
+[the behavioral checks](../docs/reviews/mantra-resource-reflection.md) have not
+demonstrated improved judgment.
+
+On `SessionStart` with `source: "startup"` or `"clear"`, the hook adds a short
+notice explaining the later reminders and says no reflection is needed now.
+Prompts and other session-start sources (including resume and compact) get the
+self-contained reflection instead, triggered before finishing or after
+unproductive attempts. The notice does not establish persistent priming or
+behavioral benefit.
+
 On session start the hook also returns `📍 Mantra: behavior rules loaded`.
 It returns no status message on individual prompts.
 
-## Resource pilot
+## Automatic resource observations
 
-The [resource pilot](context/resources.md) is installed separately through explicit
-settings hooks. `collect` writes coverage-labelled reports without feedback;
-experimental `inject` adds token categories and elapsed wall observations to
-model context on Claude and Codex during work. Resource hooks are absent from
-ordinary plugin installation.
+[Resource hooks](hooks/resources.js) collect and inject native token categories
+and elapsed wall observations on both hosts without resource environment-variable
+setup. Coverage limits and unknown values remain explicit. Subagent hook receipts
+are excluded; snapshots use the host's plugin data directory, with a built-in
+fallback and 30-day cleanup. Disabling Mantra or its hooks stops injection.
 
-See [the pilot contract and recommendation](context/resources.md) for setup,
-coverage limits and evaluation status.
+See [the measurement and reminder contract](context/resources.md) for delivery,
+storage, overhead and coverage limits.
 
 ## Skills
 

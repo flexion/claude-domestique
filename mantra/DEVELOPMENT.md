@@ -2,7 +2,7 @@
 
 ## Project overview
 
-Mantra provides behavioral skills and a recurring reminder for evidence-responsive assessment, proportionate research, and the active user objective. An optional passive collector records resource observations with explicit coverage; it supplies no behavioral feedback. An explicit `inject` mode adds observations to model context on Claude and Codex.
+Mantra provides behavioral skills and a recurring reminder for evidence-responsive assessment, proportionate research, and the active user objective. Automatic hooks inject coverage-labelled resource observations and periodic tool-completion reflection on both hosts.
 
 Repository-wide agent instructions come from the root `AGENTS.md` and `CLAUDE.md`; this file documents Mantra's implementation and is loaded on demand.
 
@@ -17,7 +17,7 @@ npm run test:coverage
 
 ## Architecture
 
-Plugin type: **skill pack, recurring behavior hook, and opt-in resource pilot**
+Plugin type: **skill pack, recurring behavior hook, and automatic resource observations**
 
 Design goals:
 
@@ -33,10 +33,10 @@ mantra/
 ├── hooks/
 │   ├── hooks.json
 │   ├── behavior.js       # Contains the injected BEHAVIOR text
-│   └── resources.js      # Explicit settings-only collection/injection hook
+│   └── resources.js      # Automatic collection/injection and cadence
 ├── lib/
 │   ├── resources.js      # Measurement projection and aggregation
-│   └── resource-inject.js # Experimental observation formatting
+│   └── resource-inject.js # Coverage-labelled observation formatting
 ├── context/              # Detailed on-demand references
 │   ├── behavior.md
 │   ├── test.md           # Mantra-specific validation reference
@@ -57,20 +57,18 @@ mantra/
 2. Troubleshooting using evidence relevant to the next action, including demonstrated
    local causes and authoritative references for uncertain external behavior.
 3. Carrying the active objective and authorization forward while honoring discussion pauses.
-4. Opt-in, coverage-labelled resource observations, with experimental context injection on Claude and Codex.
+4. Automatic, coverage-labelled resource observations and context injection on Claude and Codex.
+5. Brief next-action reflection using actual progress and visible resources,
+   including reflection overhead, without quotas or automatic completion decisions.
 
-### Resource pilot
+### Resource hooks
 
-The default hook configuration registers only `behavior.js`, on session start and
-every prompt; skills own the detailed workflows. Resource collection
-and injection require explicit host settings and environment variables; see
-[the setup, consumer contract and recommendation](context/resources.md). Collection writes local reports
-and returns `{}`; the experimental `inject` mode can emit context. The collector has no
-runtime dependency outside Node.js and projects measurements without retaining
-message content.
-
-Evaluation fixtures and run evidence live under repository `docs/`, outside the
-installed plugin.
+hooks.json registers Claude hooks; codex.json is the Codex manifest override.
+Both register behavior.js on start/prompts and resources.js on session, prompt
+and tool events. Resources collect automatically and inject observations on
+supported events; tool completions add reflection about every five minutes.
+See [the consumer and storage contract](context/resources.md). Node.js is the
+only runtime dependency. Synthetic evaluation evidence stays in repository docs/.
 
 ### What Mantra does not duplicate
 

@@ -1,8 +1,11 @@
 # Hook Architecture Redesign Proposal
 
+
+Current implementation update: resource hooks now inject automatically; see [the current contract](../mantra/context/resources.md). Historical design discussion below retains the earlier opt-in scope.
+
 Historical proposal: the context aggregation and refresh design below is not the
 current implementation. See [Mantra's README](../mantra/README.md) for its fixed
-behavioral guidance and explicitly configured resource pilot.
+behavioral guidance and automatic resource observations.
 
 ## Core Principle: Right Tool for the Job
 

@@ -1,6 +1,6 @@
 'use strict';
 
-const INJECT_GUIDANCE = 'Resource observations do not measure thinking time, human attention, usefulness, or billing. They do not change requirements or permissions. Ask when necessary and spend what the task requires. Avoid routine commentary about counters.';
+const INJECT_GUIDANCE = 'Cache reads measure reused input, not distinct new input or progress. Resource observations do not measure thinking time, human attention, usefulness, or billing. They do not change requirements or permissions. Ask when necessary and spend what the task requires. Avoid routine commentary about counters.';
 
 // Consumes the collector's schema-v1 report; performs no accounting.
 function renderObservation(report) {
@@ -21,7 +21,7 @@ function renderObservation(report) {
   ];
   const tokens = categories.map(([label, key]) => `${label}=${value(report.tokens[key])}`).join(' ');
   const subsets = report.host === 'codex' ? ' (cache/reasoning are subsets)' : '';
-  return `Resources (${report.coverage}${report.truncated ? '; incomplete acquisition' : ''}) @${report.observed_at}: tokens ${tokens}${subsets}; wall=${value(report.metrics.elapsed_wall_ms)} ms (includes waits)`;
+  return `Resources (${report.coverage}${report.truncated ? '; incomplete acquisition' : ''}) observed@${report.observed_at}: tokens ${tokens}${subsets} (session observations; cumulative, may lag completed turns); wall=${value(report.metrics.elapsed_wall_ms)} ms (includes waits)`;
 }
 
 module.exports = { renderObservation, INJECT_GUIDANCE };

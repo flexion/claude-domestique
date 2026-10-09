@@ -44,7 +44,6 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const CODEX = '@openai/codex@0.147.0';
 const REPO = path.resolve(__dirname, '..');
 
 function arg(name, fallback) {
@@ -199,8 +198,12 @@ function runClaude(pluginDir, prompt, cwd) {
 }
 
 function runCodex(pluginName, prompt, cwd) {
-  const version = arg('codex-version');
-  const codex = version ? `@openai/codex@${version}` : CODEX;
+  try {
+    const version = execFileSync('codex', ['--version'], { encoding: 'utf8' }).trim();
+    process.stdout.write(`runtime: ${version}\n`);
+  } catch (err) {
+    die(`could not run installed codex: ${err.message}`);
+  }
   const trustHooks = process.argv.includes('--codex-trust-hooks');
   // A throwaway home is what makes the install cheap to repeat and impossible to
   // stale: nothing survives between runs.
@@ -222,8 +225,8 @@ function runCodex(pluginName, prompt, cwd) {
   }
   const marketplace = require(path.join(REPO, '.claude-plugin', 'marketplace.json')).name;
   try {
-    execFileSync('npx', ['--yes', codex, 'plugin', 'marketplace', 'add', REPO], { env, stdio: 'ignore' });
-    execFileSync('npx', ['--yes', codex, 'plugin', 'add', `${pluginName}@${marketplace}`], { env, stdio: 'ignore' });
+    execFileSync('codex', ['plugin', 'marketplace', 'add', REPO], { env, stdio: 'ignore' });
+    execFileSync('codex', ['plugin', 'add', `${pluginName}@${marketplace}`], { env, stdio: 'ignore' });
   } catch (err) {
     die(`could not install ${pluginName} into a throwaway CODEX_HOME: ${err.message}`);
   }
@@ -231,8 +234,8 @@ function runCodex(pluginName, prompt, cwd) {
   // and codex refuses an untrusted non-repo without it.
   // input '': codex exec reads the positional prompt AND waits on stdin, so an
   // open stdin hangs the run until it is killed.
-  const r = spawnSync('npx', [
-    '--yes', codex, 'exec', '--json', '--sandbox', 'read-only', '--skip-git-repo-check',
+  const r = spawnSync('codex', [
+    'exec', '--json', '--sandbox', 'read-only', '--skip-git-repo-check',
     ...(trustHooks ? ['--dangerously-bypass-hook-trust'] : []), prompt,
   ], {
     cwd, env, encoding: 'utf8', input: '', maxBuffer: 64 * 1024 * 1024,
@@ -242,11 +245,12 @@ function runCodex(pluginName, prompt, cwd) {
 }
 
 function main() {
+  if (process.argv.includes('--codex-version')) die('--codex-version was removed; probes use the installed codex and report its version');
   const host = arg('host', 'claude');
   const plugin = arg('plugin');
   const prompt = arg('prompt');
   const expect = arg('expect');
-  if (!plugin || !prompt) die('usage: --plugin <name-or-dir> --prompt <text> [--host claude|codex] [--codex-version <version>] [--codex-trust-hooks] [--expect <skill>] [--stream <path>]');
+  if (!plugin || !prompt) die('usage: --plugin <name-or-dir> --prompt <text> [--host claude|codex] [--codex-trust-hooks] [--expect <skill>] [--stream <path>]');
 
   const pluginDir = path.resolve(REPO, plugin);
   if (!fs.existsSync(path.join(pluginDir, '.claude-plugin', 'plugin.json'))) {

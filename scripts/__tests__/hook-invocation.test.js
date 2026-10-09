@@ -34,6 +34,9 @@ const PAYLOADS = {
   UserPromptSubmit: { prompt: 'what should I do first?' },
   PreToolUse: { tool_name: 'Bash', tool_input: { command: 'git status' } },
   PostToolUse: { tool_name: 'TodoWrite', tool_input: {}, tool_response: {} },
+  PostToolUseFailure: { tool_name: 'Bash', tool_input: {}, error: 'fixture failure' },
+  Stop: {},
+  SessionEnd: { reason: 'clear' },
 };
 
 function marketplacePlugins() {
@@ -42,26 +45,33 @@ function marketplacePlugins() {
 }
 
 // One case per (plugin, event, command) registration, named so a failure says
-// which of the nine registrations broke without reading the manifest.
+// which registration broke without reading the manifest.
 function registrations() {
   const cases = [];
 
   for (const entry of marketplacePlugins()) {
     const pluginRoot = path.join(ROOT, entry.name);
-    const manifestPath = path.join(pluginRoot, 'hooks', 'hooks.json');
-    if (!fs.existsSync(manifestPath)) continue;
+    const hookPaths = [path.join(pluginRoot, 'hooks', 'hooks.json')];
+    const codexManifest = path.join(pluginRoot, '.codex-plugin', 'plugin.json');
+    if (fs.existsSync(codexManifest)) {
+      const hooks = JSON.parse(fs.readFileSync(codexManifest, 'utf8')).hooks;
+      if (typeof hooks === 'string') hookPaths.push(path.join(pluginRoot, hooks));
+    }
+    for (const manifestPath of new Set(hookPaths)) {
+      if (!fs.existsSync(manifestPath)) continue;
 
-    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-    for (const [event, matchers] of Object.entries(manifest.hooks || {})) {
-      for (const matcher of matchers) {
-        for (const hook of matcher.hooks || []) {
-          if (hook.type !== 'command') continue;
-          cases.push({
-            name: `${entry.name} ${event} ${path.basename(hook.command.replace(/"\s*$/, ''))}`,
-            pluginRoot,
-            event,
-            command: hook.command,
-          });
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+      for (const [event, matchers] of Object.entries(manifest.hooks || {})) {
+        for (const matcher of matchers) {
+          for (const hook of matcher.hooks || []) {
+            if (hook.type !== 'command') continue;
+            cases.push({
+              name: `${entry.name} ${event} ${path.basename(hook.command.replace(/"\s*$/, ''))}`,
+              pluginRoot,
+              event,
+              command: hook.command,
+            });
+          }
         }
       }
     }
@@ -96,7 +106,7 @@ describe.each(cases)('$name', ({ pluginRoot, event, command }) => {
     // shell. cmd.exe expands neither `${...}` nor `$...`, so the substitution has
     // to happen here for the spawned command to be what Windows would receive.
     const resolved = command.split('${CLAUDE_PLUGIN_ROOT}').join(pluginRoot);
-    const payload = JSON.stringify({ hook_event_name: event, ...PAYLOADS[event] });
+    const payload = JSON.stringify({ session_id: 'invocation-fixture', hook_event_name: event, ...PAYLOADS[event] });
 
     const result = spawnSync(resolved, {
       cwd: scratch,
@@ -104,6 +114,8 @@ describe.each(cases)('$name', ({ pluginRoot, event, command }) => {
       env: {
         ...process.env,
         CLAUDE_PLUGIN_ROOT: pluginRoot,
+        CLAUDE_PLUGIN_DATA: path.join(scratch, 'plugin-data'),
+        PLUGIN_DATA: path.join(scratch, 'plugin-data'),
         // os.homedir() reads HOME on POSIX and USERPROFILE on Windows, and the
         // hooks that provision or cache do so under one of them.
         HOME: scratch,

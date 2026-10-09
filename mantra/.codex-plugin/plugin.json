@@ -1,7 +1,7 @@
 {
   "name": "mantra",
-  "version": "0.10.0",
-  "description": "Behavioral skills and recurring guidance for assessment, proportionate research, and the active user objective; optional passive resource measurements",
+  "version": "0.11.0",
+  "description": "Behavioral skills, recurring guidance, and automatic resource observations for Claude Code and Codex",
   "author": {
     "name": "David Puglielli"
   },
@@ -18,7 +18,7 @@
   "interface": {
     "displayName": "Mantra",
     "shortDescription": "Evidence-responsive assessment and scoped action",
-    "longDescription": "Supports sound assessment, proportionate troubleshooting, retained authorization, and discussion pauses. Passive resource measurements are opt-in.",
+    "longDescription": "Supports sound assessment, proportionate troubleshooting, retained authorization, and discussion pauses, with automatic resource observations and periodic reflection.",
     "developerName": "Flexion",
     "category": "Developer Tools",
     "capabilities": [
@@ -31,5 +31,6 @@
       "Assess this proposal critically before I implement it.",
       "Troubleshoot this failure using evidence relevant to the next action."
     ]
-  }
+  },
+  "hooks": "./hooks/codex.json"
 }

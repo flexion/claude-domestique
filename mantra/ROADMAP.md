@@ -3,8 +3,7 @@
 ## Current implementation
 
 Mantra provides four skills and a fixed reminder on session start and every
-prompt. Separately configured resource hooks support passive `collect` and
-experimental Claude and Codex `inject`; see [the pilot contract and recommendation](context/resources.md).
+prompt. Resource hooks support automatic Claude and Codex resource injection and periodic tool-completion reflection; see [the current measurement contract](context/resources.md).
 See [README.md](README.md) and [DEVELOPMENT.md](DEVELOPMENT.md).
 
 Older plans described periodic file refresh, sibling-plugin discovery, and

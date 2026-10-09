@@ -1,132 +1,72 @@
-# Resource pilot
+# Resource observations and reflection
 
-Use `collect` for passive observations. The visibility comparison recommends
-retaining passive collection and ending the Claude context-injection evaluation.
-The experimental `inject` mode supports Claude and Codex; no further comparison
-is scheduled. Neither mode changes assessment, the active objective, task
-requirements, or permissions.
-The [evaluation report](../../docs/research/resource-visibility.md) records the
-evidence and limitations.
+Mantra automatically collects and injects resource observations on Claude Code
+and Codex. Installation registers the hooks; no resource environment variables or
+separate settings file are required. Codex still requires the host's hook trust
+review. Disable the plugin or its hooks through the host to stop this behavior.
 
-The pilot is opt-in and its hooks are **not registered by plugin installation**.
-Before launching Claude Code or Codex, set:
+This is an operator decision, superseding the earlier opt-in visibility pilot's
+recommendation. The [earlier evaluation](../../docs/research/resource-visibility.md)
+and [reflection checks](../../docs/reviews/mantra-resource-reflection.md) establish
+neither better judgment nor an optimal reminder interval.
 
-```sh
-export MANTRA_RESOURCES=collect
-export MANTRA_RESOURCE_DIR=/absolute/path/to/local/scratch/resources
-```
+## Delivery and cadence
 
-In a scratch workspace, add this fragment to Claude's `.claude/settings.local.json`
-or supply a settings file with `--settings`. Replace the script path with an
-absolute path to this checkout or the installed Mantra plugin. Merge the `hooks`
-entries with any existing settings; do not overwrite unrelated settings.
+SessionStart adds measurement guidance; UserPromptSubmit and PostToolUse add the
+fresh observation. Claude also injects after PostToolUseFailure. PreToolUse, Stop
+and SessionEnd collect without context or decisions. Stop never forces another
+model request. The [Claude](https://code.claude.com/docs/en/hooks) and
+[Codex](https://learn.chatgpt.com/docs/hooks) contracts support additionalContext
+on the delivery events.
 
-```json
-{
-  "hooks": {
-    "SessionStart": [{"hooks": [{"type": "command", "command": "node /absolute/path/to/mantra/hooks/resources.js --host claude", "timeout": 3}]}],
-    "UserPromptSubmit": [{"hooks": [{"type": "command", "command": "node /absolute/path/to/mantra/hooks/resources.js --host claude", "timeout": 3}]}],
-    "PreToolUse": [{"hooks": [{"type": "command", "command": "node /absolute/path/to/mantra/hooks/resources.js --host claude", "timeout": 3}]}],
-    "PostToolUse": [{"hooks": [{"type": "command", "command": "node /absolute/path/to/mantra/hooks/resources.js --host claude", "timeout": 3}]}],
-    "PostToolUseFailure": [{"hooks": [{"type": "command", "command": "node /absolute/path/to/mantra/hooks/resources.js --host claude", "timeout": 3}]}],
-    "Notification": [{"matcher": "permission_prompt", "hooks": [{"type": "command", "command": "node /absolute/path/to/mantra/hooks/resources.js --host claude", "timeout": 3}]}],
-    "Stop": [{"hooks": [{"type": "command", "command": "node /absolute/path/to/mantra/hooks/resources.js --host claude", "timeout": 3}]}],
-    "SessionEnd": [{"hooks": [{"type": "command", "command": "node /absolute/path/to/mantra/hooks/resources.js --host claude", "timeout": 3}]}]
-  }
-}
-```
+Tool completion also adds the self-contained reflection when five minutes have
+elapsed since the latest prompt, session start or tool reflection. An atomically published
+claim chooses one concurrent completion. The first receipt seeds a missing
+clock; a backward wall-clock change resets it. No background timer runs, and an
+idle gap never queues multiple reminders. Prompts reset the clock, so time
+waiting for a new user turn does not trigger its first tool reminder. A long tool
+or approval wait can delay delivery: this measures elapsed time, not active model
+computation. Five minutes is a provisional reminder interval, not a task deadline,
+stopping quota or established optimum.
 
-For Codex, put the fragment in a scratch workspace's `.codex/hooks.json`, replace
-`--host claude` with `--host codex`, and remove `Notification` and
-`PostToolUseFailure` (unsupported events). Enable/review hooks for that workspace.
-Quote script paths containing spaces inside the JSON command string.
+Root-conversation resource hooks skip inputs carrying agent_id, keeping subagent
+measurements and cadence from consuming the parent's checkpoint. This does not
+establish complete nested-agent coverage. Prompt/compact reflection remains in
+behavior.js as the single source of reflection text.
 
-Unset `MANTRA_RESOURCES` or set it to `disabled` to stop all collection writes.
-Unrecognized values do not collect. Remove these
-settings entries to remove the launch cost too. No resource hook runs for ordinary
-plugin users. Existing behavior rules remain independent.
+## Storage and consumer API
 
-For example, after saving the Claude fragment with its absolute script path as
-`resource-hooks.json`, launch:
+Hooks use the host-provided plugin data directory (CLAUDE_PLUGIN_DATA on Claude,
+PLUGIN_DATA on Codex), under resources/. If the host provides none, storage falls
+back to ~/.cache/claude-domestique/mantra/resources. These host variables require
+no user configuration. Per-session files are keyed by SHA256 of
+JSON.stringify([host, session_id]): .jsonl journal, .json snapshot and .checkpoint
+cadence pointer. Immutable .checkpoint.<previous-time>.claim receipts are
+fully written to unique temporary files, then published through exclusive hard
+links. Readers follow the published chain if a pointer update lags or is lost.
+No shared lock is reclaimed or released; legacy .checkpoint.lock files are
+ignored. On a filesystem without hard-link support, observations continue but
+the periodic reflection claim is skipped. A crash after publication can omit
+that reflection; it cannot cause another caller to repeat the same claim. Files untouched for 30 days are removed
+on session start; unrelated filenames are preserved. New session identities get
+separate reports. Resume and compaction retain session scope, so reported elapsed
+wall time includes gaps since the first observed SessionStart.
 
-```sh
-MANTRA_RESOURCES=collect MANTRA_RESOURCE_DIR=/absolute/path/to/local/scratch/resources claude --settings resource-hooks.json
-```
+hooks/resources.js exports collect(input, { host, directory }),
+readSnapshot(host, runId, { directory }) and processInput(input, { host, directory }).
+Directory is an internal caller/test option, not an environment mode. collect
+returns the current report without host output; processInput emits supported
+additionalContext. Missing identity or unsupported hosts yield no report. The CLI
+supplies --host, catches failures, returns valid JSON and exits successfully.
+readSnapshot validates host/session identity. Saved snapshots can lag concurrent
+writes; injection uses its own fresh collect return.
 
-Use `MANTRA_RESOURCES=inject` with the same settings for experimental context injection.
-Setting the environment variable alone does not register hooks.
-
-## Consumer API
-
-`hooks/resources.js` exports `collect(input, env)` and
-`readSnapshot(host, runId, env)`. The first returns the current report after
-recording the hook, or null when disabled/unsupported; it never produces host
-feedback. Programmatic callers set `MANTRA_RESOURCE_HOST` to `claude` or `codex`.
-The settings commands supply `--host` themselves. `readSnapshot` checks both host and
-run identity and returns null for missing/invalid files. It is a saved observation,
-not a new measurement; consumers must inspect its observation time. A context-injection
-experiment can wrap `collect` and explicitly decide whether to expose its return
-value. In `collect` mode the command always writes `{}` to stdout.
-
-## Experimental context injection
-
-With the same explicit host hook settings, set `MANTRA_RESOURCES=inject` to
-collect and add observations to model context on Claude or Codex. The name refers
-to context injection, rather than screen output. The former mode value is not an
-alias; unrecognized values neither collect nor inject. `collect(input, env)` itself
-remains passive and accepts only `collect`; the CLI's `processInput(input, env)`
-maps `inject` to passive collection before deciding whether to emit context.
-
-SessionStart injects fixed guidance unless its source is `resume`; compaction may
-inject it again. UserPromptSubmit and PostToolUse inject the current `collect`
-return, rather than an older disk snapshot. Claude also injects on
-PostToolUseFailure. PreToolUse collects passively on both hosts, avoiding a second
-observation block for each tool call. Other events also collect passively and
-return `{}`.
-
-The [official Codex hook contract](https://learn.chatgpt.com/docs/hooks) and
-[Codex 0.161.0 output schema](https://github.com/openai/codex/blob/rust-v0.161.0/codex-rs/hooks/src/schema.rs)
-confirm this JSON shape on the pilot's injection events: SessionStart,
-UserPromptSubmit and PostToolUse (use the current event name):
-
-```json
-{
-  "hookSpecificOutput": {
-    "hookEventName": "UserPromptSubmit",
-    "additionalContext": "Resource observation text"
-  }
-}
-```
-
-Stop and SessionEnd do not support added model context, so the pilot collects
-there without injecting. Codex does not support Notification or
-PostToolUseFailure; omit those registrations. Failed Bash commands still produce
-PostToolUse. The pilot does not register additional events such as SubagentStart,
-which Codex also supports for context injection.
-
-Injected text preserves each host's separate token categories, shared coverage
-with differing fields tagged, observation time and elapsed wall including waits.
-Codex cached/reasoning categories are explicitly labelled as subsets; no combined
-token total is produced. Other metrics remain in the report with their full
-semantics. The report's `truncated` flag appears as "incomplete acquisition"
-because it also covers a missing early transcript or malformed input, not only
-size truncation. No configured hook event means no refreshed observation.
-
-Consumption does not change requirements or permissions. Ask when necessary and
-spend what the task requires. Avoid routine commentary about counters. Injected
-text contains no success score, countdown, question quota or automatic stop.
-Unknown values remain unknown. The guidance and added observation text have their
-own input cost; collection alone establishes no behavioral benefit.
-
-Snapshots and journals live in the configured local scratch directory. Their stem
-is SHA256 of `JSON.stringify([host, session_id])`; extensions are `.json` and
-`.jsonl`. Keep this directory outside git. Resume/compaction retain hook session scope;
-elapsed wall time includes gaps since the first observed SessionStart. A new host
-session id starts a new report. Transcript rows bearing another snake_case
-`session_id`, including records from before some resumes, are excluded from usage;
-the observed elapsed window and usage window can therefore differ. Root/session
-coverage does not include all nested
-agents or tools. No cross-session or cross-host sums are made.
+Injected text preserves native token categories, coverage, acquisition timestamp (not the time of token use)
+and elapsed wall including waits. Unknown stays unknown. Claude cache reads count
+repeated reuse, not distinct new input or progress; Codex cache/reasoning categories
+are subsets. No combined spend, billing or success score is computed. Consumption
+changes neither requirements nor permissions. Reflection considers actual results,
+consequential missing facts, the next useful action and its own overhead.
 
 Reports use `schema_version: 1`, `host`, `run_id`, `observed_at` (UTC ISO timestamp),
 `coverage`, `truncated`, `tokens`, and `metrics`. Each metric has `value`, `unit`,
@@ -138,9 +78,7 @@ observed and what the value can establish. No combined token total is emitted.
 ## Supported observations and limits
 
 Claude and Codex lifecycle/tool hooks capture local receipt timestamps.
-Claude additionally supplies optional `duration_ms` on tool completion/failure
-and permission-prompt notifications. These notifications are counted as
-notifications, **not distinct human-stop episodes**. PermissionRequest is excluded:
+Claude additionally supplies optional `duration_ms` on tool completion/failure. The projection can count permission-prompt notifications, **not distinct human-stop episodes**, but the plugin does not register Notification. PermissionRequest is excluded:
 it can be automatically approved by another hook. Notifications themselves can
 repeat, miss fast answers, or target automated SDK callbacks. Actual human
 permission and clarification counts therefore remain separately unknown, as does
@@ -168,7 +106,7 @@ tokens still in flight; this timing is an observation, not a host guarantee.
 The Codex protocol defines timestamped `exec_command_begin/end` events, but the
 [independent verification](../../docs/reviews/resource-measurements-verification.md)
 found none in sampled codex-cli 0.161.0 rollouts. They are not an input
-supported by this pilot. Active execution interval union therefore stays unknown.
+supported by this collector. Active execution interval union therefore stays unknown.
 Hook brackets establish only receipt-to-receipt occupancy and include
 approval/hook overhead. Their union is separate from actual execution. Summed
 execution durations may overlap and are never a wall-time total.
@@ -183,12 +121,12 @@ including automation and possible background work, not human attention.
 Each invocation reads at most 2 MiB of journal and 2 MiB of transcript and accepts
 at most 1 MiB of hook input. A transcript larger than that limit is skipped
 entirely: all its token/API measurements become unknown, rather than stale prefix
-totals. A full journal stops new capture and marks `truncated: true`. Missing files,
+totals. This can remove token visibility during the longest autonomous sessions;
+reflection still uses actual progress and available wall observations. A full journal stops new capture and marks `truncated: true`. Missing files,
 malformed lines and concurrent partial reads also mark acquisition as truncated;
 that flag does not mean successful full coverage. Concurrent appends at the size
 boundary can exceed the journal limit by their small in-flight records; subsequent
-invocations stop appending. Files are not rotated or uploaded. Delete scratch
-data between experiments as needed.
+invocations stop appending. Files are not uploaded. SessionStart removes collector files untouched for 30 days; retention is cleanup, not a task budget.
 
 The collector uses small append-only journal writes on a local filesystem,
 without persistent locks; snapshots use temporary files plus rename. Parallel
@@ -199,5 +137,22 @@ other filesystems without reliable append semantics are outside pilot coverage.
 `collector_work_ms` sums earlier successful hook work samples, including journal,
 projection and snapshot work. The current sample appears in the next snapshot;
 its final sample write and process startup are excluded. External wall benchmarks
-must include those costs. Collection inspects no private reasoning, retains no
-message content, arguments, results or source paths, and emits no feedback.
+must include those costs. Collection retains no message content, arguments, results or source paths; only projected measurement records are stored.
+
+## Measured overhead
+
+An independent 60-event direct-spawn benchmark including Node startup measured
+p50/p95 of 43.6/45.5 ms with a small transcript and 48.3/54.0 ms with a real
+1.15 MB Claude transcript; bare Node startup p50 was 38.7 ms. These are local
+samples, not latency guarantees. PreToolUse and PostToolUse both collect, retaining
+receipt-bracket accounting on both hosts, so typical pairs add about 95–110 ms per
+tool call (roughly 20 seconds across 200 tools). Retention scanning adds work on
+session start. Collector samples exclude process startup and the final write;
+external timings include them.
+
+Observations remain enabled on every prompt and supported tool completion,
+independent of the reflection interval. A typical observation is about 230
+characters; that is not an exact model token count. Repeated observations add to
+history and later input/cache reads. The earlier reflection-only overhead figures
+do not measure this always-on version. No resource savings or judgment improvement
+has been demonstrated.
