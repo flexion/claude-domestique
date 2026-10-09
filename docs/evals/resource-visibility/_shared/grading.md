@@ -4,7 +4,7 @@ The grader records outcomes before seeing any consumption measurement or conditi
 
 ## Before grading
 
-1. The runner removes every display block and any other text that reveals the condition
+1. The runner removes every injected observation block and any other text that reveals the condition
    from the transcript, then hands the grader the redacted transcript, the final
    workspace, and the task directory. The runner keeps the unredacted transcript and the
    measurements.
@@ -16,7 +16,7 @@ The grader records outcomes before seeing any consumption measurement or conditi
 
 ## After outcomes are frozen
 
-Fixation cannot be graded blind, because the display text is part of what is judged.
+Fixation cannot be graded blind, because the injected observation text is part of what is judged.
 After freezing outcomes, the grader reads each unredacted transcript and fills in
 `fixation`. Outcome fields are not revised in this pass.
 
