@@ -29,6 +29,16 @@ Before proceeding, check for project-level rules that may override onus defaults
 
 5. **Apply precedence**: project rules override plugin defaults
 
+### Resolve Project Config
+
+Resolve `../../scripts/config.js` relative to this `SKILL.md` and run it with Node from the project root:
+
+```bash
+node <resolved-plugin-root>/scripts/config.js
+```
+
+It prints `{ source, path, config, error }`. `.onus/config.json` (top-level keys) wins; the `onus` or `workItem` section of legacy `.claude/config.json` is used only when `.onus/config.json` is absent. Use `config` for the platform, platform settings, `commitFormat`, and `branchFormat`. Any settings it does not specify keep the onus defaults. If `error` is set, report it to the user and do not fall back to legacy settings; `onus:init --force` rewrites the file.
+
 Determine what the user wants to update:
 
 ### Actions

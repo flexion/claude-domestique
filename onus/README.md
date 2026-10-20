@@ -153,31 +153,40 @@ onus works zero-config by default (GitHub Issues). Use `/onus:init` to create co
 /onus:init                    # Auto-detect from git remote
 /onus:init --platform jira    # Use JIRA
 /onus:init --force            # Overwrite existing config
+/onus:init --migrate          # Copy legacy .claude/config.json settings
 ```
 
 The init command:
 1. Analyzes recent commits to detect existing patterns
-2. Creates `.claude/config.json` with detected or default formats
+2. Creates `.onus/config.json` with detected or default formats
 3. Auto-detects GitHub owner/repo from git remote
+
+### Config Location
+
+Project settings live in `.onus/config.json` at the git root, as top-level keys, so Claude Code and Codex read the same file from any subdirectory. Commit it with the project.
+
+Earlier versions stored them in the `onus` (or `workItem`) section of `.claude/config.json`. That section is still read, but only when `.onus/config.json` does not exist; once it does, the legacy section is ignored. `/onus:init --migrate` copies the legacy section to `.onus/config.json` without modifying `.claude/config.json`; delete the old section by hand afterwards if you want.
+
+If `.onus/config.json` is not valid JSON or is not an object, onus uses its defaults, does not fall back to the legacy section, and reports the error in session context. Fix the file or run `/onus:init --force`.
+
+`node scripts/config.js` prints the resolved settings and where they came from.
 
 ### Generated Config
 
 ```json
 {
-  "onus": {
-    "platform": "github",
-    "github": {
-      "owner": "your-org",
-      "repo": "your-repo"
-    },
-    "commitFormat": {
-      "issue": "{number} - {verb} {description}",
-      "chore": "chore - {description}"
-    },
-    "branchFormat": {
-      "issue": "issue/{type}-{number}/{slug}",
-      "chore": "chore/{slug}"
-    }
+  "platform": "github",
+  "github": {
+    "owner": "your-org",
+    "repo": "your-repo"
+  },
+  "commitFormat": {
+    "issue": "{number} - {verb} {description}",
+    "chore": "chore - {description}"
+  },
+  "branchFormat": {
+    "issue": "issue/{type}-{number}/{slug}",
+    "chore": "chore/{slug}"
   }
 }
 ```
@@ -195,7 +204,7 @@ The init command:
 For scripts or automation, use the init module:
 
 ```javascript
-const { init, detectGitRemote, buildDefaultConfig } = require('@claude-domestique/onus');
+const { init, migrate, detectGitRemote, buildDefaultConfig } = require('@claude-domestique/onus');
 
 // Auto-detect from git remote (defaults to GitHub Issues)
 init(projectPath);
@@ -208,6 +217,9 @@ init(projectPath, {
 
 // Force overwrite existing config
 init(projectPath, { platform: 'azure', force: true });
+
+// Copy legacy .claude/config.json settings to .onus/config.json
+migrate(projectPath);
 ```
 
 ## How It Works
@@ -237,7 +249,7 @@ Every prompt shows issue status:
 
 ## Skills
 
-Use `/onus:<skill>` in Claude Code or `$onus:<skill>` in Codex. Both hosts intentionally share `.claude/config.json` and the existing Onus cache format.
+Use `/onus:<skill>` in Claude Code or `$onus:<skill>` in Codex. Both hosts intentionally share `.onus/config.json` and the existing Onus cache format.
 
 | Command | Description |
 |---------|-------------|

@@ -51,6 +51,14 @@ The R2-5 matrix runs (plan `docs/superpowers/plans/2026-10-20-memento-configurab
 
 All 22 matrix runs left the worktree unchanged.
 
+`chore/onus-config-location` hit the same gap from the other side. With `--cwd` on a
+disposable committed repo, the user-installed memento's SessionStart hook wrote
+`.claude/sessions/` into the target, so the following Codex `--cwd` runs refused on the
+dirty-tree guard. Disabling one plugin is not enough when other installed plugins have
+hooks. Running `claude` directly with `--setting-sources project,local` (no user
+settings) loaded only `onus@inline` plus built-ins, and the runs left the targets clean.
+Evidence: `/tmp/lex-probe-M5mo` (contaminated) and `/tmp/lex-probe2-v0yW` (isolated).
+
 ## Done when
 
 1. Both arms of `scripts/probe-skill.js` spawn the agent with `HERDR_*` and `OLDPWD`

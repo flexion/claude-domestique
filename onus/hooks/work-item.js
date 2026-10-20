@@ -18,6 +18,8 @@ try {
   shared = require('../../shared');
 }
 
+const { resolveProjectConfig, CONFIG_FILE } = require('../scripts/config');
+
 const PLUGIN_ROOT = path.resolve(__dirname, '..');
 
 // State and cache locations
@@ -29,7 +31,7 @@ const STATE_FILE = path.join(STATE_DIR, 'state.json');
 const DEFAULT_CONFIG = {
   stateFile: STATE_FILE,
   cacheFile: WORK_ITEM_CACHE_FILE,
-  configFile: '.claude/config.json',
+  configFile: CONFIG_FILE,
   branchPatterns: [
     /^issue\/(?:feature|bug|fix|chore)-(\d+)/,
     /^(?:feature|bug|fix|hotfix)\/(\d+)/,
@@ -175,15 +177,15 @@ function createPlaceholderWorkItem(issueKey, platform) {
 // Project Config
 // ============================================================================
 
-function loadProjectConfig(cwd, configFile) {
-  const configPath = path.join(cwd, configFile);
-  try {
-    if (fs.existsSync(configPath)) {
-      const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-      return config.onus || config.workItem || {};
-    }
-  } catch { /* ignore */ }
-  return {};
+// `.onus/config.json` wins; the legacy `.claude/config.json` section is read
+// only when it is absent. See scripts/config.js.
+function loadProjectConfig(cwd) {
+  return resolveProjectConfig(cwd).config;
+}
+
+function formatConfigWarning(resolution) {
+  if (!resolution.error) return '';
+  return `\n\n⚠️ Onus config error: ${resolution.error}. Using default settings; legacy .claude/config.json is ignored while ${CONFIG_FILE} exists. Fix the file or run onus init --force.`;
 }
 
 // ============================================================================
@@ -248,8 +250,8 @@ function formatWorkItemContext(workItem, cfg) {
 
 function onSessionStart(input, base) {
   const cwd = input.cwd || process.cwd();
-  const projectConfig = loadProjectConfig(cwd, DEFAULT_CONFIG.configFile);
-  const cfg = { ...DEFAULT_CONFIG, ...projectConfig };
+  const resolution = resolveProjectConfig(cwd);
+  const cfg = { ...DEFAULT_CONFIG, ...resolution.config };
   const source = input.source || 'startup';
 
   ensureStateDir();
@@ -304,6 +306,8 @@ function onSessionStart(input, base) {
     }
   }
 
+  context += formatConfigWarning(resolution);
+
   return {
     statusLine,
     additionalContext: context,
@@ -313,8 +317,8 @@ function onSessionStart(input, base) {
 
 function onUserPromptSubmit(input, base) {
   const cwd = input.cwd || process.cwd();
-  const projectConfig = loadProjectConfig(cwd, DEFAULT_CONFIG.configFile);
-  const cfg = { ...DEFAULT_CONFIG, ...projectConfig };
+  const resolution = resolveProjectConfig(cwd);
+  const cfg = { ...DEFAULT_CONFIG, ...resolution.config };
 
   const state = loadState(cfg.stateFile);
   const currentBranch = getCurrentBranch(cwd);
@@ -348,6 +352,8 @@ function onUserPromptSubmit(input, base) {
   if (staged) {
     context += `\n💡 Staged changes detected. Commit format: \`${getCommitFormat(cfg.commitFormat).replace('{number}', state.currentIssue || 'N')}\``;
   }
+
+  context += formatConfigWarning(resolution);
 
   return {
     additionalContext: context,

@@ -5,6 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { spawnSync } = require('child_process');
 
 const {
   loadState,
@@ -298,36 +299,115 @@ describe('onus work-item hook', () => {
   });
 
   describe('loadProjectConfig', () => {
+    function write(file, text) {
+      fs.mkdirSync(path.dirname(path.join(tmpDir, file)), { recursive: true });
+      fs.writeFileSync(path.join(tmpDir, file), text);
+    }
+
     it('returns empty object when config does not exist', () => {
-      const config = loadProjectConfig(tmpDir, '.claude/config.json');
-      expect(config).toEqual({});
+      expect(loadProjectConfig(tmpDir)).toEqual({});
     });
 
-    it('loads onus config from file', () => {
-      const claudeDir = path.join(tmpDir, '.claude');
-      fs.mkdirSync(claudeDir, { recursive: true });
-      fs.writeFileSync(
-        path.join(claudeDir, 'config.json'),
-        JSON.stringify({
-          onus: {
-            platform: 'jira',
-            commitFormat: 'custom format'
-          }
-        })
-      );
+    it('loads top-level settings from .onus/config.json', () => {
+      write('.onus/config.json', JSON.stringify({ platform: 'jira', commitFormat: 'custom format' }));
+
+      const config = loadProjectConfig(tmpDir);
+      expect(config.platform).toBe('jira');
+      expect(config.commitFormat).toBe('custom format');
+    });
+
+    it('prefers .onus/config.json over legacy .claude/config.json', () => {
+      write('.onus/config.json', JSON.stringify({ commitFormat: 'new' }));
+      write('.claude/config.json', JSON.stringify({ onus: { commitFormat: 'legacy' } }));
+
+      expect(loadProjectConfig(tmpDir)).toEqual({ commitFormat: 'new' });
+    });
+
+    it('loads the legacy onus section when .onus/config.json is absent', () => {
+      write('.claude/config.json', JSON.stringify({ onus: { platform: 'jira', commitFormat: 'custom format' } }));
 
       const config = loadProjectConfig(tmpDir, '.claude/config.json');
       expect(config.platform).toBe('jira');
       expect(config.commitFormat).toBe('custom format');
     });
 
-    it('handles corrupted config gracefully', () => {
-      const claudeDir = path.join(tmpDir, '.claude');
-      fs.mkdirSync(claudeDir, { recursive: true });
-      fs.writeFileSync(path.join(claudeDir, 'config.json'), 'not json');
+    it('handles corrupted legacy config gracefully', () => {
+      write('.claude/config.json', 'not json');
 
-      const config = loadProjectConfig(tmpDir, '.claude/config.json');
-      expect(config).toEqual({});
+      expect(loadProjectConfig(tmpDir)).toEqual({});
+    });
+
+    it('does not fall back to legacy settings when .onus/config.json is corrupted', () => {
+      write('.onus/config.json', 'not json');
+      write('.claude/config.json', JSON.stringify({ onus: { commitFormat: 'legacy' } }));
+
+      expect(loadProjectConfig(tmpDir)).toEqual({});
+    });
+  });
+
+  describe('hook output', () => {
+    const hook = path.join(__dirname, '..', 'work-item.js');
+    let home;
+
+    beforeEach(() => {
+      home = path.join(tmpDir, 'home');
+      fs.mkdirSync(home);
+    });
+
+    function write(file, text) {
+      fs.mkdirSync(path.dirname(path.join(tmpDir, file)), { recursive: true });
+      fs.writeFileSync(path.join(tmpDir, file), text);
+    }
+
+    function runHook(event, cwd = tmpDir) {
+      const result = spawnSync(process.execPath, [hook], {
+        input: JSON.stringify({ hook_event_name: event, cwd, session_id: 'test' }),
+        env: { PATH: process.env.PATH, HOME: home },
+        encoding: 'utf8'
+      });
+      expect(result.status).toBe(0);
+      return JSON.parse(result.stdout);
+    }
+
+    function contextOf(output) {
+      return JSON.stringify(output);
+    }
+
+    it.each(['SessionStart', 'UserPromptSubmit'])('warns about an unusable .onus/config.json on %s with valid JSON', (event) => {
+      write('.onus/config.json', '{"platform":');
+      write('.claude/config.json', JSON.stringify({ onus: { platform: 'jira' } }));
+
+      const output = runHook(event);
+
+      expect(contextOf(output)).toContain('Onus config error');
+      expect(contextOf(output)).toContain('.onus/config.json could not be parsed');
+    });
+
+    it.each(['SessionStart', 'UserPromptSubmit'])('warns about an unusable root .onus/config.json from a nested cwd on %s', (event) => {
+      spawnSync('git', ['init', '-q'], { cwd: tmpDir });
+      fs.mkdirSync(path.join(tmpDir, 'nested'));
+      write('.onus/config.json', '{');
+
+      expect(contextOf(runHook(event, path.join(tmpDir, 'nested')))).toContain('.onus/config.json could not be parsed');
+    });
+
+    it.each(['SessionStart', 'UserPromptSubmit'])('emits no config warning for a valid config on %s', (event) => {
+      write('.onus/config.json', JSON.stringify({ platform: 'github' }));
+
+      expect(contextOf(runHook(event))).not.toContain('Onus config error');
+    });
+
+    it('emits no config warning for an invalid legacy config', () => {
+      write('.claude/config.json', 'not json');
+
+      expect(contextOf(runHook('SessionStart'))).not.toContain('Onus config error');
+    });
+
+    it('keeps state under HOME/.claude/onus', () => {
+      runHook('SessionStart');
+
+      expect(fs.existsSync(path.join(home, '.claude', 'onus', 'state.json'))).toBe(true);
+      expect(fs.existsSync(path.join(tmpDir, '.onus'))).toBe(false);
     });
   });
 

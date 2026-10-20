@@ -34,6 +34,16 @@ Before proceeding, check for project-level rules that may override onus defaults
 
 6. **Apply precedence**: project rules override plugin defaults
 
+### Resolve Project Config
+
+Resolve `../../scripts/config.js` relative to this `SKILL.md` and run it with Node from the project root:
+
+```bash
+node <resolved-plugin-root>/scripts/config.js
+```
+
+It prints `{ source, path, config, error }`. `.onus/config.json` (top-level keys) wins; the `onus` or `workItem` section of legacy `.claude/config.json` is used only when `.onus/config.json` is absent. Use `config` for the platform, platform settings, `commitFormat`, and `branchFormat`. Any settings it does not specify keep the onus defaults. If `error` is set, report it to the user and do not fall back to legacy settings; `onus:init --force` rewrites the file.
+
 **IMPORTANT: Consult the PR CHECKLIST from git.md before proceeding.**
 
 ### Pre-PR Validation
@@ -82,7 +92,7 @@ Before generating PR body, check for project templates:
 2. **Handle results**
    - **Single template found**: Use it as the PR body structure
    - **Multiple templates found**:
-     - Parse branch name using `branchFormat` from `.claude/config.json` to determine type
+     - Parse branch name using `branchFormat` from the resolved project config to determine type
      - Match type to template name (e.g., `feature` → `feature.md`)
      - Ask user if still ambiguous
    - **No templates found**: Use generic format (see fallback below)
