@@ -1,31 +1,23 @@
 {
-  "onus": {
-    "platform": "github",
-    "github": {
-      "owner": "your-org",
-      "repo": "your-repo"
-    },
-    "jira": {
-      "host": "your-company.atlassian.net",
-      "project": "PROJ"
-    },
-    "azure": {
-      "org": "your-org",
-      "project": "your-project"
-    },
-    "commitFormat": {
-      "issue": "{number} - {verb} {description}",
-      "chore": "chore - {description}"
-    },
-    "branchFormat": {
-      "issue": "issue/{type}-{number}/{slug}",
-      "chore": "chore/{slug}"
-    }
+  "platform": "github",
+  "github": {
+    "owner": "your-org",
+    "repo": "your-repo"
   },
-  "context": {
-    "periodicRefresh": {
-      "enabled": true,
-      "interval": 20
-    }
+  "jira": {
+    "host": "your-company.atlassian.net",
+    "project": "PROJ"
+  },
+  "azure": {
+    "org": "your-org",
+    "project": "your-project"
+  },
+  "commitFormat": {
+    "issue": "{number} - {verb} {description}",
+    "chore": "chore - {description}"
+  },
+  "branchFormat": {
+    "issue": "issue/{type}-{number}/{slug}",
+    "chore": "chore/{slug}"
   }
 }

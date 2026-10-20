@@ -7,7 +7,8 @@
  */
 
 const workItem = require('./hooks/work-item.js');
-const { init, detectGitRemote, buildDefaultConfig } = require('./scripts/init.js');
+const { init, migrate, detectGitRemote, buildDefaultConfig } = require('./scripts/init.js');
+const { resolveProjectConfig } = require('./scripts/config.js');
 
 module.exports = {
   // Hook exports
@@ -32,11 +33,13 @@ module.exports = {
 
   // Configuration
   loadProjectConfig: workItem.loadProjectConfig,
+  resolveProjectConfig,
   DEFAULT_CONFIG: workItem.DEFAULT_CONFIG,
   PLATFORM_CONFIG: workItem.PLATFORM_CONFIG,
 
   // Init exports
   init,
+  migrate,
   detectGitRemote,
   buildDefaultConfig
 };

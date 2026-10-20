@@ -21,7 +21,7 @@
       "name": "onus",
       "source": "./onus",
       "description": "Work-item automation - fetches issues, generates commits/PRs, syncs progress",
-      "version": "0.4.4"
+      "version": "0.5.0"
     },
     {
       "name": "agent-artifex",
