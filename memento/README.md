@@ -83,9 +83,9 @@ Issue #42 (tracker)
     ↓
 Branch: issue/feature-42/description
     ↓
-Metadata: .claude/branches/issue-feature-42-description
+Metadata: .memento/branches/issue-feature-42-description
     ↓
-Session: .claude/sessions/issue-feature-42-description.md
+Session: .memento/sessions/issue-feature-42-description.md
 ```
 
 ### Interoperability
@@ -138,7 +138,7 @@ memento uses the shared plugin hook convention for automatic session management 
 
 When you start a conversation on a feature branch like `issue/feature-42/add-auth`:
 1. memento detects the branch name
-2. Creates `.claude/sessions/issue-feature-42-add-auth.md` if it doesn't exist
+2. Creates `.memento/sessions/issue-feature-42-add-auth.md` if it doesn't exist (or uses an existing `.claude/sessions/` file from an older memento)
 3. Injects the session file path into the agent's context
 4. The agent reads the session and picks up where you left off
 
@@ -189,7 +189,7 @@ Every prompt shows session status:
 
 ```
 📂 Memento: #3 ✓
-📂 Session: /path/to/.claude/sessions/issue-feature-42-add-auth.md
+📂 Session: /path/to/.memento/sessions/issue-feature-42-add-auth.md
 ```
 
 ### Check Session Status
@@ -211,9 +211,22 @@ Next Steps:
 2. Second pending task
 ```
 
+## Configuration
+
+Session files live in `.memento/sessions/` and branch metadata in `.memento/branches/` by default. A repository can move them with a committed `.memento/config.json`, so every contributor gets the same layout on Claude Code and Codex alike:
+
+```json
+{ "sessionsDir": "work/sessions", "branchesDir": "work/sessions/.branches" }
+```
+
+- Both keys are optional and relative to the git root; an unset key uses its default.
+- A value that is not a non-empty string, contains a NUL character, is absolute, resolves to the git root itself, or resolves outside the repository is ignored: memento uses the default and shows a `⚠️ memento:` warning. A malformed `.memento/config.json`, or one whose top level is not a JSON object, makes both keys fall back with one warning.
+- Sessions created by older memento versions under `.claude/sessions/` keep working. If a branch has no session in the configured directory but has one there, memento uses it instead of creating a duplicate, and offers a `git mv` command (anchored to the repository root) to move it. Nothing is moved automatically.
+- `node <memento plugin>/scripts/resolve-session.js` prints the resolved paths, legacy status, migration command, and any warnings as JSON without changing anything. memento's skills run it when no current-branch path was injected (for example when hooks are not yet trusted in Codex).
+
 ## Skills
 
-Use `/memento:<skill>` in Claude Code or `$memento:<skill>` in Codex. Both hosts share the `.claude/sessions` and `.claude/branches` project state so work can move between them.
+Use `/memento:<skill>` in Claude Code or `$memento:<skill>` in Codex. Both hosts share the `.memento/sessions` and `.memento/branches` project state so work can move between them.
 
 | Command | Description |
 |---------|-------------|

@@ -48,7 +48,7 @@ Show a consolidated view of:
    - If not cached, show placeholder with fetch suggestion
 
 3. **Load Session**
-   - Check `.claude/sessions/<sanitized-branch>.md` (sanitize by replacing `/` with `-`, so `issue/feature-42/auth` becomes `issue-feature-42-auth.md`)
+   - Check the session file: find the session file through memento. If memento injected a `📂 Session:` path whose filename is `<sanitized-branch>.md` for the current branch (`git branch --show-current`, every `/` replaced by `-`), use it; an injected path for another branch is stale, for example after a `git checkout` earlier in the same turn. Otherwise, if the memento plugin is available, invoke its `session` skill (`memento:session` on Claude Code, `$memento:session` on Codex) to locate it. If memento is not available, skip the session steps and say so. Never search the filesystem for a session file or build its path yourself: memento owns the location, so a replacement for a stale path must also come from memento, and without memento there is no session to use
    - Extract key sections: Goal, Status, Next Steps
 
 4. **Show Git Status**
@@ -68,7 +68,7 @@ Show a consolidated view of:
 - **URL**: [link if available]
 
 ### Session
-- **File**: .claude/sessions/[filename].md
+- **File**: [session path reported by memento, or "memento not available"]
 - **Status**: [in-progress/complete]
 - **Last Updated**: [timestamp or "unknown"]
 
@@ -104,7 +104,7 @@ Agent: ## Work Item Dashboard
 - **URL**: https://github.com/org/repo/issues/42
 
 ### Session
-- **File**: .claude/sessions/issue-feature-42-auth.md
+- **File**: issue-feature-42-auth.md (path reported by memento)
 - **Status**: in-progress
 - **Last Updated**: 2024-01-15
 

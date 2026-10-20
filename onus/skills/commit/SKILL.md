@@ -53,8 +53,8 @@ Before creating the commit, verify:
    ```
 
 3. **Check for session file**
-   - Read `.claude/sessions/<sanitized-branch>.md` (sanitize by replacing `/` with `-`, so `issue/feature-42/auth` becomes `issue-feature-42-auth.md`)
-   - If missing: create session file using `memento:session create`
+   - Read the session file: find the session file through memento. If memento injected a `📂 Session:` path whose filename is `<sanitized-branch>.md` for the current branch (`git branch --show-current`, every `/` replaced by `-`), use it; an injected path for another branch is stale, for example after a `git checkout` earlier in the same turn. Otherwise, if the memento plugin is available, invoke its `session` skill (`memento:session` on Claude Code, `$memento:session` on Codex) to locate it. If memento is not available, skip the session steps and say so. Never search the filesystem for a session file or build its path yourself: memento owns the location, so a replacement for a stale path must also come from memento, and without memento there is no session to use
+   - If memento is available but the branch has no session yet: create one with `memento:session create`
    - Update Session Log, Files Changed sections if needed
    - Session file should be committed atomically with code
 

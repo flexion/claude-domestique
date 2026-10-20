@@ -26,6 +26,17 @@ describe('checkpoint.js', () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
+  describe('getSessionPath', () => {
+    it('returns null without a git root or branch', () => {
+      expect(hook.getSessionPath(null, 'a')).toBe(null);
+      expect(hook.getSessionPath(tmpDir, null)).toBe(null);
+    });
+
+    it('defaults to .memento/sessions', () => {
+      expect(hook.getSessionPath(tmpDir, 'a/b')).toBe(path.join(tmpDir, '.memento', 'sessions', 'a-b.md'));
+    });
+  });
+
   describe('validateSessionFile', () => {
     it('returns missing when file does not exist', () => {
       const result = hook.validateSessionFile('/nonexistent/path.md');
@@ -150,6 +161,54 @@ Do something
       const result = hook.buildCheckpointReminder(input);
       expect(result).toContain('STOP');
       expect(result).toContain('No session file found');
+    });
+
+    it('finds a session in the default .memento location', () => {
+      const dir = path.join(tmpDir, '.memento', 'sessions');
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(path.join(dir, 'feature-test.md'), '## Goal\nShip it\n');
+
+      const result = hook.buildCheckpointReminder({
+        tool_name: 'Bash',
+        hook_event_name: 'PreToolUse',
+        tool_input: { command: 'git commit -m "test"' },
+        cwd: tmpDir
+      });
+      expect(result).toContain('Pre-Commit');
+    });
+
+    it('finds a session in a configured sessionsDir', () => {
+      fs.mkdirSync(path.join(tmpDir, '.memento'), { recursive: true });
+      fs.writeFileSync(
+        path.join(tmpDir, '.memento', 'config.json'),
+        JSON.stringify({ sessionsDir: 'work/sessions' })
+      );
+      const dir = path.join(tmpDir, 'work', 'sessions');
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(path.join(dir, 'feature-test.md'), '## Goal\nShip it\n');
+
+      const result = hook.buildCheckpointReminder({
+        tool_name: 'Bash',
+        hook_event_name: 'PreToolUse',
+        tool_input: { command: 'git commit -m "test"' },
+        cwd: tmpDir
+      });
+      expect(result).toContain('Pre-Commit');
+    });
+
+    it('finds a legacy-only session instead of reporting it missing', () => {
+      const dir = path.join(tmpDir, '.claude', 'sessions');
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(path.join(dir, 'feature-test.md'), '## Goal\nShip it\n');
+
+      const result = hook.buildCheckpointReminder({
+        tool_name: 'Bash',
+        hook_event_name: 'PreToolUse',
+        tool_input: { command: 'git commit -m "test"' },
+        cwd: tmpDir
+      });
+      expect(result).not.toContain('No session file found');
+      expect(result).toContain('Pre-Commit');
     });
 
     it('warns when session has placeholders', () => {

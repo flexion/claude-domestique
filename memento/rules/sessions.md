@@ -9,7 +9,11 @@ companion: .claude/context/sessions.md
 type: actionable
 
 ## CONVENTION
-location: {git-root}/.claude/sessions/<branch-sanitized>.md
+resolve: each needed path independently; run the resolver whenever a needed path has no current-branch injection (same-branch prompts inject only the session path)
+location: injected "📂 Session:" path if its filename is <branch-sanitized>.md for the current branch (else stale); otherwise the memento resolver's sessionPath (scripts/resolve-session.js in the memento plugin, ../../scripts/resolve-session.js from the skill's SKILL.md)
+branch-metadata: injected "🗂️ Branch metadata:" path if its filename is <branch-sanitized> for the current branch; otherwise the resolver's branchMetadataPath
+config: .memento/config.json {sessionsDir, branchesDir}, git-root-relative, defaults .memento/sessions and .memento/branches; validation lives in the resolver (context: Configuring the location)
+legacy: resolver legacy=true → session is in .claude/sessions/; use it, offer its migrationCommand verbatim (no shortening, re-quoting, relative paths, or dropping git -C), never run it unasked
 auto-create: hook creates on first prompt for feature branches
 one-session: 1 branch = 1 session = 1 issue
 

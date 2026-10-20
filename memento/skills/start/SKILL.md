@@ -100,7 +100,7 @@ Agent: What's the issue number?
 User: 42
 Agent: Fetching issue #42... "Add user authentication"
         Creating branch: issue/feature-42/user-authentication
-        Session file: .claude/sessions/42-user-authentication.md
+        Session file: .memento/sessions/issue-feature-42-user-authentication.md
 
         Goal: Add user authentication
         Acceptance Criteria:
@@ -115,7 +115,7 @@ User invokes `memento:start chore`
 Agent: What are you working on?
 User: update npm dependencies
 Agent: Creating branch: chore/update-npm-dependencies
-        Session file: .claude/sessions/chore-update-npm-dependencies.md
+        Session file: .memento/sessions/chore-update-npm-dependencies.md
 ```
 
 ## Templates

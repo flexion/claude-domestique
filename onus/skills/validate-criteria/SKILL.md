@@ -42,7 +42,7 @@ Before committing or creating a PR, verify that all acceptance criteria have bee
 
 1. **Locate Criteria**
    Find acceptance criteria from one of these sources (in priority order):
-   - Session file: `.claude/sessions/<sanitized-branch>.md` (sanitize by replacing `/` with `-`, so `issue/feature-42/auth` becomes `issue-feature-42-auth.md`)
+   - Session file: find the session file through memento. If memento injected a `📂 Session:` path whose filename is `<sanitized-branch>.md` for the current branch (`git branch --show-current`, every `/` replaced by `-`), use it; an injected path for another branch is stale, for example after a `git checkout` earlier in the same turn. Otherwise, if the memento plugin is available, invoke its `session` skill (`memento:session` on Claude Code, `$memento:session` on Codex) to locate it. If memento is not available, skip the session steps and say so. Never search the filesystem for a session file or build its path yourself: memento owns the location, so a replacement for a stale path must also come from memento, and without memento there is no session to use
    - Cached work item: use `onus:fetch` if needed
    - GitHub issue directly: `gh issue view <number>`
 
