@@ -8,8 +8,9 @@
  */
 
 const fs = require('fs');
-const path = require('path');
 const { execSync } = require('child_process');
+
+const paths = require('../lib/paths');
 
 // ============================================================================
 // Git Helpers
@@ -37,8 +38,7 @@ function getCurrentBranch(cwd) {
 
 function getSessionPath(gitRoot, branch) {
   if (!gitRoot || !branch) return null;
-  const sanitized = branch.replace(/\//g, '-');
-  return path.join(gitRoot, '.claude', 'sessions', `${sanitized}.md`);
+  return paths.resolveSession(gitRoot, branch).sessionPath;
 }
 
 function sessionExists(sessionPath) {

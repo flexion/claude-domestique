@@ -37,10 +37,7 @@ Read these files for complete session management guidance.
 
 2. Sanitize branch name (replace `/` with `-`)
 
-3. Read session file:
-   ```
-   .claude/sessions/<sanitized-branch>.md
-   ```
+3. Read the session file. Resolve each path you need on its own. Session file: use the injected `📂 Session:` path if its filename is `<sanitized-branch>.md` for the current branch (`git branch --show-current`, every `/` replaced by `-`). Branch metadata file: use the injected `🗂️ Branch metadata:` path if its filename is `<sanitized-branch>` (no `.md`). A same-branch prompt injects only the session path, and an injected path for another branch is stale, for example after a `git checkout` earlier in the same turn. Whenever a path you need has no current-branch injection, run memento's resolver with Node: `scripts/resolve-session.js` in the memento plugin, i.e. `../../scripts/resolve-session.js` relative to the directory containing this SKILL.md. (On Claude Code that directory is `${CLAUDE_SKILL_DIR}`, so the command is `node "${CLAUDE_SKILL_DIR}/../../scripts/resolve-session.js"`.) It prints one JSON object with `sessionPath`, `sessionExists`, `branchMetadataPath`, `legacy`, `migrationCommand`, and `warnings`; take the missing path from it and show the user any `warnings`. If `legacy` is true, the session is at the old `.claude/sessions/` location: use it, and offer the resolver's `migrationCommand` to move it, copied verbatim, character for character, in a code block. Do not shorten it, re-quote it, make its paths relative, or drop `git -C`: it is quoted and anchored to the repository root so it is safe to run from any directory. Do not run it unasked. Exit 1 means there is no git repository or no current branch.
 
 ### Display Context
 

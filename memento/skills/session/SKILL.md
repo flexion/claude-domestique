@@ -16,9 +16,7 @@ Based on the argument provided:
 ### No argument (default): Show session status
 1. Get current branch: `git branch --show-current`
 2. Sanitize branch name (replace `/` with `-`)
-3. Read `.claude/sessions/<sanitized-branch>.md`. The optional
-   `.claude/branches/<sanitized-branch>` metadata file records status but is not
-   needed to locate the session
+3. Read the session file. Resolve each path you need on its own. Session file: use the injected `📂 Session:` path if its filename is `<sanitized-branch>.md` for the current branch (`git branch --show-current`, every `/` replaced by `-`). Branch metadata file: use the injected `🗂️ Branch metadata:` path if its filename is `<sanitized-branch>` (no `.md`). A same-branch prompt injects only the session path, and an injected path for another branch is stale, for example after a `git checkout` earlier in the same turn. Whenever a path you need has no current-branch injection, run memento's resolver with Node: `scripts/resolve-session.js` in the memento plugin, i.e. `../../scripts/resolve-session.js` relative to the directory containing this SKILL.md. (On Claude Code that directory is `${CLAUDE_SKILL_DIR}`, so the command is `node "${CLAUDE_SKILL_DIR}/../../scripts/resolve-session.js"`.) It prints one JSON object with `sessionPath`, `sessionExists`, `branchMetadataPath`, `legacy`, `migrationCommand`, and `warnings`; take the missing path from it and show the user any `warnings`. If `legacy` is true, the session is at the old `.claude/sessions/` location: use it, and offer the resolver's `migrationCommand` to move it, copied verbatim, character for character, in a code block. Do not shorten it, re-quote it, make its paths relative, or drop `git -C`: it is quoted and anchored to the repository root so it is safe to run from any directory. Do not run it unasked. Exit 1 means there is no git repository or no current branch. The optional branch metadata file records status but is not needed to locate the session
 4. Display:
    - Branch and session file path
    - Current status
@@ -35,19 +33,19 @@ Based on the argument provided:
    - Type (feature, fix, chore)
    - Issue ID if present (e.g., #123, PROJ-456)
    - Description slug
-4. Create `.claude/sessions/` and `.claude/branches/` directories if needed
+4. Create the sessions and branch-metadata directories (resolved as in the status section) if needed
 5. Sanitize the branch name by replacing `/` with `-`. **This sanitized branch name
    is the session filename.** Do not generate a name from the issue or description:
-   `memento/hooks/session-startup.js` and `memento/rules/sessions.md` both resolve
-   sessions as `.claude/sessions/<sanitized-branch>.md`, and so do `resume` and the
-   Onus `commit`, `pr`, and `status` skills. A generated name such as `42-auth.md`
-   is invisible to every one of them.
-6. Create branch metadata file at `.claude/branches/<sanitized-branch>`:
+   `memento/hooks/session-startup.js`, `memento/scripts/resolve-session.js`, and
+   `memento/rules/sessions.md` all resolve sessions as `<sessions dir>/<sanitized-branch>.md`,
+   and `resume` and the Onus `commit`, `pr`, and `status` skills rely on that name.
+   A generated name such as `42-auth.md` is invisible to every one of them.
+6. Create the branch metadata file at the branch metadata path, resolved as in the status section (default `.memento/branches/<sanitized-branch>`):
    ```
    session: <sanitized-branch>.md
    status: in-progress
    ```
-7. Create session file at `.claude/sessions/<sanitized-branch>.md` with template:
+7. Create the session file at the session path, resolved as in the status section (default `.memento/sessions/<sanitized-branch>.md`), with template:
    ```markdown
    # Session: <description>
 
@@ -103,5 +101,5 @@ Runs before the final commit of a branch, not after the PR is opened.
 2. Set **Status** to `complete`
 3. Append a final dated Session Log entry summarising the outcome
 4. Mark remaining Next Steps done, or clear them if they are no longer relevant
-5. Update `.claude/branches/<sanitized-branch>` metadata so `status: complete`
+5. Update the branch metadata file (path resolved as in the status section) so `status: complete`
 6. Show the user the completed session file

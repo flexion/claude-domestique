@@ -54,16 +54,6 @@ describe('memento session-startup hook', () => {
     });
   });
 
-  describe('getSessionPath', () => {
-    it('sanitizes branch name by replacing slashes with dashes', () => {
-      expect(hook.getSessionPath('/p', 'a/b/c')).toBe('/p/.claude/sessions/a-b-c.md');
-    });
-
-    it('handles simple branch names', () => {
-      expect(hook.getSessionPath('/p', 'main')).toBe('/p/.claude/sessions/main.md');
-    });
-  });
-
   describe('createSession', () => {
     it('creates directory and file', () => {
       const sessionPath = path.join(tmpDir, '.claude', 'sessions', 'test.md');
@@ -268,6 +258,239 @@ describe('memento session-startup hook', () => {
       const context = hook.buildTriggerContext(triggers, '/path/session.md');
       expect(context).toContain('85%');
       expect(context).toContain('compaction');
+    });
+  });
+
+  describe('session location', () => {
+    const branch = 'issue/feature-42/auth';
+
+    function mockGit() {
+      mockExecSync.mockImplementation(command =>
+        command.includes('--show-toplevel') ? `${tmpDir}\n` : `${branch}\n`
+      );
+    }
+
+    function start() {
+      return hook.processHook(
+        { hook_event_name: 'SessionStart', cwd: tmpDir },
+        { homeDir: path.join(tmpDir, 'home') }
+      );
+    }
+
+    function contextOf(result) {
+      return result.hookSpecificOutput.additionalContext;
+    }
+
+    it('creates a new session under .memento/sessions by default', () => {
+      mockGit();
+      start();
+      expect(fs.existsSync(path.join(tmpDir, '.memento', 'sessions', 'issue-feature-42-auth.md'))).toBe(true);
+      expect(fs.existsSync(path.join(tmpDir, '.claude', 'sessions'))).toBe(false);
+    });
+
+    it('creates the session in the configured sessionsDir', () => {
+      mockGit();
+      fs.mkdirSync(path.join(tmpDir, '.memento'), { recursive: true });
+      fs.writeFileSync(
+        path.join(tmpDir, '.memento', 'config.json'),
+        JSON.stringify({ sessionsDir: 'work/sessions' })
+      );
+      start();
+      expect(fs.existsSync(path.join(tmpDir, 'work', 'sessions', 'issue-feature-42-auth.md'))).toBe(true);
+    });
+
+    it('does not create a duplicate when a legacy session exists', () => {
+      mockGit();
+      const legacy = path.join(tmpDir, '.claude', 'sessions', 'issue-feature-42-auth.md');
+      fs.mkdirSync(path.dirname(legacy), { recursive: true });
+      fs.writeFileSync(legacy, '# real notes\n');
+
+      const context = contextOf(start());
+
+      expect(fs.existsSync(path.join(tmpDir, '.memento', 'sessions', 'issue-feature-42-auth.md'))).toBe(false);
+      expect(fs.readFileSync(legacy, 'utf8')).toBe('# real notes\n');
+      expect(context).toContain(`📂 Session: ${legacy}`);
+      expect(context).toContain('legacy location');
+      expect(context).toContain(`git -C '${tmpDir}' mv -- `);
+      expect(context).toContain('(offer this command verbatim; do not run it unasked)');
+    });
+
+    it('injects the branch metadata path', () => {
+      mockGit();
+      const context = contextOf(start());
+      expect(context).toContain(
+        `🗂️ Branch metadata: ${path.join(tmpDir, '.memento', 'branches', 'issue-feature-42-auth')}`
+      );
+    });
+
+    it('injects a warning and uses the default for an invalid config', () => {
+      mockGit();
+      fs.mkdirSync(path.join(tmpDir, '.memento'), { recursive: true });
+      fs.writeFileSync(
+        path.join(tmpDir, '.memento', 'config.json'),
+        JSON.stringify({ sessionsDir: '../escape' })
+      );
+      const context = contextOf(start());
+      expect(context).toContain('⚠️ memento: sessionsDir in .memento/config.json must stay inside the repository');
+      expect(fs.existsSync(path.join(tmpDir, '.memento', 'sessions', 'issue-feature-42-auth.md'))).toBe(true);
+      expect(fs.existsSync(path.join(tmpDir, '..', 'escape'))).toBe(false);
+    });
+
+    it('reports the legacy session on UserPromptSubmit without creating one', () => {
+      mockGit();
+      const legacy = path.join(tmpDir, '.claude', 'sessions', 'issue-feature-42-auth.md');
+      fs.mkdirSync(path.dirname(legacy), { recursive: true });
+      fs.writeFileSync(legacy, '# real notes\n');
+      const homeDir = path.join(tmpDir, 'home');
+      fs.mkdirSync(path.join(homeDir, '.claude'), { recursive: true });
+      fs.writeFileSync(
+        path.join(homeDir, '.claude', 'memento-state.json'),
+        JSON.stringify({ branch })
+      );
+
+      const result = hook.processHook(
+        { hook_event_name: 'UserPromptSubmit', cwd: tmpDir, prompt: 'hi' },
+        { homeDir }
+      );
+
+      expect(contextOf(result)).toContain(`📂 Session: ${legacy}`);
+      expect(fs.existsSync(path.join(tmpDir, '.memento', 'sessions'))).toBe(false);
+    });
+
+    function seedState(homeDir, savedBranch) {
+      fs.mkdirSync(path.join(homeDir, '.claude'), { recursive: true });
+      fs.writeFileSync(
+        path.join(homeDir, '.claude', 'memento-state.json'),
+        JSON.stringify({ branch: savedBranch })
+      );
+    }
+
+    it('repeats config warnings on a same-branch UserPromptSubmit', () => {
+      mockGit();
+      fs.mkdirSync(path.join(tmpDir, '.memento'), { recursive: true });
+      fs.writeFileSync(
+        path.join(tmpDir, '.memento', 'config.json'),
+        JSON.stringify({ branchesDir: '/abs' })
+      );
+      const homeDir = path.join(tmpDir, 'home');
+      seedState(homeDir, branch);
+
+      const context = contextOf(hook.processHook(
+        { hook_event_name: 'UserPromptSubmit', cwd: tmpDir, prompt: 'hi' },
+        { homeDir }
+      ));
+
+      expect(context).toContain('⚠️ memento: branchesDir in .memento/config.json must be relative to the git root');
+      expect(context).not.toContain('🗂️ Branch metadata:');
+    });
+
+    it('emits the current session path and metadata path on a branch switch', () => {
+      mockGit();
+      const homeDir = path.join(tmpDir, 'home');
+      seedState(homeDir, 'chore/previous');
+
+      const context = contextOf(hook.processHook(
+        { hook_event_name: 'UserPromptSubmit', cwd: tmpDir, prompt: 'hi' },
+        { homeDir }
+      ));
+
+      expect(context).toContain('Branch Switch Detected');
+      expect(context).toContain(
+        `📂 Session: ${path.join(tmpDir, '.memento', 'sessions', 'issue-feature-42-auth.md')}`
+      );
+      expect(context).toContain(
+        `🗂️ Branch metadata: ${path.join(tmpDir, '.memento', 'branches', 'issue-feature-42-auth')}`
+      );
+    });
+
+    it.each([
+      ['the git root', '.'],
+      ['a nested directory', path.join('src', 'deep')]
+    ])('offers a migration command that is quoted and works when run from %s', (_label, relCwd) => {
+      // Metacharacters in both the git root and the configured dir must stay inert
+      const root = path.join(tmpDir, "repo $(touch PWNED3) 'r'");
+      const nastyDir = "work/a b $(touch PWNED) `touch PWNED2` \"q\" it's";
+      mockExecSync.mockImplementation(command =>
+        command.includes('--show-toplevel') ? `${root}\n` : 'issue/feature-42/auth\n'
+      );
+      fs.mkdirSync(path.join(root, '.memento'), { recursive: true });
+      fs.writeFileSync(
+        path.join(root, '.memento', 'config.json'),
+        JSON.stringify({ sessionsDir: nastyDir })
+      );
+      const legacy = path.join(root, '.claude', 'sessions', 'issue-feature-42-auth.md');
+      fs.mkdirSync(path.dirname(legacy), { recursive: true });
+      fs.writeFileSync(legacy, '# real notes\n');
+
+      const context = contextOf(hook.processHook(
+        { hook_event_name: 'SessionStart', cwd: root },
+        { homeDir: path.join(tmpDir, 'home') }
+      ));
+      const command = context.match(/Offer to move it: `(.+)`/)[1];
+      expect(command).toContain(' mv -- ');
+
+      // Execute the offered command for real, in a real git repo, from the given cwd
+      const real = jest.requireActual('child_process');
+      real.execFileSync('git', ['init', '-q'], { cwd: root });
+      real.execFileSync('git', ['add', '--', '.claude/sessions/issue-feature-42-auth.md'], { cwd: root });
+      const runFrom = path.join(root, relCwd);
+      fs.mkdirSync(runFrom, { recursive: true });
+      real.execFileSync('/bin/sh', ['-c', command], { cwd: runFrom });
+
+      expect(fs.existsSync(path.join(root, nastyDir, 'issue-feature-42-auth.md'))).toBe(true);
+      expect(fs.existsSync(legacy)).toBe(false);
+      if (relCwd !== '.') expect(fs.existsSync(path.join(runFrom, 'work'))).toBe(false);
+      for (const dir of [tmpDir, root, runFrom]) {
+        for (const marker of ['PWNED', 'PWNED2', 'PWNED3']) {
+          expect(fs.existsSync(path.join(dir, marker))).toBe(false);
+        }
+      }
+    });
+  });
+
+  describe('session search across locations', () => {
+    it('finds possible sessions in both the configured and legacy dirs', () => {
+      const configured = path.join(tmpDir, '.memento', 'sessions');
+      const legacy = path.join(tmpDir, '.claude', 'sessions');
+      fs.mkdirSync(configured, { recursive: true });
+      fs.mkdirSync(legacy, { recursive: true });
+      fs.writeFileSync(path.join(configured, '42-new.md'), '');
+      fs.writeFileSync(path.join(legacy, '42-old.md'), '');
+
+      const result = hook.findPossibleSessions(tmpDir, 'issue/feature-42/x', configured);
+      expect(result.map(r => r.location).sort()).toEqual([
+        path.join('.claude', 'sessions', '42-old.md'),
+        path.join('.memento', 'sessions', '42-new.md')
+      ]);
+    });
+
+    it('deduplicates search dirs when configured dir is the legacy dir', () => {
+      const legacy = path.join(tmpDir, '.claude', 'sessions');
+      fs.mkdirSync(legacy, { recursive: true });
+      fs.writeFileSync(path.join(legacy, '42-old.md'), '');
+
+      const result = hook.findPossibleSessions(tmpDir, 'issue/feature-42/x', legacy);
+      expect(result).toHaveLength(1);
+    });
+
+    it('detects a misnamed legacy session from the configured location', () => {
+      const legacy = path.join(tmpDir, '.claude', 'sessions');
+      fs.mkdirSync(legacy, { recursive: true });
+      fs.writeFileSync(path.join(legacy, 'old-name.md'), '**Branch**: issue/feature-42/test\n');
+      const expected = path.join(tmpDir, '.memento', 'sessions', 'issue-feature-42-test.md');
+
+      const result = hook.detectMismatch(tmpDir, 'issue/feature-42/test', expected);
+      expect(result.currentName).toBe('old-name.md');
+      expect(result.path).toBe(path.join(legacy, 'old-name.md'));
+    });
+
+    it('labels possible matches with their location in switch context', () => {
+      const context = hook.buildSwitchContext(
+        '/r/.memento/sessions/x.md', false,
+        [{ file: '42-old.md', location: '.claude/sessions/42-old.md', score: 10 }],
+        'issue/feature-42/x'
+      );
+      expect(context).toContain('.claude/sessions/42-old.md (score: 10)');
     });
   });
 

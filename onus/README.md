@@ -78,9 +78,9 @@ Issue #42 (tracker)
     ↓
 Branch: issue/feature-42/description
     ↓
-Metadata: .claude/branches/issue-feature-42-description
+Metadata: memento branch metadata file issue-feature-42-description
     ↓
-Session: .claude/sessions/issue-feature-42-description.md
+Session: memento session file issue-feature-42-description.md (memento decides the directory)
 ```
 
 ### Interoperability

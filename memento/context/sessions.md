@@ -23,31 +23,23 @@ Sessions are the long-term memory system for Claude projects. They persist work 
 ## Directory Structure
 
 ```
-.claude/
+.memento/               # Default; see "Configuring the location"
 ├── sessions/           # Session files (rich, detailed)
-│   ├── 123-add-auth.md
-│   ├── 456-fix-bug.md
+│   ├── issue-feature-123-add-auth.md
+│   ├── issue-fix-456-fix-bug.md
 │   └── chore-update-deps.md
-├── branches/           # Branch metadata (compact, mapping)
-│   ├── issue-feature-123-add-auth
-│   └── chore-update-deps
-├── templates/          # Session templates
-│   ├── feature.md
-│   ├── fix.md
-│   └── chore.md
-└── tools/              # Session management tools
-    ├── session.js          # Core module
-    ├── create-session.js   # Create session
-    └── get-session.js      # Find session
+└── branches/           # Branch metadata (compact, mapping)
+    ├── issue-feature-123-add-auth
+    └── chore-update-deps
 ```
+
+Session templates ship with the plugin (`memento/templates/`), not in the project.
 
 ## Session Files
 
-**Location**: `.claude/sessions/`
+**Location**: `.memento/sessions/` by default; set `sessionsDir` in `.memento/config.json` to change it (git-root-relative). Older sessions under `.claude/sessions/` are still read.
 
-**Naming**:
-- Feature/Fix with issue: `<IssueNumber>-<desc>.md` (e.g., `123-add-authentication.md`)
-- Chore: `chore-<desc>.md` (e.g., `chore-update-deps.md`)
+**Naming**: `<sanitized-branch>.md` — the branch name with every `/` replaced by `-` (e.g. `issue-feature-123-add-authentication.md`, `chore-update-deps.md`).
 
 **Content Structure**:
 - Details (issue, branch, type, created, status)
@@ -60,7 +52,7 @@ Sessions are the long-term memory system for Claude projects. They persist work 
 
 ## Branch Metadata Files
 
-**Location**: `.claude/branches/`
+**Location**: `.memento/branches/` by default; set `branchesDir` in `.memento/config.json` to change it.
 
 **Naming**: Branch name with `/` → `-`
 - `issue/feature-123/add-auth` → `issue-feature-123-add-auth`
@@ -70,7 +62,7 @@ Sessions are the long-term memory system for Claude projects. They persist work 
 ```
 # Branch Metadata
 branch: issue/feature-123/add-authentication
-session: 123-add-authentication.md
+session: issue-feature-123-add-authentication.md
 type: feature
 status: in-progress
 created: 2024-01-15
@@ -86,6 +78,28 @@ Implementing JWT authentication system
 Create PR for authentication implementation
 ```
 
+## Configuring the location
+
+A repository can move both directories with a committed `.memento/config.json`:
+
+```json
+{ "sessionsDir": "work/sessions", "branchesDir": "work/sessions/.branches" }
+```
+
+- Both keys are optional and relative to the git root. Defaults: `.memento/sessions` and `.memento/branches`.
+- A value that is not a non-empty string, contains a NUL character, is absolute, resolves to the git root itself, or resolves outside the repository is ignored: memento uses the default and shows a `⚠️ memento:` warning. A malformed `.memento/config.json`, or one whose top level is not a JSON object, makes both keys fall back with one warning. `.claude/config.json` is not read by memento.
+- If a branch has no session in the configured directory but `.claude/sessions/<sanitized-branch>.md` exists (from an older memento), memento uses that file instead of creating a new one and offers a `git mv` command to move it. Nothing is moved automatically.
+
+### Resolver
+
+`scripts/resolve-session.js` in the memento plugin applies exactly these rules and prints the result as one JSON object, without creating or moving anything:
+
+```bash
+node <memento plugin>/scripts/resolve-session.js [--cwd <dir>]
+```
+
+Exit 0 prints `ok`, `gitRoot`, `branch`, `sanitizedBranch`, `sessionPath`, `sessionExists`, `legacy`, `configuredPath`, `branchMetadataPath`, `sessionsDir`, `branchesDir`, `configFile`, `migrationCommand` (a root-anchored `git mv` command when `legacy` is true, else `null`), and `warnings`. Exit 1 prints `{"ok": false, "reason": "not-a-git-repo" | "no-branch"}`; exit 2 is a usage error. Skills find it at `../../scripts/resolve-session.js` relative to their own `SKILL.md`; on Claude Code that directory is `${CLAUDE_SKILL_DIR}`, and on Codex it is the directory of the `SKILL.md` it read. Same script, same behaviour on both hosts.
+
 ## Tools
 
 ### Finding Current Session
@@ -95,15 +109,15 @@ Create PR for authentication implementation
 **Steps**:
 1. Get current branch: `git branch --show-current`
 2. Sanitize branch name: replace `/` with `-`
-3. Read `.claude/branches/<sanitized-branch>` for session mapping
-4. Read `.claude/sessions/<session-file>.md` for full context
+3. Locate the session file: resolve each path you need on its own. Session file: use the injected `📂 Session:` path if its filename is `<sanitized-branch>.md` for the current branch (`git branch --show-current`, every `/` replaced by `-`). Branch metadata file: use the injected `🗂️ Branch metadata:` path if its filename is `<sanitized-branch>` (no `.md`). A same-branch prompt injects only the session path, and an injected path for another branch is stale, for example after a `git checkout` earlier in the same turn. Whenever a path you need has no current-branch injection, run memento's resolver with Node: `scripts/resolve-session.js` in the memento plugin (skills locate it relative to their own `SKILL.md`; see [Resolver](#resolver)). It prints one JSON object with `sessionPath`, `sessionExists`, `branchMetadataPath`, `legacy`, `migrationCommand`, and `warnings`; take the missing path from it and show the user any `warnings`. If `legacy` is true, the session is at the old `.claude/sessions/` location: use it, and offer the resolver's `migrationCommand` to move it, copied verbatim, character for character, in a code block. Do not shorten it, re-quote it, make its paths relative, or drop `git -C`: it is quoted and anchored to the repository root so it is safe to run from any directory. Do not run it unasked. Exit 1 means there is no git repository or no current branch.
+4. Read the session file for full context
 
 **Example**:
 ```bash
 # On branch issue/feature-123/add-authentication
-# Check: .claude/branches/issue-feature-123-add-authentication
-# Contains: session: 123-add-authentication.md
-# Read: .claude/sessions/123-add-authentication.md
+# Check: .memento/branches/issue-feature-123-add-authentication
+# Contains: session: issue-feature-123-add-authentication.md
+# Read: .memento/sessions/issue-feature-123-add-authentication.md (or the injected 📂 Session: path)
 ```
 
 ### Creating a Session
@@ -121,8 +135,9 @@ git checkout -b issue/feature-123/add-authentication
 /session
 
 # Creates:
-# - .claude/branches/issue-feature-123-add-authentication
-# - .claude/sessions/123-add-authentication.md
+# - .memento/branches/issue-feature-123-add-authentication
+# - .memento/sessions/issue-feature-123-add-authentication.md
+# (or the branchesDir / sessionsDir set in .memento/config.json)
 ```
 
 ### Updating Sessions
@@ -225,7 +240,7 @@ Claude edits the session file directly. User can ask "update session" or Claude 
 
 **Claude must**:
 1. Get current branch: `git branch --show-current`
-2. Read `.claude/branches/<sanitized-branch>` to find session file
+2. Locate the session file: use the injected `📂 Session:` path, or resolve it as in [Finding Current Session](#finding-current-session) step 3
 3. Read the session file
 4. Display: Goal, Approach, Next Steps, recent Session Log entries
 
@@ -244,7 +259,7 @@ Claude edits the session file directly. User can ask "update session" or Claude 
 ```bash
 # Update session status to complete (Claude edits directly)
 # Then commit session + code together (atomic)
-git add .claude/sessions/123-add-authentication.md src/
+git add .memento/sessions/issue-feature-123-add-authentication.md src/
 git commit -m "#123 - add authentication system"
 
 # Push and create PR
@@ -308,7 +323,7 @@ These triggers ensure critical information is captured before it might be lost.
 
 ```bash
 # Session update + code changes = single commit
-git add .claude/sessions/123-add-auth.md src/
+git add .memento/sessions/issue-feature-123-add-auth.md src/
 git commit -m "..."
 ```
 

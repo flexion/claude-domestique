@@ -18,6 +18,8 @@ try {
   shared = require('../../shared');
 }
 
+const paths = require('../lib/paths');
+
 const PLUGIN_ROOT = path.join(__dirname, '..');
 
 // ============================================================================
@@ -44,31 +46,43 @@ function getGitRoot(cwd) {
 // Session Management
 // ============================================================================
 
-function getSessionPath(gitRoot, branch) {
-  return path.join(gitRoot, '.claude', 'sessions', `${branch.replace(/\//g, '-')}.md`);
+function buildWarningContext(session) {
+  return session.warnings.map(warning => `\n⚠️ memento: ${warning}`).join('');
 }
 
-function getSessionsDir(gitRoot) {
-  return path.join(gitRoot, '.claude', 'sessions');
+function buildLocationContext(gitRoot, session) {
+  let context = `\n🗂️ Branch metadata: ${session.branchMetadataPath}`;
+  if (session.legacy) {
+    const from = path.relative(gitRoot, session.legacyPath);
+    context += `\nSession is at the legacy location (${from}). Offer to move it: `
+      + `\`${paths.migrationCommand(gitRoot, session)}\` (offer this command verbatim; do not run it unasked)`;
+  }
+  return context + buildWarningContext(session);
+}
+
+function listSessionFiles(gitRoot, sessionsDir) {
+  const files = [];
+  for (const dir of paths.sessionSearchDirs(gitRoot, sessionsDir)) {
+    if (!fs.existsSync(dir)) continue;
+    for (const file of fs.readdirSync(dir).filter(f => f.endsWith('.md'))) {
+      files.push({ file, fullPath: path.join(dir, file) });
+    }
+  }
+  return files;
 }
 
 /**
  * Find possible session files that might match the current branch.
  * Scores by matching issue number and description words.
  */
-function findPossibleSessions(gitRoot, branch) {
-  const sessionsDir = getSessionsDir(gitRoot);
-  if (!fs.existsSync(sessionsDir)) return [];
-
+function findPossibleSessions(gitRoot, branch, sessionsDir = paths.resolveDirs(gitRoot).sessionsDir) {
   // Extract issue number and description words from branch
   const issueMatch = branch.match(/(\d+)/);
   const issueNumber = issueMatch?.[1];
   const descWords = branch.split(/[-\/]/).filter(w => w.length > 3 && !/^\d+$/.test(w));
 
-  const sessions = fs.readdirSync(sessionsDir).filter(f => f.endsWith('.md'));
-
-  return sessions
-    .map(file => {
+  return listSessionFiles(gitRoot, sessionsDir)
+    .map(({ file, fullPath }) => {
       let score = 0;
       const lowerFile = file.toLowerCase();
 
@@ -80,7 +94,7 @@ function findPossibleSessions(gitRoot, branch) {
         if (lowerFile.includes(word.toLowerCase())) score += 2;
       }
 
-      return { file, score };
+      return { file, location: path.relative(gitRoot, fullPath), score };
     })
     .filter(s => s.score > 0)
     .sort((a, b) => b.score - a.score)
@@ -91,29 +105,20 @@ function findPossibleSessions(gitRoot, branch) {
  * Detect session files that reference the current branch but have wrong filename.
  * This helps when sessions were manually renamed or created with different naming.
  */
-function detectMismatch(gitRoot, branch, sessionPath) {
+function detectMismatch(gitRoot, branch, sessionPath, sessionsDir = paths.resolveDirs(gitRoot).sessionsDir) {
   // If exact match exists, no mismatch
   if (fs.existsSync(sessionPath)) return null;
 
-  const sessionsDir = getSessionsDir(gitRoot);
-  if (!fs.existsSync(sessionsDir)) return null;
-
   const expectedName = path.basename(sessionPath);
-  const sessions = fs.readdirSync(sessionsDir).filter(f => f.endsWith('.md'));
 
-  for (const session of sessions) {
-    if (session === expectedName) continue; // Skip exact match
+  for (const { file, fullPath } of listSessionFiles(gitRoot, sessionsDir)) {
+    if (file === expectedName) continue; // Exact name in another location is the legacy fallback, not a mismatch
 
-    const sessionFullPath = path.join(sessionsDir, session);
     try {
-      const content = fs.readFileSync(sessionFullPath, 'utf8');
+      const content = fs.readFileSync(fullPath, 'utf8');
       // Check if session file references this branch
       if (content.includes(`**Branch**: ${branch}`) || content.includes(`Branch: ${branch}`)) {
-        return {
-          currentName: session,
-          expectedName: expectedName,
-          path: sessionFullPath
-        };
+        return { currentName: file, expectedName, path: fullPath };
       }
     } catch {
       // Skip unreadable files
@@ -146,7 +151,7 @@ function buildSwitchContext(sessionPath, sessionExists, possibleSessions, branch
   } else if (possibleSessions.length > 0) {
     context += '\nNo exact session match. Possible matches:\n';
     for (const s of possibleSessions) {
-      context += `  - ${s.file} (score: ${s.score})\n`;
+      context += `  - ${s.location || s.file} (score: ${s.score})\n`;
     }
     context += '\nAsk user: use an existing file, rename it to match, or create new?\n';
   } else {
@@ -274,7 +279,8 @@ function onSessionStart(input, base) {
     };
   }
 
-  const sessionPath = getSessionPath(gitRoot, branch);
+  const session = paths.resolveSession(gitRoot, branch);
+  const { sessionPath } = session;
   const sessionName = path.basename(sessionPath);
   const isNew = !fs.existsSync(sessionPath);
 
@@ -289,12 +295,15 @@ function onSessionStart(input, base) {
   if (isNew) {
     statusLine = `📍 Memento: NEW → ${sessionName}`;
   } else {
-    statusLine = `📍 Memento: ${sessionName}`;
+    statusLine = session.legacy
+      ? `📍 Memento: ${sessionName} (legacy location)`
+      : `📍 Memento: ${sessionName}`;
   }
 
   // Build context
   let context = base.additionalContext || '';
   context += `\n📂 Session: ${sessionPath}`;
+  context += buildLocationContext(gitRoot, session);
   if (isNew) {
     context += '\nNew session created. Update Goal and Next Steps.';
   } else {
@@ -305,7 +314,7 @@ function onSessionStart(input, base) {
   return {
     statusLine,
     additionalContext: context,
-    extra: { sessionPath, isNew }
+    extra: { sessionPath, isNew, legacy: session.legacy }
   };
 }
 
@@ -323,7 +332,8 @@ function onUserPromptSubmit(input, base) {
   const previousBranch = state.branch;
   const branchChanged = previousBranch && previousBranch !== branch;
 
-  const sessionPath = getSessionPath(gitRoot, branch);
+  const session = paths.resolveSession(gitRoot, branch);
+  const { sessionPath, sessionsDir } = session;
   const sessionExists = fs.existsSync(sessionPath);
 
   // Build context
@@ -334,13 +344,15 @@ function onUserPromptSubmit(input, base) {
     saveState({ ...state, branch }, input.homeDir);
 
     // Check for misnamed session (references branch but wrong filename)
-    const mismatch = sessionExists ? null : detectMismatch(gitRoot, branch, sessionPath);
+    const mismatch = sessionExists ? null : detectMismatch(gitRoot, branch, sessionPath, sessionsDir);
 
     // Find possible sessions if no exact match and no mismatch
-    const possibleSessions = (sessionExists || mismatch) ? [] : findPossibleSessions(gitRoot, branch);
+    const possibleSessions = (sessionExists || mismatch) ? [] : findPossibleSessions(gitRoot, branch, sessionsDir);
 
     // Inject switch guidance
     context += buildSwitchContext(sessionPath, sessionExists, possibleSessions, branch, mismatch);
+    context += `\n📂 Session: ${sessionPath}`;
+    context += buildLocationContext(gitRoot, session);
 
     return {
       additionalContext: context,
@@ -360,6 +372,7 @@ function onUserPromptSubmit(input, base) {
 
   // Normal prompt - standard session reminder
   context += `\n📂 Session: ${sessionPath}`;
+  context += buildWarningContext(session);
   if (!sessionExists) {
     context += '\nNo session file found. Consider creating one with `/memento:session create`.';
   } else {
@@ -422,8 +435,8 @@ module.exports = {
   processHook,
   getBranch,
   getGitRoot,
-  getSessionPath,
-  getSessionsDir,
+  buildLocationContext,
+  buildWarningContext,
   createSession,
   loadState,
   saveState,

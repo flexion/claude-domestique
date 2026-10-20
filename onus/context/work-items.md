@@ -128,7 +128,7 @@ If criteria are not fully addressed:
 When working on an issue, the session file is populated with:
 
 ```yaml
-# .claude/sessions/42-user-login.md (managed by memento)
+# issue-feature-42-user-login.md (managed by memento, which decides its directory)
 
 ## Issue Details (populated by onus)
 - Number: 42
