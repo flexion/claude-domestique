@@ -20,15 +20,24 @@ const { execFileSync } = require('child_process');
 // `defaultModel` is what a launch gets when the selector names none. Pinning it
 // here, rather than inheriting ambient config, means every herd member starts
 // on a known model unless the caller chose otherwise; an explicit `model=`
-// always wins. Effort has no default and is still inherited.
+// always wins. Effort and the permission settings have no default and are
+// still inherited.
+//
+// `refuses` maps each selector a kind cannot express to the reason, so
+// makeAgent can refuse it instead of dropping it quietly.
 const KINDS = {
   claude: {
     glyph: '◆',
     kind: 'claude',
     defaultModel: 'claude-opus-5-5',
-    extraArgs: ({ model, effort }) => [
+    refuses: {
+      sandbox: 'claude has no sandbox selector (use mode= for --permission-mode)',
+      approval: 'claude has no approval selector (use mode= for --permission-mode)',
+    },
+    extraArgs: ({ model, effort, mode }) => [
       ...(model ? ['--model', model] : []),
       ...(effort ? ['--effort', effort] : []),
+      ...(mode ? ['--permission-mode', mode] : []),
     ],
   },
   codex: {
@@ -43,10 +52,19 @@ const KINDS = {
     // `--no-daemon` on every launch: run without the shared background
     // app-server even when one is already running, so a herd member's session
     // does not depend on a daemon some other codex started.
-    extraArgs: ({ model, effort }) => [
+    //
+    // sandbox and approval are -c overrides too, quoted as TOML strings. The
+    // selector charset admits no quote or backslash, so a value cannot close
+    // the string early.
+    refuses: {
+      mode: 'codex has no permission mode (use sandbox= and approval=)',
+    },
+    extraArgs: ({ model, effort, sandbox, approval }) => [
       '--no-daemon',
       ...(model ? ['--model', model] : []),
       ...(effort ? ['-c', `model_reasoning_effort=${effort}`] : []),
+      ...(sandbox ? ['-c', `sandbox_mode="${sandbox}"`] : []),
+      ...(approval ? ['-c', `approval_policy="${approval}"`] : []),
     ],
   },
   opencode: {
@@ -54,6 +72,13 @@ const KINDS = {
     kind: 'opencode',
     // `-m <provider/model>`, and no effort equivalent on the interactive TUI
     // that herdr launches: `--variant` is a flag of `opencode run` only.
+    // Its permissions live in opencode's own config, with no launch flag.
+    refuses: {
+      effort: 'the opencode TUI has no effort selector (--variant belongs to `opencode run`)',
+      mode: 'opencode has no permission-mode flag',
+      sandbox: 'opencode has no sandbox flag',
+      approval: 'opencode has no approval flag',
+    },
     extraArgs: ({ model }) => ['-m', model],
   },
 };
@@ -67,10 +92,15 @@ const KINDS = {
 // reaches the agent's CLI args, and it is deliberately not part of the handle -
 // the handle stays a bare pool call-sign, because it is the addressable
 // identity and must survive an agent being relaunched in a different part.
+// `mode` (claude --permission-mode), `sandbox` and `approval` (codex -c
+// sandbox_mode / approval_policy) are bare words like effort.
 const SELECTORS = {
   model: /^[\w./:-]+$/,
   effort: /^[\w-]+$/,
   role: /^[\w-]+$/,
+  mode: /^[\w-]+$/,
+  sandbox: /^[\w-]+$/,
+  approval: /^[\w-]+$/,
 };
 
 // `<handle>`, `<handle>:<model>`, or `<handle>:key=value[,key=value]`.
@@ -86,7 +116,8 @@ const SELECTORS = {
 function parseSelector(kind, spec) {
   const text = String(spec);
   const colon = text.indexOf(':');
-  const out = { handle: colon >= 0 ? text.slice(0, colon) : text, model: null, effort: null, role: null };
+  const out = { handle: colon >= 0 ? text.slice(0, colon) : text };
+  for (const key of Object.keys(SELECTORS)) out[key] = null;
   if (colon < 0) return out;
 
   const rest = text.slice(colon + 1);
@@ -114,7 +145,44 @@ function parseSelector(kind, spec) {
   return out;
 }
 
-function makeAgent(kind, spec) {
+// `--env KEY=VALUE`, forwarded to `herdr tab create --env`. KEY is
+// shell-style. A control character in VALUE is refused: a newline or escape
+// in an environment variable is almost always a mistake, and it would break
+// any surface that later prints the pair one per line.
+function parseEnv(pairs) {
+  const out = [];
+  const seen = new Set();
+  for (const pair of pairs || []) {
+    const text = String(pair);
+    const eq = text.indexOf('=');
+    const key = eq >= 0 ? text.slice(0, eq) : text;
+    if (eq < 0) throw new Error(`--env needs KEY=VALUE (got "${key}")`);
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) throw new Error(`--env key is not shell-style: "${key}"`);
+    if (/\p{Cc}/u.test(text.slice(eq + 1))) { // C0, DEL and C1
+      throw new Error(`--env ${key} has a control character in its value`);
+    }
+    if (seen.has(key)) throw new Error(`--env ${key} is set twice`);
+    seen.add(key);
+    out.push(text);
+  }
+  return out;
+}
+
+// A failed `tab create` carries its argv in the error message (execFileSync
+// reports "Command failed: herdr tab create ... --env KEY=VALUE"), and herdr's
+// own diagnostics may echo a value too. No redaction can promise to catch every
+// echo - a short value cannot be scrubbed without mangling unrelated text - so
+// when any --env is set, the child's output is withheld entirely and only the
+// exit status and the key names are reported. With no --env there is nothing
+// to hide and the original error passes through.
+function withholdEnvOutput(err, env) {
+  if (!env.length) return err;
+  const keys = env.map((pair) => pair.slice(0, pair.indexOf('='))).join(', ');
+  const status = err && err.status != null ? ` (exit ${err.status})` : '';
+  return new Error(`herdr tab create failed${status}; its output is withheld because it may echo --env values (${keys})`);
+}
+
+function makeAgent(kind, spec, env = []) {
   const def = KINDS[kind];
   if (!def) throw new Error(`unknown agent kind: ${kind} (want ${Object.keys(KINDS).join('/')})`);
   const sel = parseSelector(kind, spec);
@@ -123,12 +191,12 @@ function makeAgent(kind, spec) {
   if (kind === 'opencode') {
     // opencode alone requires a model: it has no ambient default to inherit.
     if (!sel.model) throw new Error(`--opencode needs <handle>:<model> (got "${spec}")`);
-    // Refuse a setting this CLI cannot express instead of dropping it quietly.
-    // A selector that silently vanishes is precisely the false report that
-    // reporting resolved values exists to prevent.
-    if (sel.effort) {
-      throw new Error('--opencode cannot set effort: the opencode TUI has no effort selector (--variant belongs to `opencode run`)');
-    }
+  }
+  // Refuse a setting this CLI cannot express instead of dropping it quietly.
+  // A selector that silently vanishes is precisely the false report that
+  // reporting resolved values exists to prevent.
+  for (const [key, reason] of Object.entries(def.refuses || {})) {
+    if (sel[key]) throw new Error(`--${kind} cannot set ${key}: ${reason}`);
   }
   return {
     handle: sel.handle,
@@ -137,12 +205,20 @@ function makeAgent(kind, spec) {
     model: sel.model,
     effort: sel.effort,
     role: sel.role,
+    mode: sel.mode,
+    sandbox: sel.sandbox,
+    approval: sel.approval,
+    env: parseEnv(env),
     extraArgs: def.extraArgs(sel),
   };
 }
 
 function parseArgs(argv) {
   const out = { branch: undefined, base: 'origin/main', timeout: 45000, sourceWorkspace: undefined, agents: [] };
+  // Agents are built after the loop: `--env` applies to every agent, and may
+  // appear before or after the agent flags.
+  const specs = [];
+  const env = [];
   for (let i = 0; i < argv.length; i++) {
     const flag = argv[i];
     const need = () => {
@@ -155,12 +231,14 @@ function parseArgs(argv) {
       case '--base': out.base = need(); break;
       case '--timeout': out.timeout = Number(need()); break;
       case '--source-workspace': out.sourceWorkspace = need(); break;
-      case '--claude': out.agents.push(makeAgent('claude', need())); break;
-      case '--codex': out.agents.push(makeAgent('codex', need())); break;
-      case '--opencode': out.agents.push(makeAgent('opencode', need())); break;
+      case '--env': env.push(need()); break;
+      case '--claude': specs.push(['claude', need()]); break;
+      case '--codex': specs.push(['codex', need()]); break;
+      case '--opencode': specs.push(['opencode', need()]); break;
       default: throw new Error(`unknown flag: ${flag}`);
     }
   }
+  out.agents = specs.map(([kind, spec]) => makeAgent(kind, spec, env));
   if (!out.branch) throw new Error('--branch is required');
   if (out.agents.length === 0) {
     throw new Error('at least one agent flag is required (--claude/--codex/--opencode)');
@@ -235,8 +313,14 @@ function launchAgent(a, opts, deps) {
   const label = opts.label
     || `${a.role ? `${a.handle}-${a.role}` : a.handle} ${a.glyph}`;
   const timeout = String(Number(opts.timeout || 45000));
-  const tc = JSON.parse(run('herdr', ['tab', 'create', '--workspace', opts.workspace,
-    '--cwd', opts.cwd, '--label', label, '--no-focus']));
+  const env = (a.env || []).flatMap((pair) => ['--env', pair]);
+  let tc;
+  try {
+    tc = JSON.parse(run('herdr', ['tab', 'create', '--workspace', opts.workspace,
+      '--cwd', opts.cwd, '--label', label, '--no-focus', ...env]));
+  } catch (e) {
+    throw withholdEnvOutput(e, a.env || []);
+  }
   const tab = tc.result.tab.tab_id;
   const rootPane = tc.result.root_pane.pane_id;
   const st = startAgent(a, rootPane, timeout, deps);
@@ -245,12 +329,17 @@ function launchAgent(a, opts, deps) {
   // selected, and null means inherited from the CLI's ambient config. Reporting
   // the kind AS the model (the old `"model":"claude"`) read like an answer while
   // saying nothing about Opus vs Sonnet, so a launch on an unintended model was
-  // indistinguishable from a chosen one.
+  // indistinguishable from a chosen one. `env` lists the KEYS set, never the
+  // values: a value can be a secret, and this result is printed and relayed.
   return {
     handle: a.handle,
     kind: a.kind,
     model: a.model,
     effort: a.effort,
+    mode: a.mode,
+    sandbox: a.sandbox,
+    approval: a.approval,
+    env: (a.env || []).map((pair) => pair.slice(0, pair.indexOf('='))),
     pane_id: st.result.agent.pane_id,
     tab,
   };
@@ -319,8 +408,12 @@ function up(argv, deps) {
   return { worktree: { path, workspace_id: workspace }, agents };
 }
 
+// `stdio: 'pipe'` captures stderr instead of letting execFileSync echo it to
+// the terminal. A child's stderr then reaches the caller only inside the
+// thrown error, where it can be parsed as a herdr envelope or redacted - an
+// echoed `tab create` argv would otherwise print every --env value.
 function defaultRun(file, args) {
-  return execFileSync(file, args, { encoding: 'utf8' });
+  return execFileSync(file, args, { encoding: 'utf8', stdio: 'pipe' });
 }
 
-module.exports = { makeAgent, parseArgs, startAgent, launchAgent, up, defaultRun };
+module.exports = { makeAgent, parseEnv, withholdEnvOutput, parseArgs, startAgent, launchAgent, up, defaultRun };

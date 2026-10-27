@@ -41,10 +41,11 @@ node HERD up --branch chore/my-slug --base origin/main --claude sly --codex jay 
 ```json
 { "worktree": { "path": "…", "workspace_id": "wR" },
   "agents": [ { "handle": "sly", "kind": "claude", "model": "claude-opus-5-5", "effort": null,
+                "mode": null, "sandbox": null, "approval": null, "env": [],
                 "pane_id": "wR:p3", "tab": "wR:t2" } ] }
 ```
 
-`kind` is the integration; `model` and `effort` are what was actually **passed** - an explicit selector or the kind's default model - and `null` means **inherited** from the CLI's ambient config. Do not read `kind` as an answer to "which model is it on".
+`kind` is the integration; `model`, `effort`, `mode`, `sandbox` and `approval` are what was actually **passed** - an explicit selector or the kind's default model - and `null` means **inherited** from the CLI's ambient config. Do not read `kind` as an answer to "which model is it on". `env` lists the **names** of the variables set with `--env`, never their values, because a value can be a secret and this result gets printed and relayed.
 
 the `git fetch` happens only when `--base` names a configured remote. `origin/main` does; `task/my-slug` does not - a slash is not what makes a base remote-tracking, and a base with no slash is a local ref. so a **local-only base creates the worktree with no fetch attempted**, so a worktree can branch off a task branch that was never pushed.
 
@@ -70,14 +71,24 @@ the optional `:<selector>` overrides that per agent, as `key=value` pairs:
 |---|---|---|---|
 | `model=<m>` | `--model <m>` (default `claude-opus-5-5`) | `--model <m>` (default `gpt-6.1-sol`) | `-m <m>` (required) |
 | `effort=<level>` | `--effort <level>` | `-c model_reasoning_effort=<level>` | **unsupported - refused** |
+| `mode=<mode>` | `--permission-mode <mode>` | **unsupported - refused** | **unsupported - refused** |
+| `sandbox=<mode>` | **unsupported - refused** | `-c sandbox_mode="<mode>"` | **unsupported - refused** |
+| `approval=<policy>` | **unsupported - refused** | `-c approval_policy="<policy>"` | **unsupported - refused** |
 
 claude takes an alias (`opus`, `sonnet`, `fable`) or a full name (`claude-fable-5`), and its effort levels are `low, medium, high, xhigh, max`. codex has no effort *flag* - only the generic `-c <key>=<value>` config override - which is why the two kinds cannot share one flag pair.
 
+the permission selectors follow the same rules: unset means **inherited** from the CLI's own config and reports `null`. claude's `--permission-mode` choices are `acceptEdits, auto, bypassPermissions, manual, dontAsk, plan`; codex takes `sandbox_mode` and `approval_policy` values such as `danger-full-access` and `never`. the CLI validates the value itself; the helper checks only the charset (`[\w-]+`), which admits no quote or backslash, so a codex value cannot break out of its quoted TOML string. a kind **refuses** a selector it cannot express - claude refuses `sandbox=` and `approval=`, codex refuses `mode=`, opencode refuses all three - rather than launching without it.
+
 ```text
 node HERD up --branch chore/my-slug --base origin/main --claude nell:model=opus,effort=high --codex jay:effort=high --opencode bob:ollama/qwen2.5:7b
+node HERD up --branch chore/my-slug --claude sly:mode=dontAsk --codex jay:sandbox=danger-full-access,approval=never
 ```
 
 a bare suffix is a model, so `sly:opus` == `sly:model=opus`. the keys are **named rather than positional** because opencode model ids contain colons (`ollama/qwen2.5:7b` would be ambiguous as `handle:model:effort`); named keys are also order-independent and attach per agent, so two agents of the same kind can differ in one launch. the settings ride the `-- <args>` vector on `agent start`. opencode's TUI has no effort selector at all (`--variant` belongs to `opencode run`), so `--opencode bob:model=x,effort=high` is an **error** rather than a silent drop.
+
+### per-agent environment
+
+`--env KEY=VALUE` is repeatable. on `up` it applies to **every** agent launched; on `agent` it applies to that one agent, so per-member identity (`--env BEADS_ACTOR=<handle>`) or a non-default profile (`CLAUDE_CONFIG_DIR`, `CODEX_HOME`) goes on the `agent` verb. each pair is forwarded to `herdr tab create --env`, on the tab whose root pane the agent then takes over. `KEY` must be shell-style (`[A-Za-z_][A-Za-z0-9_]*`); a missing `=`, a repeated key, or a control character (newline, tab, escape) in the value is refused before anything is created. the launch result reports the keys only.
 
 flag order is tab order. defaults: `--base origin/main`, `--timeout 45000` (ms, per-agent readiness wait). handles must be unique - `up` pre-checks `agent list` and refuses before creating the worktree if one is taken. one command also means one permission approval instead of one per step. `up` resolves the repo's main-checkout workspace from your cwd, so it works run from the main checkout **or** from inside a linked worktree (a herd lead spinning up a sibling herd); pass `--source-workspace <ws>` only to override that lookup.
 
@@ -177,9 +188,10 @@ herdr ties one workspace to a worktree, so keep all its agents in that **one** w
 ```text
 node HERD agent codex jay --workspace wR --cwd <worktree-path>
 node HERD agent claude nell:model=opus,effort=high --workspace wR --cwd <path>
+node HERD agent claude sly:mode=dontAsk --env BEADS_ACTOR=sly --workspace wR --cwd <path>
 ```
 
-it runs the primitives for you: `tab create` (decorated label) -> `agent start <handle> --kind <kind> --pane <tab-root-pane> --timeout <ms>` (the agent takes over the tab's root shell pane, so there is no leftover shell to close; the handle is assigned **at launch** - no detect-then-rename) -> `agent wait <handle> --until idle` (ready to seed). the trailing `-- <args>` on `agent start` is the only channel for per-agent program args, so the `handle[:<selector>]` model/effort selectors ride there - same syntax and same defaults as `up` (see [where model and effort come from](#where-model-and-effort-come-from)), because both share one `makeAgent`. `--timeout` alone only guarantees interactive readiness, so the explicit `--until idle` wait is what confirms the status the caller depends on.
+it runs the primitives for you: `tab create` (decorated label) -> `agent start <handle> --kind <kind> --pane <tab-root-pane> --timeout <ms>` (the agent takes over the tab's root shell pane, so there is no leftover shell to close; the handle is assigned **at launch** - no detect-then-rename) -> `agent wait <handle> --until idle` (ready to seed). the trailing `-- <args>` on `agent start` is the only channel for per-agent program args, so the `handle[:<selector>]` model, effort and permission selectors ride there - same syntax and same defaults as `up` (see [where model and effort come from](#where-model-and-effort-come-from)), because both share one `makeAgent`. `--timeout` alone only guarantees interactive readiness, so the explicit `--until idle` wait is what confirms the status the caller depends on.
 
 ### 4. change a handle
 

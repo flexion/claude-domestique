@@ -7,12 +7,14 @@ describe('makeAgent', () => {
   test('claude with no selector: ◆ glyph, default Opus 5.5 model, effort null', () => {
     expect(makeAgent('claude', 'sly')).toEqual({
       handle: 'sly', kind: 'claude', glyph: '◆', model: 'claude-opus-5-5', effort: null, role: null,
+      mode: null, sandbox: null, approval: null, env: [],
       extraArgs: ['--model', 'claude-opus-5-5'],
     });
   });
   test('codex with no selector: ◇ glyph, --no-daemon, default gpt-6.1-sol model, effort null', () => {
     expect(makeAgent('codex', 'jay')).toEqual({
       handle: 'jay', kind: 'codex', glyph: '◇', model: 'gpt-6.1-sol', effort: null, role: null,
+      mode: null, sandbox: null, approval: null, env: [],
       extraArgs: ['--no-daemon', '--model', 'gpt-6.1-sol'],
     });
   });
@@ -28,12 +30,14 @@ describe('makeAgent', () => {
   test('claude model= and effort= become --model/--effort (both first-class flags)', () => {
     expect(makeAgent('claude', 'nell:model=opus,effort=high')).toEqual({
       handle: 'nell', kind: 'claude', glyph: '◆', model: 'opus', effort: 'high', role: null,
+      mode: null, sandbox: null, approval: null, env: [],
       extraArgs: ['--model', 'opus', '--effort', 'high'],
     });
   });
   test('codex effort= becomes a -c config override, not a flag', () => {
     expect(makeAgent('codex', 'jay:model=gpt-6.1-sol,effort=high')).toEqual({
       handle: 'jay', kind: 'codex', glyph: '◇', model: 'gpt-6.1-sol', effort: 'high', role: null,
+      mode: null, sandbox: null, approval: null, env: [],
       extraArgs: ['--no-daemon', '--model', 'gpt-6.1-sol', '-c', 'model_reasoning_effort=high'],
     });
   });
@@ -75,6 +79,7 @@ describe('makeAgent', () => {
   test('opencode splits handle:model into a -m selector (model may contain colons)', () => {
     expect(makeAgent('opencode', 'bob:ollama/qwen2.5:7b')).toEqual({
       handle: 'bob', kind: 'opencode', glyph: '⬨', model: 'ollama/qwen2.5:7b', effort: null, role: null,
+      mode: null, sandbox: null, approval: null, env: [],
       extraArgs: ['-m', 'ollama/qwen2.5:7b'],
     });
   });
@@ -118,6 +123,53 @@ describe('makeAgent', () => {
   });
   test('an unknown kind throws a readable error', () => {
     expect(() => makeAgent('bogus', 'sly')).toThrow(/unknown agent kind: bogus/);
+  });
+
+  // Permission settings ride the same selector syntax; unset stays inherited.
+  test('claude mode= becomes --permission-mode', () => {
+    const a = makeAgent('claude', 'sly:mode=dontAsk');
+    expect(a.mode).toBe('dontAsk');
+    expect(a.sandbox).toBeNull();
+    expect(a.approval).toBeNull();
+    expect(a.extraArgs).toEqual(['--model', 'claude-opus-5-5', '--permission-mode', 'dontAsk']);
+  });
+  test('codex sandbox= and approval= become quoted -c overrides', () => {
+    const a = makeAgent('codex', 'jay:sandbox=danger-full-access,approval=never');
+    expect(a).toMatchObject({ mode: null, sandbox: 'danger-full-access', approval: 'never' });
+    expect(a.extraArgs).toEqual(['--no-daemon', '--model', 'gpt-6.1-sol',
+      '-c', 'sandbox_mode="danger-full-access"', '-c', 'approval_policy="never"']);
+    expect(makeAgent('codex', 'jay:approval=on-request').extraArgs)
+      .toEqual(['--no-daemon', '--model', 'gpt-6.1-sol', '-c', 'approval_policy="on-request"']);
+  });
+  // A kind refuses a setting it cannot express rather than dropping it.
+  test('each kind refuses the permission selectors it cannot express', () => {
+    expect(() => makeAgent('claude', 'sly:sandbox=read-only')).toThrow(/claude cannot set sandbox/);
+    expect(() => makeAgent('claude', 'sly:approval=never')).toThrow(/claude cannot set approval/);
+    expect(() => makeAgent('codex', 'jay:mode=dontAsk')).toThrow(/codex cannot set mode/);
+    for (const key of ['mode', 'sandbox', 'approval']) {
+      expect(() => makeAgent('opencode', `bob:model=x,${key}=y`)).toThrow(new RegExp(`opencode cannot set ${key}`));
+    }
+  });
+  // Quoted TOML values must not break out of their string.
+  test('permission selectors keep the conservative charset', () => {
+    expect(() => makeAgent('codex', 'jay:sandbox=x"y')).toThrow(/unsafe characters/);
+    expect(() => makeAgent('codex', 'jay:approval=never\\')).toThrow(/unsafe characters/);
+    expect(() => makeAgent('claude', 'sly:mode=plan;id')).toThrow(/unsafe characters/);
+  });
+
+  test('env pairs are validated and kept in order', () => {
+    expect(makeAgent('claude', 'sly', ['BEADS_ACTOR=sly', 'EMPTY=', 'A_1=x=y']).env)
+      .toEqual(['BEADS_ACTOR=sly', 'EMPTY=', 'A_1=x=y']);
+    expect(() => makeAgent('claude', 'sly', ['NOEQUALS'])).toThrow(/needs KEY=VALUE/);
+    expect(() => makeAgent('claude', 'sly', ['1BAD=x'])).toThrow(/not shell-style/);
+    expect(() => makeAgent('claude', 'sly', ['BAD-KEY=x'])).toThrow(/not shell-style/);
+    expect(() => makeAgent('claude', 'sly', ['=x'])).toThrow(/not shell-style/);
+    expect(() => makeAgent('claude', 'sly', ['A=1', 'A=2'])).toThrow(/set twice/);
+  });
+  test('an env value with a control character is refused', () => {
+    for (const ch of ['\n', '\r', '\t', '\x00', '\x1b', '\x7f', '\u0085', '\u009b']) {
+      expect(() => makeAgent('claude', 'sly', [`K=a${ch}b`])).toThrow(/control character/);
+    }
   });
 });
 
@@ -319,7 +371,8 @@ describe('launchAgent', () => {
     const { run, calls } = fakeRunner(dynMatchers());
     const out = launchAgent(makeAgent('codex', 'jay'), { workspace: 'wR', cwd: '/wt/x' }, { run });
     expect(out).toEqual({
-      handle: 'jay', kind: 'codex', model: 'gpt-6.1-sol', effort: null, pane_id: 'wR:p2', tab: 'wR:t2',
+      handle: 'jay', kind: 'codex', model: 'gpt-6.1-sol', effort: null,
+      mode: null, sandbox: null, approval: null, env: [], pane_id: 'wR:p2', tab: 'wR:t2',
     });
     expect(calls).toEqual([
       ['herdr', 'tab', 'create', '--workspace', 'wR', '--cwd', '/wt/x', '--label', 'jay ◇', '--no-focus'],
@@ -354,8 +407,63 @@ describe('launchAgent', () => {
     const out = launchAgent(makeAgent('claude', 'nell:model=opus,effort=high'),
       { workspace: 'wR', cwd: '/wt/x' }, { run });
     expect(out).toEqual({
-      handle: 'nell', kind: 'claude', model: 'opus', effort: 'high', pane_id: 'wR:p2', tab: 'wR:t2',
+      handle: 'nell', kind: 'claude', model: 'opus', effort: 'high',
+      mode: null, sandbox: null, approval: null, env: [], pane_id: 'wR:p2', tab: 'wR:t2',
     });
+  });
+
+  test('env goes to tab create; the result lists keys only, never values', () => {
+    const { run, calls } = fakeRunner(dynMatchers());
+    const out = launchAgent(
+      makeAgent('codex', 'jay:sandbox=workspace-write,approval=never', ['BEADS_ACTOR=jay', 'API_TOKEN=s3cret']),
+      { workspace: 'wR', cwd: '/wt/x' }, { run });
+    expect(calls).toContainEqual(['herdr', 'tab', 'create', '--workspace', 'wR', '--cwd', '/wt/x',
+      '--label', 'jay ◇', '--no-focus', '--env', 'BEADS_ACTOR=jay', '--env', 'API_TOKEN=s3cret']);
+    expect(out).toMatchObject({
+      mode: null, sandbox: 'workspace-write', approval: 'never', env: ['BEADS_ACTOR', 'API_TOKEN'],
+    });
+    expect(JSON.stringify(out)).not.toContain('s3cret');
+  });
+});
+
+describe('launchAgent failure output', () => {
+  // execFileSync puts the full argv in the error message; the CLI prints it.
+  test('a failed tab create never exposes an env value', () => {
+    const run = (f, a) => {
+      if (a[0] === 'tab') {
+        const e = new Error(`Command failed: herdr ${a.join(' ')}\nherdr: bad env API_TOKEN=s3cret-value`);
+        e.stderr = 'API_TOKEN=s3cret-value';
+        e.status = 7;
+        throw e;
+      }
+      return '';
+    };
+    const a = makeAgent('claude', 'sly', ['API_TOKEN=s3cret-value', 'N=1']);
+    let err;
+    try { launchAgent(a, { workspace: 'wR', cwd: '/wt/x' }, { run }); } catch (e) { err = e; }
+    expect(err).toBeInstanceOf(Error);
+    expect(err.message).toBe(
+      'herdr tab create failed (exit 7); its output is withheld because it may echo --env values (API_TOKEN, N)');
+    expect(err.stderr).toBeUndefined();
+  });
+  // Length-based scrubbing cannot hide a short value, so nothing is echoed.
+  test('a short env value echoed alone by herdr is not exposed either', () => {
+    const run = (f, a) => {
+      if (a[0] === 'tab') throw new Error('herdr: rejected env value: abc');
+      return '';
+    };
+    let err;
+    try {
+      launchAgent(makeAgent('claude', 'sly', ['API_TOKEN=abc']), { workspace: 'wR', cwd: '/wt/x' }, { run });
+    } catch (e) { err = e; }
+    expect(err.message).not.toContain('abc');
+    expect(err.message).toContain('API_TOKEN');
+  });
+  test('with no env the original tab create error passes through', () => {
+    const boom = new Error('herdr: no such workspace wR');
+    const run = (f, a) => { if (a[0] === 'tab') throw boom; return ''; };
+    expect(() => launchAgent(makeAgent('claude', 'sly'), { workspace: 'wR', cwd: '/wt/x' }, { run }))
+      .toThrow(boom);
   });
 });
 
@@ -367,7 +475,8 @@ describe('up', () => {
     expect(result).toEqual({
       worktree: { path: '/wt/x', workspace_id: 'wR' },
       agents: [{
-        handle: 'sly', kind: 'claude', model: 'claude-opus-5-5', effort: null, pane_id: 'wR:p2', tab: 'wR:t2',
+        handle: 'sly', kind: 'claude', model: 'claude-opus-5-5', effort: null,
+        mode: null, sandbox: null, approval: null, env: [], pane_id: 'wR:p2', tab: 'wR:t2',
       }],
     });
     expect(calls).toEqual([
@@ -390,8 +499,10 @@ describe('up', () => {
     const result = up(['--branch', 'chore/x', '--claude', 'sly', '--codex', 'jay'], { run });
 
     expect(result.agents).toEqual([
-      { handle: 'sly', kind: 'claude', model: 'claude-opus-5-5', effort: null, pane_id: 'wR:p2', tab: 'wR:t2' },
-      { handle: 'jay', kind: 'codex', model: 'gpt-6.1-sol', effort: null, pane_id: 'wR:p3', tab: 'wR:t3' },
+      { handle: 'sly', kind: 'claude', model: 'claude-opus-5-5', effort: null,
+        mode: null, sandbox: null, approval: null, env: [], pane_id: 'wR:p2', tab: 'wR:t2' },
+      { handle: 'jay', kind: 'codex', model: 'gpt-6.1-sol', effort: null,
+        mode: null, sandbox: null, approval: null, env: [], pane_id: 'wR:p3', tab: 'wR:t3' },
     ]);
     expect(calls).toContainEqual(
       ['herdr', 'tab', 'create', '--workspace', 'wR', '--cwd', '/wt/x', '--label', 'jay ◇', '--no-focus']);
@@ -417,8 +528,10 @@ describe('up', () => {
       '--claude', 'nell:model=opus,effort=high',
       '--claude', 'sly:model=sonnet'], { run });
     expect(result.agents).toEqual([
-      { handle: 'nell', kind: 'claude', model: 'opus', effort: 'high', pane_id: 'wR:p2', tab: 'wR:t2' },
-      { handle: 'sly', kind: 'claude', model: 'sonnet', effort: null, pane_id: 'wR:p3', tab: 'wR:t3' },
+      { handle: 'nell', kind: 'claude', model: 'opus', effort: 'high',
+        mode: null, sandbox: null, approval: null, env: [], pane_id: 'wR:p2', tab: 'wR:t2' },
+      { handle: 'sly', kind: 'claude', model: 'sonnet', effort: null,
+        mode: null, sandbox: null, approval: null, env: [], pane_id: 'wR:p3', tab: 'wR:t3' },
     ]);
     expect(calls).toContainEqual(
       ['herdr', 'agent', 'start', 'nell', '--kind', 'claude', '--pane', 'wR:p2', '--timeout', '45000',
@@ -426,6 +539,23 @@ describe('up', () => {
     expect(calls).toContainEqual(
       ['herdr', 'agent', 'start', 'sly', '--kind', 'claude', '--pane', 'wR:p3', '--timeout', '45000',
         '--', '--model', 'sonnet']);
+  });
+
+  test('--env applies to every agent, whether given before or after the agent flags', () => {
+    const { run, calls } = fakeRunner(dynMatchers());
+    const result = up(['--branch', 'b', '--env', 'A=1', '--claude', 'sly:mode=plan',
+      '--codex', 'jay', '--env', 'B=2'], { run });
+    expect(result.agents.map((a) => a.env)).toEqual([['A', 'B'], ['A', 'B']]);
+    expect(result.agents[0].mode).toBe('plan');
+    const tabs = calls.filter((c) => c[1] === 'tab' && c[2] === 'create');
+    expect(tabs).toHaveLength(2);
+    for (const t of tabs) expect(t.slice(-4)).toEqual(['--env', 'A=1', '--env', 'B=2']);
+  });
+  test('a bad --env is rejected before any herdr call', () => {
+    const { run, calls } = fakeRunner(dynMatchers());
+    expect(() => up(['--branch', 'b', '--claude', 'sly', '--env', 'X=a\nb'], { run })).toThrow(/control character/);
+    expect(() => up(['--branch', 'b', '--claude', 'sly', '--env'], { run })).toThrow(/missing value for --env/);
+    expect(calls).toEqual([]);
   });
 
   test('a bad selector is rejected before any herdr call', () => {
