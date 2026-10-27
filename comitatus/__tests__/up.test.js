@@ -121,6 +121,48 @@ describe('makeAgent', () => {
     expect(() => makeAgent('claude', 'sly:model=')).toThrow(/needs a value/);
     expect(() => makeAgent('claude', 'sly:')).toThrow(/needs a value/);
   });
+  // --arg values follow the kind's own arguments, in order, untouched.
+  test('pass-through args are appended after the kind\'s own', () => {
+    expect(makeAgent('claude', 'sol:mode=dontAsk', [], ['--add-dir', '/wt/d365']).extraArgs)
+      .toEqual(['--model', 'claude-opus-5-5', '--permission-mode', 'dontAsk', '--add-dir', '/wt/d365']);
+    const mcp = 'mcp_servers={"chrome-devtools"={enabled=false}}';
+    expect(makeAgent('codex', 'ren:sandbox=danger-full-access,approval=never', [], ['-c', mcp]).extraArgs)
+      .toEqual(['--no-daemon', '--model', 'gpt-6.1-sol', '-c', 'sandbox_mode="danger-full-access"',
+        '-c', 'approval_policy="never"', '-c', mcp]);
+    expect(makeAgent('claude', 'sly', [], ['']).extraArgs).toEqual(['--model', 'claude-opus-5-5', '']);
+  });
+  test('a pass-through arg with a control character is refused', () => {
+    for (const ch of ['\n', '\x00', '\x1b', '\x7f', '\u0085']) {
+      expect(() => makeAgent('claude', 'sly', [], ['--add-dir', `/a${ch}b`])).toThrow(/control character/);
+    }
+  });
+  // A pass-through that duplicates a selector would make the reported setting
+  // false, so it is refused whether or not the selector was given.
+  test('a pass-through that sets what a selector owns is refused', () => {
+    const refused = {
+      claude: [['--model', 'x'], ['--model=x'], ['--effort', 'high'], ['--permission-mode', 'plan'],
+        ['--permission-mode=plan'], ['--dangerously-skip-permissions']],
+      codex: [['--model', 'x'], ['-m', 'x'], ['-mx'], ['--sandbox', 'read-only'], ['-s', 'read-only'],
+        ['--ask-for-approval', 'never'], ['-a', 'never'], ['--dangerously-bypass-approvals-and-sandbox'],
+        ['-c', 'sandbox_mode="read-only"'], ['--config', 'approval_policy=never'],
+        ['--config=model_reasoning_effort=high'], ['-cmodel=x'],
+        ['-c=approval_policy=never'], ['-c=sandbox_mode=danger-full-access'], ['-s=read-only'],
+        ['--sandbox=read-only'], ['--approve-for-me'], ['-c', ' "sandbox_mode" = "x"']],
+      opencode: [['-m', 'x'], ['--model', 'x']],
+    };
+    for (const [kind, cases] of Object.entries(refused)) {
+      const spec = kind === 'opencode' ? 'bob:x' : 'sly';
+      for (const args of cases) {
+        expect(() => makeAgent(kind, spec, [], args)).toThrow(/selectors? owns?/);
+      }
+    }
+    expect(() => makeAgent('codex', 'jay', [], ['-s', 'x'])).toThrow(/use <handle>:sandbox=<value> on --codex/);
+  });
+  test('pass-through args that no selector owns are accepted', () => {
+    expect(() => makeAgent('codex', 'jay', [], ['-c', 'sandbox_workspace_write.network_access=true'])).not.toThrow();
+    expect(() => makeAgent('codex', 'jay', [], ['--profile', 'work'])).not.toThrow();
+    expect(() => makeAgent('claude', 'sly', [], ['--allow-dangerously-skip-permissions'])).not.toThrow();
+  });
   test('an unknown kind throws a readable error', () => {
     expect(() => makeAgent('bogus', 'sly')).toThrow(/unknown agent kind: bogus/);
   });
@@ -372,7 +414,8 @@ describe('launchAgent', () => {
     const out = launchAgent(makeAgent('codex', 'jay'), { workspace: 'wR', cwd: '/wt/x' }, { run });
     expect(out).toEqual({
       handle: 'jay', kind: 'codex', model: 'gpt-6.1-sol', effort: null,
-      mode: null, sandbox: null, approval: null, env: [], pane_id: 'wR:p2', tab: 'wR:t2',
+      mode: null, sandbox: null, approval: null, env: [],
+      args: ['--no-daemon', '--model', 'gpt-6.1-sol'], pane_id: 'wR:p2', tab: 'wR:t2',
     });
     expect(calls).toEqual([
       ['herdr', 'tab', 'create', '--workspace', 'wR', '--cwd', '/wt/x', '--label', 'jay ◇', '--no-focus'],
@@ -408,8 +451,18 @@ describe('launchAgent', () => {
       { workspace: 'wR', cwd: '/wt/x' }, { run });
     expect(out).toEqual({
       handle: 'nell', kind: 'claude', model: 'opus', effort: 'high',
-      mode: null, sandbox: null, approval: null, env: [], pane_id: 'wR:p2', tab: 'wR:t2',
+      mode: null, sandbox: null, approval: null, env: [],
+      args: ['--model', 'opus', '--effort', 'high'], pane_id: 'wR:p2', tab: 'wR:t2',
     });
+  });
+
+  test('the result reports args as the full vector the CLI received', () => {
+    const { run, calls } = fakeRunner(dynMatchers());
+    const out = launchAgent(makeAgent('claude', 'sol', [], ['--add-dir', '/wt/d365']),
+      { workspace: 'wR', cwd: '/wt/x' }, { run });
+    expect(out.args).toEqual(['--model', 'claude-opus-5-5', '--add-dir', '/wt/d365']);
+    expect(calls).toContainEqual(['herdr', 'agent', 'start', 'sol', '--kind', 'claude', '--pane', 'wR:p2',
+      '--timeout', '45000', '--', '--model', 'claude-opus-5-5', '--add-dir', '/wt/d365']);
   });
 
   test('env goes to tab create; the result lists keys only, never values', () => {
@@ -476,7 +529,8 @@ describe('up', () => {
       worktree: { path: '/wt/x', workspace_id: 'wR' },
       agents: [{
         handle: 'sly', kind: 'claude', model: 'claude-opus-5-5', effort: null,
-        mode: null, sandbox: null, approval: null, env: [], pane_id: 'wR:p2', tab: 'wR:t2',
+        mode: null, sandbox: null, approval: null, env: [],
+        args: ['--model', 'claude-opus-5-5'], pane_id: 'wR:p2', tab: 'wR:t2',
       }],
     });
     expect(calls).toEqual([
@@ -500,9 +554,11 @@ describe('up', () => {
 
     expect(result.agents).toEqual([
       { handle: 'sly', kind: 'claude', model: 'claude-opus-5-5', effort: null,
-        mode: null, sandbox: null, approval: null, env: [], pane_id: 'wR:p2', tab: 'wR:t2' },
+        mode: null, sandbox: null, approval: null, env: [],
+        args: ['--model', 'claude-opus-5-5'], pane_id: 'wR:p2', tab: 'wR:t2' },
       { handle: 'jay', kind: 'codex', model: 'gpt-6.1-sol', effort: null,
-        mode: null, sandbox: null, approval: null, env: [], pane_id: 'wR:p3', tab: 'wR:t3' },
+        mode: null, sandbox: null, approval: null, env: [],
+        args: ['--no-daemon', '--model', 'gpt-6.1-sol'], pane_id: 'wR:p3', tab: 'wR:t3' },
     ]);
     expect(calls).toContainEqual(
       ['herdr', 'tab', 'create', '--workspace', 'wR', '--cwd', '/wt/x', '--label', 'jay ◇', '--no-focus']);
@@ -529,9 +585,11 @@ describe('up', () => {
       '--claude', 'sly:model=sonnet'], { run });
     expect(result.agents).toEqual([
       { handle: 'nell', kind: 'claude', model: 'opus', effort: 'high',
-        mode: null, sandbox: null, approval: null, env: [], pane_id: 'wR:p2', tab: 'wR:t2' },
+        mode: null, sandbox: null, approval: null, env: [],
+        args: ['--model', 'opus', '--effort', 'high'], pane_id: 'wR:p2', tab: 'wR:t2' },
       { handle: 'sly', kind: 'claude', model: 'sonnet', effort: null,
-        mode: null, sandbox: null, approval: null, env: [], pane_id: 'wR:p3', tab: 'wR:t3' },
+        mode: null, sandbox: null, approval: null, env: [],
+        args: ['--model', 'sonnet'], pane_id: 'wR:p3', tab: 'wR:t3' },
     ]);
     expect(calls).toContainEqual(
       ['herdr', 'agent', 'start', 'nell', '--kind', 'claude', '--pane', 'wR:p2', '--timeout', '45000',

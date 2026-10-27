@@ -632,15 +632,30 @@ function withdrawCmd(args, deps) {
 
 function agentCmd(args, deps) {
   const { makeAgent, launchAgent } = require('./up.js'); // lazy: keep plain verbs independent of the launcher
-  const [kind, spec] = args;
-  const opt = optOf(args);
-  const ws = opt('--workspace');
-  const cwd = opt('--cwd');
-  if (!ws || !cwd) throw new Error('--workspace and --cwd are required');
-  // `--env KEY=VALUE` is repeatable, so collect every occurrence.
-  const env = args.flatMap((v, i) => (v === '--env' && i + 1 < args.length ? [args[i + 1]] : []));
-  if (args[args.length - 1] === '--env') throw new Error('missing value for --env');
-  const a = makeAgent(kind, spec, env); // validates the kind, the handle[:selector] and every --env pair
+  const [kind, spec, ...rest] = args;
+  // Read flags in order, each consuming its own value. `--arg` values often
+  // look like flags themselves (`--arg --add-dir`), so a lookup by indexOf
+  // could mistake one for the helper's own `--cwd` or `--workspace`.
+  const opts = { timeout: 45000, env: [], args: [] };
+  for (let i = 0; i < rest.length; i++) {
+    const flag = rest[i];
+    const need = () => {
+      if (i + 1 >= rest.length) throw new Error(`missing value for ${flag}`);
+      return rest[++i];
+    };
+    switch (flag) {
+      case '--workspace': opts.workspace = need(); break;
+      case '--cwd': opts.cwd = need(); break;
+      case '--timeout': opts.timeout = need(); break;
+      case '--label': opts.label = need(); break;
+      case '--env': opts.env.push(need()); break;
+      case '--arg': opts.args.push(need()); break;
+      default: throw new Error(`unknown flag for agent: ${flag}`);
+    }
+  }
+  if (!opts.workspace || !opts.cwd) throw new Error('--workspace and --cwd are required');
+  // validates the kind, the handle[:selector], every --env pair and every --arg
+  const a = makeAgent(kind, spec, opts.env, opts.args);
 
   // preflight: herdr rejects a duplicate handle at agent start, but only after
   // the tab is built. Fail before creating anything.
@@ -649,7 +664,7 @@ function agentCmd(args, deps) {
   }
 
   return launchAgent(a,
-    { workspace: ws, cwd, timeout: opt('--timeout', 45000), label: opt('--label') }, deps);
+    { workspace: opts.workspace, cwd: opts.cwd, timeout: opts.timeout, label: opts.label }, deps);
 }
 
 function usage() {
@@ -679,7 +694,7 @@ function usage() {
     '  withdraw --lead <handle> [--workspace ws] [--note s]',
     '      hand off to the working lead, then announce your own departure',
     '  agent <kind> <handle>[:<selector>] --workspace <ws> --cwd <dir> [--timeout ms] [--label s]',
-    '        [--env KEY=VALUE]...',
+    '        [--env KEY=VALUE]... [--arg ARG]...',
     '      kind is claude|codex|opencode. a bare handle gets the default model',
     '      (claude-opus-5-5 for claude, gpt-6.1-sol for codex) and INHERITS effort',
     '      from that CLI\'s ambient config; codex always runs --no-daemon. the',
@@ -700,6 +715,13 @@ function usage() {
     '      --env (repeatable) goes to herdr tab create --env; KEY is shell-style',
     '      and a control character in VALUE is refused. the result lists the',
     '      env KEYS only, never values.',
+    '      --arg (repeatable, agent only) appends ARG to the CLI args after the',
+    '      kind\'s own, in order; e.g. claude: --arg --add-dir --arg /wt/other,',
+    '      codex: --arg -c --arg \'mcp_servers={"x"={enabled=false}}\'. an ARG that',
+    '      sets what a selector owns (--model, --permission-mode, -s, -c',
+    '      sandbox_mode=...) is refused - use the selector. the result reports',
+    '      args as the full vector the CLI received.',
+    '      an unknown flag is an error: a CLI flag needs --arg in front.',
     '  up [...] [--env KEY=VALUE]...    one-shot worktree + herd launcher;',
     '      --env applies to every agent it launches',
   ].join('\n');
