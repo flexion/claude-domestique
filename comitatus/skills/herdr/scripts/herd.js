@@ -637,7 +637,10 @@ function agentCmd(args, deps) {
   const ws = opt('--workspace');
   const cwd = opt('--cwd');
   if (!ws || !cwd) throw new Error('--workspace and --cwd are required');
-  const a = makeAgent(kind, spec); // validates the kind and the handle[:model,effort] selector
+  // `--env KEY=VALUE` is repeatable, so collect every occurrence.
+  const env = args.flatMap((v, i) => (v === '--env' && i + 1 < args.length ? [args[i + 1]] : []));
+  if (args[args.length - 1] === '--env') throw new Error('missing value for --env');
+  const a = makeAgent(kind, spec, env); // validates the kind, the handle[:selector] and every --env pair
 
   // preflight: herdr rejects a duplicate handle at agent start, but only after
   // the tab is built. Fail before creating anything.
@@ -676,6 +679,7 @@ function usage() {
     '  withdraw --lead <handle> [--workspace ws] [--note s]',
     '      hand off to the working lead, then announce your own departure',
     '  agent <kind> <handle>[:<selector>] --workspace <ws> --cwd <dir> [--timeout ms] [--label s]',
+    '        [--env KEY=VALUE]...',
     '      kind is claude|codex|opencode. a bare handle gets the default model',
     '      (claude-opus-5-5 for claude, gpt-6.1-sol for codex) and INHERITS effort',
     '      from that CLI\'s ambient config; codex always runs --no-daemon. the',
@@ -687,7 +691,17 @@ function usage() {
     '      are named, not positional, because opencode models contain colons.',
     '      opencode has no effort selector and refuses effort= rather than',
     '      dropping it. the result reports effort as null when inherited.',
-    '  up [...]                         one-shot worktree + herd launcher',
+    '      permission selectors, null (inherited) when unset:',
+    '        sly:mode=dontAsk               claude --permission-mode dontAsk',
+    '        jay:sandbox=workspace-write,approval=never',
+    '                                       codex -c sandbox_mode="<m>" -c approval_policy="<p>"',
+    '      a kind refuses one it cannot express: claude refuses sandbox= and',
+    '      approval=, codex refuses mode=, opencode refuses all three.',
+    '      --env (repeatable) goes to herdr tab create --env; KEY is shell-style',
+    '      and a control character in VALUE is refused. the result lists the',
+    '      env KEYS only, never values.',
+    '  up [...] [--env KEY=VALUE]...    one-shot worktree + herd launcher;',
+    '      --env applies to every agent it launches',
   ].join('\n');
 }
 

