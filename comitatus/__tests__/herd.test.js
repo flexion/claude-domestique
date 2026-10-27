@@ -403,7 +403,8 @@ describe('agentCmd', () => {
     const out = h.agentCmd(['codex', 'jay', '--workspace', 'wR', '--cwd', '/wt/x'], { run });
     expect(out).toEqual({
       handle: 'jay', kind: 'codex', model: 'gpt-6.1-sol', effort: null,
-      mode: null, sandbox: null, approval: null, env: [], pane_id: 'wR:p2', tab: 'wR:t2',
+      mode: null, sandbox: null, approval: null, env: [],
+      args: ['--no-daemon', '--model', 'gpt-6.1-sol'], pane_id: 'wR:p2', tab: 'wR:t2',
     });
     expect(calls).toEqual([
       ['herdr', 'agent', 'list'],
@@ -464,6 +465,40 @@ describe('agentCmd', () => {
     expect(calls).toEqual([]);
   });
 
+  // The issue's two examples, verbatim.
+  test('--arg values reach agent start after the kind\'s own, in order', () => {
+    const { run, calls } = runner();
+    const out = h.agentCmd(['claude', 'sol:mode=dontAsk', '--workspace', 'wR', '--cwd', '/wt/x',
+      '--arg', '--add-dir', '--arg', '/wt/d365'], { run });
+    expect(out.args).toEqual(['--model', 'claude-opus-5-5', '--permission-mode', 'dontAsk', '--add-dir', '/wt/d365']);
+    const mcp = 'mcp_servers={"chrome-devtools"={enabled=false}}';
+    h.agentCmd(['codex', 'ren:sandbox=danger-full-access,approval=never', '--workspace', 'wR', '--cwd', '/wt/x',
+      '--arg', '-c', '--arg', mcp], { run });
+    expect(calls).toContainEqual(['herdr', 'agent', 'start', 'ren', '--kind', 'codex', '--pane', 'wR:p2',
+      '--timeout', '45000', '--', '--no-daemon', '--model', 'gpt-6.1-sol',
+      '-c', 'sandbox_mode="danger-full-access"', '-c', 'approval_policy="never"', '-c', mcp]);
+  });
+  // Flags are read in order, so an --arg value is never mistaken for the
+  // helper's own flag.
+  test('an --arg value that looks like a helper flag stays a pass-through', () => {
+    const { run, calls } = runner();
+    const out = h.agentCmd(['claude', 'sly', '--arg', '--cwd', '--arg', '/elsewhere',
+      '--workspace', 'wR', '--cwd', '/wt/x', '--arg', '--workspace'], { run });
+    expect(out.args).toEqual(['--model', 'claude-opus-5-5', '--cwd', '/elsewhere', '--workspace']);
+    expect(calls).toContainEqual(
+      ['herdr', 'tab', 'create', '--workspace', 'wR', '--cwd', '/wt/x', '--label', 'sly ◆', '--no-focus']);
+  });
+  test('a refused --arg, missing value or unknown flag fails before any herdr call', () => {
+    const { run, calls } = runner();
+    const base = ['--workspace', 'wR', '--cwd', '/wt/x'];
+    expect(() => h.agentCmd(['codex', 'jay', ...base, '--arg', '-c', '--arg', 'sandbox_mode=x'], { run }))
+      .toThrow(/selectors? owns?/);
+    expect(() => h.agentCmd(['claude', 'sly', ...base, '--arg'], { run })).toThrow(/missing value for --arg/);
+    expect(() => h.agentCmd(['claude', 'sly', ...base, '--add-dir', '/x'], { run }))
+      .toThrow(/unknown flag for agent: --add-dir/);
+    expect(calls).toEqual([]);
+  });
+
   test('opencode agent with an unsafe model is rejected before any herdr call', () => {
     const { run, calls } = runner();
     expect(() => h.agentCmd(['opencode', 'bob:x;curl evil|sh', '--workspace', 'wR', '--cwd', '/wt/x'], { run }))
@@ -479,7 +514,8 @@ describe('agentCmd', () => {
       '--workspace', 'wR', '--cwd', '/wt/x'], { run });
     expect(out).toEqual({
       handle: 'nell', kind: 'claude', model: 'opus', effort: 'high',
-      mode: null, sandbox: null, approval: null, env: [], pane_id: 'wR:p2', tab: 'wR:t2',
+      mode: null, sandbox: null, approval: null, env: [],
+      args: ['--model', 'opus', '--effort', 'high'], pane_id: 'wR:p2', tab: 'wR:t2',
     });
     expect(calls).toContainEqual(
       ['herdr', 'agent', 'start', 'nell', '--kind', 'claude', '--pane', 'wR:p2', '--timeout', '45000',

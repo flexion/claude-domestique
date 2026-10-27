@@ -42,6 +42,7 @@ node HERD up --branch chore/my-slug --base origin/main --claude sly --codex jay 
 { "worktree": { "path": "…", "workspace_id": "wR" },
   "agents": [ { "handle": "sly", "kind": "claude", "model": "claude-opus-5-5", "effort": null,
                 "mode": null, "sandbox": null, "approval": null, "env": [],
+                "args": ["--model", "claude-opus-5-5"],
                 "pane_id": "wR:p3", "tab": "wR:t2" } ] }
 ```
 
@@ -89,6 +90,23 @@ a bare suffix is a model, so `sly:opus` == `sly:model=opus`. the keys are **name
 ### per-agent environment
 
 `--env KEY=VALUE` is repeatable. on `up` it applies to **every** agent launched; on `agent` it applies to that one agent, so per-member identity (`--env BEADS_ACTOR=<handle>`) or a non-default profile (`CLAUDE_CONFIG_DIR`, `CODEX_HOME`) goes on the `agent` verb. each pair is forwarded to `herdr tab create --env`, on the tab whose root pane the agent then takes over. `KEY` must be shell-style (`[A-Za-z_][A-Za-z0-9_]*`); a missing `=`, a repeated key, or a control character (newline, tab, escape) in the value is refused before anything is created. the launch result reports the keys only.
+
+### pass-through arguments
+
+for a CLI flag no selector covers, `agent` takes `--arg <ARG>`, repeatable. each value is appended, in order, after the kind's own arguments on the `agent start ... -- <args>` vector:
+
+```text
+node HERD agent claude sol:mode=dontAsk --workspace wR --cwd <path> --arg --add-dir --arg <second-checkout>
+node HERD agent codex ren:sandbox=danger-full-access,approval=never --workspace wR --cwd <path> --arg -c --arg 'mcp_servers={"chrome-devtools"={enabled=false}}'
+```
+
+`--add-dir` lets a claude member read and edit a second checkout without writing `permissions.additionalDirectories` into a settings file. a codex `-c` override is the only way to turn off an MCP server the user's profile defines: a project `.codex/config.toml` table for a server the profile lacks makes codex refuse to load its config.
+
+there is no shell (`execFile`), so an `ARG` is passed byte for byte; only a control character is refused, as for `--env`. an `ARG` that sets something a selector owns is **refused**, whether or not that selector was given. examples: `--model`, `--effort`, `--permission-mode` or `--dangerously-skip-permissions` for claude; `-m`, `-s`, `-a`, `--approve-for-me`, `--dangerously-bypass-approvals-and-sandbox` or a `-c` (in any spelling) on `model`, `model_reasoning_effort`, `sandbox_mode` or `approval_policy` for codex. use the selector instead. that keeps `model`, `effort`, `mode`, `sandbox` and `approval` in the result truthful. the result's `args` is the full vector the CLI received: the kind's own arguments, then the pass-through.
+
+`--arg` is on `agent` only, not `up`. one `up` launches several kinds, and a claude flag such as `--add-dir` would break the codex launch beside it. launch members that need extra arguments with `agent`.
+
+`agent` reads its own flags strictly in order, so an `--arg` value that looks like a helper flag (`--arg --cwd`) stays a pass-through. an unrecognized flag is an **error**: a CLI flag passed without `--arg` in front (`--add-dir /x`) is refused rather than silently ignored, as it was before.
 
 flag order is tab order. defaults: `--base origin/main`, `--timeout 45000` (ms, per-agent readiness wait). handles must be unique - `up` pre-checks `agent list` and refuses before creating the worktree if one is taken. one command also means one permission approval instead of one per step. `up` resolves the repo's main-checkout workspace from your cwd, so it works run from the main checkout **or** from inside a linked worktree (a herd lead spinning up a sibling herd); pass `--source-workspace <ws>` only to override that lookup.
 

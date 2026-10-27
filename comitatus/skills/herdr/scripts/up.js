@@ -34,6 +34,14 @@ const KINDS = {
       sandbox: 'claude has no sandbox selector (use mode= for --permission-mode)',
       approval: 'claude has no approval selector (use mode= for --permission-mode)',
     },
+    owns: {
+      flags: {
+        '--model': ['model'],
+        '--effort': ['effort'],
+        '--permission-mode': ['mode'],
+        '--dangerously-skip-permissions': ['mode'],
+      },
+    },
     extraArgs: ({ model, effort, mode }) => [
       ...(model ? ['--model', model] : []),
       ...(effort ? ['--effort', effort] : []),
@@ -59,6 +67,25 @@ const KINDS = {
     refuses: {
       mode: 'codex has no permission mode (use sandbox= and approval=)',
     },
+    owns: {
+      flags: {
+        '--model': ['model'],
+        '-m': ['model'],
+        '--sandbox': ['sandbox'],
+        '-s': ['sandbox'],
+        '--ask-for-approval': ['approval'],
+        '-a': ['approval'],
+        '--dangerously-bypass-approvals-and-sandbox': ['sandbox', 'approval'],
+        // workspace-write sandbox plus automatic review of approvals
+        '--approve-for-me': ['sandbox', 'approval'],
+      },
+      config: {
+        model: 'model',
+        model_reasoning_effort: 'effort',
+        sandbox_mode: 'sandbox',
+        approval_policy: 'approval',
+      },
+    },
     extraArgs: ({ model, effort, sandbox, approval }) => [
       '--no-daemon',
       ...(model ? ['--model', model] : []),
@@ -78,6 +105,9 @@ const KINDS = {
       mode: 'opencode has no permission-mode flag',
       sandbox: 'opencode has no sandbox flag',
       approval: 'opencode has no approval flag',
+    },
+    owns: {
+      flags: { '--model': ['model'], '-m': ['model'] },
     },
     extraArgs: ({ model }) => ['-m', model],
   },
@@ -182,7 +212,49 @@ function withholdEnvOutput(err, env) {
   return new Error(`herdr tab create failed${status}; its output is withheld because it may echo --env values (${keys})`);
 }
 
-function makeAgent(kind, spec, env = []) {
+// `--arg <ARG>` values, appended in order after the kind's own arguments on
+// the `agent start -- <args>` vector. There is no shell (execFile), so the
+// only content check is the control-character refusal --env applies.
+//
+// A pass-through that sets something a selector owns is refused, whether or
+// not that selector was given. Otherwise the launch result would report, say,
+// `sandbox: null` (inherited) for an agent launched with `--sandbox`, and a
+// CLI given the same flag twice is free to honour either one.
+function ownedBy(def, token, next) {
+  const owns = def.owns || {};
+  const flags = owns.flags || {};
+  const name = token.startsWith('--') ? token.split('=')[0] : token;
+  if (flags[name]) return flags[name];
+  // A short flag may carry its value attached: `-mgpt-5`, `-sread-only`.
+  if (/^-[A-Za-z]./.test(token) && flags[token.slice(0, 2)]) return flags[token.slice(0, 2)];
+  if (!owns.config) return null;
+  // codex `-c key=value`, `--config key=value`, `--config=key=value`,
+  // `-c=key=value` and `-ckey=value`.
+  let kv = null;
+  if (token === '-c' || token === '--config') kv = next;
+  else if (token.startsWith('--config=')) kv = token.slice('--config='.length);
+  else if (token.startsWith('-c=')) kv = token.slice(3);
+  else if (/^-c./.test(token)) kv = token.slice(2);
+  if (kv == null) return null;
+  const key = String(kv).split('=')[0].trim().replace(/^["']|["']$/g, '');
+  return owns.config[key] ? [owns.config[key]] : null;
+}
+
+function parsePassArgs(kind, def, args) {
+  const out = (args || []).map(String);
+  out.forEach((arg, i) => {
+    if (/\p{Cc}/u.test(arg)) throw new Error(`--arg ${JSON.stringify(arg)} has a control character`);
+    const keys = ownedBy(def, arg, out[i + 1]);
+    if (keys) {
+      const use = keys.map((k) => `${k}=`).join(' and ');
+      const owner = keys.length > 1 ? 'selectors own' : 'selector owns';
+      throw new Error(`--arg ${arg} sets what the ${use} ${owner}; use <handle>:${keys[0]}=<value> on --${kind} instead`);
+    }
+  });
+  return out;
+}
+
+function makeAgent(kind, spec, env = [], args = []) {
   const def = KINDS[kind];
   if (!def) throw new Error(`unknown agent kind: ${kind} (want ${Object.keys(KINDS).join('/')})`);
   const sel = parseSelector(kind, spec);
@@ -209,7 +281,7 @@ function makeAgent(kind, spec, env = []) {
     sandbox: sel.sandbox,
     approval: sel.approval,
     env: parseEnv(env),
-    extraArgs: def.extraArgs(sel),
+    extraArgs: [...def.extraArgs(sel), ...parsePassArgs(kind, def, args)],
   };
 }
 
@@ -340,6 +412,9 @@ function launchAgent(a, opts, deps) {
     sandbox: a.sandbox,
     approval: a.approval,
     env: (a.env || []).map((pair) => pair.slice(0, pair.indexOf('='))),
+    // Everything after `--` on `agent start`: the kind's own arguments, then
+    // any --arg pass-through, exactly as the CLI received them.
+    args: a.extraArgs,
     pane_id: st.result.agent.pane_id,
     tab,
   };
