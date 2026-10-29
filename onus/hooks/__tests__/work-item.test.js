@@ -100,6 +100,22 @@ describe('onus work-item hook', () => {
       expect(detectPlatform(null)).toBe('github');
       expect(detectPlatform(undefined)).toBe('github');
     });
+
+    it('uses the configured platform for a numeric ID', () => {
+      expect(detectPlatform('123', 'azure')).toBe('azure');
+      expect(detectPlatform('123', 'github')).toBe('github');
+    });
+
+    it('keeps JIRA-shaped keys and unrecognized IDs off the configured platform', () => {
+      expect(detectPlatform('PROJ-123', 'azure')).toBe('jira');
+      expect(detectPlatform('unknown', 'azure')).toBe('github');
+    });
+
+    it('falls back to inference when the configured platform is absent or unknown', () => {
+      expect(detectPlatform('123', undefined)).toBe('github');
+      expect(detectPlatform('123', 'gitlab')).toBe('github');
+      expect(detectPlatform('123', 'toString')).toBe('github');
+    });
   });
 
   describe('getCommitFormat', () => {
@@ -401,6 +417,56 @@ describe('onus work-item hook', () => {
       write('.claude/config.json', 'not json');
 
       expect(contextOf(runHook('SessionStart'))).not.toContain('Onus config error');
+    });
+
+    function branchRepo(branch) {
+      // The branch needs a commit to resolve; isolate it from global signing and hooks.
+      const git = (...args) => {
+        const result = spawnSync('git', ['-c', 'commit.gpgsign=false', '-c', 'core.hooksPath=/dev/null', ...args],
+          { cwd: tmpDir, encoding: 'utf8' });
+        expect(result.stderr).toBe('');
+        expect(result.status).toBe(0);
+      };
+      git('init', '-q', '-b', branch);
+      git('-c', 'user.name=t', '-c', 'user.email=t@example.com', 'commit', '-q', '--allow-empty', '-m', 'init');
+    }
+
+    function savedState() {
+      return JSON.parse(fs.readFileSync(path.join(home, '.claude', 'onus', 'state.json'), 'utf8'));
+    }
+
+    function cachedKeys() {
+      return Object.keys(JSON.parse(fs.readFileSync(path.join(home, '.claude', 'onus', 'work-item-cache.json'), 'utf8')).items);
+    }
+
+    it('records a numeric branch item under the configured Azure tracker', () => {
+      branchRepo('feature/123');
+      write('.onus/config.json', JSON.stringify({ platform: 'azure', azure: { organization: 'o', project: 'p' } }));
+
+      runHook('SessionStart');
+
+      expect(savedState()).toMatchObject({ currentIssue: '123', platform: 'azure' });
+      expect(cachedKeys()).toEqual(['azure:123']);
+    });
+
+    it('records a numeric branch item as GitHub when no tracker is configured', () => {
+      branchRepo('feature/123');
+
+      runHook('SessionStart');
+
+      expect(savedState()).toMatchObject({ currentIssue: '123', platform: 'github' });
+      expect(cachedKeys()).toEqual(['github:123']);
+    });
+
+    it('uses the configured tracker when a prompt follows a branch change', () => {
+      branchRepo('main');
+      write('.onus/config.json', JSON.stringify({ platform: 'azure' }));
+      runHook('SessionStart');
+      spawnSync('git', ['checkout', '-q', '-b', 'feature/456'], { cwd: tmpDir });
+
+      runHook('UserPromptSubmit');
+
+      expect(savedState()).toMatchObject({ currentIssue: '456', platform: 'azure' });
     });
 
     it('keeps state under HOME/.claude/onus', () => {

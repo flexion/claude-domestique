@@ -54,6 +54,19 @@ describe('mantra behavior hook', () => {
       expect(context).toContain('active user objective');
     });
 
+    it.each([
+      ['SessionStart', 'startup'],
+      ['SessionStart', 'resume'],
+      ['UserPromptSubmit', undefined]
+    ])('delivers uncertainty-scope guidance on %s (%s)', (hookEvent, source) => {
+      const context = hook.processInput({ hook_event_name: hookEvent, source })
+        .hookSpecificOutput.additionalContext;
+
+      expect(context).toContain('An uncertainty about existing behavior is not, by itself, a requirement to change it or a blocker to the requested work.');
+      expect(context).toContain('Preserve existing behavior outside the requested change.');
+      expect(context).toContain("obtain the user's decision before implementing it.");
+    });
+
     it('returns additionalContext on SessionStart', () => {
       const result = hook.processInput({
         hook_event_name: 'SessionStart'

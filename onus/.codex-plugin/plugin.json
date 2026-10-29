@@ -1,6 +1,6 @@
 {
   "name": "onus",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Work-item, commit, and pull-request automation",
   "author": {
     "name": "David Puglielli"

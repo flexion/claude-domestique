@@ -92,9 +92,14 @@ function extractIssueFromBranch(branch, patterns) {
   return null;
 }
 
-function detectPlatform(issueKey) {
+// A numeric ID could belong to any tracker, so the configured platform decides
+// it; inference applies only when no known platform is configured.
+function detectPlatform(issueKey, configuredPlatform) {
   if (!issueKey) return 'github';
   if (/^[A-Z]+-\d+$/.test(issueKey)) return 'jira';
+  if (/^\d+$/.test(issueKey) && Object.hasOwn(PLATFORM_CONFIG, configuredPlatform)) {
+    return configuredPlatform;
+  }
   return 'github';
 }
 
@@ -258,7 +263,7 @@ function onSessionStart(input, base) {
 
   const branch = getCurrentBranch(cwd);
   const issueKey = extractIssueFromBranch(branch, cfg.branchPatterns);
-  const platform = detectPlatform(issueKey);
+  const platform = detectPlatform(issueKey, cfg.platform);
 
   // Load cache and get/create work item
   const cache = loadWorkItemCache(cfg.cacheFile);
@@ -328,7 +333,7 @@ function onUserPromptSubmit(input, base) {
   if (currentBranch !== state.currentBranch) {
     branchChanged = true;
     const issueKey = extractIssueFromBranch(currentBranch, cfg.branchPatterns);
-    const platform = detectPlatform(issueKey);
+    const platform = detectPlatform(issueKey, cfg.platform);
     state.currentBranch = currentBranch;
     state.currentIssue = issueKey;
     state.platform = platform;
