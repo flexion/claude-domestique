@@ -421,8 +421,28 @@ describe('launchAgent', () => {
       ['herdr', 'tab', 'create', '--workspace', 'wR', '--cwd', '/wt/x', '--label', 'jay ◇', '--no-focus'],
       ['herdr', 'agent', 'start', 'jay', '--kind', 'codex', '--pane', 'wR:p2', '--timeout', '45000',
         '--', '--no-daemon', '--model', 'gpt-6.1-sol'],
-      ['herdr', 'agent', 'wait', 'jay', '--until', 'idle', '--timeout', '45000'],
+      ['herdr', 'agent', 'wait', 'jay', '--until', 'idle', '--until', 'done', '--timeout', '45000'],
     ]);
+  });
+  // Models herdr's wait: it returns when the agent's status is one of the
+  // `--until` states and otherwise times out, exiting non-zero.
+  function settlesAs(status) {
+    const matchers = dynMatchers();
+    matchers.unshift([(f, a) => f === 'herdr' && a[0] === 'agent' && a[1] === 'wait', (f, a) => {
+      const wanted = a.filter((_, i) => a[i - 1] === '--until');
+      if (!wanted.includes(status)) throw new Error(`agent wait timeout (status ${status})`);
+      return '';
+    }]);
+    return fakeRunner(matchers);
+  }
+  test.each(['idle', 'done'])('a start that settles %s launches without a timeout', (status) => {
+    const { run } = settlesAs(status);
+    expect(launchAgent(makeAgent('codex', 'jay'), { workspace: 'wR', cwd: '/wt/x' }, { run }).handle).toBe('jay');
+  });
+  test.each(['blocked', 'unknown'])('a start that stays %s still fails the launch', (status) => {
+    const { run } = settlesAs(status);
+    expect(() => launchAgent(makeAgent('codex', 'jay'), { workspace: 'wR', cwd: '/wt/x' }, { run }))
+      .toThrow(/timeout/);
   });
   test('a role decorates the tab as <handle>-<role>, keeping the kind glyph', () => {
     const { run, calls } = fakeRunner(dynMatchers());
@@ -436,7 +456,7 @@ describe('launchAgent', () => {
     launchAgent(makeAgent('claude', 'sly'), { workspace: 'wR', cwd: '/wt/x', label: 'x', timeout: 9000 }, { run });
     expect(calls).toContainEqual(
       ['herdr', 'tab', 'create', '--workspace', 'wR', '--cwd', '/wt/x', '--label', 'x', '--no-focus']);
-    expect(calls).toContainEqual(['herdr', 'agent', 'wait', 'sly', '--until', 'idle', '--timeout', '9000']);
+    expect(calls).toContainEqual(['herdr', 'agent', 'wait', 'sly', '--until', 'idle', '--until', 'done', '--timeout', '9000']);
   });
   test('opencode passes its -m selector after -- ', () => {
     const { run, calls } = fakeRunner(dynMatchers());
@@ -543,7 +563,7 @@ describe('up', () => {
       ['herdr', 'tab', 'create', '--workspace', 'wR', '--cwd', '/wt/x', '--label', 'sly ◆', '--no-focus'],
       ['herdr', 'agent', 'start', 'sly', '--kind', 'claude', '--pane', 'wR:p2', '--timeout', '45000',
         '--', '--model', 'claude-opus-5-5'],
-      ['herdr', 'agent', 'wait', 'sly', '--until', 'idle', '--timeout', '45000'],
+      ['herdr', 'agent', 'wait', 'sly', '--until', 'idle', '--until', 'done', '--timeout', '45000'],
       ['herdr', 'tab', 'close', 'wR:t1'], // the worktree's original root tab
     ]);
   });
@@ -678,7 +698,7 @@ describe('up', () => {
   test('--timeout flows into the readiness wait', () => {
     const { run, calls } = fakeRunner(dynMatchers());
     up(['--branch', 'b', '--timeout', '9000', '--claude', 'sly'], { run });
-    expect(calls).toContainEqual(['herdr', 'agent', 'wait', 'sly', '--until', 'idle', '--timeout', '9000']);
+    expect(calls).toContainEqual(['herdr', 'agent', 'wait', 'sly', '--until', 'idle', '--until', 'done', '--timeout', '9000']);
   });
 
   test('resolves the source workspace from cwd and forwards it to worktree create', () => {

@@ -15,13 +15,13 @@
       "name": "mantra",
       "source": "./mantra",
       "description": "Behavioral skills, recurring guidance, and automatic resource observations for Claude Code and Codex",
-      "version": "0.11.0"
+      "version": "0.11.1"
     },
     {
       "name": "onus",
       "source": "./onus",
       "description": "Work-item automation - fetches issues, generates commits/PRs, syncs progress",
-      "version": "0.5.0"
+      "version": "0.5.1"
     },
     {
       "name": "agent-artifex",
@@ -33,7 +33,7 @@
       "name": "comitatus",
       "source": "./comitatus",
       "description": "herdr workflows - packages the herdr agent-orchestration skill for claude and codex, auto-injected inside herdr",
-      "version": "1.2.0"
+      "version": "1.2.1"
     },
     {
       "name": "stilus",

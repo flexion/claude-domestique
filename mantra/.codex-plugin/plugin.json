@@ -1,6 +1,6 @@
 {
   "name": "mantra",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "description": "Behavioral skills, recurring guidance, and automatic resource observations for Claude Code and Codex",
   "author": {
     "name": "David Puglielli"

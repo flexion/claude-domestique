@@ -374,9 +374,11 @@ function startAgent(a, rootPane, timeout, deps) {
 // shell pane (by pane id) rather than spawning its own, so the tab's root shell
 // pane - already at the right cwd - becomes the agent pane. There is no leftover
 // shell to close. `--kind` names the integration; the handle is assigned at
-// launch (no detect-then-rename). We still wait for `idle` explicitly:
-// `--timeout` only guarantees interactive readiness, not the idle status the
-// caller depends on.
+// launch (no detect-then-rename). We still wait for a settled status explicitly:
+// `--timeout` only guarantees interactive readiness. Either `idle` or `done`
+// is ready to seed - a fresh agent can settle in `done` (observed with codex),
+// and waiting on `idle` alone reported that ready launch as a timeout.
+// `blocked` and `unknown` still time out, so a stalled start is not hidden.
 function launchAgent(a, opts, deps) {
   const run = deps.run;
   // `<handle>-<role> <glyph>` when a part was named, `<handle> <glyph>` when it
@@ -396,7 +398,7 @@ function launchAgent(a, opts, deps) {
   const tab = tc.result.tab.tab_id;
   const rootPane = tc.result.root_pane.pane_id;
   const st = startAgent(a, rootPane, timeout, deps);
-  run('herdr', ['agent', 'wait', a.handle, '--until', 'idle', '--timeout', timeout]);
+  run('herdr', ['agent', 'wait', a.handle, '--until', 'idle', '--until', 'done', '--timeout', timeout]);
   // `kind` is the integration name; `model`/`effort` are what was actually
   // selected, and null means inherited from the CLI's ambient config. Reporting
   // the kind AS the model (the old `"model":"claude"`) read like an answer while

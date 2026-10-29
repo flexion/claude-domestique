@@ -398,7 +398,7 @@ describe('agentCmd', () => {
     return { run, calls };
   }
 
-  test('codex agent: preflight, tab create -> agent start --kind/--pane -> wait until idle', () => {
+  test('codex agent: preflight, tab create -> agent start --kind/--pane -> wait until idle or done', () => {
     const { run, calls } = runner();
     const out = h.agentCmd(['codex', 'jay', '--workspace', 'wR', '--cwd', '/wt/x'], { run });
     expect(out).toEqual({
@@ -411,7 +411,7 @@ describe('agentCmd', () => {
       ['herdr', 'tab', 'create', '--workspace', 'wR', '--cwd', '/wt/x', '--label', 'jay ◇', '--no-focus'],
       ['herdr', 'agent', 'start', 'jay', '--kind', 'codex', '--pane', 'wR:p2', '--timeout', '45000',
         '--', '--no-daemon', '--model', 'gpt-6.1-sol'],
-      ['herdr', 'agent', 'wait', 'jay', '--until', 'idle', '--timeout', '45000'],
+      ['herdr', 'agent', 'wait', 'jay', '--until', 'idle', '--until', 'done', '--timeout', '45000'],
     ]);
   });
 
@@ -425,7 +425,7 @@ describe('agentCmd', () => {
   test('--timeout overrides the readiness wait', () => {
     const { run, calls } = runner();
     h.agentCmd(['claude', 'sly', '--workspace', 'wR', '--cwd', '/wt/x', '--timeout', '9000'], { run });
-    expect(calls).toContainEqual(['herdr', 'agent', 'wait', 'sly', '--until', 'idle', '--timeout', '9000']);
+    expect(calls).toContainEqual(['herdr', 'agent', 'wait', 'sly', '--until', 'idle', '--until', 'done', '--timeout', '9000']);
   });
 
   test('missing --cwd throws', () => {
