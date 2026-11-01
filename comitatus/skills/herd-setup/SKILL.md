@@ -59,4 +59,11 @@ prefix_rule(pattern=["herdr", "agent", "wait"], decision="allow")
 
 - **Launching agents:** an agent that launches others may also need `["herdr", "tab"]`, `["herdr", "worktree"]` and `["herdr", "workspace"]`.
 - **Old 1.x rules:** rules that name a versioned `.../comitatus/<version>/skills/herdr/scripts/herd.js` path are obsolete, and the user can remove them by hand.
+- **comitatus mail:** a Codex agent that sends mail needs write access to the mail drop. Grant it per launch, with no config change:
+
+  ```text
+  codex -c 'sandbox_workspace_write.writable_roots=["<root>/mail"]'
+  ```
+
+  `<root>` is `$COMITATUS_HOME`, or `~/.comitatus`. The user may instead add the same `writable_roots` entry to their Codex config.
 - **No message bodies:** a rule saved with a message body inside it matches only that one message, so it is safe to delete.

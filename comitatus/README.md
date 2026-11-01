@@ -226,6 +226,31 @@ rm -rf ~/.codex/skills/herdr
 This plugin does not touch `~/.codex/hooks.json` or herdr's own
 `~/.codex/herdr-agent-state.sh`, so nothing else needs cleanup.
 
+## Mail
+
+From 2.1.0, agents that run with `COMITATUS_HANDLE=<handle>` set publish a discovery card, and exchange best-effort durable mail through the comitatus hooks. That works on Claude and Codex, inside herdr or not. Without the variable, the mail hooks do nothing. The `comitatus:mail` skill covers finding, sending and doorbells.
+
+```text
+<root>/roll/<participant>.json     card: who, where, status, live routes
+<root>/mail/<participant>/         drop: senders write <id>.json here
+<root>/state/<participant>/        recently delivered ids
+```
+
+`<root>` is `$COMITATUS_HOME`, or `~/.comitatus` under the account home. A participant is the agent kind, its settings home and its conversation id, so it survives `--resume`. Hooks deliver waiting mail at session start, prompt submission, after each tool call and at turn end. A content-free doorbell (herdr pane, Claude socket or `codex queue`) wakes an idle recipient.
+
+**Known limits:**
+- No disk flush, no exactly-once delivery, no delivery receipt, and no sender authentication within one OS user.
+- A crash at the wrong moment can lose a message.
+- A Codex sender needs write access to `<root>/mail`; see `/herd-setup`.
+- A Codex sandbox cannot ring a Claude socket. That mail then arrives on the recipient's next turn.
+- Untested on Linux.
+
+To withdraw a participant, delete its card, drop and state:
+
+```bash
+rm -rf <root>/roll/<participant>.json <root>/mail/<participant> <root>/state/<participant>
+```
+
 ## Changes in 2.0.0
 
 2.0.0 removed `skills/herdr/scripts/herd.js` and `up.js`. The skill now composes

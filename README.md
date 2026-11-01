@@ -218,6 +218,7 @@ Selected entry points are listed below. Each plugin's README explains its usage 
 | agent-artifex | `/agent-artifex:guide` | Choose an AI-service design, implementation, or assessment workflow |
 | comitatus | `/comitatus:herdr` | Manage agents, messages, and herds inside herdr |
 | comitatus | `/comitatus:herd-setup` | Configure herdr command permissions |
+| comitatus | `/comitatus:mail` | Find participating agents and send them mail, inside or outside herdr |
 | stilus | `/stilus:deslop` | Edit prose to remove formulaic phrasing |
 | stilus | `/stilus:review` | Review finished prose for correctness and clarity |
 | modus | `/modus:human-work-item` | Rewrite an unclear item for a person |

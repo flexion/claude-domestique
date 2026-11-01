@@ -33,6 +33,10 @@
       "classification": "public"
     },
     {
+      "name": "comitatus:mail",
+      "classification": "public"
+    },
+    {
       "name": "mantra:assess",
       "classification": "public"
     },

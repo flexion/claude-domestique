@@ -23,6 +23,8 @@ When a message carries more than a sentence of content, write the content to a f
 
 ## Sending
 
+When every party runs with `COMITATUS_HANDLE` set, the preferred send is mail plus a pane doorbell, per the `comitatus:mail` skill. The content goes to the recipient's mailbox, and the pane only carries `[from <me> mail #<id>]`. Mail most likely survives a restart, and a lost doorbell costs only a delay. The pane content messages below are the fallback for agents without mail.
+
 ```text
 herdr agent prompt jay "[from sly reply #a3f9] rerun the failing test in src/api/; findings to .pipeline/api-test.md"
 ```

@@ -7,11 +7,24 @@ const SKILLS = path.join(ROOT, 'skills');
 // 1.0.0 removed the fan-out skill: a second discoverable skill gave a seeded
 // member a second, conflicting account of who leads. Only directories with a
 // SKILL.md are discoverable by either host.
-test('herdr and herd-setup are the only discoverable skills', () => {
+test('herd-setup, herdr and mail are the only discoverable skills', () => {
   const discoverable = fs.readdirSync(SKILLS)
     .filter((name) => fs.existsSync(path.join(SKILLS, name, 'SKILL.md')))
     .sort();
-  expect(discoverable).toEqual(['herd-setup', 'herdr']);
+  expect(discoverable).toEqual(['herd-setup', 'herdr', 'mail']);
+});
+
+// The doorbell commands are what agents copy; they must match the spec exactly.
+test('the mail skill carries the exact doorbell command for each route and the wait rule', () => {
+  const skill = fs.readFileSync(path.join(SKILLS, 'mail', 'SKILL.md'), 'utf8');
+  for (const exact of [
+    'herdr agent prompt <routes.herdr_pane> "[from <me> mail #<id>]"',
+    '{"msgV":1,"msg_id":"<uuid>","type":"user","message":{"role":"user","content":"[from <me> mail #<id>]"},"priority":"next"}',
+    'CODEX_HOME=<codex_home> codex queue --thread <session> --message "[from <me> mail #<id>]"',
+    'To wait for a reply, end your turn',
+  ]) {
+    expect(skill).toContain(exact);
+  }
 });
 
 function markdownFiles(dir) {
