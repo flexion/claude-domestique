@@ -48,16 +48,19 @@ function run({ input, env, accountHome, now, ppid }) {
   return text ? JSON.stringify({ hookSpecificOutput: { hookEventName: event, additionalContext: text } }) : null;
 }
 
+// A hook always answers with a JSON object (AGENTS.md): `{}` means nothing to
+// say, which also covers opt-out and failure, so the host is never disturbed.
 function main() {
+  let out = null;
   try {
     const input = JSON.parse(fs.readFileSync(0, 'utf8'));
-    const out = run({
+    out = run({
       input, env: process.env, accountHome: os.userInfo().homedir, now: Date.now(), pid: process.pid, ppid: process.ppid,
     });
-    if (out) process.stdout.write(out);
   } catch (e) {
     process.stderr.write(`comitatus mail: ${e.message}\n`);
   }
+  process.stdout.write(out || '{}');
   process.exitCode = 0;
 }
 

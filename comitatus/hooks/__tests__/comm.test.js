@@ -84,7 +84,7 @@ test('PostToolUse with no mail prints nothing but still marks the card working',
   expect(cardOf(root).status).toBe('working');
 });
 
-test('an unusable root throws from run, and the hook process prints nothing and exits 0', () => {
+test('an unusable root throws from run, and the hook process prints {} and exits 0', () => {
   const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'comm-hook-')), 'not-a-dir');
   fs.writeFileSync(file, 'x');
   const { call } = setup({ COMITATUS_HOME: file });
@@ -94,12 +94,26 @@ test('an unusable root throws from run, and the hook process prints nothing and 
     env: { ...process.env, CLAUDECODE: '1', COMITATUS_HANDLE: 'ned', COMITATUS_HOME: file },
   });
   expect(r.status).toBe(0);
-  expect(r.stdout.toString()).toBe('');
+  expect(r.stdout.toString()).toBe('{}');
 });
 
-test('bad stdin prints nothing and exits 0', () => {
+test('bad stdin prints {} and exits 0', () => {
   const { env } = setup();
   const r = spawnSync(process.execPath, [HOOK], { input: 'not json', env: { ...process.env, ...env } });
   expect(r.status).toBe(0);
-  expect(r.stdout.toString()).toBe('');
+  expect(r.stdout.toString()).toBe('{}');
+});
+
+// AGENTS.md: a hook always answers with a JSON object; empty stdout is
+// indistinguishable from a crash (scripts/__tests__/hook-invocation.test.js).
+test('an opted-out session gets {} from the hook process, and nothing is written', () => {
+  const { root, env } = setup();
+  delete env.COMITATUS_HANDLE;
+  const r = spawnSync(process.execPath, [HOOK], {
+    input: JSON.stringify({ session_id: 's1', hook_event_name: 'Stop' }),
+    env: { ...process.env, ...env, COMITATUS_HANDLE: '' },
+  });
+  expect(r.status).toBe(0);
+  expect(r.stdout.toString()).toBe('{}');
+  expect(fs.existsSync(root)).toBe(false);
 });
