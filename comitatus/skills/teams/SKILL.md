@@ -5,28 +5,27 @@ description: Use when an agent needs to send or receive Microsoft Teams chat mes
 
 # Teams chat messaging
 
-Use Microsoft Graph PowerShell for explicit send and receive operations in an
-existing chat. Each agent owns its PowerShell process and signs in independently.
+Use the installed Microsoft Graph PowerShell commands for explicit send and receive
+operations in an existing chat. Each agent owns its process and signs in independently.
 No browser or shared authentication cache is needed. This skill works outside
 herdr and does not require `COMITATUS_HANDLE`.
 
-## Setup and sign-in
+Teams uses ordinary Graph HTTPS endpoints. PowerShell supplies the demonstrated
+authentication client here; it is not part of the messaging protocol.
+
+## Connect
 
 Requires PowerShell 7 (`pwsh`) and `Microsoft.Graph.Authentication`. Install the
-module once if missing:
-
-```powershell
-Install-Module Microsoft.Graph.Authentication -Scope CurrentUser -Repository PSGallery
-```
+module once if missing with
+`Install-Module Microsoft.Graph.Authentication -Scope CurrentUser -Repository PSGallery`.
 
 Start a private `pwsh -NoLogo -NoProfile` process and keep it open for the exchange.
-Run these commands in that process, replacing `<skill-directory>` with the directory
-containing this SKILL.md:
+Run the installed module's commands directly:
 
 ```powershell
 Import-Module Microsoft.Graph.Authentication
-. '<skill-directory>/scripts/teams.ps1'
 Connect-MgGraph -TenantId $env:COMITATUS_TEAMS_TENANT_ID -Scopes 'Chat.Read','ChatMessage.Send' -UseDeviceAuthentication -ContextScope Process -NoWelcome
+$messagesUri = 'https://graph.microsoft.com/v1.0/chats/' + [uri]::EscapeDataString($env:COMITATUS_TEAMS_CHAT_ID) + '/messages'
 ```
 
 The user supplies `COMITATUS_TEAMS_TENANT_ID` and `COMITATUS_TEAMS_CHAT_ID` at runtime.
@@ -40,32 +39,60 @@ client can have broader previously-consented scopes; inspect `Get-MgContext` and
 do not describe this as guaranteed least privilege. Report a consent or tool denial
 as returned. Do not switch OAuth clients or create an app to work around it.
 
-## Send and receive
+Choose the operations the task needs in that same authenticated process.
 
-In the same authenticated process:
+## Receive
+
+Read one page; `$top` controls page size, with a maximum of 50.
 
 ```powershell
-# Receive a page (default 10, maximum 50); keep its @odata.nextLink if present.
-$page = Get-ComitatusTeamsMessage -ChatId $env:COMITATUS_TEAMS_CHAT_ID -Top 10
+$page = Invoke-MgGraphRequest -Method GET -Uri ($messagesUri + '?$top=10') -ErrorAction Stop
 $page | ConvertTo-Json -Depth 20
+```
 
-# Send plain text; retain the returned ID for a subsequent read or reply.
-$sent = Send-ComitatusTeamsMessage -ChatId $env:COMITATUS_TEAMS_CHAT_ID -Text '[from sender reply #example] to recipient: hello'
+## Send
+
+Set `$text` to the requested message. Serialize it as JSON to preserve quotes,
+newlines and Unicode. Keep the returned ID for subsequent reads or replies.
+
+```powershell
+$body = @{ body = @{ contentType = 'text'; content = $text } } | ConvertTo-Json -Depth 4
+$sent = Invoke-MgGraphRequest -Method POST -Uri $messagesUri -Body $body -ContentType 'application/json' -ErrorAction Stop
 $sent.id
+```
 
-# Read one known message.
-Get-ComitatusTeamsMessage -ChatId $env:COMITATUS_TEAMS_CHAT_ID -MessageId $sent.id | ConvertTo-Json -Depth 20
+## Read message
 
-# End the authenticated exchange.
+Set `$messageId` to an ID from a received page or send response.
+
+```powershell
+$messageUri = $messagesUri + '/' + [uri]::EscapeDataString($messageId)
+Invoke-MgGraphRequest -Method GET -Uri $messageUri -ErrorAction Stop | ConvertTo-Json -Depth 20
+```
+
+## Next page
+
+A page is not the complete history. Follow Graph's continuation link when needed:
+
+```powershell
+if ($page.'@odata.nextLink') {
+  Invoke-MgGraphRequest -Method GET -Uri $page.'@odata.nextLink' -ErrorAction Stop | ConvertTo-Json -Depth 20
+}
+```
+
+## Disconnect
+
+Run this when finished or abandoning an exchange, then close the private process:
+
+```powershell
 Disconnect-MgGraph
 Get-MgContext # Should be empty; then close this PowerShell process.
 ```
 
-The helpers return Graph's response, including IDs and continuation links. A page
-is not the complete history. For another page, use `Invoke-MgGraphRequest -Method GET
--Uri $page.'@odata.nextLink'` in the same process. A successful POST confirms storage
-in Teams; only a peer's reply establishes that it handled the message. After an
-ambiguous send failure, read before resending to avoid duplicates.
+## Message handling
+
+A successful POST confirms storage in Teams; only a peer's reply establishes that
+it handled the message. After an ambiguous send failure, read before resending.
 
 For interagent messages, include sender, recipient and correlation ID in the text;
 agents signed in as the same user otherwise share the same Teams identity. Use

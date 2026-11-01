@@ -36,8 +36,8 @@ belongs to comitatus.
 - `/herd-setup`, which merges a safe allow-list of native herdr and read-only
   git commands into your Claude settings, and lists the Codex prefix rules for
   you to add yourself.
-- The `teams` skill (`comitatus:teams`) and PowerShell helpers for explicit chat
-  send/receive through Microsoft Graph, with independent process-scoped sign-in.
+- The `teams` skill (`comitatus:teams`) for explicit chat send/receive using the
+  installed Graph PowerShell commands, with independent process-scoped sign-in.
 
 2.0.0 removed the `herd.js` and `up.js` helper scripts. See
 [Changes in 2.0.0](#changes-in-200) for what each helper behavior became.
@@ -265,13 +265,16 @@ existing Teams chat through `Microsoft.Graph.Authentication`. See the
 Each agent signs in independently in a private PowerShell process using
 `-ContextScope Process`. Tenant and decoded chat IDs are supplied at runtime as
 `COMITATUS_TEAMS_TENANT_ID` and `COMITATUS_TEAMS_CHAT_ID`; no conversation destination
-ships with the plugin. The helpers send plain text, read a page or a specific
-message, and return Graph responses including message IDs and pagination links.
-They do not connect Teams to the local mail hooks or automatically wake an agent.
+ships with the plugin. The skill composes `Import-Module`, `Connect-MgGraph`,
+`Invoke-MgGraphRequest` and `Disconnect-MgGraph` directly: no comitatus runtime
+helper or plugin-cache path is needed. Examples send plain text, read a page or a
+specific message, and retain Graph message IDs and pagination links. They do not
+connect Teams to the local mail hooks or automatically wake an agent.
 
 The implementation uses the same Graph PowerShell path demonstrated by a
-three-message exchange between two independent clients. Offline helper tests run
-when `pwsh` is available; they do not authenticate or post to Teams. The Microsoft
+three-message exchange between two independent clients. Offline tests execute the
+skill's actual PowerShell examples with SDK commands stubbed when `pwsh` is
+available; they do not authenticate or post to Teams. The Microsoft
 Graph Command Line Tools application can carry broader existing consent than the
 two chat scopes requested; process isolation does not narrow that consent.
 

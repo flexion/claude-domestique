@@ -1,19 +1,28 @@
 $ErrorActionPreference = 'Stop'
 $inputData = $env:COMITATUS_TEAMS_TEST_INPUT | ConvertFrom-Json -AsHashtable
 $calls = [System.Collections.Generic.List[object]]::new()
+$env:COMITATUS_TEAMS_TENANT_ID = $inputData.tenantId
+$env:COMITATUS_TEAMS_CHAT_ID = $inputData.chatId
+$text = $inputData.text
+$messageId = $inputData.messageId
+$context = $null
+$disconnected = 0
 
-# Only the Graph SDK boundary is replaced; PowerShell binding, URI encoding,
-# serialization and the shipped helpers execute normally. No login or HTTP.
-function Get-MgContext {
-  if ($inputData.context -eq 'none') { return $null }
-  $scope = if ($inputData.context) { $inputData.context } else { 'Process' }
-  [pscustomobject]@{ ContextScope = $scope }
+# Only installed SDK commands are replaced. The actual Markdown examples execute
+# normally, without a plugin runtime helper, login or HTTP.
+function Import-Module { param($Name) $script:imported = $Name }
+function Connect-MgGraph {
+  param($TenantId, $Scopes, [switch]$UseDeviceAuthentication, $ContextScope, [switch]$NoWelcome)
+  $script:connection = @{ tenantId = $TenantId; scopes = $Scopes; device = $UseDeviceAuthentication.IsPresent; contextScope = $ContextScope }
+  $script:context = @{ ContextScope = $ContextScope }
 }
+function Get-MgContext { $script:context }
+function Disconnect-MgGraph { $script:context = $null; $script:disconnected++ }
 
 function Invoke-MgGraphRequest {
   param($Method, $Uri, $Body, $ContentType, $ErrorAction)
   $calls.Add(@{ method = $Method; uri = $Uri; body = $Body; contentType = $ContentType })
-  if ($inputData.fail) { throw 'Graph test failure: 403' }
+  if ($inputData.failMethod -eq $Method) { throw 'Graph test failure: 403' }
   if ($Method -eq 'POST') { return @{ id = 'sent-id' } }
   return @{
     value = @(@{ id = 'received-id'; body = @{ content = 'hello' } })
@@ -21,20 +30,15 @@ function Invoke-MgGraphRequest {
   }
 }
 
-# A missing script is a setup failure, not a successful error-path test.
-. $env:COMITATUS_TEAMS_TEST_SCRIPT
-$result = $null
 $errorText = $null
 try {
-  $params = @{ ChatId = $inputData.chatId }
-  if ($inputData.action -eq 'send') {
-    $result = Send-ComitatusTeamsMessage @params -Text $inputData.text
-  } else {
-    if ($inputData.ContainsKey('top')) { $params.Top = $inputData.top }
-    if ($inputData.ContainsKey('messageId')) { $params.MessageId = $inputData.messageId }
-    $result = Get-ComitatusTeamsMessage @params
+  . ([scriptblock]::Create($inputData.examples.Connect)) | Out-Null
+  foreach ($action in $inputData.actions) {
+    . ([scriptblock]::Create($inputData.examples[$action])) | Out-Null
   }
 } catch {
   $errorText = $_.Exception.Message
+} finally {
+  . ([scriptblock]::Create($inputData.examples.Disconnect)) | Out-Null
 }
-@{ result = $result; error = $errorText; calls = @($calls.ToArray()) } | ConvertTo-Json -Depth 20 -Compress
+@{ imported = $imported; connection = $connection; context = $context; disconnected = $disconnected; calls = @($calls.ToArray()); page = $page; sent = $sent; error = $errorText } | ConvertTo-Json -Depth 20 -Compress

@@ -58,6 +58,7 @@ test('every relative Markdown link in the plugin resolves', () => {
 // placeholder may not.
 test('no runtime helper ships and nothing shipped invokes one', () => {
   expect(fs.existsSync(path.join(SKILLS, 'herdr', 'scripts'))).toBe(false);
+  expect(fs.existsSync(path.join(SKILLS, 'teams', 'scripts'))).toBe(false);
   const shipped = [];
   (function walk(dir) {
     for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
