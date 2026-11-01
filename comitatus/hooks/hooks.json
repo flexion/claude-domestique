@@ -1,5 +1,5 @@
 {
-  "description": "herdr orientation + codex skill provisioning when running inside herdr",
+  "description": "herdr orientation when running inside herdr",
   "hooks": {
     "SessionStart": [
       {

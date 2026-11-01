@@ -7,50 +7,56 @@ argument-hint: "[--local | --project]"
 
 # herd-setup
 
-This skill configures Claude Code's command allowlist. Codex users should not run
-the script: Codex uses its own approval policy, and the installed `herdr` skill
-works directly without editing Claude settings.
+This skill configures Claude Code's command allowlist for native `herdr` verbs. It changes settings only when the user runs it, and it never removes an existing rule.
 
-For Claude Code, merge a curated allow-list of safe herdr workflow commands into
-`settings.json`, so routine herdr driving and the `herd.js` composite verbs stop
-prompting. Arbitrary-exec primitives (`herdr pane run`, `herdr pane send-keys`)
-and destructive git verbs (`git branch -D`, `reset`, force-push) remain excluded.
+## Claude Code
 
-## Run it
-
-Resolve `../../scripts/herd-setup.js` relative to this `SKILL.md`. Default is
-**user** scope (`~/.claude/settings.json`), recommended because herdr is used
-across repositories and the helper-path rule is machine-specific:
+Resolve `../../scripts/herd-setup.js` relative to this `SKILL.md` and run it:
 
 ```bash
 node <resolved-plugin-root>/scripts/herd-setup.js
 ```
 
-Add `--local` for `~/.claude/settings.local.json` (machine, gitignored), or
-`--project` for `.claude/settings.json` (committed, team-wide).
+| Scope | Flag | File |
+| --- | --- | --- |
+| User (default) | none | `~/.claude/settings.json` |
+| Machine, gitignored | `--local` | `~/.claude/settings.local.json` |
+| Team-wide, committed | `--project` | `.claude/settings.json` |
 
-## What it adds
+Every scope gets the same rules, because no rule names a machine-specific path.
 
-- Safe herdr verbs: `agent list/get/read/prompt/rename/wait`, `pane read`,
-  `pane wait-output`, and the `tab`/`workspace`/`worktree` lifecycle (including
-  `worktree remove`).
-- `git fetch`, read-only `git status`/`git branch`.
-- One rule **per helper verb** at the stable path, e.g.
-  `Bash(node <home>/.claude/comitatus/skills/herdr/scripts/herd.js send:*)` -
-  so `status`/`members`/`send`/`seed`/`broadcast`/`sync`/`withdraw`/`agent`/`up` run
-  prompt-free, but ONLY when you call the helper by the **absolute path** shown
-  in your herdr orientation (shell variables and relative paths defeat the
-  permission matcher).
+**It adds:**
+- **Read and inspect:**
+  - `agent list/get/read/explain`
+  - `pane list/get/current/read/wait-output`
+  - `tab list`, `workspace list`, `worktree list`
+  - `herdr status`, `integration status`
+- **Messaging and waits:** `agent prompt`, `agent wait`, `agent rename`.
+- **Lifecycle:** `tab create/rename/focus/close`, `workspace create/close`, `worktree create/open/remove`.
+- **git:** `git fetch`, `git remote`, and read-only `git status` and `git branch`.
 
-## What it will NOT add
+**It never adds:**
+- **`herdr agent start`.** Arguments after `--` reach the agent CLI unchanged and can include permission-bypass flags, so each launch stays a human approval.
+- **`herdr pane run`, `herdr pane send-keys`, `herdr agent send-keys`.** These are raw shell and keystroke injection.
+- **`git branch -D`, `git reset`, `git checkout`, `git push`, `git merge`, `git worktree remove`.** These are irreversible or change history.
+- **Any `node`, interpreter, or helper-script rule.**
 
-- `herdr pane run` / `herdr pane send-keys` - raw shell / keystroke injection. The
-  composite verbs cover their legitimate uses with fixed arguments.
-- `git branch -D`, `git reset`, `git checkout`, `git push`, `git worktree remove`
-  - irreversible or history-changing.
-- A blanket `node .../herd.js:*` - rules are per-verb, so a future verb is not
-  auto-allowed.
-- The machine-specific baked rules under `--project` (they embed your home path).
+Re-running is idempotent. It warns when a rule it adds is shadowed by an existing `deny` or `ask` entry.
 
-Re-running is safe and idempotent. It warns if any rule it would add is shadowed
-by an existing `deny`/`ask` entry.
+**Upgrading from comitatus 1.x:** the old per-verb rules for the 1.x helper script (`herd.js`) stay in your settings, because the script never deletes rules. 2.0.0 no longer ships or updates the file they point to, though an old copy may still sit on disk. Remove the rules by hand.
+
+## Codex
+
+Do not run the script for Codex. Codex reads its own rules from `$CODEX_HOME/rules/default.rules`. Commands without a matching rule run in a sandbox that blocks the herdr socket, so they fail with `Operation not permitted`. Show the user these lines to add themselves; never edit the file for them.
+
+```text
+prefix_rule(pattern=["herdr", "agent", "prompt"], decision="allow")
+prefix_rule(pattern=["herdr", "agent", "list"], decision="allow")
+prefix_rule(pattern=["herdr", "agent", "get"], decision="allow")
+prefix_rule(pattern=["herdr", "agent", "read"], decision="allow")
+prefix_rule(pattern=["herdr", "agent", "wait"], decision="allow")
+```
+
+- **Launching agents:** an agent that launches others may also need `["herdr", "tab"]`, `["herdr", "worktree"]` and `["herdr", "workspace"]`.
+- **Old 1.x rules:** rules that name a versioned `.../comitatus/<version>/skills/herdr/scripts/herd.js` path are obsolete, and the user can remove them by hand.
+- **No message bodies:** a rule saved with a message body inside it matches only that one message, so it is safe to delete.

@@ -37,3 +37,32 @@ test('every relative Markdown link in the plugin resolves', () => {
   }
   expect(broken).toEqual([]);
 });
+
+// 2.0.0 replaced herd.js and up.js with native herdr commands. No operational
+// path may still require them: neither file ships, and no skill, reference,
+// hook, script or agent manifest invokes one. Prose that records the removal
+// may name them; an invocation (`node <path>herd.js`) or the old `HERD`
+// placeholder may not.
+test('no runtime helper ships and nothing shipped invokes one', () => {
+  expect(fs.existsSync(path.join(SKILLS, 'herdr', 'scripts'))).toBe(false);
+  const shipped = [];
+  (function walk(dir) {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (['node_modules', '__tests__'].includes(e.name)) continue;
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (/\.(md|js|json|ya?ml)$/.test(e.name)) shipped.push(p);
+    }
+  })(ROOT);
+  const offenders = shipped
+    .filter((f) => !['README.md', 'package.json', 'jest.config.js'].includes(path.relative(ROOT, f)))
+    .filter((f) => /node\s+\S*[\\/](herd|up)\.js\b|\bHERD\b|require\([^)]*[\\/](herd|up)\.js/.test(fs.readFileSync(f, 'utf8')))
+    .map((f) => path.relative(ROOT, f));
+  expect(offenders).toEqual([]);
+});
+
+// The skill states the herdr version whose native behavior it relies on.
+test('the herdr skill states its supported herdr version', () => {
+  const skill = fs.readFileSync(path.join(SKILLS, 'herdr', 'SKILL.md'), 'utf8');
+  expect(skill).toMatch(/Supported herdr: 0\.9\.5 or later/);
+});

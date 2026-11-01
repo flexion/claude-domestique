@@ -12,8 +12,8 @@ keeps it from drifting when herdr changes.
 | Layer | What it is | Owns | Does **not** own |
 |-------|-----------|------|------------------|
 | **herdr** | The terminal-native multiplexer binary (`herdr`), installed from [herdr.dev](https://herdr.dev). | The entire command surface and runtime: worktrees, workspaces, tabs, panes, and agents; `agent start/prompt/read/wait`, `worktree`/`tab`/`pane`/`workspace` verbs; agent **detection integrations** (`~/.codex/herdr-agent-state.sh` and friends) that read each agent's status. The authoritative source for flags — run `herdr <verb> --help`. | Any notion of a "herd" as a team, the roster/naming convention, or the agent-to-agent messaging protocol. |
-| **herdr skill** (`comitatus:herdr`) | A curated workflow skill authored under `skills/herdr/`, invoked from inside a herdr pane. | The *conventions layer* herdr has no opinion on: the herd roster + short-handle naming, the `[from <self> reply\|fyi]` messaging protocol, worktree-herd setup patterns, and the `herd.js` composite verbs. Points at `herdr <verb> --help` for CLI flags rather than re-teaching them. | The herdr CLI itself (it calls it), and herdr's detection integrations. |
-| **comitatus** (this plugin) | The Claude Code plugin that packages and delivers the skill. | Delivery + activation: the SessionStart hook that gates on `HERDR_ENV=1`, injects orientation, provisions a stable copy of the skill under `~/.claude/comitatus/`, and reports whether comitatus is installed as a Codex plugin (it never writes into `~/.codex`); the `/herd-setup` permission allow-list; the stable helper path. | herdr's binary, its integrations, and the skill's *content* semantics (it ships the files, it doesn't decide what they say). |
+| **herdr skill** (`comitatus:herdr`) | A curated workflow skill authored under `skills/herdr/`, invoked from inside a herdr pane. | The *conventions layer* herdr has no opinion on: the herd roster + short-handle naming, the `[from <self> reply\|fyi #<id>]` messaging protocol and how to read a send result, the briefing template, and launch, worktree and teardown sequences composed from native `herdr` and `git` commands. Points at `herdr <verb> --help` for CLI flags rather than re-teaching them. | The herdr CLI itself (it calls it), and herdr's detection integrations. There is no helper script. |
+| **comitatus** (this plugin) | The Claude Code and Codex plugin that packages and delivers the skill. | Delivery + activation: the SessionStart hook that gates on `HERDR_ENV=1`, injects orientation, and reports whether comitatus is installed as a Codex plugin; the `/herd-setup` permission allow-list. The hook writes nothing; `/herd-setup` edits a settings file only when you run it. | herdr's binary, its integrations, and the skill's *content* semantics (it ships the files, it doesn't decide what they say). |
 
 **Rule of thumb:** if it is a herdr command or agent-status mechanic, it belongs to
 herdr; if it is "how a team of agents coordinates," it belongs to the skill; if it
@@ -30,21 +30,15 @@ belongs to comitatus.
   sweeps. 1.0.0 removed the `comitatus:fan-out` skill, its role files, and its
   run verbs; git and the native `herdr` verbs carry that state now.
 - A SessionStart hook that is silent unless you are inside herdr (`HERDR_ENV=1`).
-  Inside herdr it injects a short orientation and provisions a stable copy of the
-  `herdr` skill under `~/.claude/comitatus/`, so the helper path it prints
-  survives a comitatus update. It writes
-  nothing into the Codex home — a codex agent gets the skill by installing the
-  plugin, and the orientation reports whether it has.
-- `herd.js`, a Node helper exposing composite verbs that each run `herdr`
-  themselves: `status`, `members`, `send` (sender stamping, per-recipient
-  lock, blocked gate), the herd lifecycle `seed`, `broadcast`, `sync`,
-  `withdraw`, and the launchers `agent` and `up`. Codex launches always pass
-  `--no-daemon`; a bare handle launches on `claude-opus-5-5` or `gpt-6.1-sol`.
-  Waiting and reading are native: `herdr agent wait|read`. `seed` names the
-  first roster member as working lead, and a launcher that leaves itself off
-  the roster stays outside the herd it starts.
-- `/herd-setup`, which merges a safe herdr/git allow-list into your settings to
-  cut permission prompts.
+  Inside herdr it injects a short orientation naming the native verbs and the
+  skill. It writes nothing anywhere — a codex agent gets the skill by installing
+  the plugin, and the orientation reports whether it has.
+- `/herd-setup`, which merges a safe allow-list of native herdr and read-only
+  git commands into your Claude settings, and lists the Codex prefix rules for
+  you to add yourself.
+
+2.0.0 removed the `herd.js` and `up.js` helper scripts. See
+[Changes in 2.0.0](#changes-in-200) for what each helper behavior became.
 
 ## Installing
 
@@ -148,7 +142,7 @@ matters is whether the current session is running *inside* a herdr pane.
 **Active** - inside a herdr pane:
 
 - Injects a short orientation telling the agent it is inside herdr, to use the
-  `comitatus:herdr` skill, and the resolved `herd.js` helper path.
+  `comitatus:herdr` skill, and which native `herdr agent` verbs carry messages.
 - Shows the `📍 Comitatus: herdr` status line, suffixed `(codex: installed)` or
   `(codex: not installed)` to report whether comitatus is installed as a Codex
   plugin — so you can tell at a glance whether codex peers in this herd can see
@@ -166,39 +160,34 @@ normal terminal.
 
 ## Permissions (cutting prompt friction)
 
-Driving a herd means many small `herdr` calls, and several recipes capture ids
-with `$(...)`, pipe into `node <helper> ...`, or poll in a loop - shapes Claude
-Code cannot statically analyze, so each one prompts. Two things reduce this to
-near zero:
+Driving a herd means many small `herdr` calls, and each harness approves them its
+own way. Removing the helper scripts did not remove approvals: every native
+command needs a grant of its own.
 
-1. **Composite verbs.** `herd.js` exposes `status`, `members`, `send`, the herd
-   lifecycle verbs, and `agent` verbs that run `herdr` themselves - one static
-   command instead of a pipe or a `while` loop. (`up` already does this for
-   spinning up a whole worktree.) For waiting, the native
-   `herdr agent wait <handle> --until idle --until done` is already one call.
-2. **`/herd-setup`.** Run it once to merge a safe allow-list into your
-   `settings.json` (user scope by default; `--local` or `--project` to change).
-   It allows the safe herdr verbs, `git fetch`, read-only `git status`/`branch`,
-   and one rule **per helper verb** at the stable path.
+**Claude Code: `/herd-setup`.** Run it once to merge an allow-list into
+`settings.json` (user scope by default; `--local` or `--project` to change). It
+allows the read, messaging, wait and lifecycle verbs, `git fetch`, `git remote`,
+and read-only `git status`/`branch`. No rule names a machine-specific path, so
+every scope gets the same list.
 
-**Call the helper by its absolute path.** The allow-rule matches
-`node /Users/you/.claude/comitatus/skills/herdr/scripts/herd.js send ...` - the
-exact absolute path your orientation prints. A call written through a shell
-variable (`node "$H" ...`) still prompts, because the matcher cannot see through
-the variable.
+**What stays prompting, on purpose.** `/herd-setup` never allows:
+- `herdr agent start`. Arguments after `--` reach the agent CLI unchanged and can
+  carry permission-bypass flags, so each launch is a human approval.
+- `herdr pane run`, `pane send-keys` and `agent send-keys`, which are raw shell
+  and keystroke injection.
+- `git branch -D`, `git reset`, `git checkout`, `git push`, `git merge` and
+  `git worktree remove`.
+- Any `node` or interpreter rule.
 
-**What stays prompting, on purpose.** `/herd-setup` never allows `herdr pane run`
-or `herdr pane send-keys` (raw shell / keystroke injection - the composite verbs
-cover their safe uses), nor `git branch -D`, `git reset`, `git checkout`,
-`git push`, `git merge`, or `git worktree remove`. It never bakes a blanket
-`herd.js:*` rule (so a future verb is not auto-allowed), and it keeps the
-machine-specific baked rules out of committed (`--project`) settings.
-(`herdr worktree remove` *is* allowed: it tears down a herdr worktree, not git
-history.) Re-running is idempotent and warns on `deny`/`ask` conflicts.
+`herdr worktree remove` *is* allowed, because it tears down a herdr worktree,
+not git history. Re-running is idempotent, warns on `deny`/`ask` conflicts, and
+never removes a rule.
 
-A test holds `HELPER_VERBS` in `herd-setup.js` equal to the verbs
-`herd.js --help` prints, so a verb that dispatches but is not allowed fails the
-suite instead of becoming a silent permission prompt.
+**Codex.** Commands that match no rule in `$CODEX_HOME/rules/default.rules` run
+in a sandbox that blocks the herdr socket, and fail with
+`Operation not permitted`. `/herd-setup` lists the prefix rules a member needs
+(`herdr agent prompt|list|get|read|wait`); add them yourself. Rules for these
+verbs carry no version path and no message body, so they survive upgrades.
 
 ## Single source of truth
 
@@ -215,24 +204,14 @@ comitatus@claude-domestique`). Codex uninstalls with
 (`--scope user|project|local`, mirroring how you installed it); `/plugin disable`
 turns it off without removing it.
 
-comitatus writes exactly one thing outside its plugin directory: a
-version-independent copy of the skill at `~/.claude/comitatus/`, which exists so
-the `herd.js` helper has a stable absolute path for the Claude permission
-allowlist (see `/herd-setup`). Claude Code fires no hook on uninstall, so remove
-it by hand if you want a clean slate:
+Since 2.0.0 the orientation hook writes nothing outside the plugin directory. The only writer is `/herd-setup`, which edits a settings file when you run it. Versions 0.x
+and 1.x provisioned a copy of the skill at `~/.claude/comitatus/` to give the
+`herd.js` helper a stable path. 2.0.0 neither updates nor deletes that copy, and
+nothing reads it any more. Remove it by hand if you want a clean slate:
 
 ```bash
 rm -rf ~/.claude/comitatus
 ```
-
-Since 1.0.0 the hook also deletes `~/.claude/comitatus/skills/fan-out`, the copy
-of the retired fan-out skill that 0.13 and 0.14 provisioned there. It does so
-only after the new herdr copy is in place.
-
-It is staged in a temp dir and swapped into place with an atomic rename, so an
-agent never reads a half-written skill dir. A run interrupted by a hard kill
-(SIGKILL) can rarely leave an inert staging dir like
-`~/.claude/comitatus/skills/.herdr.tmp.<pid>.<n>`; it is harmless and safe to delete.
 
 Nothing is ever written into `~/.codex`. Earlier versions of comitatus
 content-hash-synced the skill into `~/.codex/skills/herdr/` so codex agents could
@@ -246,6 +225,35 @@ rm -rf ~/.codex/skills/herdr
 
 This plugin does not touch `~/.codex/hooks.json` or herdr's own
 `~/.codex/herdr-agent-state.sh`, so nothing else needs cleanup.
+
+## Changes in 2.0.0
+
+2.0.0 removed `skills/herdr/scripts/herd.js` and `up.js`. The skill now composes
+native `herdr` (0.9.5 or later) and `git` commands. What each helper behavior
+became:
+
+| 1.x helper behavior | 2.0.0 | Retained or changed |
+| --- | --- | --- |
+| `status`, `members` | `herdr agent list` / `agent get`, filtered by `workspace_id` | Changed: native JSON instead of helper output. |
+| `send`: sender stamp, `reply`/`fyi`, random `#id` | The envelope is a protocol convention you type. The sender is your assigned handle; the id is one you pick. | Retained as convention. The helper no longer infers the sender from `HERDR_PANE_ID`. |
+| `send`: per-recipient filesystem lock | herdr's own per-terminal submission queue | Changed: no lock. herdr 0.9.5 serializes text plus Enter on Unix and Windows. The lock also paced senders through observation and echo reads; that pacing is gone. |
+| `send`: `delivery: accepted/observed/undeliverable`, `evidence: turn-start` | Native exit status and error codes, read with the table in `reference/protocol.md` | Deliberately changed. `agent_blocked` fell through to `accepted` although nothing was sent, and `turn-start` could match a turn already running. `accepted` for `agent_prompt_stalled` meant submitted but unobserved; the protocol now spells out that it leaves processing unknown. |
+| `send`: echo corroboration (three reads) | A required `herdr agent read` after a stall or timeout, before any resend | Changed: a read can show that a line arrived or is stuck; a line that is not visible leaves the outcome unknown. |
+| `send`: one retry of `agent_pane_busy`/`agent_not_ready` | One manual retry, documented | Retained as guidance. |
+| `send --force` | None | Removed. It never bypassed herdr's own blocked rejection. |
+| `seed` | A one-line briefing template sent with `agent prompt`, confirmed by the recipient's reply | Changed: the old `--wait` "turn finished" report proved nothing about the seed. The template adds the workspace id. |
+| `broadcast`, `sync` | One `agent prompt` per recipient; roster checked against `agent list` by handle within the workspace | Retained. There is no global fallback when no workspace is given: the workspace is always named. |
+| `withdraw` | Handoff, **wait for the successor's reply**, then `[herd -self]` | Changed: 1.x announced departure without waiting for the handoff reply and did not check that the lead was a live member. |
+| `agent`, `up`: selectors (`model=`, `effort=`, `mode=`, `sandbox=`, `approval=`), `--arg` | Agent CLI arguments after `herdr agent start ... --` | Changed: the documented defaults (`claude-opus-5-5`; `gpt-6.1-sol` with `--no-daemon`) are examples, not enforced. Duplicate-setting checks and per-kind refusals are gone; the agent CLI validates its own arguments. |
+| `--env` parsing (refused duplicates, control characters) | `herdr tab create --env KEY=VALUE` | Changed: herdr accepts a broader grammar, and a later duplicate replaces an earlier one. |
+| Withholding `--env` values from error output | None | Not retained. Native errors can echo the command, so the skill says not to put secrets in `--env` or launch arguments. |
+| Outer `agent_pane_busy` retry (10 s window, 400 ms) | herdr's own startup retry (Unix shell-init only, 2 s window) | Changed: narrower, notably on Windows. |
+| Final wait for `idle`/`done` after start | `herdr agent wait <h> --until idle --until done`, a documented step | Retained as a step. Native start alone accepts a Codex in `unknown`. |
+| Role labels `<handle>-<role> <glyph>` | `tab create --label` | Retained as naming convention. |
+| `up`: check handles, fetch remote base, resolve source workspace, create worktree, launch, close root tab | The same steps, documented as a sequence | Retained, including checking every handle before anything is created. Not transactional, as before: a failure leaves earlier pieces in place for you to inspect. |
+| Exit 0 with a JSON result even on failed delivery | Native exit codes | Changed: a rejected or stalled prompt is now a nonzero exit. |
+| Hook: stable copy under `~/.claude/comitatus`, helper path in orientation | Orientation names the native verbs; nothing is copied | Changed. The old copy is left in place for you to delete. |
+| `/herd-setup`: per-verb `node .../herd.js` rules | Native verb rules only | Changed. Old rules stay in your settings until you remove them. |
 
 ## Provenance
 

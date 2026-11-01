@@ -2,403 +2,224 @@
 name: herdr
 description: >-
   Use when running inside herdr (HERDR_ENV=1) to manage its worktrees,
-  workspaces, panes, coding agents, messages, or state.
+  workspaces, panes, coding agents, messages, or state, or to launch, brief,
+  message, or coordinate a herd of agents.
 ---
 
-# herdr - agent skill
+# herdr
 
-before using this skill, check that `HERDR_ENV=1`. if it is not set to `1`, say you are not running inside a herdr-managed pane and stop. do not inspect or control the focused herdr pane from outside herdr.
+Before using this skill, check that `HERDR_ENV=1`. If it is not, say you are not running inside a herdr-managed pane and stop. Do not inspect or control herdr from outside it.
 
-you are running inside herdr, a terminal-native agent multiplexer. herdr gives you git worktrees, workspaces, tabs, and panes, and lets you start and drive coding agents in them - all from the cli. the `herdr` binary is in your PATH; its subcommands talk to the running herdr instance over a local socket.
+herdr is a terminal multiplexer for coding agents. The `herdr` binary is on your PATH and talks to the running herdr over a local socket. This skill uses only native `herdr` and `git` commands. There is no helper script.
 
-herdr owns its own command surface: run `herdr <family> --help` (e.g. `herdr agent --help`, `herdr worktree --help`) for the flag-by-flag reference, or read the [socket api docs](https://herdr.dev/docs/socket-api/) for the raw protocol. this skill covers only what herdr does **not**: the herd conventions (roster, from/reply protocol) and the composite helper verbs.
+| Layer | Owns |
+| --- | --- |
+| herdr | Terminal input, agent identity, startup, readiness and state waits, prompt submission and its serialization |
+| git | Branches, worktrees, fetches, merges |
+| this skill | Decisions and sequencing: roster, naming, the message protocol, launch and teardown order, what counts as evidence |
 
-## two rules that avoid most friction
+For flags, run `herdr <family> --help` (for example `herdr agent prompt --help`). The help text is authoritative and this skill does not repeat it.
 
-1. **prefer native `herdr` verbs, addressed by handle.** `herdr agent prompt|read|get|wait <handle>` all resolve handles directly - no pane-id lookups, no JSON parsing. the helper exists only for what the natives don't cover.
-2. **call the herd.js helper by the absolute path from your orientation** (the `node /abs/.../herd.js ...` line). the path is stable across comitatus updates and `/herd-setup` allowlists it once; a path built any other way (variables, relative, or a guessed Codex cache path) fails the permission matcher or targets the wrong install. quote a concrete path that contains spaces (`node "C:\Users\You Name\...\herd.js" ...` on Windows). every helper verb is self-contained - it runs `herdr` itself; nothing is piped and stdin is never read.
+**Supported herdr: 0.9.5 or later.** The skill relies on these native behaviors:
+- `agent prompt` rejects a blocked agent with `agent_blocked` before typing anything.
+- `agent prompt` queues the text and Enter as one submission per terminal, so concurrent prompts do not interleave.
+- `agent prompt --wait` reports `agent_prompt_stalled` when no activity follows.
+- `agent start` waits for interactive readiness.
+- `tab create --env` sets environment variables for the launched process.
 
-## shell syntax and Windows
+Check the version with `herdr --version`.
 
-commands in this skill are deliberately one command per line. copy the literal helper path from the orientation in place of `HERD`; do not turn it into a shell variable. on Windows, run the helper through Node and double-quote its path. the helper itself launches `herdr.exe` and `git.exe` with argument arrays, not a command string, so protocol bodies never pass through `cmd.exe` inside the helper.
+The message protocol, briefing template, membership and withdrawal rules are in [reference/protocol.md](reference/protocol.md). Read it before messaging another agent.
 
-the shell still parses the command you type. in PowerShell, single quotes keep a message body literal while double quotes expand `$variables`; in `cmd.exe`, use double quotes and escape its metacharacters. `<body>` in the examples means one argument quoted for the shell currently running - it is not a promise that one quoting form is portable between shells. keep protocol messages on one physical line; do not use POSIX `\`, PowerShell backticks, or cmd carets to continue them.
+## Quick reference
 
-helper verbs: `status | members | send | seed | broadcast | sync | withdraw | agent | up`. waiting, reading, and git are native: use `herdr agent wait|read` and `git` directly.
+| Task | Command |
+| --- | --- |
+| Who is running, and where | `herdr agent list` (JSON: `name`, `workspace_id`, `agent_status`, `pane_id`, `cwd`) |
+| One agent | `herdr agent get <handle>` |
+| Why an agent reads as that state | `herdr agent explain <handle>` |
+| Worktrees and the main-checkout workspace | `herdr worktree list --json` |
+| Workspaces, tabs, panes | `herdr workspace list`, `herdr tab list --workspace <ws>`, `herdr pane list --workspace <ws>` |
+| Send one message | `herdr agent prompt <handle> "<one line>"` |
+| Wait for a state | `herdr agent wait <handle> --until idle --until done --timeout <ms>` |
+| See what an agent shows | `herdr agent read <handle> --source recent-unwrapped --lines 40` |
+| Wait for output | `herdr pane wait-output <pane> --match "<text>" --timeout <ms>` |
+| Rename an agent | `herdr agent rename <handle> <new>` |
+| Close one agent, or a whole workspace | `herdr tab close <tab>`, `herdr workspace close <ws>` |
 
-The message and membership contract is in [reference/protocol.md](reference/protocol.md).
+Take every id from a command's JSON response or a fresh list. Ids such as `w8`, `w8:t1` and `w8:p1` are not durable, so never reuse an old one.
 
-## quickstart - the 80% path
+## Concepts
 
-create a worktree and put agents on it, one command (`HERD` below stands for the absolute helper path from your orientation - type it literally):
+herdr nests **repo -> worktree -> workspace -> tab -> pane -> agent**.
+
+- **One workspace per worktree.** herdr opens one workspace for each worktree and groups the sidebar by repo. Give each agent its own tab in that workspace. A `workspace create --cwd` workspace has no repo association and floats ungrouped.
+- **A herd is a roster, not a herdr object.** It is the set of handles that know each other and the protocol. There is no `herd` command. A herd usually lives in one workspace, and the briefing names that workspace.
+- **A handle is the agent's addressable identity**, set at launch with `agent start <handle>`. herdr enforces global uniqueness and rejects a duplicate with `agent_name_taken`.
+- **`agent_status`** is one of `idle`, `working`, `blocked`, `done` or `unknown`, detected by herdr.
+  - A ready agent is usually `idle`; Codex can settle in `done`.
+  - `done` means finished, with output not yet viewed in the UI. A CLI `agent read` does not clear it.
+  - `blocked` means herdr detected a modal or permission prompt.
+- **cwd is fixed at launch** and stored resolved; on macOS, `/tmp` becomes `/private/tmp`. Compare resolved paths when filtering by cwd.
+- **One repo per herdr session.** `worktree create` targets the session's home repo and must run with the main-checkout workspace as its source.
+
+## Naming
+
+You assign only two names:
+- **The member handle:** the next unused call-sign from [reference/names.md](reference/names.md).
+- **The agent's tab label:** `<handle> <glyph>`. The glyph is ◆ for claude, ◇ for codex and ⬨ for opencode, and shows the agent kind, not the model. To show a role, use `<handle>-<role> <glyph>`, for example `jay-verify ◇`. The handle stays `jay`; the role is label text only.
+
+Leave workspace labels at herdr's defaults: the worktree directory name, or the repo name for the main checkout. Handles are type-agnostic and phonetically distinct, so they survive a relaunch on another model. A later `agent rename` does not update the tab label, so run `herdr tab rename` to keep them in step.
+
+## Launch one agent
+
+Each step's input comes from the previous step's output. Run them as separate commands.
+
+1. **Check the handle is free.** Run `herdr agent list` and confirm no agent has that `name`.
+2. **Create its tab** in the target workspace:
+   ```text
+   herdr tab create --workspace <ws> --cwd <path> --label "jay ◇" --no-focus
+   ```
+   Take `result.tab.tab_id` and `result.root_pane.pane_id` from the response. Add `--env KEY=VALUE` per variable when the agent needs one, for example `--env BEADS_ACTOR=jay` or `--env CODEX_HOME=<path>`.
+3. **Start the agent** in that root pane. Arguments after `--` go to the agent CLI unchanged:
+   ```text
+   herdr agent start jay --kind codex --pane <root-pane> --timeout 45000 -- --no-daemon --model gpt-6.1-sol
+   ```
+   Success means herdr detected the expected agent in that terminal and found it ready for input. herdr already retries the shell-initialization race on Unix.
+4. **Wait for a settled state** when your next step depends on it:
+   ```text
+   herdr agent wait jay --until idle --until done --timeout 45000
+   ```
+   `agent start` can accept an interactive Codex whose state is still `unknown`. This wait is the stricter check.
+5. **Read before the first message on an unattended Codex launch:** `herdr agent read jay --source visible`. A Codex menu can read as `idle` while it owns the keyboard. Two have been seen:
+   - **"Update available":** `herdr agent send-keys jay 2` skips the update.
+   - **"Hooks need review":** trusting hooks is the human's decision. Ask them, or press `Escape` to continue without trusting.
+
+   Do not send keys to a menu you do not recognize; ask the human.
+6. **Brief the agent** with the template in [reference/protocol.md](reference/protocol.md#briefing-a-cold-agent). The agent is not part of the herd until its reply arrives.
+
+### Launch arguments
+
+Nothing is enforced; append what you choose after `--`.
+
+**1.x defaults.** The old `up.js` passed these automatically. Pass them yourself to keep that behavior:
+
+| Kind | Arguments |
+| --- | --- |
+| claude | `--model claude-opus-5-5` |
+| codex | `--no-daemon --model gpt-6.1-sol` |
+| opencode | none: `-m <provider/model>` was always required |
+
+**Opt-in examples.** 1.x never passed these by default. Effort and permissions were inherited from each CLI's own config unless asked for:
+
+| Kind | Examples | Notes |
+| --- | --- | --- |
+| claude | `--effort high`, `--permission-mode <mode>`, `--add-dir <second-checkout>` | Effort levels: `low`, `medium`, `high`, `xhigh`, `max`. Org-managed settings can pin a model, which makes `--model` the only lever. |
+| codex | `-c model_reasoning_effort=high`, `-c sandbox_mode="<mode>"`, `-c approval_policy="<policy>"`, `--add-dir <second-checkout>` | Codex has no effort flag; use `-c`. `--no-daemon` does not stop `codex queue` from reaching the session. |
+| opencode | | Run `herdr integration install opencode` once, or its status waits are unreliable. |
+
+A permission mode, sandbox or approval setting changes what the agent may do unasked. Choose one per task; it is not a compatibility default.
+
+The CLI validates its own arguments. Nothing checks for a setting you passed twice, so the agent CLI decides which one wins. `tab create --env` accepts later duplicates, which replace earlier ones.
+
+**Do not put secrets in `--env` or in launch arguments.** They appear in your command line, in your transcript, and in any error herdr prints. Give the agent secrets through its own config or a local `.env` file it reads.
+
+## A new worktree with a herd
+
+1. **Check every handle first.** Run `herdr agent list` and confirm none of the planned handles is taken, before anything is created.
+2. **Refresh the base when it is remote-tracking.** `git remote` lists remotes. A base such as `origin/main` whose first segment is a remote needs `git fetch origin main`. A slash alone does not make a base remote: `task/my-slug` is a local branch, so it needs no fetch.
+3. **Find the main-checkout workspace:** `herdr worktree list --cwd <your cwd> --json`, then read `result.source.source_workspace_id`. This works from the main checkout or from inside a linked worktree.
+4. **Create the worktree:**
+   ```text
+   herdr worktree create --workspace <source-ws> --branch chore/my-slug --base origin/main --no-focus --json
+   ```
+   Take `result.worktree.path`, `result.worktree.open_workspace_id` and `result.tab.tab_id`, the root shell tab.
+5. **Launch each agent** with the steps above, using the new workspace and path.
+6. **Close the root shell tab** once every agent tab exists: `herdr tab close <root-tab>`.
+
+**This is not transactional.** If a step fails:
+1. Inspect `herdr worktree list --json` and `herdr agent list`.
+2. Reuse what is healthy, and close or remove what is not.
+3. Then continue from the failed step.
+
+Never relaunch blind. A half-finished launch can hold a handle, a tab or a worktree.
+
+For an existing branch, the commands differ:
+- **The worktree exists:** `herdr worktree open --branch <b> --no-focus --json`.
+- **The branch has no worktree:** `git worktree add <path> <b>`, then `herdr worktree open --path <path> --no-focus --json`.
+
+## Paired worktrees: one workbench, one application
+
+A project can keep its agents in a workbench worktree and give them access to a separate application worktree. The workbench holds the plans, sessions and task notes; the application holds the source. The project's own guidance owns this topology. The generic pattern is:
+
+1. Create or open the workbench worktree with herdr. Its workspace is the herd's only workspace.
+2. Create the application worktree with plain git: `git -C <app-repo> worktree add <app-path> -b <branch> <base>`. It needs no herdr workspace.
+3. Launch every agent in the workbench workspace with `--cwd <workbench-path>`, and grant the application path:
+   - claude: `-- --add-dir <app-path>`
+   - codex: `-- --add-dir <app-path>`
+4. Name both paths in the briefing, along with which agent writes in the application tree.
+
+Do not open a second herdr workspace for the application worktree. The agents stay in one roster in one workspace, and nothing requires one worktree per task.
+
+## Rules for multi-agent work
+
+- **One writer per tree.** An agent writes only where its task says. Anything another tree needs goes to that tree's owner as a message.
+- **A timeout or stall is not proof of non-delivery, and an accepted prompt is not proof of processing.** The interpretation table is in [reference/protocol.md](reference/protocol.md#reading-a-send-result). Never resend blind.
+- **Idle, a finished wait, an echo in the pane, or a commit is not completion.** Completion is the agent's reply plus the stated criteria checked: tests run, evidence read.
+- **Durable content goes in files.** A message is typed into a terminal and is not stored by herdr. Put briefs, findings and decisions in a file in the shared worktree, and send a one-line message naming the path.
+- **Integrate in a stated order, in the target tree, by its owner.**
+  - Start from a clean tree and index.
+  - Merge one branch at a time.
+  - On a conflict, the target tree's owner resolves it or runs `git merge --abort`.
+- **Cleanup adjudicates; it does not sweep.**
+  1. Before removing a worktree or branch, read `git -C <tree> status --short` and `git log <target>..<branch>`.
+  2. Integrate, preserve or discard each piece, and say in one line what you discard and why.
+  3. Use `--force` and `git branch -D` only for that named discard.
+
+## Teardown
 
 ```text
-node HERD up --branch chore/my-slug --base origin/main --claude sly --codex jay --opencode bob:ollama/qwen2.5:7b
+herdr tab close <tab>
+herdr workspace close <ws>
+herdr worktree remove --workspace <ws> --json
+git branch -d <branch>
 ```
 
-`up` does it all in one process - `git fetch`, `worktree create`, and one labeled tab per agent (launch, name, readiness-wait) - and prints a JSON summary:
-
-```json
-{ "worktree": { "path": "…", "workspace_id": "wR" },
-  "agents": [ { "handle": "sly", "kind": "claude", "model": "claude-opus-5-5", "effort": null,
-                "mode": null, "sandbox": null, "approval": null, "env": [],
-                "args": ["--model", "claude-opus-5-5"],
-                "pane_id": "wR:p3", "tab": "wR:t2" } ] }
-```
-
-`kind` is the integration; `model`, `effort`, `mode`, `sandbox` and `approval` are what was actually **passed** - an explicit selector or the kind's default model - and `null` means **inherited** from the CLI's ambient config. Do not read `kind` as an answer to "which model is it on". `env` lists the **names** of the variables set with `--env`, never their values, because a value can be a secret and this result gets printed and relayed.
-
-the `git fetch` happens only when `--base` names a configured remote. `origin/main` does; `task/my-slug` does not - a slash is not what makes a base remote-tracking, and a base with no slash is a local ref. so a **local-only base creates the worktree with no fetch attempted**, so a worktree can branch off a task branch that was never pushed.
-
-| flag | runs | glyph |
-|---|---|---|
-| `--claude <handle>[:<selector>]` | `claude` | ◆ |
-| `--codex <handle>[:<selector>]` | `codex --no-daemon` | ◇ |
-| `--opencode <handle>:<model>` | `opencode -m <model>` | ⬨ |
-
-### where model and effort come from
-
-**a bare handle gets the kind's default model and inherits effort** from the CLI's own ambient config:
-
-- **claude** - model `claude-opus-5-5`; effort from user/project/**managed** settings. org-managed settings can *pin* a model the user cannot change interactively (`/model` reports e.g. "Managed settings pins Sonnet 5"), which makes the launch flag the only available lever.
-- **codex** - model `gpt-6.1-sol`; effort from `config.toml` under the Codex home (`model_reasoning_effort`). every codex launch also passes `--no-daemon`, so the session runs without the shared background app-server even when one is already running.
-- **opencode** - no default worth guessing, so its model is the one **required** selector.
-
-an explicit `model=` always replaces the default; `effort=` or `role=` alone does not, so `jay:effort=high` still launches on `gpt-6.1-sol`.
-
-the optional `:<selector>` overrides that per agent, as `key=value` pairs:
-
-| selector | claude | codex | opencode |
-|---|---|---|---|
-| `model=<m>` | `--model <m>` (default `claude-opus-5-5`) | `--model <m>` (default `gpt-6.1-sol`) | `-m <m>` (required) |
-| `effort=<level>` | `--effort <level>` | `-c model_reasoning_effort=<level>` | **unsupported - refused** |
-| `mode=<mode>` | `--permission-mode <mode>` | **unsupported - refused** | **unsupported - refused** |
-| `sandbox=<mode>` | **unsupported - refused** | `-c sandbox_mode="<mode>"` | **unsupported - refused** |
-| `approval=<policy>` | **unsupported - refused** | `-c approval_policy="<policy>"` | **unsupported - refused** |
-
-claude takes an alias (`opus`, `sonnet`, `fable`) or a full name (`claude-fable-5`), and its effort levels are `low, medium, high, xhigh, max`. codex has no effort *flag* - only the generic `-c <key>=<value>` config override - which is why the two kinds cannot share one flag pair.
-
-the permission selectors follow the same rules: unset means **inherited** from the CLI's own config and reports `null`. claude's `--permission-mode` choices are `acceptEdits, auto, bypassPermissions, manual, dontAsk, plan`; codex takes `sandbox_mode` and `approval_policy` values such as `danger-full-access` and `never`. the CLI validates the value itself; the helper checks only the charset (`[\w-]+`), which admits no quote or backslash, so a codex value cannot break out of its quoted TOML string. a kind **refuses** a selector it cannot express - claude refuses `sandbox=` and `approval=`, codex refuses `mode=`, opencode refuses all three - rather than launching without it.
-
-```text
-node HERD up --branch chore/my-slug --base origin/main --claude nell:model=opus,effort=high --codex jay:effort=high --opencode bob:ollama/qwen2.5:7b
-node HERD up --branch chore/my-slug --claude sly:mode=dontAsk --codex jay:sandbox=danger-full-access,approval=never
-```
-
-a bare suffix is a model, so `sly:opus` == `sly:model=opus`. the keys are **named rather than positional** because opencode model ids contain colons (`ollama/qwen2.5:7b` would be ambiguous as `handle:model:effort`); named keys are also order-independent and attach per agent, so two agents of the same kind can differ in one launch. the settings ride the `-- <args>` vector on `agent start`. opencode's TUI has no effort selector at all (`--variant` belongs to `opencode run`), so `--opencode bob:model=x,effort=high` is an **error** rather than a silent drop.
-
-### per-agent environment
-
-`--env KEY=VALUE` is repeatable. on `up` it applies to **every** agent launched; on `agent` it applies to that one agent, so per-member identity (`--env BEADS_ACTOR=<handle>`) or a non-default profile (`CLAUDE_CONFIG_DIR`, `CODEX_HOME`) goes on the `agent` verb. each pair is forwarded to `herdr tab create --env`, on the tab whose root pane the agent then takes over. `KEY` must be shell-style (`[A-Za-z_][A-Za-z0-9_]*`); a missing `=`, a repeated key, or a control character (newline, tab, escape) in the value is refused before anything is created. the launch result reports the keys only.
-
-### pass-through arguments
-
-for a CLI flag no selector covers, `agent` takes `--arg <ARG>`, repeatable. each value is appended, in order, after the kind's own arguments on the `agent start ... -- <args>` vector:
-
-```text
-node HERD agent claude sol:mode=dontAsk --workspace wR --cwd <path> --arg --add-dir --arg <second-checkout>
-node HERD agent codex ren:sandbox=danger-full-access,approval=never --workspace wR --cwd <path> --arg -c --arg 'mcp_servers={"chrome-devtools"={enabled=false}}'
-```
-
-`--add-dir` lets a claude member read and edit a second checkout without writing `permissions.additionalDirectories` into a settings file. a codex `-c` override is the only way to turn off an MCP server the user's profile defines: a project `.codex/config.toml` table for a server the profile lacks makes codex refuse to load its config.
-
-there is no shell (`execFile`), so an `ARG` is passed byte for byte; only a control character is refused, as for `--env`. an `ARG` that sets something a selector owns is **refused**, whether or not that selector was given. examples: `--model`, `--effort`, `--permission-mode` or `--dangerously-skip-permissions` for claude; `-m`, `-s`, `-a`, `--approve-for-me`, `--dangerously-bypass-approvals-and-sandbox` or a `-c` (in any spelling) on `model`, `model_reasoning_effort`, `sandbox_mode` or `approval_policy` for codex. use the selector instead. that keeps `model`, `effort`, `mode`, `sandbox` and `approval` in the result truthful. the result's `args` is the full vector the CLI received: the kind's own arguments, then the pass-through.
-
-`--arg` is on `agent` only, not `up`. one `up` launches several kinds, and a claude flag such as `--add-dir` would break the codex launch beside it. launch members that need extra arguments with `agent`.
-
-`agent` reads its own flags strictly in order, so an `--arg` value that looks like a helper flag (`--arg --cwd`) stays a pass-through. an unrecognized flag is an **error**: a CLI flag passed without `--arg` in front (`--add-dir /x`) is refused rather than silently ignored, as it was before.
-
-flag order is tab order. defaults: `--base origin/main`, `--timeout 45000` (ms, per-agent readiness wait). handles must be unique - `up` pre-checks `agent list` and refuses before creating the worktree if one is taken. one command also means one permission approval instead of one per step. `up` resolves the repo's main-checkout workspace from your cwd, so it works run from the main checkout **or** from inside a linked worktree (a herd lead spinning up a sibling herd); pass `--source-workspace <ws>` only to override that lookup.
-
-## concepts
-
-herdr nests like this: **repo -> worktree -> workspace -> tab -> pane -> agent** - but only for repo-associated workspaces; a plain `workspace create` sits *outside* this tree (see `## naming` and gotchas).
-
-- **worktree** - a git worktree (a branch checked out in its own directory). herdr can create, open, list, and remove them. herdr ties **one** workspace to a worktree (its anchor, `open_workspace_id`). the sidebar groups workspaces **by repo**: the repo's main checkout (`is_linked_worktree=false`) is the parent and its linked worktrees nest under it - this is the **only** hierarchy herdr renders, and it is keyed on `repo_root`, not on which workspace created it (verified).
-- **workspace** - a project context, one or more tabs. usually labeled after the repo or the worktree.
-- **tab** - a subcontext inside a workspace, one or more panes.
-- **pane** - a real terminal split. runs a shell, an agent, a server, anything.
-- **agent** - a coding agent (claude, codex, opencode, ...) running in a pane. each agent carries a **handle** in its `name` field (e.g. `fox`, `ivy`). you address agents by handle.
-- **herd** - a *group of agents you treat as a team*: 1..n members, models mixed freely. a herd is a **logical roster, not a herdr object** - there is no `herd` command and no herd field on anything; it is **orthogonal** to the worktree->...->agent nesting above. a herd can run on a worktree, on the main checkout (a plain branch), or at any cwd; and a worktree can exist with **no** herd at all. members know the roster and message each other - and members of *other* herds - by handle (see the from/to protocol). "assigning a herd to work" just means launching its agents with their `cwd` at that work.
-- **home repo / main checkout** - every herdr session is anchored to one repo, and you spin up and tend herds from its **main-checkout workspace** (the one you, reading this, are launched under). **exactly one repo per session** - a second repo means a second herdr session (`worktree create` always targets the home repo, and must be run from its main-checkout workspace). herdr labels the main checkout with the repo name and each worktree with its directory name - you leave both. only member handles are assigned - see `## naming`.
-
-three facts that drive most workflows:
-
-- **one workspace per worktree.** herdr groups a worktree's agents under its single workspace. run several agents on a worktree by giving each its own **tab** in that one workspace - separate `workspace create --cwd` workspaces get **no** repo association and float ungrouped, even at a repo root.
-- **a worktree and its agents are linked by `cwd`, not by a stored mapping.** to find every agent in a worktree, list agents and filter on `cwd`. there is no tracking file.
-- **`agent_status`** is detected automatically: `idle`, `working`, `blocked`, `done`, `unknown`. a fresh/ready agent is usually `idle`, though codex can settle in `done`; one that **finished a task whose output you have not viewed** is `done` (a CLI `agent read` does *not* clear it - only focusing the pane in the UI does). the native `herdr agent wait <handle> --until <state>` matches the states you name (repeat `--until` for more than one), so choose per situation: **launch/detect -> `idle` or `done`; a sibling finishing a task headlessly -> `done`; "free to receive a message" -> not `working` (i.e. `idle` *or* `done`).**
-
-## ids
-
-ids are short: workspace `w8`, tab `w8:t1`, pane `w8:p1`. they are opaque and **not durable** - they can change as things open and close. never reuse an old id; re-read the current one from `worktree list`, `workspace list`, `agent list`, or a create/start response. most commands print json, so parse ids out of the json rather than guessing.
-
-## naming (worktree -> members)
-
-a thin convention on top of herdr - herdr stores **none** of it. you assign exactly two things; every workspace/worktree label is left at herdr's default:
-
-- **herd** - a group of agents on a worktree. **you don't label it.** when you `worktree create`, herdr already labels the worktree's workspace with the **worktree directory name** (`chore-my-slug`) - exactly what you want in the sidebar row. (the repo's main checkout is left at its default too: the repo name.)
-- **member** - an agent in a herd. its **handle** is a short call-sign - `tim`, `jay`, `sly`, ... - claimed as the next unused entry from the pool in [reference/names.md](reference/names.md). the handle is the **addressable identity** (`agent prompt tim`), so it must stay short, unique, phonetically distinct, and stable across a model relaunch.
-
-the agent's decorated **tab** label is `<handle> <glyph>` (`fox ◆`, `jay ◇`) - the glyph (claude `◆`, codex `◇`, opencode `⬨`) encodes the agent **kind**, not which model it is on. `up` and the helper's `agent` verb set it at launch; renaming later is `tab rename`. the handle and that tab label are the **only** labels you assign. the sidebar row is `<workspace> · <tab>` = `<worktree-name> · <handle> <glyph>`, which reads true with zero renaming.
-
-rules that make it work:
-
-- **member handles are globally unique - herdr enforces it** (`agent_name_taken`, across *all* workspaces). claim each handle against live `agent list`; size the member pool above your peak concurrent agent count.
-- **handles are type-agnostic.** never encode the model in a handle; the tab glyph already shows it, and a type-free handle survives relaunching a member on another model.
-- **phonetic distinctness for members.** they message each other by handle and weak local models mis-type look-alikes - avoid rhyming clusters.
-- **only home-repo worktrees nest under the main checkout** in the sidebar; plain workspaces and other repos float separately.
-
-## discover state
-
-```text
-herdr pane list
-herdr agent list
-herdr agent get jay
-herdr worktree list --json
-herdr workspace list
-```
-
-`pane list` shows panes in your workspace and identifies the focused pane. `agent list`
-shows every detected agent with its kind, cwd, workspace, pane, and status; `agent get`
-returns one full record by handle. `worktree list` reports branches, paths, and open
-workspace ids, while `workspace list` reports workspaces and labels.
-
-## building blocks
-
-these are the small, composable operations. chain them for bigger flows. `HERD` = the absolute helper path from your orientation.
-
-### 1. new worktree on a new branch off fresh origin/main
-
-> for the common case - create a worktree and launch a herd - use `node HERD up …` (see the quickstart). the steps below are the primitives it is built from.
-
-`worktree create` uses your **local** `origin/main` and does **not** fetch. fetch first.
-
-```text
-git fetch origin main
-herdr worktree create --branch chore/my-slug --base origin/main --no-focus --json
-```
-
-the branch name carries the work item (`123456-slug`) or a chore (`chore/slug`). the new checkout lands under the herdr home at `worktrees/<repo>/<branch-slug>` (slashes become dashes, lowercased); pass `--path` to override. herdr labels its workspace `chore-my-slug`. grab the new workspace id from `result.worktree.open_workspace_id`.
-
-### 2. worktree on an existing branch
-
-two cases, and they use different commands (verified):
-
-**the worktree already exists** (e.g. you closed its workspace and want it back) - reattach with `open`:
-
-```text
-herdr worktree open --branch chore/existing-slug --no-focus --json
-```
-
-Pass `--path <dir>` instead of `--branch` when selecting the existing worktree by path.
-
-**the branch exists but has no worktree yet** - `open` errors `worktree_not_found`, and `create --branch` refuses (it only makes *new* branches). add the worktree with git first, then open it:
-
-```text
-git worktree add <worktree-path> chore/existing-slug
-herdr worktree open --path <worktree-path> --no-focus --json
-```
-
-### 3. attach an agent to a worktree - one workspace, one tab per agent
-
-herdr ties one workspace to a worktree, so keep all its agents in that **one** workspace and give each its own **tab** - that is what groups them under the worktree in the sidebar. one helper call per agent:
-
-```text
-node HERD agent codex jay --workspace wR --cwd <worktree-path>
-node HERD agent claude nell:model=opus,effort=high --workspace wR --cwd <path>
-node HERD agent claude sly:mode=dontAsk --env BEADS_ACTOR=sly --workspace wR --cwd <path>
-```
-
-it runs the primitives for you: `tab create` (decorated label) -> `agent start <handle> --kind <kind> --pane <tab-root-pane> --timeout <ms>` (the agent takes over the tab's root shell pane, so there is no leftover shell to close; the handle is assigned **at launch** - no detect-then-rename) -> `agent wait <handle> --until idle --until done` (ready to seed). the trailing `-- <args>` on `agent start` is the only channel for per-agent program args, so the `handle[:<selector>]` model, effort and permission selectors ride there - same syntax and same defaults as `up` (see [where model and effort come from](#where-model-and-effort-come-from)), because both share one `makeAgent`. `--timeout` alone only guarantees interactive readiness, so the explicit `--until idle --until done` wait is what confirms the status the caller depends on.
-
-### 4. change a handle
-
-`agent start` assigns the handle at launch; to change it later:
-
-```text
-herdr agent rename sly sly2
-```
-
-the handle is also the pane label. the decorated **tab** label does **not** auto-update - `herdr tab rename <tab> "sly2 ◆"` to keep them in sync.
-
-### 5. message another agent by handle
-
-One call stamps the sender, serializes submissions to the same recipient, types and submits with model-correct keys, and reports delivery evidence:
-
-```text
-node HERD send jay "please rerun the failing test in src/api/" --reply
-```
-
-Delivery separately reports `accepted`, `observed`, or `undeliverable`, with evidence/reason fields. An accepted-but-unobserved prompt may already have arrived, so do not blindly resend. Blocked recipients are a hard gate (`recipient_blocked`); idle, working, done, and unknown may be submitted, with unknown remaining observationally uncertain. The native primitive is `herdr agent prompt <handle> "..."`, which types **and** submits in one kind-aware call; the helper adds stamping and evidence.
-
-### 6. close agents on a worktree
-
-one agent - close its tab (takes the pane with it). all of them - close the worktree's workspace:
-
-```text
-herdr tab close wR:t2
-herdr workspace close wR
-```
-
-### 7. remove a worktree
-
-removes the git worktree, its directory, the workspace, and all its tabs/agents - then delete the branch separately. adjudicate first (see [cleanup](#cleanup-adjudicates-it-does-not-sweep)). leave `--force` off: `git worktree remove` refuses a dirty tree without it, and `git branch -d` refuses an unmerged branch where `-D` would not:
-
-```text
-herdr worktree remove --workspace wR --json
-git branch -d chore/my-slug
-```
-
-`worktree remove` does not delete the branch; the second command does.
-
-## composed flows
-
-### spin up a paired reviewer in a fresh worktree
-
-```text
-node HERD up --branch chore/review-x --base origin/main --claude sly --codex jay
-node HERD send sly "review the diff on this branch; jay is cross-checking" --fyi
-```
-
-### tear a worktree down completely
-
-Take `<workspace-id>` from `herdr worktree list --json`. The first command removes the
-worktree, its directory, its workspace, and every tab and agent in that workspace.
-Adjudicate its work first; add `--force` / `-D` only for what you decided to discard.
-
-```text
-herdr worktree remove --workspace <workspace-id> --json
-git branch -d chore/review-x
-```
-
-### assign a herd to a worktree
-
-step 1 (create the worktree) then step 3 per agent - or just `up`. the herd is simply the agents launched with that worktree's cwd. a herd does **not** require a worktree: launch agents at any cwd (most usefully the main checkout for a plain branch) - but a plain-branch herd shares the single repo checkout, so prefer a worktree when the herd needs its own branch.
-
-### reassign a herd to a different worktree
-
-an agent's **cwd is fixed at launch** - you cannot re-cwd a running agent. reassigning = **relaunching** on the new worktree. handles are preserved; conversation + protocol seeding are **not**. handles must be unique, so the old herd comes down first:
-
-Closing the old workspace frees its handles. The final two commands are optional cleanup
-for the old worktree and branch after the new herd launches successfully, subject to the
-same adjudication.
-
-```text
-herdr workspace close <old-herd-ws>
-node HERD up --branch chore/new-slug --base origin/main --claude sly --codex jay
-git worktree remove <old-worktree-path>
-git branch -d chore/old-slug
-```
-
-after a reassign the relaunched agents are **cold**: re-seed the protocol + roster (see below).
-
-## roles and multi-agent work
-
-this skill owns herd initialization, membership, and who does what: `seed` assigns each member its handle, roster and working lead, and the working lead coordinates. a small task needs nothing more - a working lead who also implements, plus an independent verifier given the requirements and the diff and test evidence. add a dedicated agent per part only when coordination or verification warrants one. comitatus ships no run workflow or role files; git and the native verbs carry the state. what follows are the rules that keep that safe:
-
-- **one writer per tree.** an agent writes only in its own worktree (cwd is fixed at launch). anything another tree needs goes to that tree's owner as a message.
-- **a timeout is not a failure to deliver.** a wait can time out after the text was submitted, and neither silence nor a missing echo in the pane proves it was lost. only an `undeliverable` result (or `agent_blocked`) establishes that no input was sent; after `accepted` or `observed`, do not resend blind - a resend duplicates the turn.
-- **idle, a finished wait, or a commit is not completion.** an agent reads `idle` between its own turns, `agent prompt --wait` can match a turn that was already running, and an interim commit is not a finished one. done means the agent's reply plus the stated criteria checked - tests run, evidence read.
-- **inspect a partial launch before retrying.** a failed `up` or `agent` can leave a worktree, workspace, tab, or a running agent holding the handle. look (`herdr worktree list`, `herdr agent list`) and remove or reuse what is there; never relaunch blind.
-- **integrate in a stated order, in the target tree, by its owner.** start from a clean target tree and index - `git merge --abort` cannot always restore uncommitted changes that predate the merge. merge branches one at a time in the order you named. on a conflict, the owner of the tree being merged into resolves it or runs `git merge --abort`, so the tree is clean before anything is handed back. the branch's author fixes its own branch in its own tree.
-
-### cleanup adjudicates; it does not sweep
-
-before removing a worktree or deleting a branch, inspect what would be lost: `git -C <tree> status --short` (dirty and untracked files) and `git log <target>..<branch>` (commits not merged). decide each piece - **integrate** it, **preserve** it (keep the branch, or commit or push it where you already have that authority), or **discard** it. say what you are discarding and why, in one line, to whoever owns the work. `--force` and `git branch -D` are for that explicit discard, within the authority you already have; they are not the default. discarding a failed experiment you were authorized to throw away needs no extra approval - it needs to be named.
-
-## agent-to-agent protocol (from/to)
-
-a stateless convention for agents to message each other and reply, without scraping panes. no inbox, no acks - a reply is just a message back to the sender, arriving in the sender's pane as a normal turn.
-
-**message format - one line, with a mandatory reply flag:**
-
-```
-[from <self> reply #<id>] <body> # a one-line reply IS required
-[from <self> fyi #<id>]   <body> # no reply expected - do NOT reply
-```
-
-`<self>` is your handle; reply to `<self>` with `[from <you> ...] <answer>`. a newline submits the turn early, so keep every message to one line. `node HERD send` stamps the flag and a unique delivery id: `--reply` -> `[from <self> reply #<id>]`, `--fyi` -> `[from <self> fyi #<id>]`. Ignore `#<id>` except to detect duplicate delivery. it resolves `<self>` from the *executing* pane (the `HERDR_PANE_ID` environment variable, inherited by your subprocesses), so scripted sends stamp the right sender even when UI focus has drifted; pass `--from <self>` to override.
-
-**send, and let the reply confirm:**
-
-```text
-node HERD send jay "<body>" --reply
-```
-
-the helper reports mechanical evidence, and the `[from jay]` reply landing in your pane is the end-to-end confirmation. Silence is not proof of loss. For a message that expects **no** reply (`[herd ...]`, a one-way note), the helper serializes the send; it does not make the message durable:
-
-```text
-herdr agent wait jay --until idle --until done --timeout 30000
-```
-
-For delivery purposes, either `idle` or `done` means the recipient is free to receive.
-
-**receive / reply:** a message reaching you as `[from X] ...` is from teammate X. if it needs an answer, send X back a one-line `[from <self>] <answer>` the same way. if not, do nothing - there are no acks. reading the peer's pane is a diagnostic last resort, not the channel.
-
-**one sender at a time per recipient.** the helper serializes concurrent sends with an ownership-checked lock; a live holder is never stolen. State is not a send gate except for blocked recipients, and unknown remains observationally uncertain. That gate only catches modals herdr actually *detects* as `blocked` - a freshly launched codex sitting on its update menu reads as ready, so the send succeeds and the text lands in the menu (see gotchas).
-
-**cross-herd is the same call.** handles resolve from the global `agent list`, so `send` reaches *any* agent (verified). the only requirement is knowing the target handle - rosters are per-herd, so an operator or an introduction message supplies outside handles.
-
-**seeding (required):** a cold agent knows neither this protocol nor its own handle. use `node HERD seed <handle> ...` to deliver the canonical seed with its handle, roster, workspace, and lead status. `seed` always requests a reply; that reply landing in the sender's pane is the proof the seed was processed. `--wait` only reports that the recipient finished a turn. **Promoting a solo agent into a herd counts as cold:** seed the incumbent too, then announce both with `[herd +<handle>]`. "it was already running" is not "it knows the protocol."
-
-**membership / roster sync (join & leave):** directive form, distinct from `[from X]` so it is never relayed or replied to:
-
-- join: `[herd +<handle>]` - recipient adds `<handle>` as a teammate
-- leave: `[herd -<handle>]` - recipient drops `<handle>`
-
-two complementary triggers:
-
-- **peer detection (self-healing, primary).** when you are active, run `node HERD sync --workspace <WS> --roster <your,current,roster>` (one workspace = one herd; do *not* key on cwd - herds can share a checkout). it diffs the live handles against your roster, broadcasts `[herd +H]` / `[herd -H]` to the other members, and reports `{self, live, added, removed, notified}` - apply `added`/`removed` to your roster. pass `--roster ""` when you have no teammates yet, and `--dry-run` to see the diff without announcing. keying on handles (not panes) means a restart is not a false join/leave. this catches removals: the departed agent can't announce itself, but peers see it gone from the list. **do not hand-diff `members` for this** - `members` lists *every* handle in the workspace including your own, so diffing it against your roster tells you to add yourself as your own teammate; `sync` excludes `self` on both sides, which is the whole reason to use it.
-- **operator broadcast (immediate).** the operator that adds/removes an agent may broadcast the change right away.
-
-on receiving `[herd +H]`/`[herd -H]`: update your roster **idempotently**; do **not** reply and do **not** re-broadcast (every member detects independently; re-broadcasting causes O(N²) storms).
-
-**the launcher stays out by default:** the agent that launches and seeds a herd is not a member of it unless it lists itself in `--roster`. `seed` defaults the working lead to the first handle in the roster - so pass the same `--roster`, lead first, to every seed - and refuses a `--lead` that is not in the roster, because a lead the members cannot see strands the herd. a sender left off the roster is named in the seed line as an outside launcher - neither member nor coordinator - so members do not wait on it unless their task names it as an approver. the seed reply still comes back to the launcher; that is the proof of seeding, not membership. **keep the launcher in its own workspace** (`up` already puts each herd in a fresh one): `sync`, `members`, `broadcast` and `withdraw` infer membership from the workspace, so a launcher co-located with the herd is counted whatever the roster says.
-
-**lead withdrawal:** a launcher that *did* join - by listing itself in `--roster` - leaves with `withdraw --lead <member>`: it hands off to the working lead first, then sends the withdrawal directive. Remaining members continue without waiting for it; it is not a required approval or review hop.
-
-add sequence: seed the newcomer with the roster, then `[herd +new]`. remove sequence: `[herd -gone]`, then close the agent's tab (steps 6-7).
-
-**pre-authorize the commands.** an agent that prompts for tool approval mid-protocol stalls the herd. every member needs its harness pre-authorized for the native `herdr` verbs and the helper's absolute path - claude via `/herd-setup`; other harnesses per their own config. weak local models also need an explicit "run these as real shell commands - do not print them" (the protocol is reliable between capable agents and best-effort with weak ones).
-
-## lower-level pane / tab / workspace ops
-
-you still have the raw multiplexer. run `herdr pane --help`, `herdr tab --help`, `herdr workspace --help` for the flag-by-flag surface.
-
-```text
-herdr pane split --current --direction right --no-focus
-herdr pane run w9:p2 "npm run dev"
-herdr pane wait-output w9:p2 --match "ready" --timeout 30000
-herdr agent read jay --source recent --lines 80
-herdr agent wait w9:p1 --until done --timeout 120000
-```
-
-`pane split` returns the new pane id as JSON, and `pane run` types the command plus Enter.
-`agent read` reads a pane by handle. Repeat `--until` to wait for any of several states;
-the native wait command does not accept the helper's comma-list syntax.
-
-- `--source visible` = current viewport; `--source recent` = scrollback as rendered; `--source recent-unwrapped` = recent text with soft wraps joined (what `pane wait-output` should match against).
-- tabs and workspaces: `herdr tab create|rename|focus|close`, `herdr workspace create|rename|focus|close`.
-
-## gotchas
-
-- **fetch before `worktree create`** - `--base origin/main` is the local ref; it is stale until you `git fetch origin main`.
-- **`agent prompt` types AND submits** - `herdr agent prompt <handle> "..."` is the native one-call send (kind-aware: it handles codex's double-Enter). `node HERD send` wraps it to stamp the sender, serialize the recipient, and report the three-valued `delivery` result.
-- **native `agent wait` takes one `--until` per state** - repeat the flag (`--until idle --until done`). without `--until` it also matches `blocked`, so name the states you mean.
-- **`agent start` needs an existing shell pane** - it takes `--kind <kind> --pane <pane-at-a-shell-prompt>` and takes that pane over; it does **not** spawn its own. the helper/`up` hand it a fresh tab's root pane. `--timeout` waits only for interactive readiness, not for a settled status - wait on `idle` or `done` explicitly after.
-- **a fresh codex pane can read "ready" behind an update modal** - codex may open on a blocking `Update available! <old> -> <new>` menu. `agent start` succeeds and herdr reports the pane interactively ready, but that modal owns the keyboard, so the first prompt - a seed line included - lands in the menu instead of the composer. the `blocked` send gate does **not** save you here: herdr detects the pane as ready, not `blocked`, so `send` types anyway and reports a normal delivery. on an unattended codex launch, `agent read <handle>` first and clear the menu (`herdr agent send-keys <handle> "2"` to skip) before the first send. observed on codex 0.147.0 prompting to 0.149.0.
-- **install the managed opencode status integration** - herdr 0.9.0 ships the current integration, but it is not active until `herdr integration install opencode` installs it in the user's opencode plugin directory. without it, status waits on opencode panes are unreliable.
-- **only the home repo's worktree tree nests; plain workspaces don't** - a `workspace create --cwd` workspace gets no repo association and floats ungrouped, even at a repo root. give each herd agent a *tab* in the herd's one workspace; make the herd a worktree to nest it under the repo.
-- **workspace label vs tab truncation** - rows render `<workspace> · <tab>`; the long worktree-name label can truncate the tab label in the collapsed sidebar; the handle reappears on focus/widen. that label is herdr's default - don't rename it.
-- **`worktree remove` keeps the branch** - it removes the worktree, directory, workspace, and all tabs/agents, but deleting the branch (`git branch -d`) is separate.
-- **`open` reattaches, `create` makes new branches** - existing branch with no worktree -> `git worktree add` first, then `open` (home repo only).
-- **one repo per herdr session** - `worktree create` always builds in the session's home repo regardless of cwd (verified). a second repo needs a second `herdr --session <name>`.
-- **`worktree create`/`open` run from the repo's main-checkout workspace** - from a linked worktree they error `linked_worktree_source`; pass `--workspace <main-checkout-ws>` or run from there.
-- **decorated labels are manual after launch** - `up`/`agent` set `<handle> <glyph>` at launch; a later handle rename does not update the tab label (`tab rename` to re-sync).
-- **the helper path comes from your orientation** - a fixed, allowlistable location refreshed each session by the comitatus hook. call it by that absolute path; anything else (variables, `$CLAUDE_PLUGIN_ROOT`, relative paths) prompts or breaks.
-- **Windows helper paths are shell arguments, not command text** - run `node "C:\path with spaces\herd.js" <verb> ...`; the generated seed line quotes this path automatically. quote each message body for the shell you are actually using (PowerShell and `cmd.exe` do not share one escape syntax).
-- **the send lock is per OS user** - POSIX keys the temp root by uid; Windows hashes the account name and home directory because Node exposes no `getuid()` there. cleanup asks Node to retry transient `EBUSY`, `ENOTEMPTY`, and `EPERM` removal failures before leaving a conservative busy lock behind.
-- **cwd is the resolved path** - herdr stores an agent's `cwd` OS-resolved (macOS `/tmp` -> `/private/tmp`). when filtering `agent list` by cwd, compare against the resolved path or you'll see zero agents on a healthy herd.
-- **ids are not durable** - re-read them; never reuse an old id.
-- **read vs wait, and `recent` can lag** - `agent read`/`pane read` for output that already exists; `pane wait-output` for output you expect next. `--source recent` can come back empty while a pane is freshly producing output; fall back to `--source visible` or `pane wait-output` - do not read an empty `recent` as "nothing is there."
-- **json output** - agent/workspace/pane commands print json; worktree commands need `--json`. `pane read` prints text; `pane send-text`/`send-keys`/`run` print nothing on success.
+- `herdr tab close <tab>` closes one agent.
+- `herdr workspace close <ws>` closes every agent in a workspace.
+- `herdr worktree remove` removes the worktree, its directory, its workspace and all its tabs. It keeps the branch; `git branch -d` deletes it.
+- Leave `--force` off. `git worktree remove` refuses a dirty tree without it, and `git branch -d` refuses an unmerged branch.
+
+To reassign a herd to another worktree, relaunch it there, since cwd is fixed at launch. Close the old workspace first so the handles are free, then brief again. Relaunched agents are cold.
+
+## Permissions
+
+Removing the helper does not remove approvals. Every native command needs its own grant. Each harness grants commands differently:
+
+- **Claude Code:** run `/herd-setup`. It adds one allow rule per safe native verb.
+  - It deliberately leaves `herdr agent start`, `herdr pane run` and `herdr pane send-keys` prompting. Launch arguments after `--` can carry permission-bypass flags, so each launch is a human approval.
+- **Codex:** commands run in a sandbox that blocks the herdr socket. A denied command fails with `PermissionDenied` / `Operation not permitted` and does not always prompt. That error most likely means no rule covers the command: tell the human which command failed. Do not retry it, and do not route it through another script.
+  - The human can add prefix rules to `$CODEX_HOME/rules/default.rules`. A member needs only the messaging and observation verbs:
+    ```text
+    prefix_rule(pattern=["herdr", "agent", "prompt"], decision="allow")
+    prefix_rule(pattern=["herdr", "agent", "list"], decision="allow")
+    prefix_rule(pattern=["herdr", "agent", "get"], decision="allow")
+    prefix_rule(pattern=["herdr", "agent", "read"], decision="allow")
+    prefix_rule(pattern=["herdr", "agent", "wait"], decision="allow")
+    ```
+    A launcher may also need `["herdr", "tab"]`, `["herdr", "worktree"]` and `["herdr", "workspace"]`.
+  - Never save a rule that includes a message body. It matches that one message only.
+- **Other harnesses:** pre-authorize the same verbs in their own configuration.
+
+Weak local models also need an explicit instruction to run the commands as real shell commands and not print them.
+
+## Gotchas
+
+- **`worktree create` does not fetch.** `--base origin/main` resolves your local ref.
+- **`agent prompt` types and submits** with the agent's own submit keys. It does not track turns. With `--wait`, an already-running turn can satisfy the wait.
+- **`agent wait` takes one `--until` per state.** Without `--until` it matches `idle`, `done` or `blocked`, and without `--timeout` it waits forever.
+- **`agent start` needs a pane at a shell prompt.** It takes the pane over and does not create one.
+- **`blocked` only covers modals herdr detects.** An undetected menu reads as ready and swallows typed text. Read the pane when a send stalls.
+- **`--source recent` can come back empty** while a pane is redrawing. Retry with `--source visible`, or use `pane wait-output`.
+- **`worktree create` and `open` from a linked worktree** fail with `linked_worktree_source` unless you pass `--workspace <main-checkout-ws>`.
+- **Shell quoting is yours.** The message is one shell argument on one physical line. Use single quotes in POSIX shells and PowerShell. Use double quotes, with that shell's escapes, in `cmd.exe`.
