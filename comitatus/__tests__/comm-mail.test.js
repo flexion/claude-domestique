@@ -92,6 +92,16 @@ test('discards unreadable mail with a note, and skips a directory', () => {
   expect(fs.readdirSync(drop)).toEqual(['d.json']);
 });
 
+test('a dot-prefixed mail file is discarded with a note, never silently left behind', () => {
+  const { drop, state } = boxes();
+  put(drop, { id: '.allowed' }, 1, '.allowed');
+  put(drop, { id: 'a.b-c_1' }, 2);
+  const r = mail.pickup({ drop, state, now: NOW });
+  expect(r.delivered.map((m) => m.id)).toEqual(['a.b-c_1']);
+  expect(r.notes).toEqual(['discarded unreadable mail .allowed.json']);
+  expect(fs.readdirSync(drop)).toEqual([]);
+});
+
 test('expires mail older than 7 days silently', () => {
   const { drop, state } = boxes();
   put(drop, { id: 'old', created_at: new Date(NOW - 8 * DAY).toISOString() });

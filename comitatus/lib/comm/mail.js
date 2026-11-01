@@ -19,7 +19,7 @@ function render(delivered, notes) {
 
 function valid(m) {
   return m && m.v === 1
-    && typeof m.id === 'string' && /^[A-Za-z0-9._-]{1,64}$/.test(m.id)
+    && typeof m.id === 'string' && /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(m.id)
     && typeof m.from === 'string' && m.from.length > 0 && m.from.length <= 64
     && (m.intent === 'reply' || m.intent === 'fyi')
     && typeof m.body === 'string' && Buffer.byteLength(m.body) <= MAX_BODY_BYTES
@@ -48,7 +48,9 @@ function pickup({ drop, state, now, max = 10, budget = 6000 }) {
   const notes = [];
   let names;
   try {
-    names = fs.readdirSync(drop).filter((n) => n.endsWith('.json') && !n.startsWith('.'));
+    // Claim files end in .<pid> and temp files in .tmp, so only published mail ends in .json.
+    // A dot-prefixed .json is still taken, so a bad id is discarded with a note, not left unseen.
+    names = fs.readdirSync(drop).filter((n) => n.endsWith('.json'));
   } catch {
     return { delivered, notes };
   }

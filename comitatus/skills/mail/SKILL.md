@@ -19,7 +19,7 @@ Pick the card whose `handle` you want. Note its `mailbox`, `status`, `kind`, `se
 
 ## Send
 
-1. Choose an id: letters, digits, `.`, `_` or `-`, up to 64 characters, for example `m-<you>-<n>`.
+1. Choose an id: up to 64 letters, digits, `.`, `_` or `-`, starting with a letter or digit, for example `m-<you>-<n>`.
 2. Write the message to a temp name in the recipient's `mailbox`, then rename it:
 
    ```text
