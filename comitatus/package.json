@@ -1,7 +1,7 @@
 {
   "name": "@claude-domestique/comitatus",
-  "version": "2.1.0",
-  "description": "herdr orchestration workflows for Claude Code and Codex",
+  "version": "2.2.0",
+  "description": "herdr orchestration, agent mail and Teams chat messaging for Claude Code and Codex",
   "main": "hooks/herdr-orient.js",
   "scripts": {
     "test": "jest",

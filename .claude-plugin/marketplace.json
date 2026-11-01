@@ -32,8 +32,8 @@
     {
       "name": "comitatus",
       "source": "./comitatus",
-      "description": "herdr workflows - packages the herdr agent-orchestration skill for claude and codex, auto-injected inside herdr",
-      "version": "2.1.0"
+      "description": "herdr orchestration workflows, local agent mail and headless Teams chat messaging for Claude Code and Codex",
+      "version": "2.2.0"
     },
     {
       "name": "stilus",

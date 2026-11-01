@@ -1,7 +1,7 @@
 # comitatus
 
-Packages the [herdr](https://herdr.dev) agent-orchestration skill for Claude Code
-and Codex. `comitatus` is Latin for a retinue or band of
+Packages [herdr](https://herdr.dev) agent orchestration, local agent mail and Teams
+chat messaging for Claude Code and Codex. `comitatus` is Latin for a retinue or band of
 companions — the followers who travel and work together under one leader.
 
 ## Responsibilities: herdr vs. the skill vs. comitatus
@@ -36,14 +36,17 @@ belongs to comitatus.
 - `/herd-setup`, which merges a safe allow-list of native herdr and read-only
   git commands into your Claude settings, and lists the Codex prefix rules for
   you to add yourself.
+- The `teams` skill (`comitatus:teams`) for explicit chat send/receive using the
+  installed Graph PowerShell commands, with independent process-scoped sign-in.
 
 2.0.0 removed the `herd.js` and `up.js` helper scripts. See
 [Changes in 2.0.0](#changes-in-200) for what each helper behavior became.
 
 ## Installing
 
-comitatus is a companion to [herdr](https://herdr.dev): on its own it does
-nothing (see Behavior modes). Install herdr first, then the plugin.
+The herdr workflows require [herdr](https://herdr.dev). Local mail and Teams
+messaging also work outside herdr; Teams requires PowerShell and the Microsoft
+Graph authentication module (see [Teams chat messaging](#teams-chat-messaging)).
 
 ### 1. Install herdr and its agent integrations
 
@@ -120,10 +123,12 @@ runs*; Codex support is a separate installation you make with
 
 ## Behavior modes
 
-comitatus keys off a single signal: the `HERDR_ENV=1` environment variable,
+The herdr orientation keys off a single signal: the `HERDR_ENV=1` environment variable,
 which herdr sets only inside the panes it spawns and which is inherited by
 processes launched there. Whether herdr is *installed* is irrelevant - what
 matters is whether the current session is running *inside* a herdr pane.
+This table covers herdr orientation. Mail is activated separately by
+`COMITATUS_HANDLE`; Teams messaging is explicitly invoked through its skill.
 
 | Situation | `HERDR_ENV` | comitatus |
 |-----------|-------------|-----------|
@@ -191,7 +196,7 @@ verbs carry no version path and no message body, so they survive upgrades.
 
 ## Single source of truth
 
-There is **one** skill under `skills/herdr/`, authored in plain ASCII. Codex and
+Each skill has one canonical copy under `skills/`. Codex and
 Claude load those identical files from their own installed copy of the plugin.
 Nothing is copied between hosts, so there is no fork and no shadow copy to keep
 in sync.
@@ -250,6 +255,28 @@ To withdraw a participant, delete its card, drop and state:
 ```bash
 rm -rf <root>/roll/<participant>.json <root>/mail/<participant> <root>/state/<participant>
 ```
+
+## Teams chat messaging
+
+From 2.2.0, `comitatus:teams` provides explicit send/receive commands for an
+existing Teams chat through `Microsoft.Graph.Authentication`. See the
+[Teams skill](skills/teams/SKILL.md) for setup and usage.
+
+Each agent signs in independently in a private PowerShell process using
+`-ContextScope Process`. Tenant and decoded chat IDs are supplied at runtime as
+`COMITATUS_TEAMS_TENANT_ID` and `COMITATUS_TEAMS_CHAT_ID`; no conversation destination
+ships with the plugin. The skill composes `Import-Module`, `Connect-MgGraph`,
+`Invoke-MgGraphRequest` and `Disconnect-MgGraph` directly: no comitatus runtime
+helper or plugin-cache path is needed. Examples send plain text, read a page or a
+specific message, and retain Graph message IDs and pagination links. They do not
+connect Teams to the local mail hooks or automatically wake an agent.
+
+The implementation uses the same Graph PowerShell path demonstrated by a
+three-message exchange between two independent clients. Offline tests execute the
+skill's actual PowerShell examples with SDK commands stubbed when `pwsh` is
+available; they do not authenticate or post to Teams. The Microsoft
+Graph Command Line Tools application can carry broader existing consent than the
+two chat scopes requested; process isolation does not narrow that consent.
 
 ## Changes in 2.0.0
 
