@@ -1,14 +1,14 @@
 # herd naming
 
 the **only** name you assign is the **member handle** - a call-sign from the pool below, set
-with `agent rename`. everything else is left at herdr's default:
+at launch with `herdr agent start <handle>` (or later with `herdr agent rename`). everything else is left at herdr's default:
 
 - a **worktree's workspace** is auto-labeled by herdr with the **worktree directory name**
   (`chore-comitatus-fixes`); a **repo's main checkout** with the **repo name**
   (`claude-domestique`). you never rename either - see the `## naming` section of
   [SKILL.md](../SKILL.md).
-- the decorated **tab** label `<handle> <glyph>` (`fox ◆`) is the one other thing you set, via
-  `tab rename`; it is not pooled either.
+- the decorated **tab** label `<handle> <glyph>` (`fox ◆`) is the one other thing you set, with
+  `tab create --label` at launch or `tab rename` later; it is not pooled either.
 
 so this file is just the member call-sign pool.
 
@@ -18,10 +18,10 @@ short, phonetically distinct call-signs, type-agnostic, each claimed as the **ne
 entry - check live state and skip any already in use:
 
 ```text
-node HERD members  # taken member handles, across every workspace
+herdr agent list
 ```
 
-`HERD` is the absolute helper path from your herdr orientation.
+every `name` in its output is a taken handle, across every workspace.
 
 constraints:
 

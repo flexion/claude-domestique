@@ -99,11 +99,3 @@ jobs:
 
       - name: Run each hook registration through the Windows command path
         run: npx jest scripts/__tests__/hook-invocation.test.js scripts/__tests__/validate-plugins.test.js --runInBand
-
-      # The herdr helper is the other half of the same class of defect: a seed
-      # path that only quotes correctly on POSIX, a lock root that falls back to
-      # a shared directory wherever getuid is absent — which is every Windows
-      # user — and a cleanup that asks for no retries on an OS that raises
-      # transient EPERM. None of it fails on Linux, so Linux cannot hold it.
-      - name: Run the herdr helper suite on Windows
-        run: npx jest comitatus/__tests__/herd.test.js --runInBand

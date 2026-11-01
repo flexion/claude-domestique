@@ -1,22 +1,30 @@
 #!/usr/bin/env node
 'use strict';
 
-const { stableHome, stableHerdJs, provisionStable } = require('../hooks/herdr-orient.js');
-
+// Native herdr verbs only. 2.0.0 removed the herd.js helper and its per-verb
+// rules; every rule here names a `herdr` or read-only `git` command directly,
+// so nothing is machine-specific and every scope gets the same list.
 const SAFE_ALLOW = Object.freeze([
   // herdr: read / inspect
+  'Bash(herdr --version)',
+  'Bash(herdr status)',
   'Bash(herdr agent list)',
   'Bash(herdr agent get:*)',
   'Bash(herdr agent read:*)',
-  'Bash(herdr pane list)',
+  'Bash(herdr agent explain:*)',
+  'Bash(herdr pane list:*)',
+  'Bash(herdr pane get:*)',
+  'Bash(herdr pane current)',
   'Bash(herdr pane read:*)',
   'Bash(herdr pane wait-output:*)',
+  'Bash(herdr tab list:*)',
   'Bash(herdr workspace list)',
   'Bash(herdr worktree list:*)',
   'Bash(herdr integration status)',
-  // herdr: messaging + lifecycle (NOT pane run / send-keys / agent start -
-  // those are arbitrary exec/injection and are reachable only through the
-  // gated composite verbs)
+  // herdr: messaging + lifecycle. NOT agent start, pane run, or send-keys:
+  // agent start forwards arbitrary agent-CLI arguments (permission-bypass
+  // flags included), and pane run / send-keys are arbitrary exec / keystroke
+  // injection, so each stays a human approval.
   'Bash(herdr agent prompt:*)',
   'Bash(herdr agent rename:*)',
   'Bash(herdr agent wait:*)',
@@ -29,32 +37,13 @@ const SAFE_ALLOW = Object.freeze([
   'Bash(herdr worktree create:*)',
   'Bash(herdr worktree open:*)',
   'Bash(herdr worktree remove:*)',
-  // git: read-only + the safe fetch `up` uses
+  // git: read-only + fetch
   'Bash(git fetch:*)',
+  'Bash(git remote)',
   'Bash(git status:*)',
   'Bash(git branch)',
   'Bash(git branch --show-current:*)',
 ]);
-
-// One rule per known-safe verb - never a blanket `herd.js:*`, so a verb added
-// later is not auto-allowed.
-// The herd-lifecycle verbs belong here for the same reason as `send`: an agent
-// that hits a permission prompt mid-protocol stalls the herd, and a lead that
-// stalls while seeding or withdrawing strands everyone downstream of it.
-const HELPER_VERBS = Object.freeze([
-  'status', 'members', 'send',
-  'seed', 'broadcast', 'sync', 'withdraw', 'agent', 'up',
-]);
-
-// The full dispatch surface. `herd-setup.test.js` holds this equal to the verbs
-// parsed out of `herd.js`'s own usage(), so a verb that dispatches but is not
-// allowed fails the suite rather than becoming an invisible permission trap.
-const DISPATCHABLE_VERBS = HELPER_VERBS;
-
-function bakedHerdRules(homedir) {
-  const base = stableHerdJs(stableHome(homedir));
-  return HELPER_VERBS.map((v) => `Bash(node ${base} ${v}:*)`);
-}
 
 function mergeAllow(existing, additions) {
   const out = existing.slice();
@@ -73,15 +62,12 @@ function findConflicts(json, additions) {
   return out;
 }
 
-function applySettings({ raw, homedir, scope = 'user' }) {
+function applySettings({ raw }) {
   const json = raw && raw.trim() ? JSON.parse(raw) : {};
   if (!json.permissions || typeof json.permissions !== 'object') json.permissions = {};
   if (!Array.isArray(json.permissions.allow)) json.permissions.allow = [];
 
-  const additions = scope === 'project'
-    ? SAFE_ALLOW.slice() // committed file: no machine-specific home path
-    : mergeAllow(SAFE_ALLOW.slice(), bakedHerdRules(homedir));
-
+  const additions = SAFE_ALLOW.slice();
   const conflicts = findConflicts(json, additions);
   const before = json.permissions.allow.slice();
   json.permissions.allow = mergeAllow(before, additions);
@@ -95,22 +81,13 @@ function main() {
   const path = require('path');
   const scope = process.argv.includes('--project') ? 'project'
     : process.argv.includes('--local') ? 'local' : 'user';
-  const homedir = os.homedir();
   const target = scope === 'project'
     ? path.join(process.cwd(), '.claude', 'settings.json')
-    : path.join(homedir, '.claude', scope === 'local' ? 'settings.local.json' : 'settings.json');
-
-  // ensure the baked rules have a real target before we point at it
-  try {
-    provisionStable({
-      skillDir: path.join(__dirname, '..', 'skills', 'herdr'),
-      home: stableHome(homedir),
-    });
-  } catch (e) { process.stderr.write(`herd-setup: stable provision skipped (${e.message})\n`); }
+    : path.join(os.homedir(), '.claude', scope === 'local' ? 'settings.local.json' : 'settings.json');
 
   let raw = '';
   try { raw = fs.readFileSync(target, 'utf8'); } catch { /* new file */ }
-  const { json, added, conflicts } = applySettings({ raw, homedir, scope });
+  const { json, added, conflicts } = applySettings({ raw });
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, json);
 
@@ -128,9 +105,6 @@ if (require.main === module) main();
 
 module.exports = {
   SAFE_ALLOW,
-  HELPER_VERBS,
-  DISPATCHABLE_VERBS,
-  bakedHerdRules,
   mergeAllow,
   findConflicts,
   applySettings,

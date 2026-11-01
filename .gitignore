@@ -29,4 +29,5 @@ node_modules/
 
 
 # regenerable from two refs (runbook: fan-out-trial.md setup step 5)
-.pipeline/runs/*/diff.patch
+.pipeline
+
