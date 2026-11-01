@@ -7,11 +7,11 @@ const SKILLS = path.join(ROOT, 'skills');
 // 1.0.0 removed the fan-out skill: a second discoverable skill gave a seeded
 // member a second, conflicting account of who leads. Only directories with a
 // SKILL.md are discoverable by either host.
-test('herd-setup, herdr and mail are the only discoverable skills', () => {
+test('herd-setup, herdr, mail and teams are the discoverable skills', () => {
   const discoverable = fs.readdirSync(SKILLS)
     .filter((name) => fs.existsSync(path.join(SKILLS, name, 'SKILL.md')))
     .sort();
-  expect(discoverable).toEqual(['herd-setup', 'herdr', 'mail']);
+  expect(discoverable).toEqual(['herd-setup', 'herdr', 'mail', 'teams']);
 });
 
 // The doorbell commands are what agents copy; they must match the spec exactly.
