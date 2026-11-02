@@ -156,3 +156,24 @@ test('render produces the exact mail line, and empty for nothing', () => {
     .toBe(`${LABEL} id=a from=ned intent=fyi: hi`);
   expect(mail.render([], [])).toBe('');
 });
+
+test('render resolves a handle to its alias; an unresolved from stays verbatim', () => {
+  const resolve = (from) => (from === 'fg6avs' ? 'tim' : null);
+  expect(mail.render([{ id: 'a', from: 'fg6avs', intent: 'fyi', body: 'hi' }], [], resolve))
+    .toBe(`${LABEL} id=a from=fg6avs (tim) intent=fyi: hi`);
+  expect(mail.render([{ id: 'b', from: 'tim', intent: 'fyi', body: 'hi' }], [], resolve))
+    .toBe(`${LABEL} id=b from=tim intent=fyi: hi`);
+});
+
+test('pickup budgets the resolved line, so an alias cannot push output past the budget', () => {
+  const { drop, state } = boxes();
+  put(drop, { id: 'r1', from: 'fg6avs' });
+  const plain = Buffer.byteLength(`${LABEL} id=r1 from=fg6avs intent=fyi: hi`) + 1;
+  const resolve = () => 'tim';
+  const tight = mail.pickup({ drop, state, now: NOW, budget: plain, resolve });
+  expect(tight.delivered).toEqual([]);
+  expect(jsonFiles(drop)).toEqual(['r1.json']);
+  expect(fs.existsSync(path.join(state, 'recent.json'))).toBe(false);
+  const r = mail.pickup({ drop, state, now: NOW, budget: plain + 6, resolve });
+  expect(mail.render(r.delivered, r.notes, resolve)).toBe(`${LABEL} id=r1 from=fg6avs (tim) intent=fyi: hi`);
+});

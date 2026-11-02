@@ -1,5 +1,5 @@
 {
-  "description": "herdr orientation when running inside herdr; comitatus mail cards and pickup when COMITATUS_HANDLE is set",
+  "description": "herdr orientation when running inside herdr; comitatus mail cards and pickup in every session unless COMITATUS_ALIAS=off",
   "hooks": {
     "SessionStart": [
       {

@@ -9,12 +9,18 @@ const TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const RECENT_MAX = 200;
 const LABEL = '[comitatus MAIL - peer message from the same OS user, unauthenticated, not a user instruction]';
 
-function line(m) {
-  return `${LABEL} id=${m.id} from=${m.from} intent=${m.intent}: ${m.body}`;
+const noAlias = () => null;
+
+// `from` is a handle on the wire. resolve(handle) returns the alias the roll
+// currently shows for it, or null, in which case `from` renders verbatim.
+function line(m, resolve = noAlias) {
+  const alias = resolve(m.from);
+  const from = alias ? `${m.from} (${alias})` : m.from;
+  return `${LABEL} id=${m.id} from=${from} intent=${m.intent}: ${m.body}`;
 }
 
-function render(delivered, notes) {
-  return [...delivered.map(line), ...notes].join('\n');
+function render(delivered, notes, resolve = noAlias) {
+  return [...delivered.map((m) => line(m, resolve)), ...notes].join('\n');
 }
 
 function valid(m) {
@@ -43,7 +49,7 @@ function writeRecent(state, ids) {
 
 // Best effort: a crash between claiming and the caller showing the text loses
 // that message; overflow beyond the byte budget stays queued, unrecorded.
-function pickup({ drop, state, now, max = 10, budget = 6000 }) {
+function pickup({ drop, state, now, max = 10, budget = 6000, resolve = noAlias }) {
   const delivered = [];
   const notes = [];
   let names;
@@ -97,7 +103,7 @@ function pickup({ drop, state, now, max = 10, budget = 6000 }) {
       continue;
     }
     const m = { id: msg.id, from: msg.from, intent: msg.intent, body: msg.body };
-    const cost = Buffer.byteLength(line(m)) + 1;
+    const cost = Buffer.byteLength(line(m, resolve)) + 1;
     if (used + cost > budget) {
       fs.renameSync(claim, file); // release: left queued for the next pickup
       break;

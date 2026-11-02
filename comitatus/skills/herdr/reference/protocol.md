@@ -23,7 +23,7 @@ When a message carries more than a sentence of content, write the content to a f
 
 ## Sending
 
-When every party runs with `COMITATUS_HANDLE` set, the preferred send is mail plus a pane doorbell, per the `comitatus:mail` skill. The content goes to the recipient's mailbox, and the pane only carries `[from <me> mail #<id>]`. Mail most likely survives a restart, and a lost doorbell costs only a delay. The pane content messages below are the fallback for agents without mail.
+When the recipient has a card on the comitatus roll, which every session with comitatus installed publishes unless started with `COMITATUS_ALIAS=off`, the preferred send is mail plus a pane doorbell, per the `comitatus:mail` skill. Each member's herdr name is its mail alias, and the wire `from` is its generated mail handle. The content goes to the recipient's mailbox, and the pane only carries `[from <me> (<alias>) mail #<id>]`. Mail most likely survives a restart, and a lost doorbell costs only a delay. The pane content messages below are the fallback for agents without a card.
 
 ```text
 herdr agent prompt jay "[from sly reply #a3f9] rerun the failing test in src/api/; findings to .pipeline/api-test.md"

@@ -125,6 +125,11 @@ describe.each(cases)('$name', ({ pluginRoot, event, command }) => {
         // with no output, and an empty stdout is indistinguishable from the
         // silent failure this suite exists to detect.
         HERDR_ENV: '1',
+        // comitatus mail participates by default and roots itself under the
+        // account home from os.userInfo(), which ignores HOME; keep it, and any
+        // herdr lookup it would make, inside the scratch directory.
+        COMITATUS_HOME: path.join(scratch, 'comitatus'),
+        HERDR_PANE_ID: '',
       },
       input: payload,
       shell: true,

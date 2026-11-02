@@ -8,7 +8,7 @@ description: Use when an agent needs to send or receive Microsoft Teams chat mes
 Use the installed Microsoft Graph PowerShell commands for explicit send and receive
 operations in an existing chat. Each agent owns its process and signs in independently.
 No browser or shared authentication cache is needed. This skill works outside
-herdr and does not require `COMITATUS_HANDLE`.
+herdr and does not use comitatus mail.
 
 Teams uses ordinary Graph HTTPS endpoints. PowerShell supplies the demonstrated
 authentication client here; it is not part of the messaging protocol.
