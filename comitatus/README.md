@@ -29,15 +29,17 @@ belongs to comitatus.
   completion, ordered integration, and cleanup that adjudicates rather than
   sweeps. 1.0.0 removed the `comitatus:fan-out` skill, its role files, and its
   run verbs; git and the native `herdr` verbs carry that state now.
-- A SessionStart hook that is silent unless you are inside herdr (`HERDR_ENV=1`).
+- A SessionStart hook that injects herdr orientation only inside herdr
+  (`HERDR_ENV=1`), plus a one-line `comitatus:teams` pointer in every session.
   Inside herdr it injects a short orientation naming the native verbs and the
   skill. It writes nothing anywhere — a codex agent gets the skill by installing
   the plugin, and the orientation reports whether it has.
 - `/herd-setup`, which merges a safe allow-list of native herdr and read-only
   git commands into your Claude settings, and lists the Codex prefix rules for
   you to add yourself.
-- The `teams` skill (`comitatus:teams`) for explicit chat send/receive using the
-  installed Graph PowerShell commands, with independent process-scoped sign-in.
+- The `teams` skill (`comitatus:teams`) for explicit chat send/receive. Sends use
+  the installed Graph PowerShell commands with independent process-scoped sign-in;
+  reads can also use a Microsoft 365 connector.
 
 2.0.0 removed the `herd.js` and `up.js` helper scripts. See
 [Changes in 2.0.0](#changes-in-200) for what each helper behavior became.
@@ -46,7 +48,8 @@ belongs to comitatus.
 
 The herdr workflows require [herdr](https://herdr.dev). Local mail and Teams
 messaging also work outside herdr; Teams requires PowerShell and the Microsoft
-Graph authentication module (see [Teams chat messaging](#teams-chat-messaging)).
+Graph authentication module, and under Codex a writable `~/.mg` and sandbox network
+access (see [Teams chat messaging](#teams-chat-messaging)).
 
 ### 1. Install herdr and its agent integrations
 
@@ -111,7 +114,7 @@ settings file:
 `--scope local` to change it. Precedence is local > project > user (a managed/IT
 scope overrides all).
 
-Prefer **user** scope for comitatus. It activates on whether the session is
+Prefer **user** scope for comitatus. Its herdr orientation activates on whether the session is
 running inside a herdr pane (see Behavior modes), which has nothing to do with
 which repo you opened - so "enabled everywhere" matches how herdr is actually
 used. Project or local scope leaves comitatus silent in every herdr session you
@@ -128,7 +131,9 @@ which herdr sets only inside the panes it spawns and which is inherited by
 processes launched there. Whether herdr is *installed* is irrelevant - what
 matters is whether the current session is running *inside* a herdr pane.
 This table covers herdr orientation. Mail is on in every session unless
-`COMITATUS_ALIAS=off` (see [Mail](#mail)); Teams messaging is explicitly invoked through its skill.
+`COMITATUS_ALIAS=off` (see [Mail](#mail)); Teams messaging is explicitly invoked through its skill. From
+2.4.0 the SessionStart hook injects one line pointing at `comitatus:teams` in every
+session, inside herdr or not.
 
 | Situation | `HERDR_ENV` | comitatus |
 |-----------|-------------|-----------|
@@ -136,9 +141,11 @@ This table covers herdr orientation. Mail is on in every session unless
 | Plain terminal, herdr installed but session not launched from a herdr pane | unset | **Dormant** |
 | Inside a herdr pane | `1` | **Active** |
 
-**Dormant** - the SessionStart hook returns immediately:
+**Dormant** - the SessionStart hook skips herdr orientation:
 
-- No orientation injected, no `comitatus` status line, no files written.
+- No herdr orientation injected, no `comitatus` status line, no files written.
+  The orientation hook injects only the one-line `comitatus:teams` pointer; mail
+  runs separately (see [Mail](#mail)).
 - The `comitatus:herdr` skill is present in the catalog but self-gated: invoking
   it from outside a herdr pane makes it stop and report that you are not in a
   herdr-managed pane, so it will not reach into a live herdr from the wrong
@@ -276,6 +283,16 @@ From 2.2.0, `comitatus:teams` provides explicit send/receive commands for an
 existing Teams chat through `Microsoft.Graph.Authentication`. See the
 [Teams skill](skills/teams/SKILL.md) for setup and usage.
 
+From 2.4.0 every send goes through the Graph PowerShell commands. The skill
+tells agents not to send through the Microsoft 365 connector's
+`teams_send_chat_message`, which has not been granted `ChatMessage.Send`. Reads can
+use the connector: the skill calls `get_granted_scopes`, and reads with
+`read_resource` when `Chat.Read` or `Chat.ReadWrite` is granted. The PowerShell
+route gained a module check that asks before installing, guidance on finding the
+tenant ID and which Teams links carry a chat ID, a single-script pattern for shells
+that run one command per call, a one-line scope check in place of a context dump,
+and a quiet disconnect.
+
 Each agent signs in independently in a private PowerShell process using
 `-ContextScope Process`. Tenant and decoded chat IDs are supplied at runtime as
 `COMITATUS_TEAMS_TENANT_ID` and `COMITATUS_TEAMS_CHAT_ID`; no conversation destination
@@ -291,6 +308,42 @@ skill's actual PowerShell examples with SDK commands stubbed when `pwsh` is
 available; they do not authenticate or post to Teams. The Microsoft
 Graph Command Line Tools application can carry broader existing consent than the
 two chat scopes requested; process isolation does not narrow that consent.
+
+### Codex sandbox requirements
+
+Under Codex's `workspace-write` sandbox, Teams sign-in fails until two settings
+are granted:
+
+- **`~/.mg` as a writable root.** `Connect-MgGraph` writes
+  `~/.mg/mg.authrecord.json` even with `-ContextScope Process`; the sandbox denies
+  it (`Access to the path '.../.mg/mg.authrecord.json' is denied`). Create the
+  folder once with `mkdir -p ~/.mg`.
+- **Network access.** The sandbox blocks network by default, so Graph and the
+  sign-in endpoint are unreachable.
+
+In `$CODEX_HOME/config.toml` (usually `~/.codex/config.toml`), with your home
+directory written out:
+
+```toml
+[sandbox_workspace_write]
+writable_roots = ["/Users/<you>/.mg"]
+network_access = true
+```
+
+Or per launch: `codex --add-dir ~/.mg -c sandbox_workspace_write.network_access=true`.
+In a herd, pass those after `--` to `herdr agent start`. Both settings widen the
+sandbox for every command the agent runs. Codex agents should also run PowerShell
+with `-NonInteractive -File`: an interactive `pwsh` loads PSReadLine, which writes
+its history file outside the workspace and is denied.
+
+Verified with `codex sandbox` on codex-cli 0.166.0: writing to `~/.mg` is denied
+without the writable root and allowed with it, and Graph is unreachable without
+`network_access` while sign-in reaches the device-code prompt with it.
+
+Other notes from the #209 live test: a device code expires after 120 seconds, so
+relay it at once; a message link carries both the chat and tenant IDs; and a
+conversation signs in once in a background script that serves request files
+instead of signing in per message.
 
 ## Changes in 2.0.0
 

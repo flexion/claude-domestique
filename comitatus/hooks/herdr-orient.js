@@ -5,6 +5,11 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
+// #209: always on, inside herdr or not. Agents matched a plain "send a Teams
+// message" request to the Microsoft 365 connector, missed the skill, and hit a
+// 403 when the connector lacked ChatMessage.Send.
+const TEAMS_POINTER = 'To send, read or reply in a Microsoft Teams chat or meeting chat, invoke `comitatus:teams`.';
+
 function buildOrientation({ codexPlugin } = {}) {
   return [
     '# herdr (comitatus)',
@@ -41,11 +46,14 @@ function codexPluginInstalled({ codexHome }) {
   );
 }
 
+// Outside herdr only the Teams pointer is injected, with no status line.
 // Report-only and write-free: the hook neither copies the skill anywhere nor
 // touches the Codex home. 2.0.0 removed the stable `~/.claude/comitatus` copy,
 // which existed only to give the retired herd.js helper an allowlistable path.
 function processSessionStart({ env, codexHome }) {
-  if (env.HERDR_ENV !== '1') return null;
+  if (env.HERDR_ENV !== '1') {
+    return { hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: TEAMS_POINTER } };
+  }
 
   let codexPlugin;
   try {
@@ -58,7 +66,7 @@ function processSessionStart({ env, codexHome }) {
     systemMessage: `📍 Comitatus: herdr${codexPlugin === undefined ? '' : codexPlugin ? ' (codex: installed)' : ' (codex: not installed)'}`,
     hookSpecificOutput: {
       hookEventName: 'SessionStart',
-      additionalContext: buildOrientation({ codexPlugin }),
+      additionalContext: `${buildOrientation({ codexPlugin })}\n\n${TEAMS_POINTER}`,
     },
   };
 }
@@ -89,6 +97,7 @@ async function main() {
 if (require.main === module) main();
 
 module.exports = {
+  TEAMS_POINTER,
   buildOrientation,
   codexPluginInstalled,
   resolveCodexHome,
