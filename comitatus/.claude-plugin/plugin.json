@@ -1,6 +1,6 @@
 {
   "name": "comitatus",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "herdr orchestration workflows, local agent mail and headless Teams chat messaging for Claude Code and Codex",
   "author": {
     "name": "Flexion"

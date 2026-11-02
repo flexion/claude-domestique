@@ -18,9 +18,9 @@ test('herd-setup, herdr, mail and teams are the discoverable skills', () => {
 test('the mail skill carries the exact doorbell command for each route and the wait rule', () => {
   const skill = fs.readFileSync(path.join(SKILLS, 'mail', 'SKILL.md'), 'utf8');
   for (const exact of [
-    'herdr agent prompt <routes.herdr_pane> "[from <me> mail #<id>]"',
-    '{"msgV":1,"msg_id":"<uuid>","type":"user","message":{"role":"user","content":"[from <me> mail #<id>]"},"priority":"next"}',
-    'CODEX_HOME=<codex_home> codex queue --thread <session> --message "[from <me> mail #<id>]"',
+    'herdr agent prompt <routes.herdr_pane> "[from <me> (<alias>) mail #<id>]"',
+    '{"msgV":1,"msg_id":"<uuid>","type":"user","message":{"role":"user","content":"[from <me> (<alias>) mail #<id>]"},"priority":"next"}',
+    'CODEX_HOME=<codex_home> codex queue --thread <session> --message "[from <me> (<alias>) mail #<id>]"',
     'To wait for a reply, end your turn',
   ]) {
     expect(skill).toContain(exact);

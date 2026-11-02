@@ -1,5 +1,7 @@
 # comitatus mail: discovery cards, best-effort durable mail, doorbells
 
+> **Superseded in part, 2026-11-02 (#208, comitatus 2.3.0):** participation is now on by default, with `COMITATUS_ALIAS=off` to opt out. The card's `handle` is generated from the participant key, and a new optional `alias` field holds the human label (`COMITATUS_HANDLE` now sets the alias). `host_pid` is no longer informational only: each SessionStart prunes cards whose host has exited and cards older than 7 days, and reclaims the mailbox and state of participants with no card and no activity for 7 days, under a per-participant lock that the participant's own hooks also hold. Inside herdr the alias follows the herdr member name, observed at turn boundaries. The comitatus README's Mail section is current; the rest of this record is unchanged.
+
 2026-11-01. Written from the prototype results in `.pipeline/proto-results.md`. `.pipeline/discovery-merged.md` is background on edge cases, not a requirement list.
 
 ## Goal

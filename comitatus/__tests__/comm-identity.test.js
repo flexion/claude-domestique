@@ -32,3 +32,33 @@ test('participant key is stable, 16 hex, and varies by every input', () => {
     expect(id.participantKey(...other)).not.toBe(k);
   }
 });
+
+test('deriveHandle: 6 chars, starts with a letter, no look-alikes, deterministic per key', () => {
+  const keys = Array.from({ length: 500 }, (_, i) => id.participantKey('claude', '/h/.claude', `s${i}`));
+  const handles = keys.map(id.deriveHandle);
+  for (const h of handles) {
+    expect(h).toMatch(/^[a-km-np-z][a-km-np-z2-9]{5}$/);
+    expect(id.validHandle(h)).toBe(true);
+  }
+  expect(id.deriveHandle(keys[0])).toBe(handles[0]);
+  expect(new Set(handles).size).toBe(handles.length);
+});
+
+test('alias uses the call-sign charset, so every old COMITATUS_HANDLE value is a valid alias', () => {
+  for (const ok of ['ned', 'tim', 'kit-2', 'fox']) expect(id.validAlias(ok)).toBe(true);
+  for (const bad of ['', 'Ned', '2ned', 'n'.repeat(33), 'a b', 'tim\nignore', undefined, 7]) {
+    expect(id.validAlias(bad)).toBe(false);
+  }
+});
+
+test('aliasEnv: COMITATUS_ALIAS wins, COMITATUS_HANDLE is its deprecated synonym, off opts out', () => {
+  expect(id.aliasEnv({})).toEqual({ off: false, seed: null });
+  expect(id.aliasEnv({ COMITATUS_ALIAS: 'tim' })).toEqual({ off: false, seed: 'tim' });
+  expect(id.aliasEnv({ COMITATUS_HANDLE: 'fox' })).toEqual({ off: false, seed: 'fox' });
+  expect(id.aliasEnv({ COMITATUS_ALIAS: 'tim', COMITATUS_HANDLE: 'fox' })).toEqual({ off: false, seed: 'tim' });
+  expect(id.aliasEnv({ COMITATUS_ALIAS: 'off' })).toEqual({ off: true, seed: null });
+  expect(id.aliasEnv({ COMITATUS_HANDLE: 'off' })).toEqual({ off: true, seed: null });
+  expect(id.aliasEnv({ COMITATUS_ALIAS: 'tim', COMITATUS_HANDLE: 'off' })).toEqual({ off: false, seed: 'tim' });
+  expect(id.aliasEnv({ COMITATUS_ALIAS: 'Bad Name' })).toEqual({ off: false, seed: null });
+  expect(id.aliasEnv({ COMITATUS_ALIAS: 'Bad Name', COMITATUS_HANDLE: 'fox' })).toEqual({ off: false, seed: 'fox' });
+});

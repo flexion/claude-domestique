@@ -13,7 +13,7 @@ keeps it from drifting when herdr changes.
 |-------|-----------|------|------------------|
 | **herdr** | The terminal-native multiplexer binary (`herdr`), installed from [herdr.dev](https://herdr.dev). | The entire command surface and runtime: worktrees, workspaces, tabs, panes, and agents; `agent start/prompt/read/wait`, `worktree`/`tab`/`pane`/`workspace` verbs; agent **detection integrations** (`~/.codex/herdr-agent-state.sh` and friends) that read each agent's status. The authoritative source for flags — run `herdr <verb> --help`. | Any notion of a "herd" as a team, the roster/naming convention, or the agent-to-agent messaging protocol. |
 | **herdr skill** (`comitatus:herdr`) | A curated workflow skill authored under `skills/herdr/`, invoked from inside a herdr pane. | The *conventions layer* herdr has no opinion on: the herd roster + short-handle naming, the `[from <self> reply\|fyi #<id>]` messaging protocol and how to read a send result, the briefing template, and launch, worktree and teardown sequences composed from native `herdr` and `git` commands. Points at `herdr <verb> --help` for CLI flags rather than re-teaching them. | The herdr CLI itself (it calls it), and herdr's detection integrations. There is no helper script. |
-| **comitatus** (this plugin) | The Claude Code and Codex plugin that packages and delivers the skill. | Delivery + activation: the SessionStart hook that gates on `HERDR_ENV=1`, injects orientation, and reports whether comitatus is installed as a Codex plugin; the `/herd-setup` permission allow-list. The hook writes nothing; `/herd-setup` edits a settings file only when you run it. | herdr's binary, its integrations, and the skill's *content* semantics (it ships the files, it doesn't decide what they say). |
+| **comitatus** (this plugin) | The Claude Code and Codex plugin that packages and delivers the skill. | Delivery + activation: the SessionStart hook that gates on `HERDR_ENV=1`, injects orientation, and reports whether comitatus is installed as a Codex plugin; the `/herd-setup` permission allow-list. The orientation hook writes nothing; the mail hook writes only under `~/.comitatus` (see [Mail](#mail)); `/herd-setup` edits a settings file only when you run it. | herdr's binary, its integrations, and the skill's *content* semantics (it ships the files, it doesn't decide what they say). |
 
 **Rule of thumb:** if it is a herdr command or agent-status mechanic, it belongs to
 herdr; if it is "how a team of agents coordinates," it belongs to the skill; if it
@@ -127,8 +127,8 @@ The herdr orientation keys off a single signal: the `HERDR_ENV=1` environment va
 which herdr sets only inside the panes it spawns and which is inherited by
 processes launched there. Whether herdr is *installed* is irrelevant - what
 matters is whether the current session is running *inside* a herdr pane.
-This table covers herdr orientation. Mail is activated separately by
-`COMITATUS_HANDLE`; Teams messaging is explicitly invoked through its skill.
+This table covers herdr orientation. Mail is on in every session unless
+`COMITATUS_ALIAS=off` (see [Mail](#mail)); Teams messaging is explicitly invoked through its skill.
 
 | Situation | `HERDR_ENV` | comitatus |
 |-----------|-------------|-----------|
@@ -209,7 +209,7 @@ comitatus@claude-domestique`). Codex uninstalls with
 (`--scope user|project|local`, mirroring how you installed it); `/plugin disable`
 turns it off without removing it.
 
-Since 2.0.0 the orientation hook writes nothing outside the plugin directory. The only writer is `/herd-setup`, which edits a settings file when you run it. Versions 0.x
+Since 2.0.0 the orientation hook writes nothing outside the plugin directory. `/herd-setup` edits a settings file when you run it, and since 2.3.0 the mail hook keeps its roll, mailboxes and state under `~/.comitatus` (or `$COMITATUS_HOME`); remove that directory to clear them. Versions 0.x
 and 1.x provisioned a copy of the skill at `~/.claude/comitatus/` to give the
 `herd.js` helper a stable path. 2.0.0 neither updates nor deletes that copy, and
 nothing reads it any more. Remove it by hand if you want a clean slate:
@@ -233,24 +233,38 @@ This plugin does not touch `~/.codex/hooks.json` or herdr's own
 
 ## Mail
 
-From 2.1.0, agents that run with `COMITATUS_HANDLE=<handle>` set publish a discovery card, and exchange best-effort durable mail through the comitatus hooks. That works on Claude and Codex, inside herdr or not. Without the variable, the mail hooks do nothing. The `comitatus:mail` skill covers finding, sending and doorbells.
+From 2.3.0, every Claude and Codex session with comitatus installed publishes a discovery card and exchanges best-effort durable mail through the comitatus hooks, inside herdr or not. (2.1 and 2.2 required `COMITATUS_HANDLE`.) The `comitatus:mail` skill covers finding, sending and doorbells.
 
 ```text
 <root>/roll/<participant>.json     card: who, where, status, live routes
 <root>/mail/<participant>/         drop: senders write <id>.json here
-<root>/state/<participant>/        recently delivered ids
+<root>/state/<participant>/        recently delivered ids, and the alias file
 ```
 
 `<root>` is `$COMITATUS_HOME`, or `~/.comitatus` under the account home. A participant is the agent kind, its settings home and its conversation id, so it survives `--resume`. Hooks deliver waiting mail at session start, prompt submission, after each tool call and at turn end. A content-free doorbell (herdr pane, Claude socket or `codex queue`) wakes an idle recipient.
 
+**Two names.** A participant's **handle** (`fg6avs`) is derived from its participant key: six characters, never `0`, `o`, `1` or `l`, stable for the session and across `--resume`. It goes in `from` and anywhere a name is resolved later. Its **alias** (`tim`) is an optional human label that can change at any time and need not be unique. Received mail renders as `from=fg6avs (tim)`, with the alias looked up on the roll.
+
+| Setting | Effect |
+| --- | --- |
+| nothing | participates; inside herdr the alias follows the herdr member name, otherwise there is none |
+| `COMITATUS_ALIAS=<name>` | participates with that alias at session start |
+| `COMITATUS_HANDLE=<name>` | deprecated synonym: sets the alias, not the handle |
+| `COMITATUS_ALIAS=off` (or `COMITATUS_HANDLE=off` when `COMITATUS_ALIAS` is unset) | the mail hooks stay silent and write nothing |
+
+An agent renames itself by writing a call-sign (`^[a-z][a-z0-9-]{0,31}$`) to `<root>/state/<participant>/alias`. That file wins over the environment, and the next hook event publishes it. Inside herdr, the hook asks `herdr agent get <pane>` for the member name at session start and at every turn boundary (not per tool call). The first name it sees fills an empty alias, and a later herdr rename replaces the alias when it is observed. Changes are tracked at turn boundaries, so an alias written between a herdr rename and the next lookup is overwritten, and a rename and back between two lookups goes unnoticed.
+
+Each session start sweeps the roll. It removes cards whose host process has exited, and cards not republished within 7 days. It also removes a participant's mailbox and state once that participant has had no card and no activity for 7 days: first mail past its TTL (which pickup would drop unread anyway), then the mailbox if it is empty, then the state. Every participant has a lock file, `<root>/state/<participant>.lock`. Its own hooks hold it while they run, and the sweep changes nothing of a participant without holding it, so a session that resumes mid-sweep keeps its card, mail, alias and delivered ids. A session resumed after its directories were reclaimed starts fresh, with its alias reseeded from the environment or herdr.
+
 **Known limits:**
 - No disk flush, no exactly-once delivery, no delivery receipt, and no sender authentication within one OS user.
 - A crash at the wrong moment can lose a message.
+- Handles are not guaranteed unique (about 30 bits). If two cards share one, a sender prefers the newer.
 - A Codex sender needs write access to `<root>/mail`; see `/herd-setup`.
 - A Codex sandbox cannot ring a Claude socket. That mail then arrives on the recipient's next turn.
 - Untested on Linux.
 
-To withdraw a participant, delete its card, drop and state:
+Setting `COMITATUS_ALIAS=off` stops a session from publishing, but does not remove a card it already published. To withdraw one immediately, delete its card, drop and state:
 
 ```bash
 rm -rf <root>/roll/<participant>.json <root>/mail/<participant> <root>/state/<participant>
