@@ -10,12 +10,25 @@ function tmpdir() {
 }
 
 describe('processSessionStart gating', () => {
-  test('silent when HERDR_ENV is unset', () => {
-    expect(hook.processSessionStart({ env: {}, codexHome: '/nonexistent' })).toBeNull();
+  // #209: the Teams pointer is always on, so an agent outside herdr can still
+  // find comitatus:teams. Outside herdr it is the only output: no herdr
+  // orientation and no status line.
+  test.each([[{}], [{ HERDR_ENV: '0' }]])('outside herdr (%j) injects only the Teams pointer', (env) => {
+    const r = hook.processSessionStart({ env, codexHome: '/nonexistent' });
+    expect(r.systemMessage).toBeUndefined();
+    expect(r.hookSpecificOutput.hookEventName).toBe('SessionStart');
+    expect(r.hookSpecificOutput.additionalContext).toBe(hook.TEAMS_POINTER);
+    expect(r.hookSpecificOutput.additionalContext).not.toMatch(/comitatus:herdr/);
   });
 
-  test('silent when HERDR_ENV !== 1', () => {
-    expect(hook.processSessionStart({ env: { HERDR_ENV: '0' }, codexHome: '/nonexistent' })).toBeNull();
+  test('inside herdr the orientation also carries the Teams pointer', () => {
+    const r = hook.processSessionStart({ env: { HERDR_ENV: '1' }, codexHome: '/nonexistent' });
+    expect(r.hookSpecificOutput.additionalContext).toContain(hook.TEAMS_POINTER);
+  });
+
+  test('the Teams pointer names the request and the skill', () => {
+    expect(hook.TEAMS_POINTER).toMatch(/Teams/);
+    expect(hook.TEAMS_POINTER).toContain('`comitatus:teams`');
   });
 
   test('orients when HERDR_ENV=1', () => {
