@@ -195,9 +195,10 @@ every scope gets the same list.
 not git history. Re-running is idempotent, warns on `deny`/`ask` conflicts, and
 never removes a rule.
 
-**Codex.** Commands that match no rule in `$CODEX_HOME/rules/default.rules` run
-in a sandbox that blocks the herdr socket, and fail with
-`Operation not permitted`. `/herd-setup` lists the prefix rules a member needs
+**Codex.** The sandbox blocks the herdr socket, so a Codex agent runs native
+`herdr` commands outside it by request; run in the sandbox, they fail with
+`Operation not permitted`. A matching rule in `$CODEX_HOME/rules/default.rules`
+lets the request run without a prompt. `/herd-setup` lists the prefix rules a member needs
 (`herdr agent prompt|list|get|read|wait`); add them yourself. Rules for these
 verbs carry no version path and no message body, so they survive upgrades.
 

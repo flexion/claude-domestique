@@ -33,7 +33,7 @@
       "name": "comitatus",
       "source": "./comitatus",
       "description": "herdr orchestration workflows, local agent mail and headless Teams chat messaging for Claude Code and Codex",
-      "version": "2.4.0"
+      "version": "2.4.1"
     },
     {
       "name": "stilus",
