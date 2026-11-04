@@ -198,8 +198,9 @@ Removing the helper does not remove approvals. Every native command needs its ow
 
 - **Claude Code:** run `/herd-setup`. It adds one allow rule per safe native verb.
   - It deliberately leaves `herdr agent start`, `herdr pane run` and `herdr pane send-keys` prompting. Launch arguments after `--` can carry permission-bypass flags, so each launch is a human approval.
-- **Codex:** commands run in a sandbox that blocks the herdr socket. A denied command fails with `PermissionDenied` / `Operation not permitted` and does not always prompt. That error most likely means no rule covers the command: tell the human which command failed. Do not retry it, and do not route it through another script.
-  - The human can add prefix rules to `$CODEX_HOME/rules/default.rules`. A member needs only the messaging and observation verbs:
+- **Codex:** the default sandbox blocks the herdr socket, so a native call run there fails with `PermissionDenied` / `Operation not permitted`. That is a sandbox failure, not an approval rejection, and it does not mean a rule is missing. Request the native command outside the sandbox: set `sandbox_permissions` to `require_escalated` with a one-line justification, in a form a prefix rule can match. Codex checks each command of a simple shell script against its rules, but treats a script with redirection, `$(...)` or variable assignments as one command. A matching `allow` rule then runs it without a prompt; otherwise Codex asks for approval through its own prompt, so do not ask in chat first.
+  - If the request is rejected, by the human or by automatic review, or a `forbidden` rule blocks it, stop that action and tell the human the command and the reason. Do not wrap it in another script to get past the denial, and do not change sandbox or approval settings.
+  - Prefix rules in `$CODEX_HOME/rules/default.rules` let these requests run without a prompt; only the human adds them. A member needs only the messaging and observation verbs:
     ```text
     prefix_rule(pattern=["herdr", "agent", "prompt"], decision="allow")
     prefix_rule(pattern=["herdr", "agent", "list"], decision="allow")

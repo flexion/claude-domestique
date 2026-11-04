@@ -47,7 +47,7 @@ Re-running is idempotent. It warns when a rule it adds is shadowed by an existin
 
 ## Codex
 
-Do not run the script for Codex. Codex reads its own rules from `$CODEX_HOME/rules/default.rules`. Commands without a matching rule run in a sandbox that blocks the herdr socket, so they fail with `Operation not permitted`. Show the user these lines to add themselves; never edit the file for them.
+Do not run the script for Codex. Codex runs commands in a sandbox that blocks the herdr socket, so a native call needs a request to run outside it (`sandbox_permissions` set to `require_escalated`; see Permissions in the herdr skill). Codex reads its rules from `$CODEX_HOME/rules/default.rules`, and an `allow` rule lets that request run without a prompt. Before suggesting a rule, check whether the existing rules already allow the command with `codex execpolicy check --rules <file> -- <command>`. Show the user these lines to add themselves; never edit the file for them.
 
 ```text
 prefix_rule(pattern=["herdr", "agent", "prompt"], decision="allow")

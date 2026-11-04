@@ -41,7 +41,7 @@ herdr agent prompt jay "[from sly reply #a3f9] rerun the failing test in src/api
 | `agent_pane_busy`, `agent_not_ready` | No | Transient. One retry after a short pause is safe. |
 | `agent_prompt_stalled` (with `--wait`) | Submitted, but no working or blocked state was seen within 5 s | Unknown whether the recipient took it. Inspect (see below). |
 | `timeout` | Unknown: the wait can expire before or after submission | Unknown. Inspect (see below). |
-| `PermissionDenied` / `Operation not permitted` | No: your own sandbox blocked the herdr socket | Most likely your harness has no rule for this command. Tell the human which command failed. Do not retry it, and do not route it through another script. |
+| `PermissionDenied` / `Operation not permitted` | No: your own sandbox blocked the herdr socket | A sandbox failure, not an approval rejection. On Codex, if the command ran inside the sandbox, request it once outside (`sandbox_permissions` set to `require_escalated`; see Permissions in `SKILL.md`). If that request is rejected or forbidden, or the error came from outside the sandbox, tell the human the command and the reason, and do not route it through another script. |
 
 **After a stall or timeout, inspect; never infer loss from absence.**
 1. Run `herdr agent read <handle> --source recent-unwrapped --lines 80` and `herdr agent get <handle>`. If `recent` is empty, also try `--source visible`.
