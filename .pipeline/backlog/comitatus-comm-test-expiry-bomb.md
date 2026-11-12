@@ -1,6 +1,9 @@
 # comitatus comm.test.js fails once its fixed message dates age past the sweeper window
 
-**Status**: open
+**Status**: done — fixed on `issue/feature-213/reduce-hook-injection` (2026-11-12),
+because it was the only red check on PR #214 and would redden every PR until fixed.
+`comm.test.js:10` now reads `const NOW = Date.now()`, so the fixtures the spawned
+hook processes sweep are seconds old on any calendar day. comitatus 2.4.1 → 2.4.2.
 **Area**: comitatus
 **Found in**: `issue/feature-213/reduce-hook-injection` (2026-11-12), while running the
 full suite for an unrelated change.

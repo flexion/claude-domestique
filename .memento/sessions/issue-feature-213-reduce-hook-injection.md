@@ -88,6 +88,14 @@ The seven changes the issue asks for, in its own order:
   previous detector. `echo "$(git commit -m x)"` becomes a miss, moved to the
   documented bounds.
 
+- 2026-11-12: PR #214 opened, and its `test (24)` check failed. The only failure was
+  the comitatus date bomb filed to the backlog — `comm.test.js` pinned `NOW` to
+  2026-11-01, the concurrency test spawns the hook as a real process, and that
+  process sweeps with `Date.now()` against a seven-day TTL, so all thirty fixtures
+  expired before delivery. Deferring it would have left this PR and every later one
+  red, so it is fixed here: `NOW = Date.now()`, which is what the backlog item's fix
+  direction asked for. comitatus 2.4.1 → 2.4.2 for the plugin-directory edit.
+
 ## Files Changed
 
 - `mantra/`: `hooks/behavior.js`, `hooks/resources.js`, `hooks/hooks.json`,
@@ -97,8 +105,9 @@ The seven changes the issue asks for, in its own order:
 - `onus/`: `hooks/work-item.js`, `rules/git.md`, `rules/work-items.md`, README
 - `shared/index.js` (rebuilt into `memento/lib/shared.js`, `onus/lib/shared.js`)
 - Tests updated or added in all three plugins and `shared/`
+- `comitatus/hooks/__tests__/comm.test.js` (unrelated red CI check; version bump
+  to 2.4.2 in its manifests and the marketplace)
 
 ## Next Steps
 
-1. Address jay's review findings.
-2. Hand off to the operator: no commit, push, or PR without being asked.
+1. Wait for the re-run of PR #214's checks to go green.
