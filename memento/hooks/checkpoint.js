@@ -72,6 +72,43 @@ function validateSessionFile(sessionPath) {
 }
 
 // ============================================================================
+// Command Inspection
+// ============================================================================
+
+// A command position: the start of the text, or just after a separator that
+// ends the previous command. Optional leading environment assignments, an
+// optional path, `git`, its global options, then the `commit` subcommand.
+// Backslashes are allowed among the spaces so a line continuation still reads
+// as one command.
+const GIT_COMMIT = /(?:^|[;&|(\n])[\s\\]*(?:\w+=\S*[\s\\]+)*(?:[\w./-]*\/)?git[\s\\]+(?:-[cC][\s\\]+\S+[\s\\]+|-\S+[\s\\]+)*commit(?![\w-])/;
+
+// Quoted text is an argument, so a separator inside it starts no command. This
+// matters for the very case the change was about: a grep alternation,
+// `grep -n "a\|git commit\|b" file`, puts a `|` in front of the words, and
+// without this the pattern reads it as a command position and fires.
+const QUOTED = /"(?:\\.|[^"\\])*"|'[^']*'/g;
+
+/**
+ * True when the command runs `git commit`.
+ *
+ * It used to be `command.includes('git commit')`, which fired on a grep whose
+ * search pattern was those two words. Requiring a command position outside
+ * quotes fixes that and is as far as this goes: the reminder is advisory, so a
+ * miss costs one unwritten note and a false positive one ignored line, and
+ * neither is worth parsing shell grammar.
+ *
+ * It therefore does not see a commit that something else launches - `sudo git
+ * commit`, `env VAR=x git commit`, `then git commit` inside an `if` - nor one
+ * written inside quotes, including `echo "$(git commit -m x)"`. In the other
+ * direction it fires on the words at the start of a line in a heredoc body, or
+ * after a `#` comment, which read as command positions without tracking shell
+ * context.
+ */
+function invokesGitCommit(command) {
+  return typeof command === 'string' && GIT_COMMIT.test(command.replace(QUOTED, 'Q'));
+}
+
+// ============================================================================
 // Checkpoint Logic
 // ============================================================================
 
@@ -142,15 +179,13 @@ function buildCheckpointReminder(input) {
       // Pre-commit checkpoint (PreToolUse)
       if (hookEvent === 'PreToolUse') {
         const command = input.tool_input?.command || input.tool_input?.cmd || '';
-        if (command.includes('git commit')) {
+        if (invokesGitCommit(command)) {
           if (!hasSession) {
-            reminder = '⚠️ **STOP**: No session file found. Create session before commit.';
+            reminder = '📝 This commit has no session file. Create one with `memento:session create`, or commit without it if the work does not warrant a session.';
           } else {
             const validation = validateSessionFile(sessionPath);
             if (!validation.valid && validation.issue === 'placeholders') {
-              reminder = `⚠️ **STOP**: Session file has placeholder text: "${validation.pattern}..."\n\nUpdate session BEFORE committing. Consult sessions.md rule.`;
-            } else {
-              reminder = '📝 **Pre-Commit**: Session exists. Verify it\'s updated, then commit session + code together.';
+              reminder = `📝 The session file still has template placeholder text ("${validation.pattern}..."). Fill it in before this commit, then commit session and code together. Details: memento:session.`;
             }
           }
         }
@@ -199,6 +234,7 @@ if (require.main === module) {
 
 // Export for testing
 module.exports = {
+  invokesGitCommit,
   validateSessionFile,
   buildCheckpointReminder,
   buildHookResponse,

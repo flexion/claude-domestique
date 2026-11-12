@@ -7,10 +7,10 @@ function renderObservation(report) {
   if (!report || report.schema_version !== 1 || !['claude', 'codex'].includes(report.host)
       || !report.run_id || !report.observed_at || !report.tokens || !report.metrics) return '';
 
-  const value = metric => {
-    const known = typeof metric?.value === 'number' && Number.isFinite(metric.value) && metric.value >= 0;
-    return known ? `${metric.value}${metric.coverage === report.coverage ? '' : `(${metric.coverage})`}` : 'unknown';
-  };
+  const known = metric => typeof metric?.value === 'number' && Number.isFinite(metric.value) && metric.value >= 0;
+  const value = metric => known(metric)
+    ? `${metric.value}${metric.coverage === report.coverage ? '' : `(${metric.coverage})`}`
+    : 'unknown';
   const categories = report.host === 'codex' ? [
     ['input', 'input_tokens'], ['output', 'output_tokens'],
     ['cached', 'cached_input_tokens'], ['cache-write', 'cache_write_input_tokens'],
@@ -19,6 +19,11 @@ function renderObservation(report) {
     ['input', 'input_tokens'], ['output', 'output_tokens'],
     ['cache-read', 'cache_read_input_tokens'], ['cache-create', 'cache_creation_input_tokens'],
   ];
+  // With no token category known the line carries no measurement: every field
+  // reads "unknown" beside a wall time that counts waiting as much as work. A
+  // whole session was observed in that state. Render nothing instead.
+  if (!categories.some(([, key]) => known(report.tokens[key]))) return '';
+
   const tokens = categories.map(([label, key]) => `${label}=${value(report.tokens[key])}`).join(' ');
   const subsets = report.host === 'codex' ? ' (cache/reasoning are subsets)' : '';
   return `Resources (${report.coverage}${report.truncated ? '; incomplete acquisition' : ''}) observed@${report.observed_at}: tokens ${tokens}${subsets} (session observations; cumulative, may lag completed turns); wall=${value(report.metrics.elapsed_wall_ms)} ms (includes waits)`;

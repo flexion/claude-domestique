@@ -231,6 +231,9 @@ onus uses the shared plugin hook convention for automatic work-item detection in
 | **SessionStart** | New conversation | Detects issue number from branch, injects work item context |
 | **UserPromptSubmit** | Every prompt | Shows issue number in status line |
 
+Git and work-item rules load at session start and from the `onus:commit` and
+`onus:pr` skills when they run, rather than being re-injected periodically.
+
 ### Automatic Issue Detection
 
 When you're on a branch like `issue/feature-42/add-auth`:
@@ -243,7 +246,7 @@ When you're on a branch like `issue/feature-42/add-auth`:
 Every prompt shows issue status:
 
 ```
-📋 Onus: #3 ✓
+📍 Onus ✓
 📋 Issue: 42
 ```
 

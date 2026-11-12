@@ -1,6 +1,6 @@
 {
   "name": "@claude-domestique/onus",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Work-item automation for Claude Code and Codex",
   "main": "index.js",
   "scripts": {

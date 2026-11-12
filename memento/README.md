@@ -132,7 +132,11 @@ memento uses the shared plugin hook convention for automatic session management 
 | Hook | When | What Happens |
 |------|------|--------------|
 | **SessionStart** | New conversation | Creates session file for feature branches, injects session context |
-| **UserPromptSubmit** | Every prompt | Detects branch switches, session triggers, shows status |
+| **UserPromptSubmit** | Every prompt | Injects the session path, detects branch switches and event triggers |
+
+Session rules are loaded at session start and by the `memento:session` and
+`memento:resume` skills when they run. They are not re-injected on a schedule,
+and an ordinary prompt carries the session path and nothing more.
 
 ### Automatic Session Creation
 
@@ -188,7 +192,7 @@ claude
 Every prompt shows session status:
 
 ```
-📂 Memento: #3 ✓
+📍 Memento ✓
 📂 Session: /path/to/.memento/sessions/issue-feature-42-add-auth.md
 ```
 

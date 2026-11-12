@@ -9,19 +9,19 @@
       "name": "memento",
       "source": "./memento",
       "description": "Session persistence - persist context across conversation resets with branch-based session tracking",
-      "version": "0.6.0"
+      "version": "0.7.0"
     },
     {
       "name": "mantra",
       "source": "./mantra",
       "description": "Behavioral skills, recurring guidance, and automatic resource observations for Claude Code and Codex",
-      "version": "0.11.1"
+      "version": "0.12.0"
     },
     {
       "name": "onus",
       "source": "./onus",
       "description": "Work-item automation - fetches issues, generates commits/PRs, syncs progress",
-      "version": "0.5.1"
+      "version": "0.6.0"
     },
     {
       "name": "agent-artifex",

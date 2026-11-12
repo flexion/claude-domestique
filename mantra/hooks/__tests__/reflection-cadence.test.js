@@ -17,13 +17,26 @@ afterEach(() => {
 const event = (name, extra = {}) => ({ session_id: 'a', hook_event_name: name, ...extra });
 const context = output => output.hookSpecificOutput?.additionalContext || '';
 
+// A transcript the collector can read usage from. Without one every token field
+// is unknown and the observation is suppressed, leaving the reflection alone.
+function transcript(host) {
+  const file = path.join(directory, `transcript-${host}.jsonl`);
+  const row = host === 'codex'
+    ? { type: 'event_msg', payload: { type: 'token_count', info: { total_token_usage: { input_tokens: 20, output_tokens: 6 } } } }
+    : { type: 'assistant', session_id: 'a', message: { id: 'message-a', usage: { input_tokens: 10, output_tokens: 5 } } };
+  fs.mkdirSync(directory, { recursive: true });
+  fs.writeFileSync(file, `${JSON.stringify(row)}\n`);
+  return file;
+}
+
 test.each(['claude', 'codex'])('five-minute reflection accompanies fresh resources on %s, without catch-up bursts', host => {
   const options = { host, directory };
-  processInput(event('SessionStart', { source: 'startup' }), options);
+  const transcript_path = transcript(host);
+  processInput(event('SessionStart', { source: 'startup', transcript_path }), options);
   clock.mockReturnValue(1299999);
-  expect(context(processInput(event('PostToolUse'), options))).not.toContain('Briefly recheck');
+  expect(context(processInput(event('PostToolUse', { transcript_path }), options))).not.toContain('Briefly recheck');
   clock.mockReturnValue(1300000);
-  const due = processInput(event('PostToolUse'), options);
+  const due = processInput(event('PostToolUse', { transcript_path }), options);
   expect(context(due)).toContain('Resources');
   expect(context(due)).toContain('Briefly recheck');
   expect(due).not.toHaveProperty('decision');
@@ -75,13 +88,16 @@ test('an atomically published claim survives a missing pointer update without du
   expect(context(processInput(event('PostToolUse'), options))).not.toContain('Briefly recheck');
 });
 
-test('a failed cadence claim preserves the current resource observation', () => {
+// The observation now rides the reflection rather than every tool receipt, so a
+// cadence claim that cannot be published injects nothing at all - and still
+// never reports a reflection it did not win.
+test('a failed cadence claim injects nothing and claims no reflection', () => {
   const options = { host: 'claude', directory };
   processInput(event('SessionStart'), options);
   clock.mockReturnValue(1300000);
   const link = jest.spyOn(fs, 'linkSync').mockImplementation(() => { throw new Error('unavailable'); });
   try {
-    expect(context(processInput(event('PostToolUse'), options))).toContain('Resources');
+    expect(processInput(event('PostToolUse'), options)).toEqual({});
     expect(context(processInput(event('PostToolUse'), options))).not.toContain('Briefly recheck');
   } finally { link.mockRestore(); }
 });
@@ -172,8 +188,11 @@ test('simultaneous abandoned-lock recoverers preserve observations and emit one 
     c.release('read');
     const third = await c.until(message => message.done);
     const results = [first, second, third];
-    expect(results.every(result => result.observation && !result.error)).toBe(true);
-    expect(results.filter(result => result.reflection)).toHaveLength(1);
+    expect(results.every(result => !result.error)).toBe(true);
+    const reflected = results.filter(result => result.reflection);
+    expect(reflected).toHaveLength(1);
+    // The observation rides the due reflection; the others inject nothing.
+    expect(reflected[0].observation).toBe(true);
   } finally {
     for (const child of children) child.kill();
   }

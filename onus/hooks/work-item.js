@@ -141,6 +141,21 @@ function saveWorkItemCache(cacheFile, cache) {
   } catch { /* ignore */ }
 }
 
+/**
+ * Per-session path for the branch/issue state.
+ *
+ * The state records which branch this session last saw, so a single file per
+ * machine makes concurrent agents overwrite each other's branch and rewrite the
+ * issue on nearly every prompt. A configured stateFile is honoured and gets the
+ * same suffix; without a session id the original path is used.
+ */
+function sessionStateFile(sessionId, base = STATE_FILE) {
+  const key = shared.sessionKey(sessionId);
+  if (!key) return base;
+  const extension = path.extname(base);
+  return path.join(path.dirname(base), `${path.basename(base, extension)}-${key}${extension}`);
+}
+
 function loadState(stateFile) {
   try {
     if (fs.existsSync(stateFile)) {
@@ -260,6 +275,8 @@ function onSessionStart(input, base) {
   const source = input.source || 'startup';
 
   ensureStateDir();
+  // Per-session state files would otherwise accumulate, one per agent launch.
+  shared.pruneStateFiles(STATE_DIR, 'state-');
 
   const branch = getCurrentBranch(cwd);
   const issueKey = extractIssueFromBranch(branch, cfg.branchPatterns);
@@ -282,7 +299,7 @@ function onSessionStart(input, base) {
   }
 
   // Update state
-  saveState(cfg.stateFile, {
+  saveState(sessionStateFile(input.session_id, cfg.stateFile), {
     currentIssue: issueKey,
     currentBranch: branch,
     platform,
@@ -325,7 +342,8 @@ function onUserPromptSubmit(input, base) {
   const resolution = resolveProjectConfig(cwd);
   const cfg = { ...DEFAULT_CONFIG, ...resolution.config };
 
-  const state = loadState(cfg.stateFile);
+  const stateFile = sessionStateFile(input.session_id, cfg.stateFile);
+  const state = loadState(stateFile);
   const currentBranch = getCurrentBranch(cwd);
 
   // Detect branch change
@@ -337,7 +355,7 @@ function onUserPromptSubmit(input, base) {
     state.currentBranch = currentBranch;
     state.currentIssue = issueKey;
     state.platform = platform;
-    saveState(cfg.stateFile, state);
+    saveState(stateFile, state);
   }
 
   const staged = hasStagedChanges(cwd);
@@ -412,6 +430,7 @@ module.exports = {
   processUserPromptSubmit,
   loadState,
   saveState,
+  sessionStateFile,
   loadProjectConfig,
   loadWorkItemCache,
   saveWorkItemCache,

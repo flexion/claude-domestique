@@ -2,8 +2,14 @@
 /**
  * mantra behavior hook
  *
- * Injects assessment, debugging, and active-objective guidance on every prompt.
+ * Injects assessment, debugging, and active-objective guidance once per
+ * session, and again when compaction or a resume drops it from context.
  * No state, no counters, no file I/O, no dependencies.
+ *
+ * It ran on every prompt until #213. The argument for stopping: this text names
+ * no objective, so repeating it put process guidance last in context before
+ * every action, and it was already in context unchanged from the start of the
+ * session. Whether the change improves how agents behave is untested.
  */
 
 const CORE_BEHAVIOR = `IMPORTANT: You are a skeptical peer, not an eager subordinate.
@@ -16,7 +22,7 @@ Choose the next action against the active user objective in context; distinguish
 
 const REFLECTION = `Briefly recheck the requested outcome, actual progress, and consequential uncertainty before finishing or after unproductive attempts. When wall-time/token metrics are visible, consider their coverage, recent progress, and what the next action would change, including reflection cost. Continue necessary work; change a stalled approach. Ask when missing facts affect the result; finish when the outcome and required checks are supported. Unavailable metrics stay unknown; sunk consumption alone justifies neither continuing nor stopping. Preserve requirements and permissions; avoid counter commentary.`;
 
-const STARTUP_NOTICE = `Reminders on user prompts, after compaction, and at tool completion about every five minutes will ask you to reconsider progress toward the user goal, using wall-time/token measurements when visible, to choose whether to continue, change approach, or finish. No reflection is needed now.`;
+const STARTUP_NOTICE = `A reminder at tool completion about every five minutes, and after compaction, will ask you to reconsider progress toward the user goal, using wall-time/token measurements when visible, to choose whether to continue, change approach, or finish. No reflection is needed now.`;
 
 const BEHAVIOR = `${CORE_BEHAVIOR}\n\n${REFLECTION}`;
 
@@ -35,15 +41,9 @@ function processInput(input) {
     };
   }
 
-  if (hookEvent === 'UserPromptSubmit') {
-    return {
-      hookSpecificOutput: {
-        hookEventName: 'UserPromptSubmit',
-        additionalContext: BEHAVIOR
-      }
-    };
-  }
-
+  // Every other event, UserPromptSubmit included, injects nothing. The hook is
+  // no longer wired to UserPromptSubmit in either manifest; this keeps a stale
+  // wiring silent rather than reinstating the per-prompt text.
   return {};
 }
 

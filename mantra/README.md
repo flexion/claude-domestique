@@ -26,8 +26,9 @@ installed plugin's skills can be available while its hooks remain untrusted.
 
 ## Automatic guidance
 
-[The hook](hooks/behavior.js) injects core guidance on `SessionStart`
-and every `UserPromptSubmit`. It reinforces:
+[The hook](hooks/behavior.js) injects core guidance on `SessionStart`, once per
+session and again whenever compaction, a resume or a clear drops it from context.
+It is not injected on `UserPromptSubmit`. It reinforces:
 
 - Assessment of correctness, architecture, alternatives, and material risks;
   agreement with sound proposals and revision for evidence rather than pressure.
@@ -48,14 +49,14 @@ by the host according to its own conventions.
 
 SessionStart also refreshes guidance after compaction (source: compact). During
 an autonomous turn, tool completion adds the same reflection about every five
-minutes, alongside fresh resource observations. Each prompt or session start
-resets that interval. Stop adds no continuation. The interval is provisional;
+minutes, carrying a fresh resource observation when one has measured values. Each
+prompt or session start resets that interval. Stop adds no continuation. The interval is provisional;
 [the behavioral checks](../docs/reviews/mantra-resource-reflection.md) have not
 demonstrated improved judgment.
 
 On `SessionStart` with `source: "startup"` or `"clear"`, the hook adds a short
 notice explaining the later reminders and says no reflection is needed now.
-Prompts and other session-start sources (including resume and compact) get the
+Other session-start sources (including resume and compact) get the
 self-contained reflection instead, triggered before finishing or after
 unproductive attempts. The notice does not establish persistent priming or
 behavioral benefit.

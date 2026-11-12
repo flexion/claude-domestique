@@ -167,6 +167,66 @@ describe('shared module', () => {
         .toBe(path.join(os.homedir(), '.claude', 'testplugin-state.json'));
     });
 
+    it('getStateFile separates sessions by session_id', () => {
+      expect(shared.getStateFile('TestPlugin', tmpDir, 'abc-123'))
+        .toBe(path.join(tmpDir, '.claude', 'testplugin-state-abc-123.json'));
+      expect(shared.getStateFile('TestPlugin', tmpDir, 'abc-123'))
+        .not.toBe(shared.getStateFile('TestPlugin', tmpDir, 'def-456'));
+    });
+
+    it('getStateFile keeps a session id from escaping the state directory', () => {
+      const stateFile = shared.getStateFile('TestPlugin', tmpDir, '../../etc/passwd');
+      expect(path.dirname(stateFile)).toBe(path.join(tmpDir, '.claude'));
+      expect(stateFile).not.toContain('..');
+    });
+
+    // One file per session per plugin, with a herd launching agents all day and
+    // nothing else ever deleting them.
+    it('pruneStateFiles removes stale state and keeps recent and unrelated files', () => {
+      const directory = path.join(tmpDir, '.claude');
+      fs.mkdirSync(directory, { recursive: true });
+      const stale = path.join(directory, 'test-state-old.json');
+      const recent = path.join(directory, 'test-state-new.json');
+      const other = path.join(directory, 'other-plugin-state-old.json');
+      const unrelated = path.join(directory, 'settings.json');
+      for (const file of [stale, recent, other, unrelated]) fs.writeFileSync(file, '{}');
+
+      const past = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
+      for (const file of [stale, other, unrelated]) fs.utimesSync(file, past, past);
+
+      shared.pruneStateFiles(directory, 'test-state-');
+
+      expect(fs.existsSync(stale)).toBe(false);
+      expect(fs.existsSync(recent)).toBe(true);
+      expect(fs.existsSync(other)).toBe(true);
+      expect(fs.existsSync(unrelated)).toBe(true);
+    });
+
+    it('pruneStateFiles tolerates a directory that does not exist', () => {
+      expect(() => shared.pruneStateFiles(path.join(tmpDir, 'absent'), 'test-state-')).not.toThrow();
+    });
+
+    it('a session start sweeps the plugin own stale state', () => {
+      const directory = path.join(tmpDir, '.claude');
+      fs.mkdirSync(directory, { recursive: true });
+      const stale = path.join(directory, 'test-state-gone.json');
+      fs.writeFileSync(stale, '{}');
+      const past = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      fs.utimesSync(stale, past, past);
+
+      shared.processSessionStart({ pluginName: 'Test', pluginRoot: tmpDir, homeDir: tmpDir }, { cwd: tmpDir });
+
+      expect(fs.existsSync(stale)).toBe(false);
+    });
+
+    it('sessionKey rejects ids that carry no usable characters', () => {
+      expect(shared.sessionKey(null)).toBeNull();
+      expect(shared.sessionKey('')).toBeNull();
+      expect(shared.sessionKey('///')).toBeNull();
+      expect(shared.sessionKey(42)).toBeNull();
+      expect(shared.sessionKey('a'.repeat(200))).toHaveLength(64);
+    });
+
     it('loadState returns default when file does not exist', () => {
       const stateFile = path.join(tmpDir, 'state.json');
       const state = shared.loadState(stateFile, { count: 0 });
@@ -226,7 +286,17 @@ describe('shared module', () => {
       const result = shared.processSessionStart(config, input);
 
       expect(result.systemMessage).toBe('Custom status');
-      expect(result.hookSpecificOutput.additionalContext).toBe('Custom context');
+      expect(result.hookSpecificOutput.additionalContext).toContain('Custom context');
+    });
+
+    it('states the precedence reminder once, at session start', () => {
+      const config = { pluginName: 'Test', pluginRoot: tmpDir, homeDir: tmpDir };
+
+      const started = shared.processSessionStart(config, { cwd: tmpDir });
+      const prompted = shared.processUserPromptSubmit(config, { cwd: tmpDir });
+
+      expect(started.hookSpecificOutput.additionalContext).toContain('Precedence:');
+      expect(prompted.hookSpecificOutput.additionalContext).not.toContain('Precedence:');
     });
 
     it('adds reloaded indicator for compact source', () => {
@@ -249,13 +319,9 @@ describe('shared module', () => {
   });
 
   describe('processUserPromptSubmit', () => {
-    // Regression: these two assertions used to depend on whatever count a
-    // previous run had left in the developer's real ~/.claude/test-state.json.
-    // The full suite passed only because processSessionStart happens to run
-    // first and resets the counter to 0; running this test alone, or reordering
-    // the file, failed with "expected 1, received 3". State is now confined to
-    // tmpDir via config.homeDir.
-    it('does not touch the real home directory', () => {
+    // A prompt no longer touches any state file: the counter that needed one
+    // was removed once nothing read it.
+    it('writes nothing to disk', () => {
       const realStateFile = shared.getStateFile('Test');
       const before = fs.existsSync(realStateFile)
         ? fs.readFileSync(realStateFile, 'utf8')
@@ -268,33 +334,19 @@ describe('shared module', () => {
         ? fs.readFileSync(realStateFile, 'utf8')
         : null;
       expect(after).toBe(before);
-      expect(fs.existsSync(path.join(tmpDir, '.claude', 'test-state.json'))).toBe(true);
+      expect(fs.existsSync(path.join(tmpDir, '.claude', 'test-state.json'))).toBe(false);
     });
 
-    it('starts from zero regardless of prior runs', () => {
-      // Pre-seed the isolated state as a stale previous run would have.
-      const isolated = path.join(tmpDir, '.claude', 'test-state.json');
-      fs.mkdirSync(path.dirname(isolated), { recursive: true });
-      fs.writeFileSync(isolated, JSON.stringify({ count: 7 }));
-
+    it('returns a status line that carries no counter', () => {
       const config = { pluginName: 'Test', pluginRoot: tmpDir, homeDir: tmpDir };
-      shared.processSessionStart(config, { cwd: tmpDir });
-      const result = shared.processUserPromptSubmit(config, { cwd: tmpDir });
 
-      expect(result.hookSpecificOutput.promptCount).toBe(1);
-    });
+      const first = shared.processUserPromptSubmit(config, { cwd: tmpDir });
+      const second = shared.processUserPromptSubmit(config, { cwd: tmpDir });
 
-    it('increments counter and returns structured response', () => {
-      const config = { pluginName: 'Test', pluginRoot: tmpDir, homeDir: tmpDir };
-      const input = { cwd: tmpDir };
-
-      const result1 = shared.processUserPromptSubmit(config, input);
-      const result2 = shared.processUserPromptSubmit(config, input);
-
-      expect(result1.hookSpecificOutput.promptCount).toBe(1);
-      expect(result2.hookSpecificOutput.promptCount).toBe(2);
-      expect(result1.systemMessage).toMatch(/#1/);
-      expect(result2.systemMessage).toMatch(/#2/);
+      expect(first.systemMessage).toBe('📍 Test ✓');
+      expect(second.systemMessage).toBe(first.systemMessage);
+      expect(first.hookSpecificOutput).not.toHaveProperty('promptCount');
+      expect(first.hookSpecificOutput.additionalContext).not.toMatch(/#\d/);
     });
 
     it('calls onUserPromptSubmit callback when provided', () => {
@@ -312,8 +364,23 @@ describe('shared module', () => {
       const result = shared.processUserPromptSubmit(config, input);
 
       expect(result.hookSpecificOutput.additionalContext).toContain('Custom prompt context');
-      expect(result.hookSpecificOutput.additionalContext).toContain('IMPORTANT: You MUST prioritize');
       expect(result.hookSpecificOutput.custom).toBe(true);
+    });
+
+    // The rule files were re-read and re-injected every tenth prompt. #213
+    // removed that: rules load at session start and again from the skill that
+    // acts on them.
+    it('never re-injects the rule files, however many prompts arrive', () => {
+      const rulesDir = path.join(tmpDir, 'rules');
+      fs.mkdirSync(rulesDir, { recursive: true });
+      fs.writeFileSync(path.join(rulesDir, 'test.md'), '---\nrule: do the thing\n---');
+
+      const config = { pluginName: 'Test', pluginRoot: tmpDir, homeDir: tmpDir };
+
+      for (let prompt = 1; prompt <= 25; prompt += 1) {
+        const result = shared.processUserPromptSubmit(config, { cwd: tmpDir });
+        expect(result.hookSpecificOutput.additionalContext).toBe('📍 Test ✓');
+      }
     });
   });
 
@@ -346,9 +413,10 @@ describe('shared module', () => {
     });
   });
 
-  describe('DEFAULT_REFRESH_INTERVAL', () => {
-    it('is exported and has correct value', () => {
-      expect(shared.DEFAULT_REFRESH_INTERVAL).toBe(10);
+  describe('PRECEDENCE_REMINDER', () => {
+    it('is exported and orders project guidance above plugin context', () => {
+      expect(shared.PRECEDENCE_REMINDER).toContain('AGENTS.md/CLAUDE.md');
+      expect(shared.PRECEDENCE_REMINDER).toContain('plugin context');
     });
   });
 });

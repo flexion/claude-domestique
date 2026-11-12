@@ -19,8 +19,8 @@ describe('mantra behavior hook', () => {
 
     // This guards the removed injection requirement, not an agent's judgment.
     // Fresh behavioral comparisons verify how agents use the revised guidance.
-    it.each(['SessionStart', 'UserPromptSubmit'])('does not inject an external source quota on %s', hookEvent => {
-      const context = hook.processInput({ hook_event_name: hookEvent })
+    it('does not inject an external source quota on SessionStart', () => {
+      const context = hook.processInput({ hook_event_name: 'SessionStart' })
         .hookSpecificOutput.additionalContext;
 
       expect(context).not.toMatch(/(?:minimum|at least|requires?)\s+(?:3|three)\s+(?:documented\s+)?(?:examples|sources)/i);
@@ -46,20 +46,16 @@ describe('mantra behavior hook', () => {
       expect(result.hookSpecificOutput.additionalContext).not.toContain('No reflection is needed now.');
     });
 
-    it.each(['SessionStart', 'UserPromptSubmit'])('delivers active-objective guidance on %s', hookEvent => {
-      const context = hook.processInput({ hook_event_name: hookEvent })
+    it('delivers active-objective guidance on SessionStart', () => {
+      const context = hook.processInput({ hook_event_name: 'SessionStart' })
         .hookSpecificOutput.additionalContext;
 
       // Checks hook delivery; multi-turn agent comparisons establish behavior.
       expect(context).toContain('active user objective');
     });
 
-    it.each([
-      ['SessionStart', 'startup'],
-      ['SessionStart', 'resume'],
-      ['UserPromptSubmit', undefined]
-    ])('delivers uncertainty-scope guidance on %s (%s)', (hookEvent, source) => {
-      const context = hook.processInput({ hook_event_name: hookEvent, source })
+    it.each(['startup', 'resume', 'compact', 'clear'])('delivers uncertainty-scope guidance on SessionStart (%s)', source => {
+      const context = hook.processInput({ hook_event_name: 'SessionStart', source })
         .hookSpecificOutput.additionalContext;
 
       expect(context).toContain('An uncertainty about existing behavior is not, by itself, a requirement to change it or a blocker to the requested work.');
@@ -77,13 +73,11 @@ describe('mantra behavior hook', () => {
       expect(result.hookSpecificOutput.additionalContext).toBe(hook.BEHAVIOR);
     });
 
-    it('returns additionalContext on UserPromptSubmit', () => {
-      const result = hook.processInput({
-        hook_event_name: 'UserPromptSubmit'
-      });
-
-      expect(result.hookSpecificOutput.hookEventName).toBe('UserPromptSubmit');
-      expect(result.hookSpecificOutput.additionalContext).toBe(hook.BEHAVIOR);
+    // #213: the guidance is injected once per session and again when compaction
+    // drops it, never per prompt. Restating it made process guidance the last
+    // thing read before every action, and it names no objective.
+    it('injects nothing on UserPromptSubmit', () => {
+      expect(hook.processInput({ hook_event_name: 'UserPromptSubmit' })).toEqual({});
     });
 
     it('returns empty object for unknown events', () => {
@@ -94,12 +88,15 @@ describe('mantra behavior hook', () => {
       expect(result).toEqual({});
     });
 
-    it('injects same content on SessionStart and UserPromptSubmit', () => {
-      const sessionStart = hook.processInput({ hook_event_name: 'SessionStart' });
-      const promptSubmit = hook.processInput({ hook_event_name: 'UserPromptSubmit' });
+    it('is not wired to UserPromptSubmit on either host', () => {
+      for (const manifest of ['../hooks.json', '../codex.json']) {
+        const events = require(manifest).hooks;
+        const prompt = JSON.stringify(events.UserPromptSubmit);
+        const start = JSON.stringify(events.SessionStart);
 
-      expect(sessionStart.hookSpecificOutput.additionalContext)
-        .toBe(promptSubmit.hookSpecificOutput.additionalContext);
+        expect(prompt).not.toContain('behavior.js');
+        expect(start).toContain('behavior.js');
+      }
     });
   });
 });

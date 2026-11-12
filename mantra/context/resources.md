@@ -12,9 +12,12 @@ neither better judgment nor an optimal reminder interval.
 
 ## Delivery and cadence
 
-SessionStart adds measurement guidance; UserPromptSubmit and PostToolUse add the
-fresh observation. Claude also injects after PostToolUseFailure. PreToolUse, Stop
-and SessionEnd collect without context or decisions. Stop never forces another
+SessionStart adds measurement guidance. The fresh observation is injected only
+with the five-minute reflection, at PostToolUse (and PostToolUseFailure on
+Claude), and only when at least one token category has a measured value: a line
+of "unknown" beside a wall time that counts waiting is not a measurement.
+UserPromptSubmit, PreToolUse, Stop and SessionEnd collect without context or
+decisions; a prompt also resets the reflection interval. Stop never forces another
 model request. The [Claude](https://code.claude.com/docs/en/hooks) and
 [Codex](https://learn.chatgpt.com/docs/hooks) contracts support additionalContext
 on the delivery events.
@@ -150,9 +153,9 @@ tool call (roughly 20 seconds across 200 tools). Retention scanning adds work on
 session start. Collector samples exclude process startup and the final write;
 external timings include them.
 
-Observations remain enabled on every prompt and supported tool completion,
-independent of the reflection interval. A typical observation is about 230
-characters; that is not an exact model token count. Repeated observations add to
+Observations are injected only with the due reflection, so their frequency is
+bounded by the five-minute interval rather than by prompt and tool volume. A
+typical observation is about 230 characters; that is not an exact model token count. Repeated observations add to
 history and later input/cache reads. The earlier reflection-only overhead figures
 do not measure this always-on version. No resource savings or judgment improvement
 has been demonstrated.

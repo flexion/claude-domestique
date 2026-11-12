@@ -29,7 +29,7 @@ skill: onus:validate-criteria (check-completion)
 
 ## SESSION INTEGRATION
 with-memento: populate-session-from-issue
-with-mantra: refresh-issue-context-periodically
+refresh: onus:fetch when issue context is stale (no periodic re-injection)
 shared-convention: issue-N -> branch -> metadata -> session
 
 ## COMMIT DISCIPLINE

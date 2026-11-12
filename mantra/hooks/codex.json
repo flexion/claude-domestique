@@ -22,11 +22,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/behavior.js\"",
-            "timeout": 3
-          },
-          {
-            "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/resources.js\" --host codex",
             "timeout": 3
           }

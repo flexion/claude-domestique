@@ -10,6 +10,7 @@ const { spawnSync } = require('child_process');
 const {
   loadState,
   saveState,
+  sessionStateFile,
   loadProjectConfig,
   loadWorkItemCache,
   saveWorkItemCache,
@@ -431,8 +432,10 @@ describe('onus work-item hook', () => {
       git('-c', 'user.name=t', '-c', 'user.email=t@example.com', 'commit', '-q', '--allow-empty', '-m', 'init');
     }
 
-    function savedState() {
-      return JSON.parse(fs.readFileSync(path.join(home, '.claude', 'onus', 'state.json'), 'utf8'));
+    // State is keyed by session so concurrent agents in different worktrees do
+    // not overwrite each other's branch; runHook sends session_id 'test'.
+    function savedState(session = 'test') {
+      return JSON.parse(fs.readFileSync(path.join(home, '.claude', 'onus', `state-${session}.json`), 'utf8'));
     }
 
     function cachedKeys() {
@@ -472,8 +475,18 @@ describe('onus work-item hook', () => {
     it('keeps state under HOME/.claude/onus', () => {
       runHook('SessionStart');
 
-      expect(fs.existsSync(path.join(home, '.claude', 'onus', 'state.json'))).toBe(true);
+      expect(fs.existsSync(path.join(home, '.claude', 'onus', 'state-test.json'))).toBe(true);
       expect(fs.existsSync(path.join(tmpDir, '.onus'))).toBe(false);
+    });
+
+    it('gives each session its own state file', () => {
+      expect(sessionStateFile('alpha', '/state/state.json')).toBe('/state/state-alpha.json');
+      expect(sessionStateFile('alpha', '/state/state.json'))
+        .not.toBe(sessionStateFile('beta', '/state/state.json'));
+    });
+
+    it('falls back to the shared path when the host sends no session id', () => {
+      expect(sessionStateFile(undefined, '/state/state.json')).toBe('/state/state.json');
     });
   });
 
