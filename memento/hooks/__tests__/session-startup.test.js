@@ -281,6 +281,60 @@ describe('memento session-startup hook', () => {
       return result.hookSpecificOutput.additionalContext;
     }
 
+    function prompt(extra = {}, overrides = {}) {
+      return hook.processHook(
+        { hook_event_name: 'UserPromptSubmit', cwd: tmpDir, ...extra },
+        { homeDir: path.join(tmpDir, 'home'), ...overrides }
+      );
+    }
+
+    // #213: an ordinary prompt carries the session path and nothing else. The
+    // resumption instruction belongs to session start, and the every-fifth-prompt
+    // "has anything happened worth recording?" produced records to answer itself.
+    it('injects only the session path on an ordinary prompt', () => {
+      mockGit();
+      start();
+
+      for (let i = 1; i <= 12; i += 1) {
+        const context = contextOf(prompt());
+        expect(context).toContain('📂 Session: ');
+        expect(context).not.toContain('Session Check');
+        expect(context).not.toContain('worth recording');
+        expect(context).not.toContain('Read session file FIRST');
+        expect(context).not.toContain('assess if work warrants');
+      }
+    });
+
+    it('still reports an event-driven trigger', () => {
+      mockGit();
+      start();
+
+      const context = contextOf(prompt({ toolsUsed: ['TodoWrite'] }));
+
+      expect(context).toContain('Session Update Suggested');
+      expect(context).toContain('Todos changed');
+    });
+
+    // One state file per machine made a worktree that never changed branch
+    // report "Branch Switch Detected" because another agent had written its own
+    // branch into the shared file.
+    it('does not report a branch switch another session caused', () => {
+      mockGit();
+      const home = path.join(tmpDir, 'home');
+      // A second agent, on its own branch, writing its own state.
+      hook.saveState({ branch: 'issue/feature-99/other' }, home, 'other-session');
+      hook.processHook(
+        { hook_event_name: 'SessionStart', cwd: tmpDir, session_id: 'this-session' },
+        { homeDir: home }
+      );
+
+      const context = contextOf(prompt({ session_id: 'this-session' }, { homeDir: home }));
+
+      expect(context).not.toContain('Branch Switch Detected');
+      expect(hook.loadState(home, 'other-session').branch).toBe('issue/feature-99/other');
+      expect(hook.loadState(home, 'this-session').branch).toBe(branch);
+    });
+
     it('creates a new session under .memento/sessions by default', () => {
       mockGit();
       start();
@@ -495,7 +549,7 @@ describe('memento session-startup hook', () => {
   });
 
   describe('isolated state paths', () => {
-    it('threads an injected home through shared counters and branch state', () => {
+    it('threads an injected home through branch state', () => {
       const defaultHome = path.join(tmpDir, 'default-home');
       const isolatedHome = path.join(tmpDir, 'isolated-home');
       const homedir = jest.spyOn(os, 'homedir').mockReturnValue(defaultHome);
@@ -517,7 +571,7 @@ describe('memento session-startup hook', () => {
       expect(JSON.parse(fs.readFileSync(
         path.join(isolatedHome, '.claude', 'memento-state.json'),
         'utf8'
-      ))).toEqual({ count: 0, branch: 'issue/feature-42/auth' });
+      ))).toEqual({ branch: 'issue/feature-42/auth' });
       expect(fs.existsSync(path.join(defaultHome, '.claude', 'memento-state.json'))).toBe(false);
       homedir.mockRestore();
     });

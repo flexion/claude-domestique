@@ -166,12 +166,16 @@ function processInput(input, options = {}) {
   let context = '';
   if (event === 'SessionStart' || event === 'UserPromptSubmit') checkpoint(input, options, true);
   if (event === 'SessionStart' && input.source !== 'resume') context = INJECT_GUIDANCE;
-  const observationEvents = report.host === 'codex'
-    ? ['UserPromptSubmit', 'PostToolUse']
-    : ['UserPromptSubmit', 'PostToolUse', 'PostToolUseFailure'];
-  if (observationEvents.includes(event)) {
-    context = renderObservation(report);
-    if (event !== 'UserPromptSubmit' && checkpoint(input, options, false)) context += `\n\n${REFLECTION}`;
+  // Collection still runs on every event; injection rides the five-minute
+  // reflection alone. The observation used to accompany every prompt and every
+  // tool result, which is where a measurement nobody asked for turns into the
+  // most recent thing read before acting.
+  const reflectionEvents = report.host === 'codex'
+    ? ['PostToolUse']
+    : ['PostToolUse', 'PostToolUseFailure'];
+  if (reflectionEvents.includes(event) && checkpoint(input, options, false)) {
+    const observation = renderObservation(report);
+    context = observation ? `${observation}\n\n${REFLECTION}` : REFLECTION;
   }
   return context ? { hookSpecificOutput: { hookEventName: event, additionalContext: context } } : {};
 }

@@ -140,7 +140,92 @@ Do something
     });
   });
 
+  // The check used to fire on any command whose text contained "git commit",
+  // including a grep searching for those words. It now requires a command
+  // position. It is a shape test for an advisory reminder, not a shell parser,
+  // and the bounds that follow are the deliberate cost of that.
+  describe('invokesGitCommit', () => {
+    it.each([
+      'git commit -m "test"',
+      'git commit',
+      '  git   commit  --amend',
+      'git -C /repo commit -m "x"',
+      'git -c user.name=someone commit',
+      'git --no-pager commit',
+      '/usr/bin/git commit -m "x"',
+      'GIT_AUTHOR_NAME=someone git commit',
+      'npm test && git commit -m "x"',
+      'git add . ; git commit -m "x"',
+      'git status | cat && git commit',
+      'git \\\n  commit -m "x"',
+      'git commit -m "$(cat <<EOF\nmessage body\nEOF\n)"',
+      'git commit -m "document git commit format"',
+      'git commit -m "don\'t break"'
+    ])('recognizes %s', command => {
+      expect(hook.invokesGitCommit(command)).toBe(true);
+    });
+
+    it.each([
+      "grep -rn 'git commit' .",
+      'grep -rn "git commit" docs/',
+      'echo "run git commit next"',
+      'rg "git commit" --files-with-matches',
+      'git log --grep="git commit"',
+      'git commit-tree HEAD^{tree}',
+      'git status',
+      'cat notes.md # git commit',
+      // Regression: a separator inside quotes is not a command position. The
+      // grep that prompted this change was an alternation, and the suite passed
+      // while the detector still fired on it - every grep case here had been
+      // written without a `|`.
+      'grep -n "additionalContext\\|git commit\\|remind" file.js',
+      'grep -E "push|git commit|merge" notes.md',
+      "rg -e 'push|git commit' .",
+      'echo "a | git commit | b"',
+      '',
+      undefined,
+      null
+    ])('does not fire on %s', command => {
+      expect(hook.invokesGitCommit(command)).toBe(false);
+    });
+
+    // Bounds, recorded so a later change notices if it crosses them. Each costs
+    // one unwritten note on a commit that is still free to proceed.
+    it.each([
+      ['a sudo wrapper', 'sudo git commit'],
+      ['an env wrapper', 'env GIT_AUTHOR_NAME=someone git commit'],
+      ['a shell keyword', 'if true; then git commit; fi'],
+      ['a quoted substitution', 'echo "$(git commit -m x)"']
+    ])('does not see a commit launched behind %s', (_label, command) => {
+      expect(hook.invokesGitCommit(command)).toBe(false);
+    });
+
+    // And the other direction: a command position inside data still reads as
+    // one. The cost is an ignored line.
+    it.each([
+      ['a heredoc body', 'cat <<EOF > notes.md\ngit commit -m "example"\nEOF'],
+      ['a trailing comment', 'echo ok # docs; git commit example']
+    ])('fires on the words written at a line start inside %s', (_label, command) => {
+      expect(hook.invokesGitCommit(command)).toBe(true);
+    });
+  });
+
   describe('buildCheckpointReminder for git commit', () => {
+    it('does not warn when a grep merely searches for the words', () => {
+      mockExecSync.mockImplementation((cmd) => {
+        if (cmd.includes('rev-parse --show-toplevel')) return tmpDir + '\n';
+        if (cmd.includes('rev-parse --abbrev-ref')) return 'feature/test\n';
+        throw new Error('Unknown command');
+      });
+
+      expect(hook.buildCheckpointReminder({
+        tool_name: 'Bash',
+        hook_event_name: 'PreToolUse',
+        tool_input: { command: "grep -rn 'git commit' ." },
+        cwd: tmpDir
+      })).toBeNull();
+    });
+
     beforeEach(() => {
       // Setup git mocks
       mockExecSync.mockImplementation((cmd) => {
@@ -159,8 +244,10 @@ Do something
       };
 
       const result = hook.buildCheckpointReminder(input);
-      expect(result).toContain('STOP');
-      expect(result).toContain('No session file found');
+      expect(result).toContain('no session file');
+      expect(result).toContain('memento:session create');
+      // Plainly conditional, not an order: the commit may legitimately proceed.
+      expect(result).not.toMatch(/STOP|MUST/);
     });
 
     it('finds a session in the default .memento location', () => {
@@ -174,7 +261,10 @@ Do something
         tool_input: { command: 'git commit -m "test"' },
         cwd: tmpDir
       });
-      expect(result).toContain('Pre-Commit');
+      // A session that exists and is filled in needs nothing said about it.
+      // Silence here is what distinguishes found from missing: a missing
+      // session still reports itself.
+      expect(result).toBeNull();
     });
 
     it('finds a session in a configured sessionsDir', () => {
@@ -193,7 +283,7 @@ Do something
         tool_input: { command: 'git commit -m "test"' },
         cwd: tmpDir
       });
-      expect(result).toContain('Pre-Commit');
+      expect(result).toBeNull();
     });
 
     it('finds a legacy-only session instead of reporting it missing', () => {
@@ -207,8 +297,7 @@ Do something
         tool_input: { command: 'git commit -m "test"' },
         cwd: tmpDir
       });
-      expect(result).not.toContain('No session file found');
-      expect(result).toContain('Pre-Commit');
+      expect(result).toBeNull();
     });
 
     it('warns when session has placeholders', () => {
@@ -228,12 +317,12 @@ Do something
       };
 
       const result = hook.buildCheckpointReminder(input);
-      expect(result).toContain('STOP');
       expect(result).toContain('placeholder text');
       expect(result).toContain('[Describe the objective');
+      expect(result).not.toMatch(/STOP|MUST/);
     });
 
-    it('provides normal reminder when session is valid', () => {
+    it('says nothing when the session is valid', () => {
       // Create properly filled session
       const sessionsDir = path.join(tmpDir, '.claude', 'sessions');
       fs.mkdirSync(sessionsDir, { recursive: true });
@@ -249,10 +338,10 @@ Do something
         cwd: tmpDir
       };
 
-      const result = hook.buildCheckpointReminder(input);
-      expect(result).toContain('Pre-Commit');
-      expect(result).toContain('Session exists');
-      expect(result).not.toContain('STOP');
+      // A filled-in session at a commit is the expected case. It used to inject
+      // "Pre-Commit: Session exists. Verify it's updated" on every commit, which
+      // told the agent nothing it could act on.
+      expect(hook.buildCheckpointReminder(input)).toBeNull();
     });
 
     it('returns null when on main branch', () => {
@@ -280,7 +369,7 @@ Do something
         tool_input: { cmd: 'git commit -m "test"' },
         cwd: tmpDir
       };
-      expect(hook.buildCheckpointReminder(input)).toContain('STOP');
+      expect(hook.buildCheckpointReminder(input)).toContain('no session file');
     });
 
     it('emits the portable hook response envelope', () => {
@@ -292,7 +381,7 @@ Do something
       };
       const result = hook.buildHookResponse(input);
       expect(result.hookSpecificOutput.hookEventName).toBe('PreToolUse');
-      expect(result.hookSpecificOutput.additionalContext).toContain('STOP');
+      expect(result.hookSpecificOutput.additionalContext).toContain('no session file');
       expect(result.additionalContext).toBeUndefined();
     });
   });

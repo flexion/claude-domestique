@@ -21,12 +21,6 @@ const path = require('path');
 const os = require('os');
 
 // ============================================================================
-// Configuration
-// ============================================================================
-
-const DEFAULT_REFRESH_INTERVAL = 10;
-
-// ============================================================================
 // File Discovery
 // ============================================================================
 
@@ -134,17 +128,62 @@ function ensureDir(dirPath) {
  * Resolve a plugin's state file.
  *
  * `homeDir` is injectable so callers - tests especially - can redirect state
- * away from the real home directory. Without it, a test that exercises the
- * prompt counter reads and writes the user's actual
- * ~/.claude/<plugin>-state.json, which both pollutes the machine and makes the
- * assertion depend on whatever count a previous run left behind.
+ * away from the real home directory, rather than reading and writing the
+ * user's actual ~/.claude/<plugin>-state.json.
+ *
+ * `sessionId` separates concurrent agents. A single file per machine is shared
+ * by every session on it, so the recorded branch belongs to whichever session
+ * wrote last - which made memento announce a branch switch in worktrees that
+ * had never changed branch. The hook input carries session_id; when it is
+ * absent the unsuffixed path is still used, so hosts that send no id keep
+ * working as before. Stale files are swept at session start by
+ * [pruneStateFiles].
  *
  * @param {string} pluginName
  * @param {string} [homeDir] - Defaults to the current user's home directory
+ * @param {string} [sessionId] - Hook input session_id, when the host sends one
  * @returns {string} Absolute path to the state file
  */
-function getStateFile(pluginName, homeDir = os.homedir()) {
-  return path.join(homeDir, '.claude', `${pluginName.toLowerCase()}-state.json`);
+function getStateFile(pluginName, homeDir = os.homedir(), sessionId = null) {
+  const suffix = sessionKey(sessionId);
+  const name = `${pluginName.toLowerCase()}-state${suffix ? `-${suffix}` : ''}.json`;
+  return path.join(homeDir, '.claude', name);
+}
+
+/**
+ * Reduce a host session id to a filename-safe key, or null when unusable.
+ * Any character outside [A-Za-z0-9_-] is dropped rather than escaped - dots
+ * included, so no id can form a traversal or a hidden file. The key only has to
+ * be stable and distinct per session, not reversible.
+ */
+function sessionKey(sessionId) {
+  if (typeof sessionId !== 'string') return null;
+  const key = sessionId.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64);
+  return key.length > 0 ? key : null;
+}
+
+// One state file per session means the directory grows by a file per plugin per
+// agent launch, and a herd launches a lot of agents. Nothing else would ever
+// remove them, so each session start sweeps the ones that have gone stale.
+const STATE_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+
+function pruneStateFiles(directory, prefix, now = Date.now()) {
+  let names;
+  try {
+    names = fs.readdirSync(directory);
+  } catch {
+    return; // No state directory yet.
+  }
+
+  for (const name of names) {
+    if (!name.startsWith(prefix) || !name.endsWith('.json')) continue;
+    const file = path.join(directory, name);
+    try {
+      if (now - fs.statSync(file).mtimeMs > STATE_RETENTION_MS) fs.unlinkSync(file);
+    } catch {
+      // A concurrent session may have removed or replaced it.
+    }
+  }
 }
 
 function loadState(filePath, defaultValue = {}) {
@@ -181,6 +220,8 @@ function estimateTokens(content) {
 // Unified Hook Handlers
 // ============================================================================
 
+const PRECEDENCE_REMINDER = 'Precedence: 1) project rules and AGENTS.md/CLAUDE.md, 2) plugin context, 3) default behavior.';
+
 /**
  * Process SessionStart event
  * @param {object} config - Plugin config
@@ -189,10 +230,8 @@ function estimateTokens(content) {
  */
 function processSessionStart(config, input) {
   const { pluginName, pluginRoot, homeDir } = config;
-  const stateFile = getStateFile(pluginName, homeDir);
 
-  // Reset state
-  saveState(stateFile, { count: 0 });
+  pruneStateFiles(path.join(homeDir || os.homedir(), '.claude'), `${pluginName.toLowerCase()}-state-`);
 
   // Load context from plugin
   const context = loadPluginContext(pluginRoot);
@@ -227,6 +266,11 @@ function processSessionStart(config, input) {
     }
   }
 
+  // Precedence reminder: project guidance > plugin > defaults. Stated at the
+  // start of the session, where the rules it orders are loaded, rather than
+  // repeated on every prompt.
+  additionalContext = `${PRECEDENCE_REMINDER}\n${additionalContext}`;
+
   return {
     systemMessage: statusLine,
     hookSpecificOutput: {
@@ -246,59 +290,36 @@ function processSessionStart(config, input) {
  * @param {object} input - Hook input from stdin
  * @returns {object} Hook response
  */
+// Rules are loaded once, at session start. They were also re-read and injected
+// every tenth prompt, which restated memento's session rules and onus's git and
+// work-item rules - nearly 900 words - in the middle of unrelated work. Each
+// rule now travels with the action it governs: the skills that carry it out
+// read their own rule file when they run.
+// There was also a prompt counter here, written to disk and injected as
+// "#7 ✓" on every prompt. Once the periodic refresh went, nothing read the
+// count, so it was a file write and a line of context per prompt to report its
+// own existence.
 function processUserPromptSubmit(config, input) {
-  const { pluginName, pluginRoot, homeDir } = config;
-  const stateFile = getStateFile(pluginName, homeDir);
-  const refreshInterval = config.refreshInterval || DEFAULT_REFRESH_INTERVAL;
+  const { pluginName } = config;
+  const statusLine = `📍 ${pluginName} ✓`;
 
-  // Load and increment state
-  const state = loadState(stateFile, { count: 0 });
-  state.count = (state.count || 0) + 1;
-  saveState(stateFile, state);
-
-  // Standard status line
-  const statusLine = `📍 ${pluginName}: #${state.count} ✓`;
-
-  // Check for periodic refresh
   let additionalContext = statusLine;
-  let refreshed = false;
-  if (state.count > 0 && state.count % refreshInterval === 0) {
-    const rulesDir = path.join(pluginRoot, 'rules');
-    const ruleFiles = findMdFiles(rulesDir);
-    if (ruleFiles.length > 0) {
-      additionalContext = readContextFiles(ruleFiles, { frontmatterOnly: true });
-      refreshed = true;
-    }
-  }
-
-  // Base extra fields
   let extra = {};
 
   // Allow plugin to augment
   if (config.onUserPromptSubmit) {
-    const augment = config.onUserPromptSubmit(input, {
-      statusLine,
-      additionalContext,
-      promptCount: state.count,
-      refreshed
-    });
+    const augment = config.onUserPromptSubmit(input, { statusLine, additionalContext });
     if (augment) {
       if (augment.additionalContext) additionalContext = augment.additionalContext;
       if (augment.extra) extra = augment.extra;
     }
   }
 
-  // Precedence reminder: project guidance > plugin > defaults
-  const precedenceReminder = 'IMPORTANT: You MUST prioritize: 1) project rules and AGENTS.md/CLAUDE.md, 2) plugin context, 3) default behavior.';
-  additionalContext = `${precedenceReminder}\n${additionalContext}`;
-
   return {
     systemMessage: statusLine,
     hookSpecificOutput: {
       hookEventName: 'UserPromptSubmit',
       additionalContext,
-      promptCount: state.count,
-      refreshed,
       ...extra
     }
   };
@@ -327,7 +348,7 @@ function processHook(config, input) {
 // Codex validates hook stdout against a strict schema and rejects an unknown field
 // inside hookSpecificOutput, reporting only "hook returned invalid session start
 // JSON output". The plugin metadata the builders below attach — files, tokens,
-// source, promptCount, refreshed, and each plugin's `extra` — is informational and
+// source, sessionPath, branchChanged, and each plugin's `extra` — is informational and
 // has no runtime consumer, so it is stripped here at the point of emission rather
 // than removed from the returned object, which the hooks' own tests read to observe
 // behavior. Events not listed pass through untouched: checkpoint.js and
@@ -405,6 +426,8 @@ module.exports = {
 
   // State management
   getStateFile,
+  sessionKey,
+  pruneStateFiles,
   ensureDir,
   loadState,
   saveState,
@@ -413,5 +436,5 @@ module.exports = {
   estimateTokens,
 
   // Constants
-  DEFAULT_REFRESH_INTERVAL
+  PRECEDENCE_REMINDER
 };

@@ -7,21 +7,15 @@
 companion: .claude/context/git.md
 type: actionable
 
-## COMMIT (BLOCKING REQUIREMENT)
-trigger: user says "commit", about to run git commit
-priority: BLOCKING
-action: You MUST use onus:commit for guided validation. STOP.
-command: onus:commit
-verify: "Using onus:commit for validation"
-consequence: Skipping validation causes format violations
+## COMMIT
+when: committing, or about to run git commit
+use: onus:commit, which validates the message format and reads this file
+why: the format is checked before the commit rather than fixed afterwards
 
-## PR (BLOCKING REQUIREMENT)
-trigger: user says "PR", "pull request", about to run gh pr create
-priority: BLOCKING
-action: You MUST use onus:pr for guided validation. STOP.
-command: onus:pr
-verify: "Using onus:pr for validation"
-consequence: Skipping validation causes format violations
+## PR
+when: opening a pull request, or about to run gh pr create
+use: onus:pr, which validates the title format and reads this file
+why: the format is checked before the PR rather than fixed afterwards
 
 ## CONVENTIONS (quick reference)
 branch-from: main (git-fetch-first, remote-main)

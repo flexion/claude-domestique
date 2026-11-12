@@ -22,7 +22,7 @@ Plugin type: **skill pack, recurring behavior hook, and automatic resource obser
 Design goals:
 
 - Add behavior not already supplied by the host.
-- Reinforce assessment, research, and active-objective guidance on every prompt.
+- State assessment, research, and active-objective guidance once per session, and again when compaction drops it.
 - Keep structured assessment and troubleshooting workflows available on demand.
 - Keep always-on context small.
 

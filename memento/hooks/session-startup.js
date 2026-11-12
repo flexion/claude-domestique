@@ -221,12 +221,16 @@ function buildTriggerContext(triggers, sessionPath) {
   return context;
 }
 
-function loadState(homeDir) {
-  return shared.loadState(shared.getStateFile('Memento', homeDir), {});
+// State is per session: the saved branch is compared against the current one to
+// detect a switch, and one file per machine made every concurrent agent share
+// that branch. In a herd each worktree saw "Branch Switch Detected" on most
+// prompts without having switched anything.
+function loadState(homeDir, sessionId) {
+  return shared.loadState(shared.getStateFile('Memento', homeDir, sessionId), {});
 }
 
-function saveState(state, homeDir) {
-  shared.saveState(shared.getStateFile('Memento', homeDir), state);
+function saveState(state, homeDir, sessionId) {
+  shared.saveState(shared.getStateFile('Memento', homeDir, sessionId), state);
 }
 
 function createSession(sessionPath, branch) {
@@ -288,7 +292,7 @@ function onSessionStart(input, base) {
   if (isNew) createSession(sessionPath, branch);
 
   // Save current branch
-  saveState({ ...loadState(input.homeDir), branch }, input.homeDir);
+  saveState({ ...loadState(input.homeDir, input.session_id), branch }, input.homeDir, input.session_id);
 
   // Build status line
   let statusLine;
@@ -307,9 +311,8 @@ function onSessionStart(input, base) {
   if (isNew) {
     context += '\nNew session created. Update Goal and Next Steps.';
   } else {
-    context += '\nFor resumption: Read session file FIRST.';
+    context += '\nResuming: read the session file before acting on prior context.';
   }
-  context += '\nAfter responding: assess if work warrants session update (milestones, decisions, blockers).';
 
   return {
     statusLine,
@@ -328,7 +331,7 @@ function onUserPromptSubmit(input, base) {
   }
 
   // Load state to detect branch switch
-  const state = loadState(input.homeDir);
+  const state = loadState(input.homeDir, input.session_id);
   const previousBranch = state.branch;
   const branchChanged = previousBranch && previousBranch !== branch;
 
@@ -341,7 +344,7 @@ function onUserPromptSubmit(input, base) {
 
   if (branchChanged) {
     // Branch switch detected - update state
-    saveState({ ...state, branch }, input.homeDir);
+    saveState({ ...state, branch }, input.homeDir, input.session_id);
 
     // Check for misnamed session (references branch but wrong filename)
     const mismatch = sessionExists ? null : detectMismatch(gitRoot, branch, sessionPath, sessionsDir);
@@ -370,27 +373,18 @@ function onUserPromptSubmit(input, base) {
   // Detect session update triggers
   const triggers = detectSessionTriggers(input);
 
-  // Normal prompt - standard session reminder
+  // Ordinary prompt: the session path, and anything an observed event calls for.
+  // Nothing periodic. A prompt to record something produces a record, so asking
+  // every fifth prompt whether anything was worth recording bought writing over
+  // working. The triggers below fire on an event that happened instead.
   context += `\n📂 Session: ${sessionPath}`;
   context += buildWarningContext(session);
   if (!sessionExists) {
     context += '\nNo session file found. Consider creating one with `/memento:session create`.';
-  } else {
-    context += '\nFor resumption: Read session file FIRST.';
   }
 
-  // Add trigger-based reminders if any detected
   if (triggers.length > 0) {
     context += buildTriggerContext(triggers, sessionPath);
-  } else {
-    // Periodic reminder every 5 prompts to assess session state
-    const promptCount = base.promptCount || 0;
-    const SESSION_REMINDER_INTERVAL = 5;
-    if (promptCount > 0 && promptCount % SESSION_REMINDER_INTERVAL === 0) {
-      context += '\n\n📝 **Session Check**: Has anything happened worth recording? Key decisions, requirements, design changes, or blockers should be captured in the session file.';
-    } else {
-      context += '\nAfter responding: assess if work warrants session update (milestones, decisions, blockers).';
-    }
   }
 
   return {

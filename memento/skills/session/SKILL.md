@@ -9,6 +9,14 @@ argument-hint: "[create|update|complete]"
 
 Show or manage the current session.
 
+## Rules
+
+Read `../../rules/sessions.md` (relative to this SKILL.md; on Claude Code
+`${CLAUDE_SKILL_DIR}/../../rules/sessions.md`) when running this skill. It is the
+single source of truth for session conventions, and it is loaded here, at the point
+of use, rather than injected into every prompt. `../../context/sessions.md` holds the
+worked examples.
+
 ## Task
 
 Based on the argument provided:

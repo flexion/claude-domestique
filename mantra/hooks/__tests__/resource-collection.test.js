@@ -89,7 +89,9 @@ test('concurrent hooks preserve every identified tool duration in the journal', 
       try {
         expect(status).toBe(0);
         expect(diagnostic).toBe('');
-        expect(JSON.parse(output).hookSpecificOutput.additionalContext).toContain('Resources');
+        // Injection rides the five-minute reflection, which is not due here;
+        // what this test watches is that every receipt still reaches the journal.
+        expect(JSON.parse(output)).toEqual({});
         resolve();
       } catch (error) { reject(error); }
     });
